@@ -13,13 +13,51 @@ Format: newest entries at the top of each section.
 |---|---|---|
 | 0 — Setup | ✅ | `legacy` branch + `legacy/v-original` tag created; `main` branched from the original |
 | 1 — Discovery | ✅ | Product inventory, technical audit, UX/visual audit written |
-| 2 — Vision & design | ⏳ | Next |
-| 3 — Build from scratch | ⏳ | |
-| 4 — Docs & release | ⏳ | |
+| 2 — Vision & design | ✅ | Vision, design system, UX guidelines, screen designs, architecture, 10 ADRs, permissions rationale |
+| 3 — Build from scratch | ⏳ | Next |
+| 4 — Docs & release | 🔄 | `PRIVACY.md` and `SECURITY.md` drafted ahead of schedule because Phase 2 documents link to them |
 
 ---
 
 ## Decisions log
+
+### 2026-11-23 — Phase 2 complete: vision, design system, architecture
+
+- **Name: Kintsugi.** Chosen because the product's promise — take a
+  fragmented web page and make it whole again, worth keeping — is exactly
+  what the Japanese art of repairing broken pottery with gold is about. The
+  metaphor also hands us the visual identity for free: **gold** on **warm
+  ash neutrals**.
+- The design system is a **three-layer token model** (primitives →
+  semantics → components). Theming rewrites Layer 2 only, so a new accent
+  or density is a small change rather than a rewrite. A lint rule
+  (`no-raw-colors-in-components`) makes a raw hex in a component a build
+  failure.
+- The component library is **native Web Components**, not React or Vue.
+  Rationale in ADR-0003: no framework runtime to ship, no build-time
+  hydration cost, and the Shadow DOM boundary means page styles cannot
+  reach the UI — which matters because the extension renders untrusted
+  content.
+- **Four surfaces**, not ten: Workbench (tab), Popup (launcher), Options
+  (tab), Onboarding. The baseline had ten mutually-toggling `<section>`
+  elements in one document, which is why none of them had an identity.
+- The single biggest UX change: **the primary action moves to the top
+  right and never moves.** In the baseline it was 13 rows down in a table
+  of controls and looked like every other button.
+- **Three permissions removed, none added.** `webRequest` → scoped DNR,
+  `unlimitedStorage` → IndexedDB, static `<all_urls>` → per-origin
+  optional grants.
+- The **parser contract is preserved verbatim**. 437 parsers are the
+  product's real asset; replacing them was not on the table. A compat shim
+  plus a codemod migrates them incrementally, with a parity harness
+  proving no behaviour changed.
+- The **EPUB pipeline is rebuilt on a real document model**. The baseline
+  merged books with regex surgery on the OPF and NCX, which silently
+  corrupts any EPUB not produced by its exact serialiser.
+- **No unit tests or fixtures will be created for individual parsers**,
+  per the repository's `AGENTS.md` rule for AI agents. The parity harness
+  tests the *migration*, not individual parsers, so the rule is respected
+  while still guaranteeing all 437 keep working.
 
 ### 2026-11-23 — Git baseline
 
@@ -65,11 +103,16 @@ Format: newest entries at the top of each section.
    The contract is small and will be preserved, but each parser file will need
    at least a mechanical import/type change. This is the single biggest
    execution risk in the project.
+   **Resolved in Phase 2:** ADR-0002 decides on a compat shim + codemod +
+   parity harness. The risk is now *managed*, not *open*.
 4. **i18n scope** — the baseline ships `en`, `ru`, `uk`, `vi`. A rewrite that
    changes every string must re-translate all four locales, or accept
-   English-only fallbacks. **Recommendation:** ship `en` complete, keep the
-   other locales as a known-incomplete set with an explicit note, and make
-   the i18n system fall back gracefully.
+   English-only fallbacks.
+   **Resolved in Phase 2:** ADR-0010 — ship `en` complete, keep the other
+   locales as a known-incomplete set with an explicit note, and make the
+   i18n system fall back gracefully.
+5. **Baseline `readme.md` is still the original.** It will be replaced in
+   Phase 4. Its relative links are intentionally left alone until then.
 
 ---
 

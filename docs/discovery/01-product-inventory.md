@@ -250,8 +250,8 @@ after which "Retry" resumes.
 
 ## 6. What the baseline does badly (must change)
 
-See [`audit-technical.md`](audit-technical.md) and
-[`audit-ux.md`](audit-ux.md). In summary:
+See [`02-audit-technical.md`](02-audit-technical.md) and
+[`03-audit-ux.md`](03-audit-ux.md). In summary:
 
 - The UI is a 2009-era unstyled HTML form: 15 literal hex colours, 3 font
   sizes, 6 border radii, zero ARIA, zero `:focus` styles, one animation, and a
