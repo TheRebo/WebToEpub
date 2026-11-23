@@ -9,6 +9,7 @@ import { parserFactory } from "../../compat/legacy-factory.js";
 import { UIText } from "../../compat/legacy-globals.js";
 import { ErrorLog } from "../../compat/legacy-globals.js";
 import { ChapterUrlsUI } from "../../compat/legacy-globals.js";
+import { FontInfo } from "../../compat/legacy-epub-items.js";
 import { WordpressBaseParser } from "./WordpressBaseParser.js";
 
 parserFactory.register("chrysanthemumgarden.com", () => new ChrysanthemumgardenParser());

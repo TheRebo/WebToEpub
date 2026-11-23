@@ -6,6 +6,7 @@
 import { LegacyParser as Parser } from "../../compat/legacy-parser.js";
 import { HttpClient } from "../../compat/legacy-http-client.js";
 import { parserFactory } from "../../compat/legacy-factory.js";
+import { FontInfo } from "../../compat/legacy-epub-items.js";
 
 parserFactory.register("requiemtls.com", () => new RequiemtlsParser());
 

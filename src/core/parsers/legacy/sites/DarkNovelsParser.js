@@ -7,6 +7,7 @@ import { LegacyParser as Parser } from "../../compat/legacy-parser.js";
 import { util } from "../../compat/legacy-util.js";
 import { HttpClient } from "../../compat/legacy-http-client.js";
 import { parserFactory } from "../../compat/legacy-factory.js";
+import { zip } from "../../compat/legacy-zip.js";
 
 parserFactory.register("dark-novels.ru", () => new DarkNovelsParser());
 

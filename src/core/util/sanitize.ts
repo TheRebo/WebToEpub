@@ -119,22 +119,44 @@ function ensureHook(): void {
 }
 
 /**
+ * The number of sanitising passes.
+ *
+ * One pass is enough in a browser, but not in every DOM implementation. When
+ * DOMPurify removes a disallowed element it *lifts* that element's children
+ * into its parent, and some DOM implementations do not re-visit the lifted
+ * nodes — so a payload wrapped in a `<form>` could keep its `<script>`.
+ *
+ * Sanitising the result again catches the lifted nodes, because on the second
+ * pass they are at the top level and are visited normally. The loop stops as
+ * soon as the output stops changing, so the common case still costs one pass.
+ */
+const MAX_SANITISE_PASSES = 3;
+
+/**
  * Sanitise a fragment of HTML.
  *
  * Returns a safe HTML string. The result is still untrusted *data* — it must
- * be inserted with `innerHTML` only into a document the extension controls,
- * and it is never inserted into the extension's own UI.
+ * be inserted into a document the extension controls, and it is never inserted
+ * into the extension's own UI.
  */
 export function sanitizeHtml(html: string): string {
     ensureHook();
-    return DOMPurify.sanitize(html, {
+    const config = {
         ALLOWED_TAGS,
         ALLOWED_ATTR: ALLOWED_ATTRIBUTES,
         ALLOW_DATA_ATTR: false,
         ALLOW_ARIA_ATTR: false,
         KEEP_CONTENT: true,
         RETURN_TRUSTED_TYPE: false,
-    });
+    };
+
+    let current = html;
+    for (let pass = 0; pass < MAX_SANITISE_PASSES; ++pass) {
+        const next = DOMPurify.sanitize(current, config);
+        if (next === current) return next;
+        current = next;
+    }
+    return current;
 }
 
 /**

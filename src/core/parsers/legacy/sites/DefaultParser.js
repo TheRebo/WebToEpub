@@ -6,6 +6,8 @@
 import { LegacyParser as Parser } from "../../compat/legacy-parser.js";
 import { util } from "../../compat/legacy-util.js";
 import { parserFactory } from "../../compat/legacy-factory.js";
+import { DefaultParserSiteSettings } from "../../compat/legacy-default-parser.js";
+import { DefaultParserUI } from "../../compat/legacy-default-parser.js";
 
 parserFactory.registerManualSelect(
     "Default", 

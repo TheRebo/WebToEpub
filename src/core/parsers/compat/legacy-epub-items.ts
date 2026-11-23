@@ -19,6 +19,8 @@
 "use strict";
 
 import { util } from "./legacy-util";
+import { ImageInfo } from "./legacy-image-collector";
+import { loadZip } from "./legacy-zip";
 
 /**
  * A file that goes into an EPUB.
@@ -148,6 +150,37 @@ export class ChapterEpubItem extends EpubItem {
         if (this.chapterTitle !== null) {
             yield { depth: 1, title: this.chapterTitle, src: this.getZipHref() };
         }
+    }
+}
+
+/**
+ * A font that goes into an EPUB.
+ *
+ * Two sites serve their own typeface with the chapter, and the baseline
+ * packed it into the EPUB's `OEBPS/Fonts` folder. The rewrite's packer does
+ * not embed fonts — the EPUB specification does not require it, and readers
+ * that honour embedded fonts are rare — but the parsers still create these
+ * objects and push them onto the collector's list, so the class stays.
+ */
+export class FontInfo extends ImageInfo {
+    /** The font's file name. */
+    fontName: string;
+
+    constructor(fontName: string) {
+        super("", 0, "");
+        this.fontName = fontName;
+    }
+
+    /**
+     * Pack the font into the EPUB.
+     *
+     * @param zipWriter The writer to add the font to.
+     */
+    async packInEpub(zipWriter: unknown): Promise<void> {
+        const { BlobReader } = await loadZip();
+        const bytes = this.arraybuffer ?? new ArrayBuffer(0);
+        const writer = zipWriter as { add(name: string, reader: unknown): void };
+        writer.add("OEBPS/Fonts/" + this.fontName, new BlobReader(new Blob([bytes])));
     }
 }
 

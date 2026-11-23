@@ -6,6 +6,7 @@
 import { LegacyParser as Parser } from "../../compat/legacy-parser.js";
 import { util } from "../../compat/legacy-util.js";
 import { parserFactory } from "../../compat/legacy-factory.js";
+import { FootnoteExtractor } from "../../compat/legacy-globals.js";
 
 parserFactory.register("idleturtle-translations.com", () => new IdleturtletranslationsParser());
 

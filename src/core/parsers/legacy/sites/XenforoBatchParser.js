@@ -6,6 +6,7 @@
 import { LegacyParser as Parser } from "../../compat/legacy-parser.js";
 import { util } from "../../compat/legacy-util.js";
 import { parserFactory } from "../../compat/legacy-factory.js";
+import { FetchCache } from "../../compat/legacy-globals.js";
 
 parserFactory.registerManualSelect(
     "Xenforo Batch Post Parser",

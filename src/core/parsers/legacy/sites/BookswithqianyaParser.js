@@ -5,6 +5,7 @@
 
 import { util } from "../../compat/legacy-util.js";
 import { parserFactory } from "../../compat/legacy-factory.js";
+import { FootnoteExtractor } from "../../compat/legacy-globals.js";
 import { WordpressBaseParser } from "./WordpressBaseParser.js";
 
 parserFactory.register("bookswithqianya.com", () => new BookswithqianyaParser());

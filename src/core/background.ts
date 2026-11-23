@@ -19,6 +19,8 @@ import { handleRequests, type RequestMap } from "./message/bus";
 import { localStorageAdapter, onMessage, getNamespace } from "./browser-api";
 import { SettingsStore } from "./storage/settings-store";
 import { LibraryStore } from "./storage/library-store";
+import { siteSelectors } from "./storage/site-selectors";
+import { scanDocument } from "./parsers/heuristic-scanner";
 import { toUserFacingError } from "./util/errors";
 import { validateFetchableUrl } from "./util/sanitize";
 import { DefaultParser } from "./parsers/default-parser";
@@ -113,6 +115,11 @@ class BackgroundWorker {
         // a site that does have a dedicated one.
         await registerAllParsers(this.#registry);
 
+        // The saved site selectors have to be in the cache before the first
+        // chapter is fetched, or a site the user has already taught would be
+        // parsed by the fallback parser one more time.
+        await siteSelectors.hydrate();
+
         handleRequests(
             { onMessage },
             {
@@ -165,6 +172,28 @@ class BackgroundWorker {
                     });
                     return { revoked };
                 },
+                "site-selectors:suggest": async (payload) => this.#suggestSelectors(payload.url),
+                "site-selectors:save": async (payload) => {
+                    await siteSelectors.setForHost(payload.hostname, {
+                        contentCss: payload.contentCss,
+                        titleCss: payload.titleCss,
+                        removeCss: payload.removeCss,
+                        testUrl: payload.testUrl ?? "",
+                    });
+                    return { saved: true };
+                },
+                "site-selectors:list": async () => {
+                    const all = await siteSelectors.list();
+                    const entries = [...all.entries()].map(([hostname, config]) => ({
+                        hostname,
+                        ...config,
+                    }));
+                    return { entries };
+                },
+                "site-selectors:remove": async (payload) => {
+                    await siteSelectors.removeForHost(payload.hostname);
+                    return { removed: true };
+                },
             },
         );
     }
@@ -194,6 +223,7 @@ class BackgroundWorker {
             return {
                 supported: true,
                 parserName: parser.constructor.name,
+                usedDefaultParser: parser instanceof DefaultParser,
                 title: titleText.trim() || undefined,
                 author: parser.extractAuthor(result.dom)?.trim() || undefined,
                 language: parser.extractLanguage(result.dom)?.trim() || undefined,
@@ -253,6 +283,39 @@ class BackgroundWorker {
         const api = getNamespace();
         if (!api) return false;
         return api.permissions.contains({ origins: [`${origin}/*`] });
+    }
+
+    /**
+     * Suggest the CSS selectors for a site.
+     *
+     * The scanner works on the page's DOM, so the page is fetched here rather
+     * than in the extension page: the worker already owns the fetch layer,
+     * with its cookies and its retry policy.
+     */
+    async #suggestSelectors(url: string): Promise<RequestMap["site-selectors:suggest"]["response"]> {
+        const validated = validateFetchableUrl(url);
+        if (!validated) {
+            return { status: "failed", contentCss: "", titleCss: "", error: "Unsupported URL." };
+        }
+        try {
+            const result = await this.#fetch.fetchHtml(url);
+            const scan = scanDocument(result.dom);
+            if (scan.status === "failed") {
+                return { status: "failed", contentCss: "", titleCss: "", error: scan.error };
+            }
+            return {
+                status: scan.status,
+                contentCss: scan.contentCss,
+                titleCss: scan.titleCss,
+            };
+        } catch (error) {
+            return {
+                status: "failed",
+                contentCss: "",
+                titleCss: "",
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
     }
 }
 

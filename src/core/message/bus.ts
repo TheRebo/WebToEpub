@@ -88,6 +88,33 @@ export interface RequestMap {
         request: { origin: string };
         response: { revoked: boolean };
     };
+    /** Suggest CSS selectors for a site the rewrite has no parser for. */
+    "site-selectors:suggest": {
+        request: { url: string };
+        response: SiteSelectorSuggestion;
+    };
+    /** Save the CSS selectors for a host name. */
+    "site-selectors:save": {
+        request: {
+            hostname: string;
+            contentCss: string;
+            titleCss: string;
+            removeCss: string;
+            /** The URL the selectors were tested against. */
+            testUrl?: string;
+        };
+        response: { saved: boolean };
+    };
+    /** List the saved CSS selectors. */
+    "site-selectors:list": {
+        request: Record<string, never>;
+        response: { entries: SiteSelectorEntry[] };
+    };
+    /** Forget a host name's CSS selectors. */
+    "site-selectors:remove": {
+        request: { hostname: string };
+        response: { removed: boolean };
+    };
 }
 
 /** The name of a request. */
@@ -111,6 +138,13 @@ export interface PageAnalysis {
     description?: string;
     /** The error, if the page could not be analysed. */
     error?: UserFacingError;
+    /**
+     * Whether the default parser was used.
+     *
+     * The workbench shows its site-selector panel when this is true: the
+     * fallback parser is guessing, and the user can make it stop guessing.
+     */
+    usedDefaultParser?: boolean;
 }
 
 /** The result of building a chapter list. */
@@ -152,6 +186,32 @@ export interface DownloadProgress {
     fileSize?: number;
     /** The error, if the download failed. */
     error?: UserFacingError;
+}
+
+/** The selectors the scanner suggests for a site. */
+export interface SiteSelectorSuggestion {
+    /** `success`, `toc_detected` or `failed`. */
+    status: "success" | "toc_detected" | "failed";
+    /** The selector that holds the chapter's body. */
+    contentCss: string;
+    /** The selector that holds the chapter's title. */
+    titleCss: string;
+    /** The error, when the scan failed. */
+    error?: string;
+}
+
+/** A saved set of selectors. */
+export interface SiteSelectorEntry {
+    /** The host name the selectors belong to. */
+    hostname: string;
+    /** The selector that holds the chapter's body. */
+    contentCss: string;
+    /** The selector that holds the chapter's title. */
+    titleCss: string;
+    /** The selector that holds the elements to strip from the body. */
+    removeCss: string;
+    /** The URL the selectors were tested against. */
+    testUrl: string;
 }
 
 /** A message envelope. */

@@ -108,6 +108,12 @@ const GLOBAL_IMPORTS = [
     { name: "ChapterEpubItem", from: "../../compat/legacy-epub-items.js" },
     { name: "EpubItemSupplier", from: "../../compat/legacy-epub-items.js" },
     { name: "EpubMetaInfo", from: "../../compat/legacy-epub-items.js" },
+    { name: "FontInfo", from: "../../compat/legacy-epub-items.js" },
+    { name: "FetchCache", from: "../../compat/legacy-globals.js" },
+    { name: "FootnoteExtractor", from: "../../compat/legacy-globals.js" },
+    { name: "DefaultParserSiteSettings", from: "../../compat/legacy-default-parser.js" },
+    { name: "DefaultParserUI", from: "../../compat/legacy-default-parser.js" },
+    { name: "zip", from: "../../compat/legacy-zip.js" },
 ];
 
 /* ------------------------------------------------------------------ */

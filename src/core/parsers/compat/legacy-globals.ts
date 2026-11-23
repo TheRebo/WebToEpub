@@ -25,6 +25,7 @@
 
 import { sanitizeHtml } from "../../util/sanitize";
 import { util } from "./legacy-util";
+import { HttpClient } from "./legacy-http-client";
 
 /* ------------------------------------------------------------------ */
 /* Messages                                                            */
@@ -87,6 +88,100 @@ export const UIText = {
         cancel: "Cancel",
     },
 };
+
+/* ------------------------------------------------------------------ */
+/* Fetch cache                                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The page cache.
+ *
+ * Some sites put several chapters on one page. The baseline cached the page's
+ * DOM so that the extra chapters cost no extra requests; three parsers use
+ * this. The rewrite keeps the same behaviour, and the same interface.
+ */
+export class FetchCache {
+    /** The path of the cached page. */
+    path: string | null = null;
+    /** The cached page. */
+    dom: Document | null = null;
+
+    /** Fetch a page, or return the cached copy. */
+    async fetch(url: string): Promise<Document> {
+        if (!this.inCache(url)) {
+            this.dom = (await HttpClient.wrapFetch(url)).responseXML;
+            this.path = new URL(url).pathname;
+        }
+        return (this.dom as Document).cloneNode(true) as Document;
+    }
+
+    /** Whether the page is the cached one. */
+    inCache(url: string): boolean {
+        return new URL(url).pathname === this.path && this.dom !== null;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Footnotes                                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The footnote extractor.
+ *
+ * Two sites hide their footnotes in an inline script and show them in a
+ * tooltip. The baseline pulled the text out of the script and put it back as
+ * a `<span>`, so that the footnote survives into the EPUB. The rewrite does
+ * the same thing, on the same markup.
+ */
+export class FootnoteExtractor {
+    /** The footnote spans, in the order the page uses them. */
+    scriptElementsToFootnotes(dom: Document): Element[] {
+        const indexedFootnotes = new Map<string, string>();
+        for (const script of Array.from(dom.querySelectorAll("script"))) {
+            const text = script.textContent ?? "";
+            if (!text.includes("toolTips('.classtoolTips")) continue;
+            indexedFootnotes.set(this.getId(text), this.extractFootnoteText(text));
+        }
+
+        return this.getIdsUsedOnPage(dom).map((id) =>
+            this.makeSpan(indexedFootnotes.get(id) ?? "", dom),
+        );
+    }
+
+    /** The footnote ids the page refers to. */
+    getIdsUsedOnPage(dom: Document): string[] {
+        const extractId = (span: Element): string | undefined =>
+            Array.from(span.classList).find((value) => value.startsWith("class"));
+
+        return Array.from(dom.querySelectorAll("span.tooltipsall"))
+            .map(extractId)
+            .filter((id): id is string => id !== undefined);
+    }
+
+    /** The footnote id inside a script. */
+    getId(script: string): string {
+        return this.extractSubstring(script, "toolTips('.", ",").replace("'", "");
+    }
+
+    /** Build the span that holds a footnote's text. */
+    makeSpan(content: string, dom: Document): Element {
+        const span = dom.createElement("span");
+        span.textContent = content;
+        return span;
+    }
+
+    /** The footnote's text, inside a script. */
+    extractFootnoteText(content: string): string {
+        return this.extractSubstring(content, 'tt_store_content = "', "\"; toolTips('");
+    }
+
+    /** The text between two markers. */
+    extractSubstring(content: string, startTag: string, endTag: string): string {
+        const start = content.indexOf(startTag);
+        const trimmed = content.substring(start + startTag.length);
+        return trimmed.substring(0, trimmed.indexOf(endTag));
+    }
+}
 
 /* ------------------------------------------------------------------ */
 /* Logging                                                             */
