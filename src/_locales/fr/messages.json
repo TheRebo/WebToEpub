@@ -1,0 +1,694 @@
+{
+  "appName": {
+    "message": "Kintsugi",
+    "description": "Le nom de l'extension."
+  },
+  "appTagline": {
+    "message": "Transformez n'importe quel roman en ligne en un livre à garder.",
+    "description": "Une description en une ligne de l'extension."
+  },
+  "workbenchTitle": {
+    "message": "Atelier",
+    "description": "Le titre de la page principale."
+  },
+  "workbenchStoryDetails": {
+    "message": "Détails de l'histoire",
+    "description": "Le titre du panneau de métadonnées."
+  },
+  "workbenchCover": {
+    "message": "Couverture",
+    "description": "Le titre de la section de couverture."
+  },
+  "workbenchOptions": {
+    "message": "Options",
+    "description": "Le titre de la section des options."
+  },
+  "workbenchChapters": {
+    "message": "Chapitres",
+    "description": "Le titre de la liste des chapitres."
+  },
+  "workbenchChaptersFound": {
+    "message": "$COUNT$ chapitres trouvés",
+    "description": "Combien de chapitres ont été trouvés.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchChapterCount": {
+    "message": "$VISIBLE$ of $TOTAL$",
+    "description": "How many chapters are visible, out of how many were found.",
+    "placeholders": {
+      "visible": {
+        "content": "$1",
+        "example": "12"
+      },
+      "total": {
+        "content": "$2",
+        "example": "48"
+      }
+    }
+  },
+  "workbenchPack": {
+    "message": "Créer l'EPUB",
+    "description": "Le bouton qui crée le livre."
+  },
+  "workbenchSave": {
+    "message": "Enregistrer",
+    "description": "Le bouton qui enregistre les métadonnées."
+  },
+  "workbenchCancel": {
+    "message": "Annuler",
+    "description": "Le bouton qui arrête un téléchargement."
+  },
+  "workbenchSelectAll": {
+    "message": "Tout sélectionner",
+    "description": "Le bouton qui sélectionne tous les chapitres."
+  },
+  "workbenchSelectNone": {
+    "message": "Tout désélectionner",
+    "description": "Le bouton qui désélectionne tous les chapitres."
+  },
+  "workbenchInvert": {
+    "message": "Inverser",
+    "description": "Le bouton qui inverse la sélection."
+  },
+  "workbenchRanges": {
+    "message": "Plages",
+    "description": "Le bouton qui choisit une plage de chapitres."
+  },
+  "workbenchFilter": {
+    "message": "Filtrer",
+    "description": "Le bouton qui ouvre le filtre."
+  },
+  "workbenchNoChaptersSelected": {
+    "message": "Aucun chapitre sélectionné",
+    "description": "Affiché quand rien n'est coché."
+  },
+  "workbenchWaitingForChapters": {
+    "message": "Recherche des chapitres…",
+    "description": "Affiché pendant le chargement."
+  },
+  "workbenchDetected": {
+    "message": "Detected",
+    "description": "Shown when a parser recognised the site."
+  },
+  "workbenchFieldTitle": {
+    "message": "Titre",
+    "description": "Le titre de l'histoire."
+  },
+  "workbenchFieldAuthor": {
+    "message": "Auteur",
+    "description": "L'auteur de l'histoire."
+  },
+  "workbenchFieldLanguage": {
+    "message": "Langue",
+    "description": "La langue de l'histoire."
+  },
+  "workbenchFieldFilename": {
+    "message": "Nom du fichier",
+    "description": "Le nom du fichier EPUB."
+  },
+  "workbenchResetFilename": {
+    "message": "Reset",
+    "description": "Restores the default file name."
+  },
+  "workbenchChooseFromPage": {
+    "message": "Choose from page",
+    "description": "Picks the cover image from the page."
+  },
+  "workbenchRemoveCover": {
+    "message": "Remove cover",
+    "description": "Removes the cover image."
+  },
+  "workbenchIncludeAuthorNotes": {
+    "message": "Include author notes",
+    "description": "Keeps the notes at the end of a chapter."
+  },
+  "workbenchIncludeTocPage": {
+    "message": "Include the contents page",
+    "description": "Adds the table of contents as a chapter."
+  },
+  "workbenchMoreOptions": {
+    "message": "More options",
+    "description": "Opens the full settings page."
+  },
+  "workbenchNoCover": {
+    "message": "No cover",
+    "description": "Shown when there is no cover image."
+  },
+  "workbenchCoverUrl": {
+    "message": "Cover image address",
+    "description": "The address of the cover image."
+  },
+  "workbenchNoStoryHere": {
+    "message": "Aucune histoire trouvée sur cette page",
+    "description": "Quand la page n'est pas une histoire."
+  },
+  "workbenchTryAnyway": {
+    "message": "Essayer quand même",
+    "description": "Ouvre l'atelier malgré tout."
+  },
+  "workbenchUnsupportedSite": {
+    "message": "Ce site n'est pas encore pris en charge",
+    "description": "Quand aucun analyseur ne correspond."
+  },
+  "workbenchUseSelectorBuilder": {
+    "message": "Build a selector",
+    "description": "Opens the selector builder."
+  },
+  "workbenchReloadPage": {
+    "message": "Reload the page",
+    "description": "Reloads the tab."
+  },
+  "chapterStateQueued": {
+    "message": "Queued",
+    "description": "A chapter that is waiting to be fetched."
+  },
+  "chapterStateFetching": {
+    "message": "Fetching",
+    "description": "A chapter that is being fetched."
+  },
+  "chapterStateLoaded": {
+    "message": "Loaded",
+    "description": "A chapter that has been read."
+  },
+  "chapterStateDownloaded": {
+    "message": "Downloaded",
+    "description": "A chapter that is in the book."
+  },
+  "chapterStateFailed": {
+    "message": "Failed",
+    "description": "A chapter that could not be read."
+  },
+  "chapterStateNotStarted": {
+    "message": "Not started",
+    "description": "A chapter that has not been fetched yet."
+  },
+  "phasePreparing": {
+    "message": "Preparing",
+    "description": "The first stage of a download."
+  },
+  "phaseFetchingChapters": {
+    "message": "Fetching chapters",
+    "description": "The stage that reads the chapters."
+  },
+  "phaseDownloadingImages": {
+    "message": "Downloading images",
+    "description": "The stage that reads the images."
+  },
+  "phaseBuildingEpub": {
+    "message": "Building the EPUB",
+    "description": "The stage that assembles the book."
+  },
+  "phaseSaving": {
+    "message": "Saving",
+    "description": "The stage that writes the file."
+  },
+  "phaseComplete": {
+    "message": "Saved",
+    "description": "Shown when the book is saved."
+  },
+  "phaseFailed": {
+    "message": "Failed",
+    "description": "Shown when the download failed."
+  },
+  "phaseCancelled": {
+    "message": "Cancelled",
+    "description": "Shown when the download was stopped."
+  },
+  "popupOpenWorkbench": {
+    "message": "Ouvrir l'atelier",
+    "description": "Le bouton principal du popup."
+  },
+  "popupAddToLibrary": {
+    "message": "Ajouter à la bibliothèque",
+    "description": "Le bouton de bibliothèque du popup."
+  },
+  "popupSettings": {
+    "message": "Paramètres",
+    "description": "Le bouton de paramètres du popup."
+  },
+  "popupNoStory": {
+    "message": "Aucune histoire détectée sur cette page.",
+    "description": "Quand la page n'est pas une histoire."
+  },
+  "popupUnsupported": {
+    "message": "Ce site n'est pas encore pris en charge.",
+    "description": "Quand aucun analyseur ne correspond."
+  },
+  "popupSaved": {
+    "message": "Your book is ready.",
+    "description": "Shown when a download finishes."
+  },
+  "popupTryAgain": {
+    "message": "Try again",
+    "description": "The popup's retry button."
+  },
+  "popupUnsupportedHost": {
+    "message": "$HOST$ is not supported yet.",
+    "description": "Shown when no parser matched the current site.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "optionsAppearance": {
+    "message": "Apparence",
+    "description": "Le groupe des réglages d'apparence."
+  },
+  "optionsStory": {
+    "message": "Histoire",
+    "description": "Le groupe des réglages d'histoire."
+  },
+  "optionsEpub": {
+    "message": "EPUB",
+    "description": "Le groupe des réglages EPUB."
+  },
+  "optionsImages": {
+    "message": "Images",
+    "description": "Le groupe des réglages d'images."
+  },
+  "optionsBehaviour": {
+    "message": "Comportement",
+    "description": "Le groupe des réglages de comportement."
+  },
+  "optionsPrivacy": {
+    "message": "Confidentialité",
+    "description": "Le groupe des réglages de confidentialité."
+  },
+  "optionsAdvanced": {
+    "message": "Avancé",
+    "description": "Le groupe des réglages avancés."
+  },
+  "optionsTheme": {
+    "message": "Thème",
+    "description": "Le réglage du thème."
+  },
+  "optionsAccent": {
+    "message": "Accent",
+    "description": "Le réglage de la couleur d'accent."
+  },
+  "optionsDensity": {
+    "message": "Densité",
+    "description": "Le réglage de la densité."
+  },
+  "optionsThemeSystem": {
+    "message": "Système",
+    "description": "L'option de thème système."
+  },
+  "optionsThemeLight": {
+    "message": "Clair",
+    "description": "L'option de thème clair."
+  },
+  "optionsThemeDark": {
+    "message": "Sombre",
+    "description": "L'option de thème sombre."
+  },
+  "optionsAccentGold": {
+    "message": "Gold",
+    "description": "The gold accent option."
+  },
+  "optionsAccentInk": {
+    "message": "Ink",
+    "description": "The ink accent option."
+  },
+  "optionsAccentVerdigris": {
+    "message": "Verdigris",
+    "description": "The verdigris accent option."
+  },
+  "optionsAccentPlum": {
+    "message": "Plum",
+    "description": "The plum accent option."
+  },
+  "optionsDensityComfortable": {
+    "message": "Comfortable",
+    "description": "The comfortable density option."
+  },
+  "optionsDensityCompact": {
+    "message": "Compact",
+    "description": "The compact density option."
+  },
+  "optionsSearchSettings": {
+    "message": "Search settings",
+    "description": "The settings search box."
+  },
+  "optionsSiteAccess": {
+    "message": "Site access",
+    "description": "The list of sites the extension may read."
+  },
+  "optionsRevoke": {
+    "message": "Revoke",
+    "description": "Removes access to a site."
+  },
+  "optionsRevokeAll": {
+    "message": "Revoke all",
+    "description": "Removes access to every site."
+  },
+  "optionsExportSettings": {
+    "message": "Export settings",
+    "description": "Saves the settings to a file."
+  },
+  "optionsImportSettings": {
+    "message": "Import settings",
+    "description": "Loads the settings from a file."
+  },
+  "optionsResetAll": {
+    "message": "Reset all settings",
+    "description": "Restores every setting to its default."
+  },
+  "optionsPrivacyNote": {
+    "message": "Kintsugi sends nothing to anyone. Every network request goes to the site you are reading.",
+    "description": "The note under the privacy settings."
+  },
+  "optionsLibrary": {
+    "message": "Library",
+    "description": "The library tab, and the books you have built."
+  },
+  "optionsLibraryEmptyTitle": {
+    "message": "Your library is empty.",
+    "description": "The empty library's heading."
+  },
+  "optionsLibraryEmptyText": {
+    "message": "Books you build are kept here, so you can update them when a new chapter is posted.",
+    "description": "The empty library's explanation."
+  },
+  "optionsLibraryChapters": {
+    "message": "$COUNT$ chapters",
+    "description": "How many chapters a book has.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "optionsNoResults": {
+    "message": "Nothing matches that search.",
+    "description": "Shown when a settings search finds nothing."
+  },
+  "optionsNavLabel": {
+    "message": "Settings groups",
+    "description": "The accessible name of the settings navigation."
+  },
+  "optionsLibraryMeta": {
+    "message": "$CHAPTERS$ chapters · $SIZE$",
+    "description": "The library card's metadata line.",
+    "placeholders": {
+      "chapters": {
+        "content": "$1",
+        "example": "42"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "settingReduceMotion": {
+    "message": "Always reduce motion",
+    "description": "The reduce-motion setting."
+  },
+  "settingReduceMotionHint": {
+    "message": "Turns off transitions even when the system does not ask for it.",
+    "description": "Explains the reduce-motion setting."
+  },
+  "settingFilenameTemplate": {
+    "message": "Filename template",
+    "description": "The filename-template setting."
+  },
+  "settingFilenameTemplateHint": {
+    "message": "{title} and {author} are replaced when the file is saved.",
+    "description": "Explains the filename-template setting."
+  },
+  "settingDefaultLanguage": {
+    "message": "Default language",
+    "description": "The default-language setting."
+  },
+  "settingDefaultLanguageHint": {
+    "message": "The ISO 639 code used when a site does not declare one.",
+    "description": "Explains the default-language setting."
+  },
+  "settingRemoveAuthorNotes": {
+    "message": "Remove author notes",
+    "description": "The remove-author-notes setting."
+  },
+  "settingRemoveAuthorNotesHint": {
+    "message": "Strips the notes many authors put at the end of a chapter.",
+    "description": "Explains the remove-author-notes setting."
+  },
+  "settingRemoveChapterNumbers": {
+    "message": "Remove chapter numbers from titles",
+    "description": "The remove-chapter-numbers setting."
+  },
+  "settingIncludeTocPage": {
+    "message": "Include the table of contents as a chapter",
+    "description": "The include-toc-page setting."
+  },
+  "settingEpubVersion": {
+    "message": "Version",
+    "description": "The EPUB-version setting."
+  },
+  "settingEpubVersionHint": {
+    "message": "Version 3 is the standard. Version 2 is for older readers.",
+    "description": "Explains the EPUB-version setting."
+  },
+  "settingAddInfoPage": {
+    "message": "Add an information page",
+    "description": "The information-page setting."
+  },
+  "settingAddInfoPageHint": {
+    "message": "A page with the title, author, and source.",
+    "description": "Explains the information-page setting."
+  },
+  "settingRemoveNextPrevLinks": {
+    "message": "Remove next and previous links",
+    "description": "The remove-next-prev-links setting."
+  },
+  "settingIncludeSourceUrl": {
+    "message": "Include the source URL in each chapter",
+    "description": "The include-source-url setting."
+  },
+  "settingSkipImages": {
+    "message": "Skip images entirely",
+    "description": "The skip-images setting."
+  },
+  "settingRemoveDuplicates": {
+    "message": "Remove duplicate images",
+    "description": "The remove-duplicates setting."
+  },
+  "settingPreferHighestResolution": {
+    "message": "Prefer the highest resolution",
+    "description": "The prefer-highest-resolution setting."
+  },
+  "settingUseSvg": {
+    "message": "Allow SVG images",
+    "description": "The allow-SVG setting."
+  },
+  "settingCompressImages": {
+    "message": "Compress images",
+    "description": "The compress-images setting."
+  },
+  "settingMaxResolution": {
+    "message": "Maximum resolution",
+    "description": "The maximum-resolution setting."
+  },
+  "settingMaxResolutionHint": {
+    "message": "In pixels on the longest edge.",
+    "description": "Explains the maximum-resolution setting."
+  },
+  "settingSkipFailedChapters": {
+    "message": "Skip chapters that fail",
+    "description": "The skip-failed-chapters setting."
+  },
+  "settingSkipFailedChaptersHint": {
+    "message": "A failed chapter becomes a note in the book instead of stopping the run.",
+    "description": "Explains the skip-failed-chapters setting."
+  },
+  "settingRetryOnEmptyPage": {
+    "message": "Retry on an empty page",
+    "description": "The retry-on-empty-page setting."
+  },
+  "settingMinimumDelay": {
+    "message": "Minimum delay between requests",
+    "description": "The minimum-delay setting."
+  },
+  "settingMinimumDelayHint": {
+    "message": "In milliseconds. Raise it for sites that rate-limit aggressively.",
+    "description": "Explains the minimum-delay setting."
+  },
+  "settingMaxChapters": {
+    "message": "Maximum chapters per book",
+    "description": "The maximum-chapters setting."
+  },
+  "settingDelayPerChapter": {
+    "message": "Extra delay per chapter",
+    "description": "The delay-per-chapter setting."
+  },
+  "settingDelayPerChapterHint": {
+    "message": "In milliseconds, on top of the minimum delay.",
+    "description": "Explains the delay-per-chapter setting."
+  },
+  "settingMetadataLookup": {
+    "message": "Look up book metadata",
+    "description": "The metadata-lookup setting."
+  },
+  "settingMetadataLookupHint": {
+    "message": "Off by default. When on, the title is checked against a public database.",
+    "description": "Explains the metadata-lookup setting."
+  },
+  "settingSendStoryUrl": {
+    "message": "Send the story URL with the lookup",
+    "description": "The send-story-url setting."
+  },
+  "settingSendStoryUrlHint": {
+    "message": "Off by default. Without it, the lookup can only use the title.",
+    "description": "Explains the send-story-url setting."
+  },
+  "settingDiagnostics": {
+    "message": "Developer diagnostics",
+    "description": "The diagnostics setting."
+  },
+  "settingDiagnosticsHint": {
+    "message": "Logs more detail to the console. Off by default.",
+    "description": "Explains the diagnostics setting."
+  },
+  "onboardingWelcome": {
+    "message": "Bienvenue dans Kintsugi",
+    "description": "Le titre de la première étape."
+  },
+  "onboardingStep1": {
+    "message": "Step 1 of 3",
+    "description": "The first onboarding step's label."
+  },
+  "onboardingStep2": {
+    "message": "Step 2 of 3",
+    "description": "The second onboarding step's label."
+  },
+  "onboardingStep3": {
+    "message": "Step 3 of 3",
+    "description": "The third onboarding step's label."
+  },
+  "onboardingNext": {
+    "message": "Suivant",
+    "description": "Le bouton qui passe à l'étape suivante."
+  },
+  "onboardingBack": {
+    "message": "Retour",
+    "description": "Le bouton qui revient à l'étape précédente."
+  },
+  "onboardingFinish": {
+    "message": "Terminer",
+    "description": "Le bouton qui termine l'introduction."
+  },
+  "onboardingSkip": {
+    "message": "Passer",
+    "description": "Le bouton qui passe l'introduction."
+  },
+  "onboardingGetStarted": {
+    "message": "Get started",
+    "description": "The button that leaves the onboarding."
+  },
+  "onboardingWelcomeText": {
+    "message": "Turn any web novel into a book worth keeping. Point it at a chapter list, and it builds a clean EPUB — cover, table of contents, and all.",
+    "description": "The first onboarding step's explanation."
+  },
+  "onboardingWelcomeFootnote": {
+    "message": "No account. No tracking. Works offline.",
+    "description": "The first onboarding step's footnote."
+  },
+  "onboardingWhichSite": {
+    "message": "Which site are you reading?",
+    "description": "The second onboarding step's heading."
+  },
+  "onboardingWhichSiteText": {
+    "message": "Kintsugi knows hundreds of sites. Open one, and it offers to build the book.",
+    "description": "The second onboarding step's explanation."
+  },
+  "onboardingWhichSiteFootnote": {
+    "message": "Not listed? Kintsugi can still read it — you can build a selector yourself.",
+    "description": "The second onboarding step's footnote."
+  },
+  "onboardingMakeItYours": {
+    "message": "Make it yours",
+    "description": "The third onboarding step's heading."
+  },
+  "onboardingMakeItYoursText": {
+    "message": "This is a live preview. Pick what you like.",
+    "description": "The third onboarding step's explanation."
+  },
+  "errorGeneric": {
+    "message": "Une erreur est survenue. Veuillez réessayer.",
+    "description": "Le message d'erreur par défaut."
+  },
+  "errorNetwork": {
+    "message": "Impossible de joindre le site.",
+    "description": "Un échec réseau."
+  },
+  "errorNoParser": {
+    "message": "Kintsugi ne connaît pas encore ce site.",
+    "description": "Aucun analyseur ne correspond."
+  },
+  "errorTimeout": {
+    "message": "Le site a mis trop de temps à répondre.",
+    "description": "Un délai dépassé."
+  },
+  "errorCancelled": {
+    "message": "Annulé.",
+    "description": "L'utilisateur a annulé l'opération."
+  },
+  "errorForbidden": {
+    "message": "Le site a refusé la requête.",
+    "description": "Une erreur HTTP 403."
+  },
+  "errorParse": {
+    "message": "La page n'a pas pu être lue.",
+    "description": "La page n'a pas pu être analysée."
+  },
+  "errorNoChapters": {
+    "message": "Aucun chapitre trouvé sur cette page.",
+    "description": "La liste des chapitres était vide."
+  },
+  "filterSearch": {
+    "message": "Rechercher",
+    "description": "Le champ de recherche du filtre."
+  },
+  "filterUseRegex": {
+    "message": "Utiliser une expression régulière",
+    "description": "Si la recherche est une regex."
+  },
+  "filterInclude": {
+    "message": "Inclure",
+    "description": "Ne garde que les chapitres correspondants."
+  },
+  "filterExclude": {
+    "message": "Exclure",
+    "description": "Retire les chapitres correspondants."
+  },
+  "filterMatchCount": {
+    "message": "$COUNT$ correspondants",
+    "description": "Combien de chapitres correspondent.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "filterClear": {
+    "message": "Effacer",
+    "description": "Efface le filtre."
+  },
+  "filterApply": {
+    "message": "Appliquer",
+    "description": "Applique le filtre."
+  },
+  "filterInvalidPattern": {
+    "message": "Ce motif n'est pas valide.",
+    "description": "Quand la regex ne compile pas."
+  }
+}

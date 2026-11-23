@@ -37,6 +37,22 @@ const PAGES = [
 ];
 
 /**
+ * Convert a SemVer string into the `major.minor.patch` form that Firefox
+ * accepts in `manifest.json`.
+ *
+ * Firefox rejects pre-release suffixes outright ("the version string should be
+ * simplified"), so `2.0.0-alpha.1` is published as `2.0.0`. The pre-release
+ * identity still lives in `package.json` and in the release tag, which is
+ * where it is actually read by humans and by the changelog.
+ */
+function manifestVersion(semver) {
+    const core = String(semver).split("-")[0]?.split("+")[0] ?? "0.0.0";
+    const parts = core.split(".");
+    while (parts.length < 3) parts.push("0");
+    return parts.slice(0, 3).join(".");
+}
+
+/**
  * The manifest is generated rather than hand-written, so that the version,
  * the permission set, and the CSP live in exactly one place and cannot drift
  * between the source tree and the built artifact.
@@ -47,7 +63,7 @@ async function buildManifest() {
     const manifest = {
         manifest_version: 3,
         name: "Kintsugi",
-        version: pkg.version,
+        version: manifestVersion(pkg.version),
         description:
             "Turn any web novel into a book worth keeping. Point Kintsugi at a chapter list and it builds a clean EPUB — cover, table of contents, and all.",
         default_locale: "en",
@@ -128,10 +144,10 @@ async function bundleScripts() {
     const entryPoints = {
         background: join(SRC, "core", "background.ts"),
         "content-script": join(SRC, "core", "content-script.ts"),
-        workbench: join(SRC, "ui", "pages", "workbench.ts"),
-        popup: join(SRC, "ui", "pages", "popup.ts"),
-        options: join(SRC, "ui", "pages", "options.ts"),
-        onboarding: join(SRC, "ui", "pages", "onboarding.ts"),
+        workbench: join(SRC, "ui", "pages", "workbench", "index.ts"),
+        popup: join(SRC, "ui", "pages", "popup", "index.ts"),
+        options: join(SRC, "ui", "pages", "options", "index.ts"),
+        onboarding: join(SRC, "ui", "pages", "onboarding", "index.ts"),
     };
 
     for (const entry of Object.values(entryPoints)) {
