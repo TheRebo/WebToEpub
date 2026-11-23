@@ -9,17 +9,41 @@ Format: newest entries at the top of each section.
 
 ## Progress
 
-| Phase | Status | Notes |
-|---|---|---|
-| 0 — Setup | ✅ | `legacy` branch + `legacy/v-original` tag created; `main` branched from the original |
-| 1 — Discovery | ✅ | Product inventory, technical audit, UX/visual audit written |
-| 2 — Vision & design | ✅ | Vision, design system, UX guidelines, screen designs, architecture, 10 ADRs, permissions rationale |
-| 3 — Build from scratch | ⏳ | Core, UI, all four pages, 434 migrated parsers, 146 tests. Next: release tooling, CI, E2E, screenshots |
-| 4 — Docs & release | 🔄 | `PRIVACY.md` and `SECURITY.md` drafted ahead of schedule because Phase 2 documents link to them |
+| Phase                  | Status | Notes                                                                                                  |
+| ---------------------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| 0 — Setup              | ✅     | `legacy` branch + `legacy/v-original` tag created; `main` branched from the original                   |
+| 1 — Discovery          | ✅     | Product inventory, technical audit, UX/visual audit written                                            |
+| 2 — Vision & design    | ✅     | Vision, design system, UX guidelines, screen designs, architecture, 10 ADRs, permissions rationale     |
+| 3 — Build from scratch | ⏳     | Core, UI, all four pages, 434 migrated parsers, 146 tests. Next: release tooling, CI, E2E, screenshots |
+| 4 — Docs & release     | 🔄     | `PRIVACY.md` and `SECURITY.md` drafted ahead of schedule because Phase 2 documents link to them        |
 
 ---
 
 ## Decisions log
+
+### 2026-11-23 — Phase 3, fourth pass: the locale catalogue is closed
+
+- **The locale hole is closed.** `fr`, `de` and `ja` carried 88 of the 186
+  keys; `id` carried none. All four are now **complete at 186/186**, and the
+  fallback to English is a safety net rather than the normal case.
+- **The translations moved out of the generator.** `tools/make-locales.mjs`
+  used to hold the English source _and_ every translation inline, which made a
+  400-line file that mixed two unrelated concerns. The translations now live
+  in one file per locale under `tools/locales/`, and the generator only holds
+  the source and the build logic. Adding a language is now a matter of
+  dropping a file in that directory.
+- **The catalogue is now tested, not assumed.** ADR-0010 promised a catalogue
+  test that reported the translation gap as a CI warning; `tests/unit/locales.test.ts`
+  does better than that. It _fails_ when a locale is missing a key, when a
+  message uses a `$TOKEN$` with no placeholder declaration (Firefox refuses
+  to load such a locale), when two placeholders share a substitution slot, or
+  when a translation uses different placeholder tokens than the source.
+- **A translation gap is measured against the source file, not against
+  English.** The first version of the test compared each translated string
+  with the English one, and flagged `Cover` → `Cover` in German as untranslated.
+  A cognate is a correct translation. The test now checks that every key
+  exists in the locale's _source_ file, which is the question that actually
+  matters.
 
 ### 2026-11-23 — Phase 3, third pass: the site selectors, and a DOM-free worker
 
@@ -28,27 +52,28 @@ Format: newest entries at the top of each section.
   could not tell a read list from a guessed one, and found out only after the
   download finished. The workbench now shows a **banner** whenever the
   fallback parser is in charge, and the banner opens a **site-selector
-  dialog**: *Suggest* (the scanner proposes selectors), *Test* (they are run
-  against the live page and the matched character count is reported), *Save*,
-  and *Forget this site*. The options page lists every taught site.
+  dialog**: _Suggest_ (the scanner proposes selectors), _Test_ (they are run
+  against the live page and the matched character count is reported), _Save_,
+  and _Forget this site_. The options page lists every taught site.
   See ADR-0011.
 - **Two bugs fell out of writing the feature.** Both were found by asking
   "does this work in the background worker?", and neither was visible to
   `tsc` or `eslint`:
-  - `validateSiteSelectorConfig` called `document.createDocumentFragment()`.
-    A worker is not guaranteed a DOM, so the check would have *always* failed
-    there and every save would have been rejected.
-  - `generateSelector` had `if (selector === undefined)`, but `selector` was
-    initialised to `""` — the branch was dead, and the empty selector was
-    only rescued by the DOM check that happened to throw on `""`.
-  Both are now fixed by `core/util/css.ts`, whose authority is a **syntactic**
-  check that works with or without a DOM, with the DOM used as a second
-  opinion when one is there.
-- **The locale catalogue has a hole.** `en` is complete at 186 keys, but
-  `fr`, `de` and `ja` carry only 88 of them: the newer settings, onboarding,
-  chapter-state and phase strings fall back to English. The fallback works,
-  so this is a quality gap rather than a defect — but it is a visible gap, and
-  it is tracked below.
+    - `validateSiteSelectorConfig` called `document.createDocumentFragment()`.
+      A worker is not guaranteed a DOM, so the check would have _always_ failed
+      there and every save would have been rejected.
+    - `generateSelector` had `if (selector === undefined)`, but `selector` was
+      initialised to `""` — the branch was dead, and the empty selector was
+      only rescued by the DOM check that happened to throw on `""`.
+      Both are now fixed by `core/util/css.ts`, whose authority is a **syntactic**
+      check that works with or without a DOM, with the DOM used as a second
+      opinion when one is there.
+- **The locale catalogue was incomplete.** `en` is complete at 186 keys,
+  but `fr`, `de` and `ja` carried only 88 of them: the newer settings,
+  onboarding, chapter-state and phase strings fell back to English. The
+  fallback worked, so this was a quality gap rather than a defect — but it was
+  a visible gap. **Closed in the fourth pass**: all four locales are now at
+  186/186 and the gap is covered by a test.
 - **The ZIP library is loaded on demand.** One migrated parser reads a ZIP
   archive; `zip.js` is 155 KB. It is now a dynamic import behind a lazy
   facade, so the worker bundle does not carry it. See ADR-0012.
@@ -63,11 +88,11 @@ Format: newest entries at the top of each section.
   findable by reading the code.
 - **The options and onboarding pages were hardcoded in English.** Both are
   now driven by message keys, resolved at render time. The settings
-  *search* now matches against the translated label and hint, so it works
+  _search_ now matches against the translated label and hint, so it works
   in the user's own language rather than only in English.
 - **Placeholders are numbered positionally.** Firefox substitutes
   placeholders positionally, and refuses to load a locale whose `$TOKEN$`
-  has no declaration. The generator emits the declaration block *and*
+  has no declaration. The generator emits the declaration block _and_
   numbers each placeholder by its position in the message — two placeholders
   both mapped to `$1` would have silently overwritten one another.
 - **The manifest version is normalised at build time.** Firefox rejects
@@ -76,7 +101,7 @@ Format: newest entries at the top of each section.
   release tag.
 - **The filter dialog was decoration.** It opened, showed a search box, and
   did nothing — the store's filtering logic was written but never called by
-  the UI. It now edits a *draft* filter and applies it on Apply, rather
+  the UI. It now edits a _draft_ filter and applies it on Apply, rather
   than acting on every keystroke, and reports an invalid regex inline
   instead of letting it throw.
 - **`<k-switch>` never updated its label.** The text was written into the
@@ -118,7 +143,7 @@ Format: newest entries at the top of each section.
   corrupts any EPUB not produced by its exact serialiser.
 - **No unit tests or fixtures will be created for individual parsers**,
   per the repository's `AGENTS.md` rule for AI agents. The parity harness
-  tests the *migration*, not individual parsers, so the rule is respected
+  tests the _migration_, not individual parsers, so the rule is respected
   while still guaranteeing all 437 keep working.
 
 ### 2026-11-23 — Git baseline
@@ -166,13 +191,19 @@ Format: newest entries at the top of each section.
    at least a mechanical import/type change. This is the single biggest
    execution risk in the project.
    **Resolved in Phase 2:** ADR-0002 decides on a compat shim + codemod +
-   parity harness. The risk is now *managed*, not *open*.
+   parity harness. The risk is now _managed_, not _open_.
 4. **i18n scope** — the baseline ships `en`, `ru`, `uk`, `vi`. A rewrite that
    changes every string must re-translate all four locales, or accept
    English-only fallbacks.
-   **Resolved in Phase 2:** ADR-0010 — ship `en` complete, keep the other
-   locales as a known-incomplete set with an explicit note, and make the
-   i18n system fall back gracefully.
+   **Resolved in Phase 2:** ADR-0010 — ship `en` as the source, with graceful
+   fallback for any key a locale has not translated.
+   **Resolved in Phase 3:** the shipped locales are `en`, `de`, `fr`, `id` and
+   `ja`, and **all five are complete at 186/186 keys**. The baseline's `ru`,
+   `uk` and `vi` catalogues were dropped rather than carried forward, because
+   every string they covered was rewritten and a stale partial catalogue is
+   worse than an honest fallback. The fallback stays as a safety net for a
+   future locale, and `tests/unit/locales.test.ts` fails the build when a
+   locale is incomplete.
 5. **Baseline `readme.md` is still the original.** It will be replaced in
    Phase 4. Its relative links are intentionally left alone until then.
 
@@ -180,12 +211,12 @@ Format: newest entries at the top of each section.
 
 ## Risks
 
-| Risk | Likelihood | Mitigation |
-|---|---|---|
-| 437 parsers fail to migrate | High | Preserve the contract exactly; add a compat shim so old-style parsers keep working; migrate in batches with a test harness |
-| Scope creep in the UI rebuild | High | Fix the design system first, then screens; no screen gets bespoke CSS |
-| Losing the library feature | Medium | The library is the extension's differentiator; keep it, move it to IndexedDB |
-| Screenshot capture for docs | Medium | Firefox needed; otherwise generate mockups from the real component code |
+| Risk                          | Likelihood | Mitigation                                                                                                                 |
+| ----------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 437 parsers fail to migrate   | High       | Preserve the contract exactly; add a compat shim so old-style parsers keep working; migrate in batches with a test harness |
+| Scope creep in the UI rebuild | High       | Fix the design system first, then screens; no screen gets bespoke CSS                                                      |
+| Losing the library feature    | Medium     | The library is the extension's differentiator; keep it, move it to IndexedDB                                               |
+| Screenshot capture for docs   | Medium     | Firefox needed; otherwise generate mockups from the real component code                                                    |
 
 ---
 

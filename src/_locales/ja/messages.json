@@ -38,8 +38,8 @@
     }
   },
   "workbenchChapterCount": {
-    "message": "$VISIBLE$ of $TOTAL$",
-    "description": "How many chapters are visible, out of how many were found.",
+    "message": "$VISIBLE$ 件 / $TOTAL$ 件",
+    "description": "見つかった章のうち、今表示されている章の数。",
     "placeholders": {
       "visible": {
         "content": "$1",
@@ -92,8 +92,8 @@
     "description": "章リストを読み込み中に表示。"
   },
   "workbenchDetected": {
-    "message": "Detected",
-    "description": "Shown when a parser recognised the site."
+    "message": "検出済み",
+    "description": "パーサーがサイトを認識できたときに表示。"
   },
   "workbenchFieldTitle": {
     "message": "タイトル",
@@ -112,36 +112,36 @@
     "description": "保存される EPUB の名前。"
   },
   "workbenchResetFilename": {
-    "message": "Reset",
-    "description": "Restores the default file name."
+    "message": "リセット",
+    "description": "既定のファイル名に戻します。"
   },
   "workbenchChooseFromPage": {
-    "message": "Choose from page",
-    "description": "Picks the cover image from the page."
+    "message": "ページから選択",
+    "description": "ページ内の画像から表紙を選びます。"
   },
   "workbenchRemoveCover": {
-    "message": "Remove cover",
-    "description": "Removes the cover image."
+    "message": "表紙を削除",
+    "description": "表紙画像を削除します。"
   },
   "workbenchIncludeAuthorNotes": {
-    "message": "Include author notes",
-    "description": "Keeps the notes at the end of a chapter."
+    "message": "作者のあとがきを含める",
+    "description": "章の末尾にある注記を残します。"
   },
   "workbenchIncludeTocPage": {
-    "message": "Include the contents page",
-    "description": "Adds the table of contents as a chapter."
+    "message": "目次ページを含める",
+    "description": "目次を1つの章として追加します。"
   },
   "workbenchMoreOptions": {
-    "message": "More options",
-    "description": "Opens the full settings page."
+    "message": "その他のオプション",
+    "description": "設定ページ全体を開くボタン。"
   },
   "workbenchNoCover": {
-    "message": "No cover",
-    "description": "Shown when there is no cover image."
+    "message": "表紙なし",
+    "description": "表紙画像がないときに表示。"
   },
   "workbenchCoverUrl": {
-    "message": "Cover image address",
-    "description": "The address of the cover image."
+    "message": "表紙画像の URL",
+    "description": "表紙画像のアドレス。"
   },
   "workbenchNoStoryHere": {
     "message": "このページに物語が見つかりません",
@@ -156,68 +156,68 @@
     "description": "パーサーが一致しなかったときに表示。"
   },
   "workbenchUseSelectorBuilder": {
-    "message": "Build a selector",
-    "description": "Opens the selector builder."
+    "message": "セレクターを作成",
+    "description": "セレクタービルダーを開くボタン。"
   },
   "workbenchReloadPage": {
-    "message": "Reload the page",
-    "description": "Reloads the tab."
+    "message": "ページを再読み込み",
+    "description": "タブを再読み込みします。"
   },
   "chapterStateQueued": {
-    "message": "Queued",
-    "description": "A chapter that is waiting to be fetched."
+    "message": "待機中",
+    "description": "取得待ちの章。"
   },
   "chapterStateFetching": {
-    "message": "Fetching",
-    "description": "A chapter that is being fetched."
+    "message": "取得中",
+    "description": "取得中の章。"
   },
   "chapterStateLoaded": {
-    "message": "Loaded",
-    "description": "A chapter that has been read."
+    "message": "読み込み済み",
+    "description": "読み終えた章。"
   },
   "chapterStateDownloaded": {
-    "message": "Downloaded",
-    "description": "A chapter that is in the book."
+    "message": "ダウンロード済み",
+    "description": "本に収録された章。"
   },
   "chapterStateFailed": {
-    "message": "Failed",
-    "description": "A chapter that could not be read."
+    "message": "失敗",
+    "description": "読み取れなかった章。"
   },
   "chapterStateNotStarted": {
-    "message": "Not started",
-    "description": "A chapter that has not been fetched yet."
+    "message": "未開始",
+    "description": "まだ取得していない章。"
   },
   "phasePreparing": {
-    "message": "Preparing",
-    "description": "The first stage of a download."
+    "message": "準備中",
+    "description": "ダウンロードの最初の段階。"
   },
   "phaseFetchingChapters": {
-    "message": "Fetching chapters",
-    "description": "The stage that reads the chapters."
+    "message": "章を取得中",
+    "description": "章を読み込む段階。"
   },
   "phaseDownloadingImages": {
-    "message": "Downloading images",
-    "description": "The stage that reads the images."
+    "message": "画像を取得中",
+    "description": "画像を読み込む段階。"
   },
   "phaseBuildingEpub": {
-    "message": "Building the EPUB",
-    "description": "The stage that assembles the book."
+    "message": "EPUB を作成中",
+    "description": "本を組み立てる段階。"
   },
   "phaseSaving": {
-    "message": "Saving",
-    "description": "The stage that writes the file."
+    "message": "保存中",
+    "description": "ファイルを書き出す段階。"
   },
   "phaseComplete": {
-    "message": "Saved",
-    "description": "Shown when the book is saved."
+    "message": "保存しました",
+    "description": "本の保存が完了したときに表示。"
   },
   "phaseFailed": {
-    "message": "Failed",
-    "description": "Shown when the download failed."
+    "message": "失敗しました",
+    "description": "ダウンロードが失敗したときに表示。"
   },
   "phaseCancelled": {
-    "message": "Cancelled",
-    "description": "Shown when the download was stopped."
+    "message": "キャンセルしました",
+    "description": "ダウンロードを止めたときに表示。"
   },
   "popupOpenWorkbench": {
     "message": "ワークベンチを開く",
@@ -240,16 +240,16 @@
     "description": "パーサーが一致しなかったときに表示。"
   },
   "popupSaved": {
-    "message": "Your book is ready.",
-    "description": "Shown when a download finishes."
+    "message": "本の準備ができました。",
+    "description": "ダウンロードが完了したときに表示。"
   },
   "popupTryAgain": {
-    "message": "Try again",
-    "description": "The popup's retry button."
+    "message": "再試行",
+    "description": "ポップアップの再試行ボタン。"
   },
   "popupUnsupportedHost": {
-    "message": "$HOST$ is not supported yet.",
-    "description": "Shown when no parser matched the current site.",
+    "message": "$HOST$ はまだ対応していません。",
+    "description": "現在のサイトに一致するパーサーがなかったときに表示。",
     "placeholders": {
       "host": {
         "content": "$1",
@@ -310,76 +310,76 @@
     "description": "ダークテーマの選択。"
   },
   "optionsAccentGold": {
-    "message": "Gold",
-    "description": "The gold accent option."
+    "message": "ゴールド",
+    "description": "ゴールドのアクセント選択肢。"
   },
   "optionsAccentInk": {
-    "message": "Ink",
-    "description": "The ink accent option."
+    "message": "インク",
+    "description": "インクのアクセント選択肢。"
   },
   "optionsAccentVerdigris": {
-    "message": "Verdigris",
-    "description": "The verdigris accent option."
+    "message": "緑青",
+    "description": "緑青のアクセント選択肢。"
   },
   "optionsAccentPlum": {
-    "message": "Plum",
-    "description": "The plum accent option."
+    "message": "プラム",
+    "description": "プラムのアクセント選択肢。"
   },
   "optionsDensityComfortable": {
-    "message": "Comfortable",
-    "description": "The comfortable density option."
+    "message": "ゆったり",
+    "description": "ゆったりした密度の選択肢。"
   },
   "optionsDensityCompact": {
-    "message": "Compact",
-    "description": "The compact density option."
+    "message": "コンパクト",
+    "description": "コンパクトな密度の選択肢。"
   },
   "optionsSearchSettings": {
-    "message": "Search settings",
-    "description": "The settings search box."
+    "message": "設定を検索",
+    "description": "設定の検索欄。"
   },
   "optionsSiteAccess": {
-    "message": "Site access",
-    "description": "The list of sites the extension may read."
+    "message": "サイトへのアクセス",
+    "description": "拡張機能が読み取れるサイトの一覧。"
   },
   "optionsRevoke": {
-    "message": "Revoke",
-    "description": "Removes access to a site."
+    "message": "取り消す",
+    "description": "サイトへのアクセスを削除します。"
   },
   "optionsRevokeAll": {
-    "message": "Revoke all",
-    "description": "Removes access to every site."
+    "message": "すべて取り消す",
+    "description": "すべてのサイトへのアクセスを削除します。"
   },
   "optionsExportSettings": {
-    "message": "Export settings",
-    "description": "Saves the settings to a file."
+    "message": "設定を書き出す",
+    "description": "設定をファイルに保存します。"
   },
   "optionsImportSettings": {
-    "message": "Import settings",
-    "description": "Loads the settings from a file."
+    "message": "設定を読み込む",
+    "description": "設定ファイルを読み込みます。"
   },
   "optionsResetAll": {
-    "message": "Reset all settings",
-    "description": "Restores every setting to its default."
+    "message": "すべての設定をリセット",
+    "description": "すべての設定を既定値に戻します。"
   },
   "optionsPrivacyNote": {
-    "message": "Kintsugi sends nothing to anyone. Every network request goes to the site you are reading.",
-    "description": "The note under the privacy settings."
+    "message": "Kintsugi はどこにもデータを送信しません。すべての通信は、読んでいるサイトに対してのみ行われます。",
+    "description": "プライバシー設定の項目の下に置く注記。"
   },
   "optionsLibrary": {
-    "message": "Library",
-    "description": "The library tab, and the books you have built."
+    "message": "ライブラリ",
+    "description": "ライブラリタブと、作成した本の一覧。"
   },
   "optionsLibraryEmptyTitle": {
-    "message": "Your library is empty.",
-    "description": "The empty library's heading."
+    "message": "ライブラリは空です。",
+    "description": "空のライブラリの見出し。"
   },
   "optionsLibraryEmptyText": {
-    "message": "Books you build are kept here, so you can update them when a new chapter is posted.",
-    "description": "The empty library's explanation."
+    "message": "作成した本はここに保存されます。新しい章が公開されたら更新できます。",
+    "description": "空のライブラリの説明。"
   },
   "optionsLibraryChapters": {
-    "message": "$COUNT$ chapters",
-    "description": "How many chapters a book has.",
+    "message": "$COUNT$ 章",
+    "description": "本に含まれる章の数。",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -388,16 +388,16 @@
     }
   },
   "optionsNoResults": {
-    "message": "Nothing matches that search.",
-    "description": "Shown when a settings search finds nothing."
+    "message": "検索に一致するものはありません。",
+    "description": "設定の検索で何も見つからなかったときに表示。"
   },
   "optionsNavLabel": {
-    "message": "Settings groups",
-    "description": "The accessible name of the settings navigation."
+    "message": "設定グループ",
+    "description": "設定ナビゲーションのアクセシブルな名前。"
   },
   "optionsLibraryMeta": {
-    "message": "$CHAPTERS$ chapters · $SIZE$",
-    "description": "The library card's metadata line.",
+    "message": "$CHAPTERS$ 章 · $SIZE$",
+    "description": "ライブラリカードのメタ情報行。",
     "placeholders": {
       "chapters": {
         "content": "$1",
@@ -410,168 +410,168 @@
     }
   },
   "settingReduceMotion": {
-    "message": "Always reduce motion",
-    "description": "The reduce-motion setting."
+    "message": "常に動きを減らす",
+    "description": "動きを減らす設定。"
   },
   "settingReduceMotionHint": {
-    "message": "Turns off transitions even when the system does not ask for it.",
-    "description": "Explains the reduce-motion setting."
+    "message": "システムが指定していなくても、トランジションを無効にします。",
+    "description": "動きを減らす設定の説明。"
   },
   "settingFilenameTemplate": {
-    "message": "Filename template",
-    "description": "The filename-template setting."
+    "message": "ファイル名のテンプレート",
+    "description": "ファイル名テンプレートの設定。"
   },
   "settingFilenameTemplateHint": {
-    "message": "{title} and {author} are replaced when the file is saved.",
-    "description": "Explains the filename-template setting."
+    "message": "保存時に {title} と {author} が置換されます。",
+    "description": "ファイル名テンプレートの設定の説明。"
   },
   "settingDefaultLanguage": {
-    "message": "Default language",
-    "description": "The default-language setting."
+    "message": "既定の言語",
+    "description": "既定の言語の設定。"
   },
   "settingDefaultLanguageHint": {
-    "message": "The ISO 639 code used when a site does not declare one.",
-    "description": "Explains the default-language setting."
+    "message": "サイトが言語を宣言していないときに使われる ISO 639 コードです。",
+    "description": "既定の言語の設定の説明。"
   },
   "settingRemoveAuthorNotes": {
-    "message": "Remove author notes",
-    "description": "The remove-author-notes setting."
+    "message": "作者のあとがきを削除",
+    "description": "作者のあとがきを削除する設定。"
   },
   "settingRemoveAuthorNotesHint": {
-    "message": "Strips the notes many authors put at the end of a chapter.",
-    "description": "Explains the remove-author-notes setting."
+    "message": "多くの著者が章の末尾に付ける注記を取り除きます。",
+    "description": "作者のあとがきを削除する設定の説明。"
   },
   "settingRemoveChapterNumbers": {
-    "message": "Remove chapter numbers from titles",
-    "description": "The remove-chapter-numbers setting."
+    "message": "タイトルから章番号を削除",
+    "description": "章番号をタイトルから削除する設定。"
   },
   "settingIncludeTocPage": {
-    "message": "Include the table of contents as a chapter",
-    "description": "The include-toc-page setting."
+    "message": "目次を1つの章として含める",
+    "description": "目次を含める設定。"
   },
   "settingEpubVersion": {
-    "message": "Version",
-    "description": "The EPUB-version setting."
+    "message": "バージョン",
+    "description": "EPUB のバージョンの設定。"
   },
   "settingEpubVersionHint": {
-    "message": "Version 3 is the standard. Version 2 is for older readers.",
-    "description": "Explains the EPUB-version setting."
+    "message": "バージョン 3 が標準です。バージョン 2 は古いリーダー向けです。",
+    "description": "EPUB のバージョンの設定の説明。"
   },
   "settingAddInfoPage": {
-    "message": "Add an information page",
-    "description": "The information-page setting."
+    "message": "情報ページを追加",
+    "description": "情報ページの追加設定。"
   },
   "settingAddInfoPageHint": {
-    "message": "A page with the title, author, and source.",
-    "description": "Explains the information-page setting."
+    "message": "タイトル・著者・出典を記載したページを追加します。",
+    "description": "情報ページの追加設定の説明。"
   },
   "settingRemoveNextPrevLinks": {
-    "message": "Remove next and previous links",
-    "description": "The remove-next-prev-links setting."
+    "message": "次ページ・前ページのリンクを削除",
+    "description": "次ページ・前ページのリンクを削除する設定。"
   },
   "settingIncludeSourceUrl": {
-    "message": "Include the source URL in each chapter",
-    "description": "The include-source-url setting."
+    "message": "各章に元のページの URL を含める",
+    "description": "元のページの URL を含める設定。"
   },
   "settingSkipImages": {
-    "message": "Skip images entirely",
-    "description": "The skip-images setting."
+    "message": "画像を完全にスキップ",
+    "description": "画像をスキップする設定。"
   },
   "settingRemoveDuplicates": {
-    "message": "Remove duplicate images",
-    "description": "The remove-duplicates setting."
+    "message": "重複する画像を削除",
+    "description": "重複画像を削除する設定。"
   },
   "settingPreferHighestResolution": {
-    "message": "Prefer the highest resolution",
-    "description": "The prefer-highest-resolution setting."
+    "message": "最高解像度を優先",
+    "description": "最高解像度を優先する設定。"
   },
   "settingUseSvg": {
-    "message": "Allow SVG images",
-    "description": "The allow-SVG setting."
+    "message": "SVG 画像を許可",
+    "description": "SVG 画像を許可する設定。"
   },
   "settingCompressImages": {
-    "message": "Compress images",
-    "description": "The compress-images setting."
+    "message": "画像を圧縮",
+    "description": "画像を圧縮する設定。"
   },
   "settingMaxResolution": {
-    "message": "Maximum resolution",
-    "description": "The maximum-resolution setting."
+    "message": "最大解像度",
+    "description": "最大解像度の設定。"
   },
   "settingMaxResolutionHint": {
-    "message": "In pixels on the longest edge.",
-    "description": "Explains the maximum-resolution setting."
+    "message": "長辺のピクセル数で指定します。",
+    "description": "最大解像度の設定の説明。"
   },
   "settingSkipFailedChapters": {
-    "message": "Skip chapters that fail",
-    "description": "The skip-failed-chapters setting."
+    "message": "失敗した章をスキップ",
+    "description": "失敗した章をスキップする設定。"
   },
   "settingSkipFailedChaptersHint": {
-    "message": "A failed chapter becomes a note in the book instead of stopping the run.",
-    "description": "Explains the skip-failed-chapters setting."
+    "message": "失敗した章は処理を止めずに、本の中に注記として残ります。",
+    "description": "失敗した章をスキップする設定の説明。"
   },
   "settingRetryOnEmptyPage": {
-    "message": "Retry on an empty page",
-    "description": "The retry-on-empty-page setting."
+    "message": "空のページでは再試行",
+    "description": "空のページで再試行する設定。"
   },
   "settingMinimumDelay": {
-    "message": "Minimum delay between requests",
-    "description": "The minimum-delay setting."
+    "message": "リクエスト間の最小待機時間",
+    "description": "最小待機時間の設定。"
   },
   "settingMinimumDelayHint": {
-    "message": "In milliseconds. Raise it for sites that rate-limit aggressively.",
-    "description": "Explains the minimum-delay setting."
+    "message": "ミリ秒単位です。アクセス制限が厳しいサイトでは値を上げてください。",
+    "description": "最小待機時間の設定の説明。"
   },
   "settingMaxChapters": {
-    "message": "Maximum chapters per book",
-    "description": "The maximum-chapters setting."
+    "message": "1冊あたりの最大章数",
+    "description": "最大章数の設定。"
   },
   "settingDelayPerChapter": {
-    "message": "Extra delay per chapter",
-    "description": "The delay-per-chapter setting."
+    "message": "章ごとの追加待機時間",
+    "description": "章ごとの追加待機時間の設定。"
   },
   "settingDelayPerChapterHint": {
-    "message": "In milliseconds, on top of the minimum delay.",
-    "description": "Explains the delay-per-chapter setting."
+    "message": "ミリ秒単位です。最小待機時間に加算されます。",
+    "description": "章ごとの追加待機時間の設定の説明。"
   },
   "settingMetadataLookup": {
-    "message": "Look up book metadata",
-    "description": "The metadata-lookup setting."
+    "message": "書籍情報を検索",
+    "description": "メタデータ検索の設定。"
   },
   "settingMetadataLookupHint": {
-    "message": "Off by default. When on, the title is checked against a public database.",
-    "description": "Explains the metadata-lookup setting."
+    "message": "既定ではオフです。有効にすると、タイトルを公開データベースと照合します。",
+    "description": "メタデータ検索の設定の説明。"
   },
   "settingSendStoryUrl": {
-    "message": "Send the story URL with the lookup",
-    "description": "The send-story-url setting."
+    "message": "検索時に物語の URL を送信",
+    "description": "物語の URL を送信する設定。"
   },
   "settingSendStoryUrlHint": {
-    "message": "Off by default. Without it, the lookup can only use the title.",
-    "description": "Explains the send-story-url setting."
+    "message": "既定ではオフです。オフの場合、検索にはタイトルしか使われません。",
+    "description": "物語の URL を送信する設定の説明。"
   },
   "settingDiagnostics": {
-    "message": "Developer diagnostics",
-    "description": "The diagnostics setting."
+    "message": "開発者向け診断",
+    "description": "診断ログの設定。"
   },
   "settingDiagnosticsHint": {
-    "message": "Logs more detail to the console. Off by default.",
-    "description": "Explains the diagnostics setting."
+    "message": "より詳しい情報をコンソールに出力します。既定ではオフです。",
+    "description": "診断ログの設定の説明。"
   },
   "onboardingWelcome": {
     "message": "Kintsugi へようこそ",
     "description": "最初のステップの見出し。"
   },
   "onboardingStep1": {
-    "message": "Step 1 of 3",
-    "description": "The first onboarding step's label."
+    "message": "3 ステップ中の 1 番目",
+    "description": "最初のステップのラベル。"
   },
   "onboardingStep2": {
-    "message": "Step 2 of 3",
-    "description": "The second onboarding step's label."
+    "message": "3 ステップ中の 2 番目",
+    "description": "2 番目のステップのラベル。"
   },
   "onboardingStep3": {
-    "message": "Step 3 of 3",
-    "description": "The third onboarding step's label."
+    "message": "3 ステップ中の 3 番目",
+    "description": "3 番目のステップのラベル。"
   },
   "onboardingNext": {
     "message": "次へ",
@@ -590,36 +590,36 @@
     "description": "導入をスキップするボタン。"
   },
   "onboardingGetStarted": {
-    "message": "Get started",
-    "description": "The button that leaves the onboarding."
+    "message": "はじめる",
+    "description": "導入を抜けるボタン。"
   },
   "onboardingWelcomeText": {
-    "message": "Turn any web novel into a book worth keeping. Point it at a chapter list, and it builds a clean EPUB — cover, table of contents, and all.",
-    "description": "The first onboarding step's explanation."
+    "message": "どんなウェブ小説も、永く残したい一冊の本に変えます。章リストを指定するだけで、表紙と目次を備えた整整った EPUB が完成します。",
+    "description": "最初のステップの説明。"
   },
   "onboardingWelcomeFootnote": {
-    "message": "No account. No tracking. Works offline.",
-    "description": "The first onboarding step's footnote."
+    "message": "アカウント不要。追跡なし。オフラインでも使えます。",
+    "description": "最初のステップの脚注。"
   },
   "onboardingWhichSite": {
-    "message": "Which site are you reading?",
-    "description": "The second onboarding step's heading."
+    "message": "どのサイトを読んでいますか？",
+    "description": "2 番目のステップの見出し。"
   },
   "onboardingWhichSiteText": {
-    "message": "Kintsugi knows hundreds of sites. Open one, and it offers to build the book.",
-    "description": "The second onboarding step's explanation."
+    "message": "Kintsugi は数百のサイトに対応しています。そのページを開けば、本を作る提案が表示されます。",
+    "description": "2 番目のステップの説明。"
   },
   "onboardingWhichSiteFootnote": {
-    "message": "Not listed? Kintsugi can still read it — you can build a selector yourself.",
-    "description": "The second onboarding step's footnote."
+    "message": "一覧にないサイトでも読み取れます。セレクターは自分で作成することもできます。",
+    "description": "2 番目のステップの脚注。"
   },
   "onboardingMakeItYours": {
-    "message": "Make it yours",
-    "description": "The third onboarding step's heading."
+    "message": "自分好みに整える",
+    "description": "3 番目のステップの見出し。"
   },
   "onboardingMakeItYoursText": {
-    "message": "This is a live preview. Pick what you like.",
-    "description": "The third onboarding step's explanation."
+    "message": "これは実際のプレビューです。お好きなものを選んでください。",
+    "description": "3 番目のステップの説明。"
   },
   "errorGeneric": {
     "message": "問題が発生しました。もう一度お試しください。",

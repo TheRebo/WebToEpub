@@ -1,35 +1,35 @@
 {
   "appName": {
     "message": "Kintsugi",
-    "description": "The extension's name."
+    "description": "Nama ekstensi ini."
   },
   "appTagline": {
-    "message": "Turn any web novel into a book worth keeping.",
-    "description": "A one-line description of the extension."
+    "message": "Ubah novel web mana pun menjadi buku yang layak disimpan.",
+    "description": "Deskripsi singkat ekstensi ini."
   },
   "workbenchTitle": {
-    "message": "Workbench",
-    "description": "The title of the main page."
+    "message": "Meja kerja",
+    "description": "Judul halaman utama."
   },
   "workbenchStoryDetails": {
-    "message": "Story details",
-    "description": "The heading of the metadata panel."
+    "message": "Detail cerita",
+    "description": "Judul panel metadata."
   },
   "workbenchCover": {
-    "message": "Cover",
-    "description": "The heading of the cover section."
+    "message": "Sampul",
+    "description": "Judul bagian sampul."
   },
   "workbenchOptions": {
-    "message": "Options",
-    "description": "The heading of the options section."
+    "message": "Pilihan",
+    "description": "Judul bagian opsi."
   },
   "workbenchChapters": {
-    "message": "Chapters",
-    "description": "The heading of the chapter list."
+    "message": "Bab",
+    "description": "Judul daftar bab."
   },
   "workbenchChaptersFound": {
-    "message": "$COUNT$ chapters found",
-    "description": "How many chapters were found.",
+    "message": "$COUNT$ bab ditemukan",
+    "description": "Berapa banyak bab yang ditemukan.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -38,8 +38,8 @@
     }
   },
   "workbenchChapterCount": {
-    "message": "$VISIBLE$ of $TOTAL$",
-    "description": "How many chapters are visible, out of how many were found.",
+    "message": "$VISIBLE$ dari $TOTAL$",
+    "description": "Berapa banyak bab yang terlihat dari total yang ditemukan.",
     "placeholders": {
       "visible": {
         "content": "$1",
@@ -52,204 +52,204 @@
     }
   },
   "workbenchPack": {
-    "message": "Build EPUB",
-    "description": "The button that builds the book."
+    "message": "Buat EPUB",
+    "description": "Tombol untuk menyusun buku."
   },
   "workbenchSave": {
-    "message": "Save",
-    "description": "The button that saves the metadata."
+    "message": "Simpan",
+    "description": "Tombol untuk menyimpan metadata."
   },
   "workbenchCancel": {
-    "message": "Cancel",
-    "description": "The button that stops a download."
+    "message": "Batal",
+    "description": "Tombol untuk menghentikan unduhan."
   },
   "workbenchSelectAll": {
-    "message": "Select all",
-    "description": "The button that selects every chapter."
+    "message": "Pilih semua",
+    "description": "Tombol untuk memilih semua bab."
   },
   "workbenchSelectNone": {
-    "message": "Select none",
-    "description": "The button that deselects every chapter."
+    "message": "Batalkan semua",
+    "description": "Tombol untuk membatalkan pilihan semua bab."
   },
   "workbenchInvert": {
-    "message": "Invert",
-    "description": "The button that inverts the selection."
+    "message": "Balik",
+    "description": "Tombol untuk membalik pilihan."
   },
   "workbenchRanges": {
-    "message": "Ranges",
-    "description": "The button that picks a range of chapters."
+    "message": "Rentang",
+    "description": "Tombol untuk memilih rentang bab."
   },
   "workbenchFilter": {
-    "message": "Filter",
-    "description": "The button that opens the filter."
+    "message": "Saring",
+    "description": "Tombol untuk membuka penyaring."
   },
   "workbenchNoChaptersSelected": {
-    "message": "No chapters selected",
-    "description": "Shown when nothing is ticked."
+    "message": "Tidak ada bab yang dipilih",
+    "description": "Ditampilkan saat tidak ada yang dicentang."
   },
   "workbenchWaitingForChapters": {
-    "message": "Looking for chapters…",
-    "description": "Shown while the chapter list loads."
+    "message": "Mencari bab…",
+    "description": "Ditampilkan saat daftar bab sedang dimuat."
   },
   "workbenchDetected": {
-    "message": "Detected",
-    "description": "Shown when a parser recognised the site."
+    "message": "Terdeteksi",
+    "description": "Ditampilkan saat parser mengenali situs."
   },
   "workbenchFieldTitle": {
-    "message": "Title",
-    "description": "The story's title."
+    "message": "Judul",
+    "description": "Judul cerita."
   },
   "workbenchFieldAuthor": {
-    "message": "Author",
-    "description": "The story's author."
+    "message": "Penulis",
+    "description": "Penulis cerita."
   },
   "workbenchFieldLanguage": {
-    "message": "Language",
-    "description": "The story's language."
+    "message": "Bahasa",
+    "description": "Bahasa cerita."
   },
   "workbenchFieldFilename": {
-    "message": "File name",
-    "description": "The name the EPUB is saved under."
+    "message": "Nama berkas",
+    "description": "Nama untuk menyimpan berkas EPUB."
   },
   "workbenchResetFilename": {
-    "message": "Reset",
-    "description": "Restores the default file name."
+    "message": "Atur ulang",
+    "description": "Mengembalikan nama berkas ke bawaan."
   },
   "workbenchChooseFromPage": {
-    "message": "Choose from page",
-    "description": "Picks the cover image from the page."
+    "message": "Pilih dari halaman",
+    "description": "Mengambil gambar sampul dari halaman."
   },
   "workbenchRemoveCover": {
-    "message": "Remove cover",
-    "description": "Removes the cover image."
+    "message": "Hapus sampul",
+    "description": "Menghapus gambar sampul."
   },
   "workbenchIncludeAuthorNotes": {
-    "message": "Include author notes",
-    "description": "Keeps the notes at the end of a chapter."
+    "message": "Sertakan catatan penulis",
+    "description": "Mempertahankan catatan di akhir bab."
   },
   "workbenchIncludeTocPage": {
-    "message": "Include the contents page",
-    "description": "Adds the table of contents as a chapter."
+    "message": "Sertakan daftar isi",
+    "description": "Menambahkan daftar isi sebagai satu bab."
   },
   "workbenchMoreOptions": {
-    "message": "More options",
-    "description": "Opens the full settings page."
+    "message": "Pilihan lainnya",
+    "description": "Membuka halaman pengaturan lengkap."
   },
   "workbenchNoCover": {
-    "message": "No cover",
-    "description": "Shown when there is no cover image."
+    "message": "Tanpa sampul",
+    "description": "Ditampilkan saat tidak ada gambar sampul."
   },
   "workbenchCoverUrl": {
-    "message": "Cover image address",
-    "description": "The address of the cover image."
+    "message": "Alamat gambar sampul",
+    "description": "Alamat gambar sampul."
   },
   "workbenchNoStoryHere": {
-    "message": "No story found on this page",
-    "description": "Shown when the page is not a story."
+    "message": "Tidak ada cerita di halaman ini",
+    "description": "Ditampilkan saat halaman ini bukan cerita."
   },
   "workbenchTryAnyway": {
-    "message": "Try anyway",
-    "description": "Opens the workbench regardless."
+    "message": "Coba saja",
+    "description": "Membuka meja kerja tetap saja."
   },
   "workbenchUnsupportedSite": {
-    "message": "This site is not supported yet",
-    "description": "Shown when no parser matched."
+    "message": "Situs ini belum didukung",
+    "description": "Ditampilkan saat tidak ada parser yang cocok."
   },
   "workbenchUseSelectorBuilder": {
-    "message": "Build a selector",
-    "description": "Opens the selector builder."
+    "message": "Buat selector",
+    "description": "Membuka pembuat selector."
   },
   "workbenchReloadPage": {
-    "message": "Reload the page",
-    "description": "Reloads the tab."
+    "message": "Muat ulang halaman",
+    "description": "Memuat ulang tab."
   },
   "chapterStateQueued": {
-    "message": "Queued",
-    "description": "A chapter that is waiting to be fetched."
+    "message": "Antre",
+    "description": "Bab yang menunggu diambil."
   },
   "chapterStateFetching": {
-    "message": "Fetching",
-    "description": "A chapter that is being fetched."
+    "message": "Mengambil",
+    "description": "Bab yang sedang diambil."
   },
   "chapterStateLoaded": {
-    "message": "Loaded",
-    "description": "A chapter that has been read."
+    "message": "Dimuat",
+    "description": "Bab yang sudah dibaca."
   },
   "chapterStateDownloaded": {
-    "message": "Downloaded",
-    "description": "A chapter that is in the book."
+    "message": "Terunduh",
+    "description": "Bab yang sudah ada di dalam buku."
   },
   "chapterStateFailed": {
-    "message": "Failed",
-    "description": "A chapter that could not be read."
+    "message": "Gagal",
+    "description": "Bab yang tidak dapat dibaca."
   },
   "chapterStateNotStarted": {
-    "message": "Not started",
-    "description": "A chapter that has not been fetched yet."
+    "message": "Belum dimulai",
+    "description": "Bab yang belum diambil."
   },
   "phasePreparing": {
-    "message": "Preparing",
-    "description": "The first stage of a download."
+    "message": "Menyiapkan",
+    "description": "Tahap pertama dari sebuah unduhan."
   },
   "phaseFetchingChapters": {
-    "message": "Fetching chapters",
-    "description": "The stage that reads the chapters."
+    "message": "Mengambil bab",
+    "description": "Tahap yang membaca bab-bab."
   },
   "phaseDownloadingImages": {
-    "message": "Downloading images",
-    "description": "The stage that reads the images."
+    "message": "Mengunduh gambar",
+    "description": "Tahap yang membaca gambar-gambar."
   },
   "phaseBuildingEpub": {
-    "message": "Building the EPUB",
-    "description": "The stage that assembles the book."
+    "message": "Menyusun EPUB",
+    "description": "Tahap yang merakit buku."
   },
   "phaseSaving": {
-    "message": "Saving",
-    "description": "The stage that writes the file."
+    "message": "Menyimpan",
+    "description": "Tahap yang menulis berkas."
   },
   "phaseComplete": {
-    "message": "Saved",
-    "description": "Shown when the book is saved."
+    "message": "Tersimpan",
+    "description": "Ditampilkan saat buku tersimpan."
   },
   "phaseFailed": {
-    "message": "Failed",
-    "description": "Shown when the download failed."
+    "message": "Gagal",
+    "description": "Ditampilkan saat unduhan gagal."
   },
   "phaseCancelled": {
-    "message": "Cancelled",
-    "description": "Shown when the download was stopped."
+    "message": "Dibatalkan",
+    "description": "Ditampilkan saat unduhan dihentikan."
   },
   "popupOpenWorkbench": {
-    "message": "Open workbench",
-    "description": "The popup's main button."
+    "message": "Buka meja kerja",
+    "description": "Tombol utama pada popup."
   },
   "popupAddToLibrary": {
-    "message": "Add to library",
-    "description": "The popup's library button."
+    "message": "Tambahkan ke pustaka",
+    "description": "Tombol pustaka pada popup."
   },
   "popupSettings": {
-    "message": "Settings",
-    "description": "The popup's settings button."
+    "message": "Pengaturan",
+    "description": "Tombol pengaturan pada popup."
   },
   "popupNoStory": {
-    "message": "No story detected on this page.",
-    "description": "Shown when the page is not a story."
+    "message": "Tidak ada cerita terdeteksi di halaman ini.",
+    "description": "Ditampilkan saat halaman ini bukan cerita."
   },
   "popupUnsupported": {
-    "message": "This site is not supported yet.",
-    "description": "Shown when no parser matched."
+    "message": "Situs ini belum didukung.",
+    "description": "Ditampilkan saat tidak ada parser yang cocok."
   },
   "popupSaved": {
-    "message": "Your book is ready.",
-    "description": "Shown when a download finishes."
+    "message": "Buku Anda sudah siap.",
+    "description": "Ditampilkan saat unduhan selesai."
   },
   "popupTryAgain": {
-    "message": "Try again",
-    "description": "The popup's retry button."
+    "message": "Coba lagi",
+    "description": "Tombol coba lagi pada popup."
   },
   "popupUnsupportedHost": {
-    "message": "$HOST$ is not supported yet.",
-    "description": "Shown when no parser matched the current site.",
+    "message": "$HOST$ belum didukung.",
+    "description": "Ditampilkan saat tidak ada parser yang cocok dengan situs saat ini.",
     "placeholders": {
       "host": {
         "content": "$1",
@@ -258,128 +258,128 @@
     }
   },
   "optionsAppearance": {
-    "message": "Appearance",
-    "description": "The appearance settings group."
+    "message": "Tampilan",
+    "description": "Kelompok pengaturan tampilan."
   },
   "optionsStory": {
-    "message": "Story",
-    "description": "The story settings group."
+    "message": "Cerita",
+    "description": "Kelompok pengaturan cerita."
   },
   "optionsEpub": {
     "message": "EPUB",
-    "description": "The EPUB settings group."
+    "description": "Kelompok pengaturan EPUB."
   },
   "optionsImages": {
-    "message": "Images",
-    "description": "The image settings group."
+    "message": "Gambar",
+    "description": "Kelompok pengaturan gambar."
   },
   "optionsBehaviour": {
-    "message": "Behaviour",
-    "description": "The behaviour settings group."
+    "message": "Perilaku",
+    "description": "Kelompok pengaturan perilaku."
   },
   "optionsPrivacy": {
-    "message": "Privacy",
-    "description": "The privacy settings group."
+    "message": "Privasi",
+    "description": "Kelompok pengaturan privasi."
   },
   "optionsAdvanced": {
-    "message": "Advanced",
-    "description": "The advanced settings group."
+    "message": "Lanjutan",
+    "description": "Kelompok pengaturan lanjutan."
   },
   "optionsTheme": {
-    "message": "Theme",
-    "description": "The theme setting."
+    "message": "Tema",
+    "description": "Pengaturan tema."
   },
   "optionsAccent": {
-    "message": "Accent",
-    "description": "The accent colour setting."
+    "message": "Warna aksen",
+    "description": "Pengaturan warna aksen."
   },
   "optionsDensity": {
-    "message": "Density",
-    "description": "The density setting."
+    "message": "Kepadatan",
+    "description": "Pengaturan kepadatan."
   },
   "optionsThemeSystem": {
-    "message": "System",
-    "description": "The system theme option."
+    "message": "Sistem",
+    "description": "Pilihan tema sistem."
   },
   "optionsThemeLight": {
-    "message": "Light",
-    "description": "The light theme option."
+    "message": "Terang",
+    "description": "Pilihan tema terang."
   },
   "optionsThemeDark": {
-    "message": "Dark",
-    "description": "The dark theme option."
+    "message": "Gelap",
+    "description": "Pilihan tema gelap."
   },
   "optionsAccentGold": {
-    "message": "Gold",
-    "description": "The gold accent option."
+    "message": "Emas",
+    "description": "Pilihan aksen emas."
   },
   "optionsAccentInk": {
-    "message": "Ink",
-    "description": "The ink accent option."
+    "message": "Tinta",
+    "description": "Pilihan aksen tinta."
   },
   "optionsAccentVerdigris": {
     "message": "Verdigris",
-    "description": "The verdigris accent option."
+    "description": "Pilihan aksen verdigris."
   },
   "optionsAccentPlum": {
-    "message": "Plum",
-    "description": "The plum accent option."
+    "message": "Prem",
+    "description": "Pilihan aksen prem."
   },
   "optionsDensityComfortable": {
-    "message": "Comfortable",
-    "description": "The comfortable density option."
+    "message": "Longgar",
+    "description": "Pilihan kepadatan longgar."
   },
   "optionsDensityCompact": {
-    "message": "Compact",
-    "description": "The compact density option."
+    "message": "Padat",
+    "description": "Pilihan kepadatan padat."
   },
   "optionsSearchSettings": {
-    "message": "Search settings",
-    "description": "The settings search box."
+    "message": "Cari pengaturan",
+    "description": "Kotak pencarian pengaturan."
   },
   "optionsSiteAccess": {
-    "message": "Site access",
-    "description": "The list of sites the extension may read."
+    "message": "Akses situs",
+    "description": "Daftar situs yang boleh dibaca ekstensi."
   },
   "optionsRevoke": {
-    "message": "Revoke",
-    "description": "Removes access to a site."
+    "message": "Cabut",
+    "description": "Menghapus akses ke sebuah situs."
   },
   "optionsRevokeAll": {
-    "message": "Revoke all",
-    "description": "Removes access to every site."
+    "message": "Cabut semua",
+    "description": "Menghapus akses ke semua situs."
   },
   "optionsExportSettings": {
-    "message": "Export settings",
-    "description": "Saves the settings to a file."
+    "message": "Ekspor pengaturan",
+    "description": "Menyimpan pengaturan ke berkas."
   },
   "optionsImportSettings": {
-    "message": "Import settings",
-    "description": "Loads the settings from a file."
+    "message": "Impor pengaturan",
+    "description": "Memuat pengaturan dari berkas."
   },
   "optionsResetAll": {
-    "message": "Reset all settings",
-    "description": "Restores every setting to its default."
+    "message": "Atur ulang semua pengaturan",
+    "description": "Mengembalikan setiap pengaturan ke nilai bawaan."
   },
   "optionsPrivacyNote": {
-    "message": "Kintsugi sends nothing to anyone. Every network request goes to the site you are reading.",
-    "description": "The note under the privacy settings."
+    "message": "Kintsugi tidak mengirim apa pun ke siapa pun. Setiap permintaan jaringan hanya menuju situs yang sedang Anda baca.",
+    "description": "Catatan di bawah pengaturan privasi."
   },
   "optionsLibrary": {
-    "message": "Library",
-    "description": "The library tab, and the books you have built."
+    "message": "Pustaka",
+    "description": "Tab pustaka dan buku-buku yang telah Anda buat."
   },
   "optionsLibraryEmptyTitle": {
-    "message": "Your library is empty.",
-    "description": "The empty library's heading."
+    "message": "Pustaka Anda kosong.",
+    "description": "Judul pustaka yang kosong."
   },
   "optionsLibraryEmptyText": {
-    "message": "Books you build are kept here, so you can update them when a new chapter is posted.",
-    "description": "The empty library's explanation."
+    "message": "Buku yang Anda buat disimpan di sini, sehingga Anda dapat memperbarui buku saat ada bab baru.",
+    "description": "Penjelasan untuk pustaka yang kosong."
   },
   "optionsLibraryChapters": {
-    "message": "$COUNT$ chapters",
-    "description": "How many chapters a book has.",
+    "message": "$COUNT$ bab",
+    "description": "Berapa banyak bab yang dimiliki sebuah buku.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -388,16 +388,16 @@
     }
   },
   "optionsNoResults": {
-    "message": "Nothing matches that search.",
-    "description": "Shown when a settings search finds nothing."
+    "message": "Tidak ada yang cocok dengan pencarian itu.",
+    "description": "Ditampilkan saat pencarian pengaturan tidak menemukan hasil."
   },
   "optionsNavLabel": {
-    "message": "Settings groups",
-    "description": "The accessible name of the settings navigation."
+    "message": "Kelompok pengaturan",
+    "description": "Nama yang dapat diakses untuk navigasi pengaturan."
   },
   "optionsLibraryMeta": {
-    "message": "$CHAPTERS$ chapters · $SIZE$",
-    "description": "The library card's metadata line.",
+    "message": "$CHAPTERS$ bab · $SIZE$",
+    "description": "Baris metadata pada kartu pustaka.",
     "placeholders": {
       "chapters": {
         "content": "$1",
@@ -410,268 +410,268 @@
     }
   },
   "settingReduceMotion": {
-    "message": "Always reduce motion",
-    "description": "The reduce-motion setting."
+    "message": "Selalu kurangi gerakan",
+    "description": "Pengaturan pengurangan gerakan."
   },
   "settingReduceMotionHint": {
-    "message": "Turns off transitions even when the system does not ask for it.",
-    "description": "Explains the reduce-motion setting."
+    "message": "Mematikan transisi meskipun sistem tidak memintanya.",
+    "description": "Penjelasan pengaturan pengurangan gerakan."
   },
   "settingFilenameTemplate": {
-    "message": "Filename template",
-    "description": "The filename-template setting."
+    "message": "Templat nama berkas",
+    "description": "Pengaturan templat nama berkas."
   },
   "settingFilenameTemplateHint": {
-    "message": "{title} and {author} are replaced when the file is saved.",
-    "description": "Explains the filename-template setting."
+    "message": "{title} dan {author} akan diganti saat berkas disimpan.",
+    "description": "Penjelasan pengaturan templat nama berkas."
   },
   "settingDefaultLanguage": {
-    "message": "Default language",
-    "description": "The default-language setting."
+    "message": "Bahasa bawaan",
+    "description": "Pengaturan bahasa bawaan."
   },
   "settingDefaultLanguageHint": {
-    "message": "The ISO 639 code used when a site does not declare one.",
-    "description": "Explains the default-language setting."
+    "message": "Kode ISO 639 yang digunakan bila sebuah situs tidak menyatakannya.",
+    "description": "Penjelasan pengaturan bahasa bawaan."
   },
   "settingRemoveAuthorNotes": {
-    "message": "Remove author notes",
-    "description": "The remove-author-notes setting."
+    "message": "Hapus catatan penulis",
+    "description": "Pengaturan penghapusan catatan penulis."
   },
   "settingRemoveAuthorNotesHint": {
-    "message": "Strips the notes many authors put at the end of a chapter.",
-    "description": "Explains the remove-author-notes setting."
+    "message": "Membuang catatan yang sering ditambahkan penulis di akhir bab.",
+    "description": "Penjelasan pengaturan penghapusan catatan penulis."
   },
   "settingRemoveChapterNumbers": {
-    "message": "Remove chapter numbers from titles",
-    "description": "The remove-chapter-numbers setting."
+    "message": "Hapus nomor bab dari judul",
+    "description": "Pengaturan penghapusan nomor bab."
   },
   "settingIncludeTocPage": {
-    "message": "Include the table of contents as a chapter",
-    "description": "The include-toc-page setting."
+    "message": "Sertakan daftar isi sebagai bab",
+    "description": "Pengaturan penyertaan daftar isi."
   },
   "settingEpubVersion": {
-    "message": "Version",
-    "description": "The EPUB-version setting."
+    "message": "Versi",
+    "description": "Pengaturan versi EPUB."
   },
   "settingEpubVersionHint": {
-    "message": "Version 3 is the standard. Version 2 is for older readers.",
-    "description": "Explains the EPUB-version setting."
+    "message": "Versi 3 adalah standar. Versi 2 untuk pembaca yang lebih lama.",
+    "description": "Penjelasan pengaturan versi EPUB."
   },
   "settingAddInfoPage": {
-    "message": "Add an information page",
-    "description": "The information-page setting."
+    "message": "Tambahkan halaman informasi",
+    "description": "Pengaturan halaman informasi."
   },
   "settingAddInfoPageHint": {
-    "message": "A page with the title, author, and source.",
-    "description": "Explains the information-page setting."
+    "message": "Sebuah halaman berisi judul, penulis, dan sumber.",
+    "description": "Penjelasan pengaturan halaman informasi."
   },
   "settingRemoveNextPrevLinks": {
-    "message": "Remove next and previous links",
-    "description": "The remove-next-prev-links setting."
+    "message": "Hapus tautan berikutnya dan sebelumnya",
+    "description": "Pengaturan penghapusan tautan navigasi bab."
   },
   "settingIncludeSourceUrl": {
-    "message": "Include the source URL in each chapter",
-    "description": "The include-source-url setting."
+    "message": "Sertakan URL sumber di setiap bab",
+    "description": "Pengaturan penyertaan URL sumber."
   },
   "settingSkipImages": {
-    "message": "Skip images entirely",
-    "description": "The skip-images setting."
+    "message": "Lewati gambar sepenuhnya",
+    "description": "Pengaturan melewati gambar."
   },
   "settingRemoveDuplicates": {
-    "message": "Remove duplicate images",
-    "description": "The remove-duplicates setting."
+    "message": "Hapus gambar duplikat",
+    "description": "Pengaturan penghapusan duplikat gambar."
   },
   "settingPreferHighestResolution": {
-    "message": "Prefer the highest resolution",
-    "description": "The prefer-highest-resolution setting."
+    "message": "Utamakan resolusi tertinggi",
+    "description": "Pengaturan pemilihan resolusi tertinggi."
   },
   "settingUseSvg": {
-    "message": "Allow SVG images",
-    "description": "The allow-SVG setting."
+    "message": "Izinkan gambar SVG",
+    "description": "Pengaturan izin gambar SVG."
   },
   "settingCompressImages": {
-    "message": "Compress images",
-    "description": "The compress-images setting."
+    "message": "Kompres gambar",
+    "description": "Pengaturan kompresi gambar."
   },
   "settingMaxResolution": {
-    "message": "Maximum resolution",
-    "description": "The maximum-resolution setting."
+    "message": "Resolusi maksimum",
+    "description": "Pengaturan resolusi maksimum."
   },
   "settingMaxResolutionHint": {
-    "message": "In pixels on the longest edge.",
-    "description": "Explains the maximum-resolution setting."
+    "message": "Dalam piksel pada sisi terpanjang.",
+    "description": "Penjelasan pengaturan resolusi maksimum."
   },
   "settingSkipFailedChapters": {
-    "message": "Skip chapters that fail",
-    "description": "The skip-failed-chapters setting."
+    "message": "Lewati bab yang gagal",
+    "description": "Pengaturan melewati bab yang gagal."
   },
   "settingSkipFailedChaptersHint": {
-    "message": "A failed chapter becomes a note in the book instead of stopping the run.",
-    "description": "Explains the skip-failed-chapters setting."
+    "message": "Bab yang gagal menjadi catatan di dalam buku, bukan menghentikan proses.",
+    "description": "Penjelasan pengaturan melewati bab yang gagal."
   },
   "settingRetryOnEmptyPage": {
-    "message": "Retry on an empty page",
-    "description": "The retry-on-empty-page setting."
+    "message": "Coba lagi pada halaman kosong",
+    "description": "Pengaturan percobaan ulang pada halaman kosong."
   },
   "settingMinimumDelay": {
-    "message": "Minimum delay between requests",
-    "description": "The minimum-delay setting."
+    "message": "Jeda minimum antarpermintaan",
+    "description": "Pengaturan jeda minimum."
   },
   "settingMinimumDelayHint": {
-    "message": "In milliseconds. Raise it for sites that rate-limit aggressively.",
-    "description": "Explains the minimum-delay setting."
+    "message": "Dalam milidetik. Naikkan untuk situs yang membatasi permintaan secara ketat.",
+    "description": "Penjelasan pengaturan jeda minimum."
   },
   "settingMaxChapters": {
-    "message": "Maximum chapters per book",
-    "description": "The maximum-chapters setting."
+    "message": "Jumlah bab maksimum per buku",
+    "description": "Pengaturan jumlah bab maksimum."
   },
   "settingDelayPerChapter": {
-    "message": "Extra delay per chapter",
-    "description": "The delay-per-chapter setting."
+    "message": "Jeda tambahan per bab",
+    "description": "Pengaturan jeda per bab."
   },
   "settingDelayPerChapterHint": {
-    "message": "In milliseconds, on top of the minimum delay.",
-    "description": "Explains the delay-per-chapter setting."
+    "message": "Dalam milidetik, di atas jeda minimum.",
+    "description": "Penjelasan pengaturan jeda per bab."
   },
   "settingMetadataLookup": {
-    "message": "Look up book metadata",
-    "description": "The metadata-lookup setting."
+    "message": "Cari metadata buku",
+    "description": "Pengaturan pencarian metadata."
   },
   "settingMetadataLookupHint": {
-    "message": "Off by default. When on, the title is checked against a public database.",
-    "description": "Explains the metadata-lookup setting."
+    "message": "Mati secara bawaan. Jika diaktifkan, judul diperiksa terhadap basis data publik.",
+    "description": "Penjelasan pengaturan pencarian metadata."
   },
   "settingSendStoryUrl": {
-    "message": "Send the story URL with the lookup",
-    "description": "The send-story-url setting."
+    "message": "Kirim URL cerita bersama pencarian",
+    "description": "Pengaturan pengiriman URL cerita."
   },
   "settingSendStoryUrlHint": {
-    "message": "Off by default. Without it, the lookup can only use the title.",
-    "description": "Explains the send-story-url setting."
+    "message": "Mati secara bawaan. Tanpanya, pencarian hanya dapat memakai judul.",
+    "description": "Penjelasan pengaturan pengiriman URL cerita."
   },
   "settingDiagnostics": {
-    "message": "Developer diagnostics",
-    "description": "The diagnostics setting."
+    "message": "Diagnostik pengembang",
+    "description": "Pengaturan diagnostik."
   },
   "settingDiagnosticsHint": {
-    "message": "Logs more detail to the console. Off by default.",
-    "description": "Explains the diagnostics setting."
+    "message": "Mencatat lebih banyak detail ke konsol. Mati secara bawaan.",
+    "description": "Penjelasan pengaturan diagnostik."
   },
   "onboardingWelcome": {
-    "message": "Welcome to Kintsugi",
-    "description": "The first onboarding step's heading."
+    "message": "Selamat datang di Kintsugi",
+    "description": "Judul langkah pertama orientasi."
   },
   "onboardingStep1": {
-    "message": "Step 1 of 3",
-    "description": "The first onboarding step's label."
+    "message": "Langkah 1 dari 3",
+    "description": "Label langkah pertama orientasi."
   },
   "onboardingStep2": {
-    "message": "Step 2 of 3",
-    "description": "The second onboarding step's label."
+    "message": "Langkah 2 dari 3",
+    "description": "Label langkah kedua orientasi."
   },
   "onboardingStep3": {
-    "message": "Step 3 of 3",
-    "description": "The third onboarding step's label."
+    "message": "Langkah 3 dari 3",
+    "description": "Label langkah ketiga orientasi."
   },
   "onboardingNext": {
-    "message": "Next",
-    "description": "The button that moves to the next step."
+    "message": "Berikutnya",
+    "description": "Tombol untuk ke langkah berikutnya."
   },
   "onboardingBack": {
-    "message": "Back",
-    "description": "The button that moves to the previous step."
+    "message": "Kembali",
+    "description": "Tombol untuk ke langkah sebelumnya."
   },
   "onboardingFinish": {
-    "message": "Finish",
-    "description": "The button that completes the onboarding."
+    "message": "Selesai",
+    "description": "Tombol untuk menyelesaikan orientasi."
   },
   "onboardingSkip": {
-    "message": "Skip",
-    "description": "The button that skips the onboarding."
+    "message": "Lewati",
+    "description": "Tombol untuk melewati orientasi."
   },
   "onboardingGetStarted": {
-    "message": "Get started",
-    "description": "The button that leaves the onboarding."
+    "message": "Mulai",
+    "description": "Tombol untuk keluar dari orientasi."
   },
   "onboardingWelcomeText": {
-    "message": "Turn any web novel into a book worth keeping. Point it at a chapter list, and it builds a clean EPUB — cover, table of contents, and all.",
-    "description": "The first onboarding step's explanation."
+    "message": "Ubah novel web mana pun menjadi buku yang layak disimpan. Arahkan ke daftar bab, dan Kintsugi akan menyusun EPUB yang rapi — lengkap dengan sampul dan daftar isi.",
+    "description": "Penjelasan langkah pertama orientasi."
   },
   "onboardingWelcomeFootnote": {
-    "message": "No account. No tracking. Works offline.",
-    "description": "The first onboarding step's footnote."
+    "message": "Tanpa akun. Tanpa pelacakan. Bisa dipakai luring.",
+    "description": "Catatan kaki langkah pertama orientasi."
   },
   "onboardingWhichSite": {
-    "message": "Which site are you reading?",
-    "description": "The second onboarding step's heading."
+    "message": "Situs mana yang sedang Anda baca?",
+    "description": "Judul langkah kedua orientasi."
   },
   "onboardingWhichSiteText": {
-    "message": "Kintsugi knows hundreds of sites. Open one, and it offers to build the book.",
-    "description": "The second onboarding step's explanation."
+    "message": "Kintsugi mengenal ratusan situs. Buka salah satu, dan Kintsugi menawarkan untuk menyusun bukunya.",
+    "description": "Penjelasan langkah kedua orientasi."
   },
   "onboardingWhichSiteFootnote": {
-    "message": "Not listed? Kintsugi can still read it — you can build a selector yourself.",
-    "description": "The second onboarding step's footnote."
+    "message": "Tidak ada dalam daftar? Kintsugi tetap bisa membacanya — Anda bisa membuat selector sendiri.",
+    "description": "Catatan kaki langkah kedua orientasi."
   },
   "onboardingMakeItYours": {
-    "message": "Make it yours",
-    "description": "The third onboarding step's heading."
+    "message": "Jadikan milik Anda",
+    "description": "Judul langkah ketiga orientasi."
   },
   "onboardingMakeItYoursText": {
-    "message": "This is a live preview. Pick what you like.",
-    "description": "The third onboarding step's explanation."
+    "message": "Ini pratinjau langsung. Pilih apa yang Anda sukai.",
+    "description": "Penjelasan langkah ketiga orientasi."
   },
   "errorGeneric": {
-    "message": "Something went wrong. Please try again.",
-    "description": "The fallback error message."
+    "message": "Terjadi kesalahan. Silakan coba lagi.",
+    "description": "Pesan kesalahan bawaan."
   },
   "errorNetwork": {
-    "message": "Could not reach the site.",
-    "description": "A network failure."
+    "message": "Tidak dapat menghubungi situs.",
+    "description": "Kegagalan jaringan."
   },
   "errorNoParser": {
-    "message": "Kintsugi does not know this site yet.",
-    "description": "No parser matched the URL."
+    "message": "Kintsugi belum mengenal situs ini.",
+    "description": "Tidak ada parser yang cocok dengan URL ini."
   },
   "errorTimeout": {
-    "message": "The site took too long to answer.",
-    "description": "A timeout."
+    "message": "Situs terlalu lama menjawab.",
+    "description": "Waktu habis."
   },
   "errorCancelled": {
-    "message": "Cancelled.",
-    "description": "The user cancelled the operation."
+    "message": "Dibatalkan.",
+    "description": "Pengguna membatalkan operasi."
   },
   "errorForbidden": {
-    "message": "The site refused the request.",
-    "description": "An HTTP 403."
+    "message": "Situs menolak permintaan tersebut.",
+    "description": "HTTP 403."
   },
   "errorParse": {
-    "message": "The page could not be read.",
-    "description": "The page could not be parsed."
+    "message": "Halaman tidak dapat dibaca.",
+    "description": "Halaman tidak dapat diurai."
   },
   "errorNoChapters": {
-    "message": "No chapters were found on this page.",
-    "description": "The chapter list was empty."
+    "message": "Tidak ditemukan bab di halaman ini.",
+    "description": "Daftar bab kosong."
   },
   "filterSearch": {
-    "message": "Search",
-    "description": "The filter's search box."
+    "message": "Cari",
+    "description": "Kotak pencarian penyaring."
   },
   "filterUseRegex": {
-    "message": "Use a regular expression",
-    "description": "Whether the search is a regex."
+    "message": "Gunakan ekspresi reguler",
+    "description": "Apakah pencarian memakai regex."
   },
   "filterInclude": {
-    "message": "Include",
-    "description": "Only matching chapters are kept."
+    "message": "Sertakan",
+    "description": "Hanya bab yang cocok yang dipertahankan."
   },
   "filterExclude": {
-    "message": "Exclude",
-    "description": "Matching chapters are removed."
+    "message": "Kecualikan",
+    "description": "Bab yang cocok dihapus."
   },
   "filterMatchCount": {
-    "message": "$COUNT$ matching",
-    "description": "How many chapters match the filter.",
+    "message": "$COUNT$ cocok",
+    "description": "Berapa banyak bab yang cocok dengan penyaring.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -680,76 +680,76 @@
     }
   },
   "filterClear": {
-    "message": "Clear",
-    "description": "Clears the filter."
+    "message": "Bersihkan",
+    "description": "Mengosongkan penyaring."
   },
   "filterApply": {
-    "message": "Apply",
-    "description": "Applies the filter."
+    "message": "Terapkan",
+    "description": "Menerapkan penyaring."
   },
   "filterInvalidPattern": {
-    "message": "That is not a valid pattern.",
-    "description": "Shown when the regex does not compile."
+    "message": "Pola itu tidak valid.",
+    "description": "Ditampilkan saat regex gagal dikompilasi."
   },
   "siteSelectorBannerTitle": {
-    "message": "No parser for this site",
-    "description": "The title of the banner shown when the fallback parser is used."
+    "message": "Tidak ada parser untuk situs ini",
+    "description": "Judul banner yang tampil saat parser cadangan digunakan."
   },
   "siteSelectorBannerText": {
-    "message": "Kintsugi is guessing where the story is. Tell it once and it will remember.",
-    "description": "The banner's explanation."
+    "message": "Kintsugi sedang menebak letak ceritanya. Beri tahu sekali saja, dan Kintsugi akan mengingatnya.",
+    "description": "Penjelasan banner."
   },
   "siteSelectorOpen": {
-    "message": "Set up this site",
-    "description": "The button that opens the site selector dialog."
+    "message": "Atur situs ini",
+    "description": "Tombol yang membuka dialog selector situs."
   },
   "siteSelectorDialogTitle": {
-    "message": "Site selectors",
-    "description": "The site selector dialog's heading."
+    "message": "Selector situs",
+    "description": "Judul dialog selector situs."
   },
   "siteSelectorIntro": {
-    "message": "These CSS selectors tell Kintsugi where a chapter's text is. They are remembered for this site alone.",
-    "description": "The dialog's introduction."
+    "message": "Selector CSS ini memberi tahu Kintsugi di mana teks sebuah bab berada. Selector hanya diingat untuk situs ini.",
+    "description": "Pengantar dialog."
   },
   "siteSelectorContent": {
-    "message": "Chapter text",
-    "description": "The label of the content selector field."
+    "message": "Teks bab",
+    "description": "Label kolom selector konten."
   },
   "siteSelectorContentHint": {
-    "message": "The element that holds the chapter's text, as a CSS selector.",
-    "description": "The content selector's hint."
+    "message": "Elemen yang memuat teks bab, sebagai selector CSS.",
+    "description": "Petunjuk selector konten."
   },
   "siteSelectorTitle": {
-    "message": "Chapter title",
-    "description": "The label of the title selector field."
+    "message": "Judul bab",
+    "description": "Label kolom selector judul."
   },
   "siteSelectorTitleHint": {
-    "message": "The element that holds the chapter's title. Optional.",
-    "description": "The title selector's hint."
+    "message": "Elemen yang memuat judul bab. Opsional.",
+    "description": "Petunjuk selector judul."
   },
   "siteSelectorRemove": {
-    "message": "Elements to remove",
-    "description": "The label of the remove selector field."
+    "message": "Elemen yang dibuang",
+    "description": "Label kolom selector buang."
   },
   "siteSelectorRemoveHint": {
-    "message": "Comments, ads and navigation to strip out. Optional.",
-    "description": "The remove selector's hint."
+    "message": "Komentar, iklan, dan navigasi untuk dibuang. Opsional.",
+    "description": "Petunjuk selector buang."
   },
   "siteSelectorSuggest": {
-    "message": "Suggest",
-    "description": "The button that asks the scanner for a suggestion."
+    "message": "Usulkan",
+    "description": "Tombol yang meminta saran dari pemindai."
   },
   "siteSelectorSuggested": {
-    "message": "Guessed from the page. Test it before you save.",
-    "description": "Shown after the scanner has proposed selectors."
+    "message": "Tebakan dari halaman. Uji dulu sebelum menyimpan.",
+    "description": "Ditampilkan setelah pemindai mengusulkan selector."
   },
   "siteSelectorTest": {
-    "message": "Test",
-    "description": "The button that tests the selectors against the page."
+    "message": "Uji",
+    "description": "Tombol yang menguji selector terhadap halaman."
   },
   "siteSelectorTestResult": {
-    "message": "Matched $CHARS$ characters.",
-    "description": "How much text the content selector matched.",
+    "message": "Cocok dengan $CHARS$ karakter.",
+    "description": "Berapa banyak teks yang cocok dengan selector konten.",
     "placeholders": {
       "chars": {
         "content": "$1",
@@ -758,39 +758,39 @@
     }
   },
   "siteSelectorTestFailed": {
-    "message": "That selector did not match anything on this page.",
-    "description": "Shown when the test finds nothing."
+    "message": "Selector itu tidak cocok dengan apa pun di halaman ini.",
+    "description": "Ditampilkan saat pengujian tidak menemukan apa pun."
   },
   "siteSelectorInvalid": {
-    "message": "That is not a valid CSS selector.",
-    "description": "Shown when a selector does not parse."
+    "message": "Itu bukan selector CSS yang valid.",
+    "description": "Ditampilkan saat selector gagal diurai."
   },
   "siteSelectorSave": {
-    "message": "Save",
-    "description": "Saves the selectors."
+    "message": "Simpan",
+    "description": "Menyimpan selector."
   },
   "siteSelectorSaved": {
-    "message": "Saved. Kintsugi will use these for this site from now on.",
-    "description": "Confirmation after saving."
+    "message": "Tersimpan. Kintsugi akan memakai ini untuk situs ini mulai sekarang.",
+    "description": "Konfirmasi setelah menyimpan."
   },
   "siteSelectorForget": {
-    "message": "Forget this site",
-    "description": "Removes the saved selectors."
+    "message": "Lupakan situs ini",
+    "description": "Menghapus selector yang tersimpan."
   },
   "siteSelectorForgotten": {
-    "message": "Forgotten. Kintsugi will guess again.",
-    "description": "Confirmation after forgetting."
+    "message": "Dilupakan. Kintsugi akan menebak lagi.",
+    "description": "Konfirmasi setelah melupakan."
   },
   "siteSelectorList": {
-    "message": "Site selectors",
-    "description": "The options page's site selector section."
+    "message": "Selector situs",
+    "description": "Bagian selector situs pada halaman opsi."
   },
   "siteSelectorListEmpty": {
-    "message": "No site has been set up yet.",
-    "description": "The empty state of the site selector list."
+    "message": "Belum ada situs yang diatur.",
+    "description": "Keadaan kosong pada daftar selector situs."
   },
   "siteSelectorTocDetected": {
-    "message": "That page looks like a table of contents, not a chapter. Open a chapter and try again.",
-    "description": "Shown when the scanner recognises a table of contents."
+    "message": "Halaman itu terlihat seperti daftar isi, bukan bab. Buka sebuah bab lalu coba lagi.",
+    "description": "Ditampilkan saat pemindai mengenali daftar isi."
   }
 }
