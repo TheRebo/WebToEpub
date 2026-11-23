@@ -226,8 +226,12 @@ class WorkbenchController {
         });
 
         // --- Toolbar ---
-        elements.selectAllButton.addEventListener("k-click", () => this.#store.setAllSelected(true));
-        elements.selectNoneButton.addEventListener("k-click", () => this.#store.setAllSelected(false));
+        elements.selectAllButton.addEventListener("k-click", () =>
+            this.#store.setAllSelected(true),
+        );
+        elements.selectNoneButton.addEventListener("k-click", () =>
+            this.#store.setAllSelected(false),
+        );
         elements.invertButton.addEventListener("k-click", () => this.#store.invertSelection());
         elements.filterButton.addEventListener("k-click", () => {
             this.#openFilter();
@@ -241,7 +245,11 @@ class WorkbenchController {
         elements.filterRegex.addEventListener("k-change", () => {
             this.#previewFilter();
         });
-        for (const input of [elements.filterSearch, elements.filterInclude, elements.filterExclude]) {
+        for (const input of [
+            elements.filterSearch,
+            elements.filterInclude,
+            elements.filterExclude,
+        ]) {
             input.addEventListener("input", () => this.#previewFilter());
         }
         elements.filterClear.addEventListener("k-click", () => {
@@ -443,7 +451,10 @@ class WorkbenchController {
             elements.selectorTitle.value = suggestion.titleCss;
             this.#setSelectorStatus(t("siteSelectorSuggested"));
         } catch (error) {
-            this.#setSelectorStatus(error instanceof Error ? error.message : t("errorGeneric"), "error");
+            this.#setSelectorStatus(
+                error instanceof Error ? error.message : t("errorGeneric"),
+                "error",
+            );
         }
     }
 
@@ -481,7 +492,10 @@ class WorkbenchController {
                 this.#setSelectorStatus(t("siteSelectorTestFailed"), "error");
             }
         } catch (error) {
-            this.#setSelectorStatus(error instanceof Error ? error.message : t("errorGeneric"), "error");
+            this.#setSelectorStatus(
+                error instanceof Error ? error.message : t("errorGeneric"),
+                "error",
+            );
         }
     }
 
@@ -520,7 +534,10 @@ class WorkbenchController {
                 },
             );
         } catch (error) {
-            this.#setSelectorStatus(error instanceof Error ? error.message : t("errorGeneric"), "error");
+            this.#setSelectorStatus(
+                error instanceof Error ? error.message : t("errorGeneric"),
+                "error",
+            );
             return;
         }
 
@@ -547,7 +564,10 @@ class WorkbenchController {
                 { hostname: host },
             );
         } catch (error) {
-            this.#setSelectorStatus(error instanceof Error ? error.message : t("errorGeneric"), "error");
+            this.#setSelectorStatus(
+                error instanceof Error ? error.message : t("errorGeneric"),
+                "error",
+            );
             return;
         }
 
@@ -574,7 +594,10 @@ class WorkbenchController {
     }
 
     /** Save one story option. */
-    async #saveStoryOption(key: "removeAuthorNotes" | "includeTocPage", value: boolean): Promise<void> {
+    async #saveStoryOption(
+        key: "removeAuthorNotes" | "includeTocPage",
+        value: boolean,
+    ): Promise<void> {
         const current = await this.#settings.get();
         await this.#settings.update({ story: { ...current.story, [key]: value } });
     }
@@ -635,7 +658,11 @@ class WorkbenchController {
                 succeeded: progress.phase === "complete",
             });
 
-            if (progress.phase === "complete" || progress.phase === "failed" || progress.phase === "cancelled") {
+            if (
+                progress.phase === "complete" ||
+                progress.phase === "failed" ||
+                progress.phase === "cancelled"
+            ) {
                 this.#jobId = undefined;
                 return;
             }

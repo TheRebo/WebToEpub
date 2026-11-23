@@ -660,27 +660,26 @@ Open Firefox and visit [WebToEpub on Firefox Add-ons][firefox-add-ons].
 4. Open Settings and scoll down to "About Firefox Nightly"
 5. Tap the Firefox Nightly icon (blue fox) 6 times to enable Debug menu
 6. Open Settings -> Advanced -> Install extension from file
-4. Select the zip file you downloaded in step 1.
+7. Select the zip file you downloaded in step 1.
 
 ### From Source (Developers)
 
 1. Clone this repo.
 
-   ```sh
-    git clone https://github.com/dteviot/WebToEpub.git
-   ```
+    ```sh
+     git clone https://github.com/dteviot/WebToEpub.git
+    ```
 
 2. Build extension.
-
-   - Install [Node.js](https://nodejs.org/) (if not already installed)
-   - Run `npm install` to install dependencies
-   - Run `npm run lint` to build plugin and lint
-   - This will produce 3 files in the eslint directory.
-     - WebToEpub0.0.0.x.xpi (Firefox version of plug-in)
-     - WebToEpub0.0.0.x.zip (Chrome version of plug-in)
-     - packed.js (concatenated JS for linting - don't edit this file directly)
-   - Lint tests are OK if output ends with `Wrote Zip to disk; Done in XXXs.`
-   - To auto-fix lint errors run `npm run lint:fix`
+    - Install [Node.js](https://nodejs.org/) (if not already installed)
+    - Run `npm install` to install dependencies
+    - Run `npm run lint` to build plugin and lint
+    - This will produce 3 files in the eslint directory.
+        - WebToEpub0.0.0.x.xpi (Firefox version of plug-in)
+        - WebToEpub0.0.0.x.zip (Chrome version of plug-in)
+        - packed.js (concatenated JS for linting - don't edit this file directly)
+    - Lint tests are OK if output ends with `Wrote Zip to disk; Done in XXXs.`
+    - To auto-fix lint errors run `npm run lint:fix`
 
 3. Install extension in browser of choice, using instructions above.
 
@@ -905,19 +904,19 @@ Project Link: [https://github.com/dteviot/WebToEpub](https://github.com/dteviot/
 >
 > - Close all running copies of Chrome
 > - Start Chrome with command line argument `--allow-file-access-from-files`. That is:
->   - Open a command propmt
->   - Browse to the directory holding Chrome
->   - Type in command `chrome.exe --allow-file-access-from-files` . Press "Enter".
->   - If you don't do this, some tests will fail with error messages containing the text **_Failed to execute 'send' on 'XMLHttpRequest': Failed to load_**.
+>     - Open a command propmt
+>     - Browse to the directory holding Chrome
+>     - Type in command `chrome.exe --allow-file-access-from-files` . Press "Enter".
+>     - If you don't do this, some tests will fail with error messages containing the text **_Failed to execute 'send' on 'XMLHttpRequest': Failed to load_**.
 > - Load `unitTest/Tests.html`
 > - If you get **_Failed to read the 'localStorage' property from 'Window': Access is denied for this document_** errors
->   - Type **_chrome://settings/content_** into Chrome's search bar
->   - Uncheck **_Block third-party cookies and site data_**
->   - Click **_Finished_**
->   - Re-run unit tests
+>     - Type **_chrome://settings/content_** into Chrome's search bar
+>     - Uncheck **_Block third-party cookies and site data_**
+>     - Click **_Finished_**
+>     - Re-run unit tests
 > - When finished with unit tests.
->   - Restore original value of **_Block third-party cookies and site data_** (if you changed it).
->   - close all running copies of Chrome
+>     - Restore original value of **_Block third-party cookies and site data_** (if you changed it).
+>     - close all running copies of Chrome
 >
 > #### To run unit tests (without local server) under Firefox
 >

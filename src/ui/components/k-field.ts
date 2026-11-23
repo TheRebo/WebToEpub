@@ -131,7 +131,16 @@ input:disabled, select:disabled, textarea:disabled {
 
 export class KField extends KComponent {
     static override styles = STYLES;
-    static override observedAttributes = ["label", "hint", "error", "type", "value", "disabled", "placeholder", "detected"];
+    static override observedAttributes = [
+        "label",
+        "hint",
+        "error",
+        "type",
+        "value",
+        "disabled",
+        "placeholder",
+        "detected",
+    ];
 
     /** The control's ID, used to wire the label and the descriptions. */
     readonly inputId = `k-field-${crypto.randomUUID().slice(0, 8)}`;

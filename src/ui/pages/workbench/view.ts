@@ -467,7 +467,14 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
 
     const filterCount = el("p", "filter-count");
 
-    filterBody.append(filterSearch, filterRegex, filterInclude, filterExclude, filterError, filterCount);
+    filterBody.append(
+        filterSearch,
+        filterRegex,
+        filterInclude,
+        filterExclude,
+        filterError,
+        filterCount,
+    );
     filterDialog.appendChild(filterBody);
 
     const filterFooter = document.createElement("div");

@@ -6,11 +6,7 @@ import {
     packEpub,
     type ChapterToPack,
 } from "../../src/core/epub/packer";
-import {
-    buildContainerXml,
-    buildXhtml,
-    makeItemId,
-} from "../../src/core/epub/writer";
+import { buildContainerXml, buildXhtml, makeItemId } from "../../src/core/epub/writer";
 import { CONTAINER_PATH, NCX_PATH, OPF_PATH, NAV_PATH } from "../../src/core/epub/document";
 
 /** A chapter with a little content. */
@@ -51,7 +47,11 @@ describe("packEpub", () => {
         for (const file of result.files) {
             const content = file.content;
             if (typeof content !== "string") continue;
-            if (!file.path.endsWith(".xml") && !file.path.endsWith(".opf") && !file.path.endsWith(".ncx")) {
+            if (
+                !file.path.endsWith(".xml") &&
+                !file.path.endsWith(".opf") &&
+                !file.path.endsWith(".ncx")
+            ) {
                 continue;
             }
             expect(() => parseXml(content)).not.toThrow();
@@ -107,10 +107,9 @@ describe("packEpub", () => {
     });
 
     it("does not repeat a title the content already carries", () => {
-        const withTitle = packEpub(
-            [chapter("One", "<h1>One</h1><p>Hello.</p>")],
-            { title: "A Story" },
-        );
+        const withTitle = packEpub([chapter("One", "<h1>One</h1><p>Hello.</p>")], {
+            title: "A Story",
+        });
         const body = withTitle.files.find((file) => file.path.includes("chapter-0001"));
         expect((body?.content as string).match(/<h1>/g)).toHaveLength(1);
     });

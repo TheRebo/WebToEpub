@@ -168,22 +168,28 @@ const boolean: Validator<boolean> = (value) => (typeof value === "boolean" ? val
 const string: Validator<string> = (value) => (typeof value === "string" ? value : "");
 
 /** A validator for a number within a range. */
-const integerIn = (min: number, max: number, fallback: number): Validator<number> => (value) => {
-    if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
-    return Math.min(max, Math.max(min, Math.round(value)));
-};
+const integerIn =
+    (min: number, max: number, fallback: number): Validator<number> =>
+    (value) => {
+        if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+        return Math.min(max, Math.max(min, Math.round(value)));
+    };
 
 /** A validator for one of a set of literals. */
-const oneOf = <T extends string>(allowed: readonly T[], fallback: T): Validator<T> => (value) =>
-    typeof value === "string" && (allowed as readonly string[]).includes(value)
-        ? (value as T)
-        : fallback;
+const oneOf =
+    <T extends string>(allowed: readonly T[], fallback: T): Validator<T> =>
+    (value) =>
+        typeof value === "string" && (allowed as readonly string[]).includes(value)
+            ? (value as T)
+            : fallback;
 
 /** A validator for one of a set of numeric literals. */
-const oneOfNumber = <T extends number>(allowed: readonly T[], fallback: T): Validator<T> => (value) =>
-    typeof value === "number" && (allowed as readonly number[]).includes(value)
-        ? (value as T)
-        : fallback;
+const oneOfNumber =
+    <T extends number>(allowed: readonly T[], fallback: T): Validator<T> =>
+    (value) =>
+        typeof value === "number" && (allowed as readonly number[]).includes(value)
+            ? (value as T)
+            : fallback;
 
 /** Build a validator for an object from a shape. */
 function shape<T extends Record<string, Validator<unknown>>>(

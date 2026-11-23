@@ -46,7 +46,11 @@ export abstract class KComponent extends HTMLElement {
     }
 
     /** Called when an observed attribute changes. */
-    attributeChangedCallback(_name: string, _oldValue: string | null, _newValue: string | null): void {
+    attributeChangedCallback(
+        _name: string,
+        _oldValue: string | null,
+        _newValue: string | null,
+    ): void {
         this.render();
     }
 
@@ -83,9 +87,7 @@ export abstract class KComponent extends HTMLElement {
 
     /** Dispatch a composed, bubbling custom event. */
     protected emit<T>(name: string, detail: T): void {
-        this.dispatchEvent(
-            new CustomEvent(name, { detail, bubbles: true, composed: true }),
-        );
+        this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
     }
 
     /** The element's accessible name, from `aria-label`. */

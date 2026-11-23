@@ -186,8 +186,9 @@ details[open] > .workbench-panel__summary .workbench-panel__chevron {
     background: transparent;
     color: var(--text-muted);
     cursor: pointer;
-    transition: background-color var(--dur-instant) var(--ease-out),
-                color var(--dur-instant) var(--ease-out);
+    transition:
+        background-color var(--dur-instant) var(--ease-out),
+        color var(--dur-instant) var(--ease-out);
 }
 
 .story-field__reset:hover {
@@ -382,8 +383,12 @@ details[open] > .workbench-panel__summary .workbench-panel__chevron {
     color: var(--accent);
 }
 
-.status-bar[data-variant="success"] .status-bar__icon { color: var(--success); }
-.status-bar[data-variant="danger"] .status-bar__icon { color: var(--danger); }
+.status-bar[data-variant="success"] .status-bar__icon {
+    color: var(--success);
+}
+.status-bar[data-variant="danger"] .status-bar__icon {
+    color: var(--danger);
+}
 
 .status-bar__body {
     display: flex;

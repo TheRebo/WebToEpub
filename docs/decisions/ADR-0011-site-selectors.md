@@ -14,7 +14,7 @@ the asset; everything else in the product exists to serve them.
 
 That coverage is never complete. New sites launch, sites redesign, and some
 sites were never covered to begin with. When no parser matches, the extension
-still has to do *something* — otherwise the user gets a dead end and blames the
+still has to do _something_ — otherwise the user gets a dead end and blames the
 extension.
 
 The baseline handled this with a `DefaultParser`: a ~200-line heuristic that
@@ -26,7 +26,7 @@ Three problems with that arrangement:
 1. **The guess was invisible.** The user could not tell whether the chapters
    they were about to download had been read from the site or guessed at. The
    baseline showed the same UI either way.
-2. **The guess was often wrong.** The heuristic produced *plausible* garbage —
+2. **The guess was often wrong.** The heuristic produced _plausible_ garbage —
    a list of forty navigation links presented as a chapter list — and the user
    found out only after the download had finished.
 3. **The override was unreachable.** The baseline's `DefaultParserConfigs` was
@@ -48,7 +48,7 @@ workbench shows a **banner** above the chapter list:
 
 The banner is warm, not alarming: the extension still works, it is just
 guessing, and the banner is offering a way to stop. A banner rather than an
-error is deliberate — the baseline's failure mode was a *silent* wrong answer,
+error is deliberate — the baseline's failure mode was a _silent_ wrong answer,
 and the fix is visibility, not obstruction.
 
 The banner appears only while the fallback parser is in charge. Once the user
@@ -59,11 +59,11 @@ longer guessing.
 
 The banner opens a **site-selector dialog** with three CSS selectors:
 
-| Selector | What it is | Required |
-|---|---|---|
-| Content | The element that holds the chapter's text | yes |
-| Title | The element that holds the chapter's title | no |
-| Remove | The elements to strip out (ads, comments, navigation) | no |
+| Selector | What it is                                            | Required |
+| -------- | ----------------------------------------------------- | -------- |
+| Content  | The element that holds the chapter's text             | yes      |
+| Title    | The element that holds the chapter's title            | no       |
+| Remove   | The elements to strip out (ads, comments, navigation) | no       |
 
 The dialog offers three ways to fill them in, because the user may know the
 answer, may not, and may want to know before committing either way:
@@ -107,15 +107,15 @@ not two.
 
 ## Alternatives considered
 
-| Alternative | Why rejected |
-|---|---|
-| **No fallback: show "unsupported site" and stop** | Honest, but it throws away a real use case. The baseline supported unknown sites, and a user on a new site is exactly the user who needs help most. Refusing is a product regression. |
-| **Improve the heuristic and stay silent** | The heuristic cannot be made reliable: novel sites are arbitrary HTML. Visibility is what actually prevents the harm. |
-| **Let the user write a parser in the page** | Far too much for a browser popup, and it would need a scripting environment, which we do not want to grant (ADR-0007). |
-| **Store the overrides in `localStorage`, as the baseline did** | Unavailable in the service worker; unvalidated; and unscoped, so it collides with the page's own storage. |
-| **Run the scanner in the extension page via a content script** | Possible, but it needs a message round-trip per page and duplicates the fetch layer. The worker already fetches the page; one implementation is better than two. |
-| **Keep the banner until the user dismisses it** | The banner is a statement of fact ("I am guessing"). Once the selectors are saved, the fact is false, and a stale banner is worse than none. |
-| **Validate the selectors only when they are used** | A throwing selector would then fail one chapter, in the middle of a download, with no explanation. Validating at the boundary turns a silent corruption into an immediate, visible error. |
+| Alternative                                                    | Why rejected                                                                                                                                                                              |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **No fallback: show "unsupported site" and stop**              | Honest, but it throws away a real use case. The baseline supported unknown sites, and a user on a new site is exactly the user who needs help most. Refusing is a product regression.     |
+| **Improve the heuristic and stay silent**                      | The heuristic cannot be made reliable: novel sites are arbitrary HTML. Visibility is what actually prevents the harm.                                                                     |
+| **Let the user write a parser in the page**                    | Far too much for a browser popup, and it would need a scripting environment, which we do not want to grant (ADR-0007).                                                                    |
+| **Store the overrides in `localStorage`, as the baseline did** | Unavailable in the service worker; unvalidated; and unscoped, so it collides with the page's own storage.                                                                                 |
+| **Run the scanner in the extension page via a content script** | Possible, but it needs a message round-trip per page and duplicates the fetch layer. The worker already fetches the page; one implementation is better than two.                          |
+| **Keep the banner until the user dismisses it**                | The banner is a statement of fact ("I am guessing"). Once the selectors are saved, the fact is false, and a stale banner is worse than none.                                              |
+| **Validate the selectors only when they are used**             | A throwing selector would then fail one chapter, in the middle of a download, with no explanation. Validating at the boundary turns a silent corruption into an immediate, visible error. |
 
 ## Consequences
 
@@ -137,7 +137,7 @@ not two.
   both, or the site will have to be split by path in a future iteration.
 - The banner adds a state to the workbench that has to be designed, translated
   and tested. That is a real cost of choosing visibility over silence.
-- The rewrite still has no way to *submit* a new parser upstream from inside
+- The rewrite still has no way to _submit_ a new parser upstream from inside
   the extension.
 
 ### Neutral

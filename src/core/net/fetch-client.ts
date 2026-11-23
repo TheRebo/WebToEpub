@@ -253,7 +253,10 @@ export class FetchClient {
                             attempts: attempt,
                             isChallenge,
                         });
-                        if (RETRYABLE_STATUSES.has(response.status) && attempt < policy.maxAttempts) {
+                        if (
+                            RETRYABLE_STATUSES.has(response.status) &&
+                            attempt < policy.maxAttempts
+                        ) {
                             lastError = error;
                             await this.#environment.sleep(this.#delayFor(policy, attempt));
                             continue;
@@ -270,7 +273,10 @@ export class FetchClient {
                 } catch (error) {
                     if (isAbort(error)) throw error;
                     if (error instanceof FetchError) {
-                        if (RETRYABLE_STATUSES.has(error.status ?? 0) && attempt < policy.maxAttempts) {
+                        if (
+                            RETRYABLE_STATUSES.has(error.status ?? 0) &&
+                            attempt < policy.maxAttempts
+                        ) {
                             lastError = error;
                             await this.#environment.sleep(this.#delayFor(policy, attempt));
                             continue;
@@ -278,10 +284,13 @@ export class FetchClient {
                         throw error;
                     }
                     // A transport-level failure.
-                    lastError = new FetchError(error instanceof Error ? error.message : String(error), {
-                        url,
-                        attempts: attempt,
-                    });
+                    lastError = new FetchError(
+                        error instanceof Error ? error.message : String(error),
+                        {
+                            url,
+                            attempts: attempt,
+                        },
+                    );
                     if (attempt < policy.maxAttempts) {
                         await this.#environment.sleep(this.#delayFor(policy, attempt));
                         continue;
@@ -290,7 +299,10 @@ export class FetchClient {
                 }
             }
 
-            throw lastError ?? new FetchError(`Could not fetch ${url}`, { url, attempts: policy.maxAttempts });
+            throw (
+                lastError ??
+                new FetchError(`Could not fetch ${url}`, { url, attempts: policy.maxAttempts })
+            );
         } finally {
             // The baseline leaked the copied cookies whenever the request
             // threw. This finally block is the whole point of the rewrite.

@@ -71,7 +71,8 @@ export class ThemeController {
     /** Apply the theme attribute. */
     #apply(): void {
         const prefersDark = this.#mediaQuery?.matches ?? false;
-        this.#resolvedTheme = this.#theme === "system" ? (prefersDark ? "dark" : "light") : this.#theme;
+        this.#resolvedTheme =
+            this.#theme === "system" ? (prefersDark ? "dark" : "light") : this.#theme;
         document.documentElement.dataset.theme = this.#resolvedTheme;
     }
 }

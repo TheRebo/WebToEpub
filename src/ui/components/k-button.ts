@@ -156,7 +156,14 @@ button:focus-visible {
 
 export class KButton extends KComponent {
     static override styles = STYLES;
-    static override observedAttributes = ["variant", "size", "disabled", "loading", "icon-only", "label"];
+    static override observedAttributes = [
+        "variant",
+        "size",
+        "disabled",
+        "loading",
+        "icon-only",
+        "label",
+    ];
 
     /** The inner button. */
     private button: HTMLButtonElement | undefined;

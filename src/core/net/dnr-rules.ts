@@ -21,10 +21,7 @@ const SESSION_RULE_ID_BASE = 1000;
 
 /** The subset of the DNR API this module uses. */
 export interface DnrApi {
-    updateDynamicRules(options: {
-        removeRuleIds: number[];
-        addRules: DnrRule[];
-    }): Promise<void>;
+    updateDynamicRules(options: { removeRuleIds: number[]; addRules: DnrRule[] }): Promise<void>;
     getSessionRules(): Promise<{ id: number; condition: DnrCondition }[]>;
 }
 

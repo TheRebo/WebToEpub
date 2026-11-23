@@ -82,8 +82,7 @@
     --weight-semibold: 600;
     --weight-bold: 700;
 
-    --font-sans:
-        system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
     /* Spacing. Base 4px, deliberately short — long scales invite off-scale

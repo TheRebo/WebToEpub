@@ -198,7 +198,9 @@ class PopupController {
             case "primary": {
                 const tab = await activeTab();
                 await openTab(
-                    getURL(`workbench.html${tab?.url ? `?url=${encodeURIComponent(tab.url)}` : ""}`),
+                    getURL(
+                        `workbench.html${tab?.url ? `?url=${encodeURIComponent(tab.url)}` : ""}`,
+                    ),
                 );
                 window.close();
                 return;

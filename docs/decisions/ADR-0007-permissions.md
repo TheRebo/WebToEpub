@@ -26,15 +26,18 @@ flagged in the technical audit:
 `Firefox.startWebRequestListeners` registers
 
 ```ts
-browser.webRequest.onBeforeSendHeaders.addListener(Firefox.filterHeaders,
-    { urls: ["<all_urls>"] }, ["blocking", "requestHeaders"]);
+browser.webRequest.onBeforeSendHeaders.addListener(
+    Firefox.filterHeaders,
+    { urls: ["<all_urls>"] },
+    ["blocking", "requestHeaders"],
+);
 ```
 
 This grants **blocking read/write access to the headers of every HTTP request
 the browser makes**, on every origin, in order to do exactly one thing: strip
 `Origin: moz-extension://` from extension-originated fetches
-(`Firefox.js:14-19`). The filter *is* narrow — it only removes an `Origin`
-that starts with `moz-extension://` — but the *grant* is the broadest thing
+(`Firefox.js:14-19`). The filter _is_ narrow — it only removes an `Origin`
+that starts with `moz-extension://` — but the _grant_ is the broadest thing
 in the manifest.
 
 Note also that MV3 Chrome does not support blocking `webRequest` for
@@ -62,8 +65,8 @@ permission becomes unnecessary.
 
 The code only ever touches cookies for the registrable domain of the URL
 being fetched (`HttpClient.js:285-288`), and it is required for a meaningful
-subset of Cloudflare-protected sites. The *grant* is unscoped, but the
-*behaviour* is narrow, and the behaviour is correctable within the same
+subset of Cloudflare-protected sites. The _grant_ is unscoped, but the
+_behaviour_ is narrow, and the behaviour is correctable within the same
 permission.
 
 ### `<all_urls>` — inherent, but should be opt-in
@@ -94,13 +97,13 @@ static `<all_urls>`), **none added.**
 
 ### Permission-by-permission justification
 
-| Permission | Why it is needed | Why it is justified |
-|---|---|---|
-| `downloads` | Save the generated EPUB to disk | The product's output. `chrome.downloads.download` is the only supported way to write a file the user can open. |
-| `scripting` | Inject a content script into the source tab to read its live, JS-rendered DOM | The extension must read the DOM *as the user sees it*, including content injected by the site's own scripts. A plain `fetch` would miss it. |
-| `storage` | Preferences, reading list, per-host parser configs | Small structured settings. `browser.storage.local` is the only extension-scoped key/value store. |
-| `declarativeNetRequest` | Header spoofing (`Referer`, `Sec-Fetch-*`) for Cloudflare-protected sites; and the scoped origin-stripping rule that replaces `webRequest` | Session-scoped rules, restricted to the extension's own `initiatorDomains`. No persistent or global effect. |
-| `cookies` | Copy the site's partitioned (CHIPS) cookies into unpartitioned cookies so extension-context fetches authenticate | Required for a meaningful subset of protected sites. Behaviourally scoped to the registrable domain of the URL being fetched; cookies are removed in a `finally` ([ADR-0004](ADR-0004-fetch-layer.md)). |
+| Permission              | Why it is needed                                                                                                                           | Why it is justified                                                                                                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `downloads`             | Save the generated EPUB to disk                                                                                                            | The product's output. `chrome.downloads.download` is the only supported way to write a file the user can open.                                                                                          |
+| `scripting`             | Inject a content script into the source tab to read its live, JS-rendered DOM                                                              | The extension must read the DOM _as the user sees it_, including content injected by the site's own scripts. A plain `fetch` would miss it.                                                             |
+| `storage`               | Preferences, reading list, per-host parser configs                                                                                         | Small structured settings. `browser.storage.local` is the only extension-scoped key/value store.                                                                                                        |
+| `declarativeNetRequest` | Header spoofing (`Referer`, `Sec-Fetch-*`) for Cloudflare-protected sites; and the scoped origin-stripping rule that replaces `webRequest` | Session-scoped rules, restricted to the extension's own `initiatorDomains`. No persistent or global effect.                                                                                             |
+| `cookies`               | Copy the site's partitioned (CHIPS) cookies into unpartitioned cookies so extension-context fetches authenticate                           | Required for a meaningful subset of protected sites. Behaviourally scoped to the registrable domain of the URL being fetched; cookies are removed in a `finally` ([ADR-0004](ADR-0004-fetch-layer.md)). |
 
 ### Optional host permissions
 
@@ -109,8 +112,8 @@ it**:
 
 1. The user clicks the toolbar button on a story page.
 2. The extension checks whether it already has host access for that origin.
-3. If not, it shows a **one-line, non-blocking banner**: *"Kintsugi needs
-   access to `novelsite.com` to read the chapters. [Allow] [Not now]"*.
+3. If not, it shows a **one-line, non-blocking banner**: _"Kintsugi needs
+   access to `novelsite.com` to read the chapters. [Allow] [Not now]"_.
 4. On "Allow", `browser.permissions.request({ origins: [...] })` prompts the
    browser's own permission UI and the grant is persisted.
 
@@ -125,9 +128,12 @@ nothing else. A compromise of the extension page cannot read arbitrary sites.
 ```ts
 // Strip the extension's own Origin header so protected sites accept the request.
 const ORIGIN_STRIP_RULE: Rule = {
-    id: ORIGIN_STRIP_RULE_ID,          // owned by this extension
+    id: ORIGIN_STRIP_RULE_ID, // owned by this extension
     priority: 1,
-    action: { type: "modifyHeaders", requestHeaders: [{ header: "Origin", operation: "remove" }] },
+    action: {
+        type: "modifyHeaders",
+        requestHeaders: [{ header: "Origin", operation: "remove" }],
+    },
     condition: {
         initiatorDomains: [EXTENSION_ID],
         resourceTypes: ["xmlhttprequest"],
@@ -149,14 +155,14 @@ rule does not itself require a broad host grant.
 
 ## Alternatives considered
 
-| Alternative | Why rejected |
-|---|---|
-| **Keep `webRequest`** | The narrowest fix in the product is also the broadest permission. DNR expresses the same rule with a scoped condition. |
-| **Keep `unlimitedStorage`** | Only needed because of the base64 library representation. IndexedDB removes the cause. |
-| **Keep `<all_urls>` static** | Simpler, but grants permanent access to every site for no reason. The optional flow is a one-line banner plus the browser's own prompt. |
-| **Drop `cookies` too** | Would break a meaningful subset of Cloudflare-protected sites — a product regression for a permission that is behaviourally narrow and now leak-free. |
-| **Use `webRequest` only in Firefox, DNR elsewhere** | Two mechanisms for one rule doubles the surface and the testing. One mechanism, scoped, is better. |
-| **Request host access for every site the user visits automatically** | Firefox requires a user gesture for `permissions.request`; auto-requesting is not possible and would be an abuse of the prompt. |
+| Alternative                                                          | Why rejected                                                                                                                                          |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Keep `webRequest`**                                                | The narrowest fix in the product is also the broadest permission. DNR expresses the same rule with a scoped condition.                                |
+| **Keep `unlimitedStorage`**                                          | Only needed because of the base64 library representation. IndexedDB removes the cause.                                                                |
+| **Keep `<all_urls>` static**                                         | Simpler, but grants permanent access to every site for no reason. The optional flow is a one-line banner plus the browser's own prompt.               |
+| **Drop `cookies` too**                                               | Would break a meaningful subset of Cloudflare-protected sites — a product regression for a permission that is behaviourally narrow and now leak-free. |
+| **Use `webRequest` only in Firefox, DNR elsewhere**                  | Two mechanisms for one rule doubles the surface and the testing. One mechanism, scoped, is better.                                                    |
+| **Request host access for every site the user visits automatically** | Firefox requires a user gesture for `permissions.request`; auto-requesting is not possible and would be an abuse of the prompt.                       |
 
 ## Consequences
 
@@ -166,7 +172,7 @@ rule does not itself require a broad host grant.
 - The extension's access to the user's browsing is now proportional to what
   they actually use.
 - The origin-stripping rule is **more precise** than the baseline's: the
-  baseline filtered by header *value* at runtime, which is a string
+  baseline filtered by header _value_ at runtime, which is a string
   comparison on every request in the browser; the DNR rule is matched by
   initiator domain in the network stack.
 - A static DNR rule survives service-worker restarts; the baseline's

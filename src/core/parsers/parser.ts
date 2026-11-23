@@ -55,7 +55,10 @@ export interface ImageCollector {
 /** The services a parser may use. */
 export interface ParserServices {
     /** Fetch a page and parse it as HTML. */
-    fetchHtml(url: string, options?: { signal?: AbortSignal }): Promise<{ dom: Document; url: string }>;
+    fetchHtml(
+        url: string,
+        options?: { signal?: AbortSignal },
+    ): Promise<{ dom: Document; url: string }>;
     /** Fetch a JSON body. */
     fetchJson(url: string, options?: { signal?: AbortSignal }): Promise<{ json: unknown }>;
     /** The utility functions. */
@@ -148,7 +151,10 @@ export abstract class Parser {
      *
      * The one method every parser must implement.
      */
-    abstract getChapterUrls(dom: Document, chapterUrlsUI?: TocProgress): Promise<ChapterLink[]> | ChapterLink[];
+    abstract getChapterUrls(
+        dom: Document,
+        chapterUrlsUI?: TocProgress,
+    ): Promise<ChapterLink[]> | ChapterLink[];
 
     /**
      * Find the element holding the chapter's content.
@@ -174,7 +180,7 @@ export abstract class Parser {
 
     /** The language, as an ISO 639 code. */
     extractLanguage(dom: Document): string | null {
-        const element = dom.querySelector('html[lang]');
+        const element = dom.querySelector("html[lang]");
         return element?.getAttribute("lang") ?? null;
     }
 
@@ -226,9 +232,11 @@ export abstract class Parser {
      * contain.
      */
     removeUnwantedElementsFromContentElement(element: Element): void {
-        element.querySelectorAll("script, style, noscript, iframe, object, embed").forEach((node) => {
-            node.remove();
-        });
+        element
+            .querySelectorAll("script, style, noscript, iframe, object, embed")
+            .forEach((node) => {
+                node.remove();
+            });
         this.services.util.removeComments(element);
     }
 

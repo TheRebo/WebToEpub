@@ -31,7 +31,9 @@ function parseXml(text: string, label: string): XmlDocument {
     const dom = parser.parseFromString(text, "application/xml");
     const error = dom.querySelector("parsererror");
     if (error) {
-        throw new Error(`Malformed XML in ${label}: ${error.textContent?.trim() ?? "unknown error"}`);
+        throw new Error(
+            `Malformed XML in ${label}: ${error.textContent?.trim() ?? "unknown error"}`,
+        );
     }
     return dom;
 }
@@ -141,7 +143,9 @@ function parsePackage(xml: string): PackageDocument {
             const mediaType = item.getAttribute("media-type");
             if (!id || !href || !mediaType) continue;
             const properties = item.getAttribute("properties") ?? undefined;
-            manifest.push(properties ? { id, href, mediaType, properties } : { id, href, mediaType });
+            manifest.push(
+                properties ? { id, href, mediaType, properties } : { id, href, mediaType },
+            );
         }
     }
 
@@ -155,8 +159,7 @@ function parsePackage(xml: string): PackageDocument {
         }
     }
 
-    const uniqueIdentifier =
-        packageElement.getAttribute("unique-identifier") ?? "id";
+    const uniqueIdentifier = packageElement.getAttribute("unique-identifier") ?? "id";
 
     const metadata = parseMetadata(metadataElement, manifest);
 
@@ -172,8 +175,7 @@ function parsePackage(xml: string): PackageDocument {
 /** Parse the metadata element. */
 function parseMetadata(metadataElement: Element | null, manifest: ManifestItem[]): Metadata {
     const identifier =
-        textOf(metadataElement ?? document, "identifier") ??
-        `urn:uuid:${crypto.randomUUID()}`;
+        textOf(metadataElement ?? document, "identifier") ?? `urn:uuid:${crypto.randomUUID()}`;
 
     const creators = metadataElement
         ? findAllByLocalName(metadataElement, "creator")
@@ -323,7 +325,9 @@ export type UnzipFunction = (data: ArrayBuffer | Uint8Array) => Promise<Map<stri
  * Unzip using the `zip.js` reader.
  */
 export const unzipWithZipJs: UnzipFunction = async (data) => {
-    const { Uint8ArrayReader, Uint8ArrayWriter, TextWriter, ZipReader } = await import("@zip.js/zip.js");
+    const { Uint8ArrayReader, Uint8ArrayWriter, TextWriter, ZipReader } = await import(
+        "@zip.js/zip.js"
+    );
 
     const reader = new Uint8ArrayReader(data as Uint8Array);
     const zipReader = new ZipReader(reader);

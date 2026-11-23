@@ -76,30 +76,48 @@ describe("the parser registry", () => {
         class Exact extends StubParser {}
         class Rule extends StubParser {}
         registry.register("example.com", (s) => new Exact(s));
-        registry.registerUrlRule(() => true, (s) => new Rule(s));
+        registry.registerUrlRule(
+            () => true,
+            (s) => new Rule(s),
+        );
         expect(registry.fetchByUrl("https://example.com/story")).toBeInstanceOf(Exact);
     });
 
     it("uses the first URL rule that matches", () => {
         class First extends StubParser {}
         class Second extends StubParser {}
-        registry.registerUrlRule((url) => url.includes("/first"), (s) => new First(s));
-        registry.registerUrlRule(() => true, (s) => new Second(s));
+        registry.registerUrlRule(
+            (url) => url.includes("/first"),
+            (s) => new First(s),
+        );
+        registry.registerUrlRule(
+            () => true,
+            (s) => new Second(s),
+        );
         expect(registry.fetchByUrl("https://example.com/first")).toBeInstanceOf(First);
     });
 
     it("takes the confidence rule with the highest confidence", () => {
         class Low extends StubParser {}
         class High extends StubParser {}
-        registry.registerRule(() => 0.2, (s) => new Low(s));
-        registry.registerRule(() => 0.9, (s) => new High(s));
+        registry.registerRule(
+            () => 0.2,
+            (s) => new Low(s),
+        );
+        registry.registerRule(
+            () => 0.9,
+            (s) => new High(s),
+        );
         const dom = new DOMParser().parseFromString("", "text/html");
         expect(registry.fetch("https://example.com/story", dom)).toBeInstanceOf(High);
     });
 
     it("ignores a confidence rule that reports zero", () => {
         class Never extends StubParser {}
-        registry.registerRule(() => 0, (s) => new Never(s));
+        registry.registerRule(
+            () => 0,
+            (s) => new Never(s),
+        );
         registry.registerDefault((s) => new StubParser(s));
         const dom = new DOMParser().parseFromString("", "text/html");
         expect(registry.fetch("https://example.com/story", dom)).not.toBeInstanceOf(Never);
@@ -139,8 +157,8 @@ describe("host name helpers", () => {
         expect(stripWebArchive("https://web.archive.org/web/2020/https://example.com/story")).toBe(
             "https://example.com/story",
         );
-        expect(hostNameForParserSelection("https://web.archive.org/web/2020/https://example.com/x")).toBe(
-            "example.com",
-        );
+        expect(
+            hostNameForParserSelection("https://web.archive.org/web/2020/https://example.com/x"),
+        ).toBe("example.com");
     });
 });

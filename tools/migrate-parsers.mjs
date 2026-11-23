@@ -320,7 +320,10 @@ function stripDeadBranches(fileName, source) {
  * The rewritten file gets its own header, and a module is always strict.
  */
 function stripPrologue(source) {
-    return source.replace(/^\s*"use strict";\s*$/m, "").replace(/\n{3,}/g, "\n\n").trimStart();
+    return source
+        .replace(/^\s*"use strict";\s*$/m, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trimStart();
 }
 
 /* ------------------------------------------------------------------ */
@@ -372,7 +375,8 @@ function transform(fileName, source, exportedBy, ownNames) {
     // Export the top-level declarations so that other parsers can import them.
     const body = stripPrologue(stripDeadBranches(fileName, source)).replace(
         /^(export\s+)?(class|const|let|var|function)\s+([A-Za-z_$][\w$]*)/gm,
-        (match, existingExport, keyword, name) => `${existingExport ?? ""}export ${keyword} ${name}`,
+        (match, existingExport, keyword, name) =>
+            `${existingExport ?? ""}export ${keyword} ${name}`,
     );
 
     const header = `// Ai generated + Claude Opus 4.6

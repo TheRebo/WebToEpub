@@ -94,7 +94,10 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
     const manifest: ManifestItem[] = [];
     const spine: SpineItem[] = [];
     const toc: NavigationPoint[] = [];
-    const files = new Map<string, { path: string; content: string | Uint8Array; mediaType: string }>();
+    const files = new Map<
+        string,
+        { path: string; content: string | Uint8Array; mediaType: string }
+    >();
 
     let itemIndex = 0;
     const nextId = (href: string): string => makeItemId(itemIndex++, href);
@@ -131,7 +134,11 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
         });
 
         const id = nextId(path);
-        manifest.push({ id, href: path.replace(/^OEBPS\//, ""), mediaType: "application/xhtml+xml" });
+        manifest.push({
+            id,
+            href: path.replace(/^OEBPS\//, ""),
+            mediaType: "application/xhtml+xml",
+        });
         spine.push({ idRef: id });
 
         toc.push({

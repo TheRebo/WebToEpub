@@ -167,7 +167,11 @@ const GROUPS: GroupSpec[] = [
                 label: "settingSkipFailedChapters",
                 hint: "settingSkipFailedChaptersHint",
             },
-            { kind: "switch", path: "behaviour.retryOnEmptyPage", label: "settingRetryOnEmptyPage" },
+            {
+                kind: "switch",
+                path: "behaviour.retryOnEmptyPage",
+                label: "settingRetryOnEmptyPage",
+            },
             {
                 kind: "number",
                 path: "behaviour.minimumDelay",
@@ -335,9 +339,9 @@ class OptionsController {
         if (next === previous) return;
 
         groupValue[key] = next as never;
-        this.#settings = await this.#store.update(
-            { [group]: groupValue } as unknown as Partial<Settings>,
-        );
+        this.#settings = await this.#store.update({
+            [group]: groupValue,
+        } as unknown as Partial<Settings>);
 
         // The appearance settings take effect immediately, so the user sees
         // the theme they just chose rather than a preview of it.
@@ -422,9 +426,10 @@ class OptionsController {
         if (!this.#settings) return;
 
         const values = flatten(this.#settings);
-        const active = this.#active === "library" || this.#active === "site-selectors"
-            ? "appearance"
-            : this.#active;
+        const active =
+            this.#active === "library" || this.#active === "site-selectors"
+                ? "appearance"
+                : this.#active;
         renderNav(this.#elements, GROUPS, active);
         renderGroups(this.#elements, GROUPS, values, this.#query);
 
@@ -477,4 +482,12 @@ void main().catch((error) => {
 
 // The types are re-exported so a reader of this file can see which settings
 // groups exist without opening the settings store.
-export type { AppearanceSettings, StorySettings, EpubSettings, ImageSettings, BehaviourSettings, PrivacySettings, AdvancedSettings };
+export type {
+    AppearanceSettings,
+    StorySettings,
+    EpubSettings,
+    ImageSettings,
+    BehaviourSettings,
+    PrivacySettings,
+    AdvancedSettings,
+};

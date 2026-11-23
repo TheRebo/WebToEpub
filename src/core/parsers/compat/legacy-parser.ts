@@ -49,13 +49,17 @@ import {
     makeLegacyUserPreferences,
     type LegacyUserPreferences,
 } from "./legacy-image-collector";
-import {
-    ChapterEpubItem,
-    EpubItemSupplier,
-    EpubMetaInfo,
-} from "./legacy-epub-items";
+import { ChapterEpubItem, EpubItemSupplier, EpubMetaInfo } from "./legacy-epub-items";
 import type { EpubItem } from "./legacy-epub-items";
-import { ChapterUrlsUI, CoverImageUI, ErrorLog, Imgur, ProgressBar, UIText, main } from "./legacy-globals";
+import {
+    ChapterUrlsUI,
+    CoverImageUI,
+    ErrorLog,
+    Imgur,
+    ProgressBar,
+    UIText,
+    main,
+} from "./legacy-globals";
 import { peekParserServices } from "../services-context";
 
 /**
@@ -207,7 +211,7 @@ export class LegacyParser extends Parser {
     /** The default title extractor: the Open Graph title, or the document title. */
     static extractTitleDefault(dom: Document): string {
         const title = dom.querySelector("meta[property='og:title']");
-        return title === null ? dom.title : title.getAttribute("content") ?? dom.title;
+        return title === null ? dom.title : (title.getAttribute("content") ?? dom.title);
     }
 
     /**
@@ -494,7 +498,7 @@ export class LegacyParser extends Parser {
         if (!rawDom) return;
         const found = this.findChapterTitle(rawDom, webPage);
         if (found !== null && found !== undefined) {
-            const title = found instanceof HTMLElement ? found.textContent ?? "" : String(found);
+            const title = found instanceof HTMLElement ? (found.textContent ?? "") : String(found);
             if (webPage.title === "[placeholder]") {
                 webPage.title = title.trim();
             }
@@ -511,10 +515,7 @@ export class LegacyParser extends Parser {
     /** Whether the content already starts with the chapter's title. */
     titleAlreadyPresent(title: string, content: Element): boolean {
         const existingTitle = content.querySelector("h1, h2, h3, h4, h5, h6");
-        return (
-            existingTitle !== null &&
-            title.trim() === (existingTitle.textContent ?? "").trim()
-        );
+        return existingTitle !== null && title.trim() === (existingTitle.textContent ?? "").trim();
     }
 
     /** Replace the WordPress block spacers with horizontal rules. */
@@ -672,7 +673,10 @@ export class LegacyParser extends Parser {
      * the parser asks for its minimum to be authoritative.
      */
     override getRateLimit(): number {
-        const manual = Number.parseInt(this.userPreferences?.manualDelayPerChapter?.value ?? "", 10);
+        const manual = Number.parseInt(
+            this.userPreferences?.manualDelayPerChapter?.value ?? "",
+            10,
+        );
         const manualDelay = Number.isNaN(manual) ? this.minimumThrottle : manual;
         if (!this.userPreferences.overrideMinimumDelay.value) {
             return Math.max(this.minimumThrottle, manualDelay);
@@ -1027,7 +1031,9 @@ export class LegacyParser extends Parser {
 
     /** Fetch every chapter. */
     async fetchWebPages(): Promise<void> {
-        const pagesToFetch = [...this.state.webPages.values()].filter((c) => c.isIncludeable !== false);
+        const pagesToFetch = [...this.state.webPages.values()].filter(
+            (c) => c.isIncludeable !== false,
+        );
         if (pagesToFetch.length === 0) {
             throw new Error("No chapters found.");
         }
@@ -1104,7 +1110,10 @@ export class LegacyParser extends Parser {
             webPage.sourceUrl,
         );
         this.imageCollector.findImagesUsedInDocument(revisedContent);
-        await this.imageCollector.fetchImages(() => this.updateProgressBarOneStep(), webPage.sourceUrl);
+        await this.imageCollector.fetchImages(
+            () => this.updateProgressBarOneStep(),
+            webPage.sourceUrl,
+        );
         this.updateLoadState(webPage);
     }
 
@@ -1121,10 +1130,9 @@ export class LegacyParser extends Parser {
 
     /** Update the reading list. */
     updateReadingList(): void {
-        this.userPreferences.readingList.update(
-            this.state.chapterListUrl ?? "",
-            [...this.state.webPages.values()],
-        );
+        this.userPreferences.readingList.update(this.state.chapterListUrl ?? "", [
+            ...this.state.webPages.values(),
+        ]);
     }
 
     /* ------------------------------------------------------------------

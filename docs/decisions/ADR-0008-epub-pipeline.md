@@ -31,7 +31,7 @@ Three things about it are wrong:
 1. **The library merge is regex surgery on XML.** `Library.LibMergeEpub`
    (`Library.js:60-198`) merges two EPUBs by `RegExp`-replacing `<dc:source>`,
    `<item>`, `<itemref>`, and `<navPoint>` fragments inside `content.opf` and
-   `toc.ncx`. This assumes the *exact* serialisation of the baseline's own
+   `toc.ncx`. This assumes the _exact_ serialisation of the baseline's own
    `EpubPacker`. Any EPUB produced by another tool — or by a future version of
    this extension — will not match, and the merge silently produces a
    malformed OPF. It also indexes `filter(...)[0]` without a guard, so a
@@ -60,8 +60,8 @@ interface EpubDocument {
     metadata: EpubMetadata;
     manifest: ManifestItem[];
     spine: SpineItem[];
-    nav: NavigationDocument;   // EPUB 3 nav + EPUB 2 NCX, both generated
-    resources: Map<string, Blob>;  // images, fonts, stylesheets
+    nav: NavigationDocument; // EPUB 3 nav + EPUB 2 NCX, both generated
+    resources: Map<string, Blob>; // images, fonts, stylesheets
 }
 ```
 
@@ -75,7 +75,7 @@ safe.
 ### 2. The merge becomes structural
 
 ```ts
-async function mergeEpubs(base: Blob, addition: Blob): Promise<Blob>
+async function mergeEpubs(base: Blob, addition: Blob): Promise<Blob>;
 ```
 
 - Parse both containers with `zip.js`'s reader.
@@ -93,10 +93,10 @@ A resource that failed to download is **not** packed. Instead:
 
 - the image element in the chapter is replaced with a **visible, styled
   placeholder** (`<span class="kintsugi-missing-image" role="img"
-  aria-label="Image unavailable">`) that carries the original source URL, so
+aria-label="Image unavailable">`) that carries the original source URL, so
   the reader knows something was there;
 - the failure is recorded in the error log and reported in the completion
-  summary: *"3 images could not be downloaded."*;
+  summary: _"3 images could not be downloaded."_;
 - the EPUB is still produced, and it is **valid**.
 
 We never write a zero-byte file into a container.
@@ -118,14 +118,14 @@ decode failure does not discard the image.
 
 ## Alternatives considered
 
-| Alternative | Why rejected |
-|---|---|
-| **Keep the regex merge but harden it** | Regex over XML cannot be made safe. The failure mode is silent corruption of the user's book — the worst possible bug for this product. |
-| **Adopt an EPUB library (epub.js, JSZip, etc.)** | `epub.js` is a *reader*, not a writer, and is large. JSZip would replace `zip.js`, which already works. |
-| **Build the OPF as strings, as today** | String-built XML is how the merge became regex surgery in the first place. A DOM-based model makes the merge structural for free. |
-| **Drop the library merge feature** | It is the extension's differentiator — "search for new chapters and update the book" is why the library exists. |
-| **Fail the whole EPUB if any image fails** | Too brittle. A missing illustration should not cost the user the entire book. |
-| **Keep `zip.js`** | It is 30 KB minified, supports streaming writes, has no known advisories, and already works. Replacing it would be churn. |
+| Alternative                                      | Why rejected                                                                                                                            |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Keep the regex merge but harden it**           | Regex over XML cannot be made safe. The failure mode is silent corruption of the user's book — the worst possible bug for this product. |
+| **Adopt an EPUB library (epub.js, JSZip, etc.)** | `epub.js` is a _reader_, not a writer, and is large. JSZip would replace `zip.js`, which already works.                                 |
+| **Build the OPF as strings, as today**           | String-built XML is how the merge became regex surgery in the first place. A DOM-based model makes the merge structural for free.       |
+| **Drop the library merge feature**               | It is the extension's differentiator — "search for new chapters and update the book" is why the library exists.                         |
+| **Fail the whole EPUB if any image fails**       | Too brittle. A missing illustration should not cost the user the entire book.                                                           |
+| **Keep `zip.js`**                                | It is 30 KB minified, supports streaming writes, has no known advisories, and already works. Replacing it would be churn.               |
 
 ## Consequences
 

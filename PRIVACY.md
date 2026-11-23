@@ -29,14 +29,14 @@ The manifest declares this explicitly, and Firefox enforces it:
 Everything Kintsugi stores is stored **locally in your browser profile** and
 is visible to you in the options page.
 
-| Data | Where it lives | Why | How to remove it |
-|---|---|---|---|
-| Settings (theme, accent, density, defaults) | `browser.storage.local`, key `kintsugi.settings` | Remembered preferences | Options → Advanced → Reset all settings |
-| Saved site access | `browser.permissions` | Knowing which sites you approved | Options → Site access → Revoke |
-| Custom parsers (CSS selectors you wrote) | `browser.storage.local`, key `kintsugi.parsers` | Reuse your selectors | Options → Site access → Custom parsers |
-| Reading list | `browser.storage.local`, key `kintsugi.readingList` | Unpacked stories you saved | Options → Reading list → Delete |
-| Your library (EPUB files) | **IndexedDB**, database `kintsugi-library` | The books you made | Options → Library → Delete |
-| In-progress download checkpoints | `sessionStorage` | Resume a download after a reload | Cleared when the tab closes |
+| Data                                        | Where it lives                                      | Why                              | How to remove it                        |
+| ------------------------------------------- | --------------------------------------------------- | -------------------------------- | --------------------------------------- |
+| Settings (theme, accent, density, defaults) | `browser.storage.local`, key `kintsugi.settings`    | Remembered preferences           | Options → Advanced → Reset all settings |
+| Saved site access                           | `browser.permissions`                               | Knowing which sites you approved | Options → Site access → Revoke          |
+| Custom parsers (CSS selectors you wrote)    | `browser.storage.local`, key `kintsugi.parsers`     | Reuse your selectors             | Options → Site access → Custom parsers  |
+| Reading list                                | `browser.storage.local`, key `kintsugi.readingList` | Unpacked stories you saved       | Options → Reading list → Delete         |
+| Your library (EPUB files)                   | **IndexedDB**, database `kintsugi-library`          | The books you made               | Options → Library → Delete              |
+| In-progress download checkpoints            | `sessionStorage`                                    | Resume a download after a reload | Cleared when the tab closes             |
 
 **None of this is encrypted, and none of it is transmitted.** Firefox's
 extension storage is already protected by your operating system's profile
@@ -49,11 +49,11 @@ encryption (if you use one) and by your browser's profile isolation.
 Kintsugi fetches pages **only from the site you asked it to read**. The
 requests are:
 
-| Request | When | Destination |
-|---|---|---|
-| Chapter pages | During a download | The site you are reading |
-| Table-of-contents pages | While building the chapter list | The site you are reading |
-| Images | During a download | The same site, or a CDN it links to |
+| Request                 | When                            | Destination                         |
+| ----------------------- | ------------------------------- | ----------------------------------- |
+| Chapter pages           | During a download               | The site you are reading            |
+| Table-of-contents pages | While building the chapter list | The site you are reading            |
+| Images                  | During a download               | The same site, or a CDN it links to |
 
 These requests carry the ordinary headers a browser sends, including the
 cookies that site has already set — because that is what makes a

@@ -400,7 +400,9 @@ export const Imgur = {
     findImagesList(dom: Document): Array<{ hash: string; ext: string }> | null {
         const json = Imgur.findImagesJson(dom);
         if (json === null) return null;
-        const album = json.album_images as { images?: Array<{ hash: string; ext: string }> } | undefined;
+        const album = json.album_images as
+            | { images?: Array<{ hash: string; ext: string }> }
+            | undefined;
         if (album?.images) return album.images;
         return [json as unknown as { hash: string; ext: string }];
     },

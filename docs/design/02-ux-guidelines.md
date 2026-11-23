@@ -15,12 +15,12 @@ The extension has **four** surfaces, not ten. The original had ten mutually
 toggling `<section>` elements inside one document, which is why nothing had a
 clear identity.
 
-| Surface | Surface | Purpose |
-|---|---|---|
-| **Workbench** | A tab (`moz-extension://…/workbench.html`) | The main tool. Everything happens here. |
-| **Popup** | The toolbar popup | A *launcher*, not the tool. Shows the current page's story and one big button. |
-| **Options** | A tab (`moz-extension://…/options.html`) | Settings, library, reading list. |
-| **First-run** | A tab | A 3-step introduction, shown once. |
+| Surface       | Surface                                    | Purpose                                                                        |
+| ------------- | ------------------------------------------ | ------------------------------------------------------------------------------ |
+| **Workbench** | A tab (`moz-extension://…/workbench.html`) | The main tool. Everything happens here.                                        |
+| **Popup**     | The toolbar popup                          | A _launcher_, not the tool. Shows the current page's story and one big button. |
+| **Options**   | A tab (`moz-extension://…/options.html`)   | Settings, library, reading list.                                               |
+| **First-run** | A tab                                      | A 3-step introduction, shown once.                                             |
 
 ### 1.1 Why the workbench is a tab, not the popup
 
@@ -32,8 +32,8 @@ it is the original's central architectural constraint.
 The cause is real: **the browser kills a popup when it loses focus**, so a
 30-minute download cannot live in one. The fix is architectural, not visual —
 see [ADR-0005](../decisions/ADR-0005-background-worker.md). With a background
-service worker owning the download, the *popup* can stay a popup for the
-short interactions it is good at, and the *workbench* can be a tab for the
+service worker owning the download, the _popup_ can stay a popup for the
+short interactions it is good at, and the _workbench_ can be a tab for the
 long ones.
 
 **New behaviour:** clicking the toolbar icon opens the workbench in a tab
@@ -100,7 +100,7 @@ above the chapter list, and the panels become collapsible accordions.
 ### 2.2 The app bar
 
 - **Left:** the product mark, then the story title (truncated) and author.
-  This is *live* — it reflects what the extension detected, and it updates
+  This is _live_ — it reflects what the extension detected, and it updates
   when the user edits the title.
 - **Right:** the **Pack EPUB** button. Always visible. Always the same size.
   This is the answer to the original's core UX failure, where the primary
@@ -132,7 +132,7 @@ Advanced.
 word "Chapters", the count, and the range control.
 
 **Range control.** The original had two separate "First Chapter" / "Last
-Chapter" `<select>` dropdowns, which did not reveal that they were a *range*.
+Chapter" `<select>` dropdowns, which did not reveal that they were a _range_.
 The new control is a **paired range selector**: two dropdowns joined by a
 visual connector, with a live summary "Chapters 1–318 of 318". It also
 supports typing a number.
@@ -164,6 +164,7 @@ shift-click gesture was gesturing at, but done properly.
 with a regex built from raw user input (which could throw, and which had no
 keyboard path). The new filters live in a **popover** anchored to the
 toolbar, with:
+
 - plain substring matching by default (safe, no regex),
 - an opt-in "regular expression" mode that **validates the pattern and shows
   the error inline** instead of throwing,
@@ -210,8 +211,8 @@ The bottom strip is the only place progress lives.
 ```
 
 - Determinate progress, eased.
-- The phase label changes: *Preparing* → *Fetching chapters* → *Downloading
-  images* → *Building EPUB* → *Saving*.
+- The phase label changes: _Preparing_ → _Fetching chapters_ → _Downloading
+  images_ → _Building EPUB_ → _Saving_.
 - **Cancel** appears only while work is in flight, and it **actually aborts**
   the in-flight HTTP requests (see [ADR-0004](../decisions/ADR-0004-fetch-layer.md)).
   The original's "Pause to Library" did not abort anything; it merely
@@ -320,21 +321,21 @@ trace. The new one:
 
 ## 4. Keyboard map
 
-| Key | Action |
-|---|---|
-| `Ctrl/Cmd + Enter` | Pack EPUB |
-| `Ctrl/Cmd + O` | Focus the URL field |
-| `Ctrl/Cmd + F` | Focus the chapter filter |
-| `Ctrl/Cmd + A` | Select all chapters (when the chapter list has focus) |
-| `Ctrl/Cmd + D` | Deselect all chapters |
-| `Ctrl/Cmd + Shift + I` | Invert selection |
-| `Escape` | Close the active dialog / popover / drawer |
-| `↑` `↓` | Move between chapters in the list |
-| `Space` | Toggle the focused chapter |
-| `Home` `End` | Jump to the first / last chapter |
-| `Enter` | Edit the focused chapter's title |
-| `?` | Show the keyboard shortcut sheet |
-| `Tab` | The chapter list is **one** tab stop; arrow keys move within it |
+| Key                    | Action                                                          |
+| ---------------------- | --------------------------------------------------------------- |
+| `Ctrl/Cmd + Enter`     | Pack EPUB                                                       |
+| `Ctrl/Cmd + O`         | Focus the URL field                                             |
+| `Ctrl/Cmd + F`         | Focus the chapter filter                                        |
+| `Ctrl/Cmd + A`         | Select all chapters (when the chapter list has focus)           |
+| `Ctrl/Cmd + D`         | Deselect all chapters                                           |
+| `Ctrl/Cmd + Shift + I` | Invert selection                                                |
+| `Escape`               | Close the active dialog / popover / drawer                      |
+| `↑` `↓`                | Move between chapters in the list                               |
+| `Space`                | Toggle the focused chapter                                      |
+| `Home` `End`           | Jump to the first / last chapter                                |
+| `Enter`                | Edit the focused chapter's title                                |
+| `?`                    | Show the keyboard shortcut sheet                                |
+| `Tab`                  | The chapter list is **one** tab stop; arrow keys move within it |
 
 ---
 
@@ -342,16 +343,16 @@ trace. The new one:
 
 The UI is a product, so its copy is written like one.
 
-| Rule | Example |
-|---|---|
-| Say what happened, then what to do | "Could not fetch chapter 42" → "Retry" |
-| Never blame the user | Not "You entered an invalid URL" |
-| No jargon in user-facing text | "Captcha" → "Verify your browser" |
-| Buttons name the action | "Pack EPUB", not "Apply"; "Search for new chapters", not "Update" |
-| Sentence case everywhere | "Remove author notes", not "Remove Author Notes" |
-| No trailing colons on labels | "Cover image URL", not "Cover Image URL:" |
-| Explain units | "Delay between requests (ms)", not "manualDelayPerChapter" |
-| Keep the same word for the same thing | Always "chapter", never "page" or "part" for a chapter |
+| Rule                                  | Example                                                           |
+| ------------------------------------- | ----------------------------------------------------------------- |
+| Say what happened, then what to do    | "Could not fetch chapter 42" → "Retry"                            |
+| Never blame the user                  | Not "You entered an invalid URL"                                  |
+| No jargon in user-facing text         | "Captcha" → "Verify your browser"                                 |
+| Buttons name the action               | "Pack EPUB", not "Apply"; "Search for new chapters", not "Update" |
+| Sentence case everywhere              | "Remove author notes", not "Remove Author Notes"                  |
+| No trailing colons on labels          | "Cover image URL", not "Cover Image URL:"                         |
+| Explain units                         | "Delay between requests (ms)", not "manualDelayPerChapter"        |
+| Keep the same word for the same thing | Always "chapter", never "page" or "part" for a chapter            |
 
 ---
 

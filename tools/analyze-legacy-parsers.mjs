@@ -33,7 +33,8 @@ for (const file of files) {
     for (const m of code.matchAll(/\bsuper\s*\.\s*([A-Za-z_$][\w$]*)/g)) bump(superCalls, m[1]);
     for (const m of code.matchAll(/\butil\s*\.\s*([A-Za-z_$][\w$]*)/g)) bump(utilCalls, m[1]);
     for (const m of code.matchAll(/\bHttpClient\s*\.\s*([A-Za-z_$][\w$]*)/g)) bump(httpCalls, m[1]);
-    for (const m of code.matchAll(/\bparserFactory\s*\.\s*([A-Za-z_$][\w$]*)/g)) bump(factoryCalls, m[1]);
+    for (const m of code.matchAll(/\bparserFactory\s*\.\s*([A-Za-z_$][\w$]*)/g))
+        bump(factoryCalls, m[1]);
     for (const m of code.matchAll(/\bthis\s*\.\s*([A-Za-z_$][\w$]*)/g)) bump(thisMembers, m[1]);
     for (const m of code.matchAll(/class\s+([A-Za-z_$][\w$]*)\s+extends\s+([A-Za-z_$][\w$]*)/g)) {
         parserClasses.set(m[1], { base: m[2], file });

@@ -235,10 +235,7 @@ export type Substitutions = string | string[];
 
 /** The `browser.i18n` API, as far as this module uses it. */
 export interface I18nApi {
-    getMessage(
-        key: string,
-        substitutions?: string | string[] | undefined,
-    ): string;
+    getMessage(key: string, substitutions?: string | string[] | undefined): string;
     getUILanguage?(): string;
 }
 

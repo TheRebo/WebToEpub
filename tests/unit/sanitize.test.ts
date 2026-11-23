@@ -49,9 +49,9 @@ describe("sanitizeHtml", () => {
         expect(sanitizeHtml("<form><script>alert(1)</script></form>")).not.toContain("script");
         expect(sanitizeHtml("<form><img src=x onerror=alert(1)></form>")).not.toContain("onerror");
         expect(sanitizeHtml("<form><svg onload=alert(1)></svg></form>")).not.toContain("svg");
-        expect(sanitizeHtml("<form><iframe src=javascript:alert(1)></iframe></form>")).not.toContain(
-            "iframe",
-        );
+        expect(
+            sanitizeHtml("<form><iframe src=javascript:alert(1)></iframe></form>"),
+        ).not.toContain("iframe");
         expect(sanitizeHtml("<form><a href=javascript:alert(1)>x</a></form>")).not.toContain(
             "javascript:",
         );
@@ -130,7 +130,9 @@ describe("isSameRegistrableDomain", () => {
     });
 
     it("treats a different scheme as different", () => {
-        expect(isSameRegistrableDomain("http://example.com/a", "https://example.com/b")).toBe(false);
+        expect(isSameRegistrableDomain("http://example.com/a", "https://example.com/b")).toBe(
+            false,
+        );
     });
 
     it("refuses to guess when a URL is malformed", () => {

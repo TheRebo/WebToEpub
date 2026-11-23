@@ -38,7 +38,11 @@ export default defineConfig([
         rules: {
             "@typescript-eslint/no-unused-vars": [
                 "error",
-                { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+                {
+                    argsIgnorePattern: "^_",
+                    varsIgnorePattern: "^_",
+                    caughtErrorsIgnorePattern: "^_",
+                },
             ],
             "@typescript-eslint/consistent-type-imports": ["error", { prefer: "type-imports" }],
             "@typescript-eslint/no-explicit-any": "warn",
@@ -101,7 +105,8 @@ export default defineConfig([
                 {
                     object: "window",
                     property: "innerHTML",
-                    message: "Untrusted content must not be inserted as HTML. Use textContent or DOMPurify.sanitize().",
+                    message:
+                        "Untrusted content must not be inserted as HTML. Use textContent or DOMPurify.sanitize().",
                 },
             ],
         },

@@ -101,20 +101,28 @@ declare namespace browser {
 
     /** The declarative network request namespace. */
     const declarativeNetRequest: {
-        updateDynamicRules(options: { removeRuleIds?: number[]; addRules?: unknown[] }): Promise<void>;
+        updateDynamicRules(options: {
+            removeRuleIds?: number[];
+            addRules?: unknown[];
+        }): Promise<void>;
         getDynamicRules(): Promise<Array<{ id: number }>>;
-        updateSessionRules(options: { removeRuleIds?: number[]; addRules?: unknown[] }): Promise<void>;
+        updateSessionRules(options: {
+            removeRuleIds?: number[];
+            addRules?: unknown[];
+        }): Promise<void>;
         getSessionRules(): Promise<Array<{ id: number }>>;
     };
 
     /** The scripting namespace. */
-    const scripting: {
-        executeScript(options: {
-            target: { tabId: number };
-            func?: (...args: never[]) => unknown;
-            files?: string[];
-        }): Promise<unknown[]>;
-    } | undefined;
+    const scripting:
+        | {
+              executeScript(options: {
+                  target: { tabId: number };
+                  func?: (...args: never[]) => unknown;
+                  files?: string[];
+              }): Promise<unknown[]>;
+          }
+        | undefined;
 
     /** The internationalisation namespace. */
     const i18n: {

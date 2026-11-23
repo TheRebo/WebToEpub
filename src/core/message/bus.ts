@@ -262,9 +262,7 @@ export interface MessagingApi {
 
 /** The messaging API a server needs to receive a request. */
 export interface MessagingListenerApi {
-    onMessage(
-        listener: (message: unknown, sender: unknown) => Promise<unknown> | undefined,
-    ): void;
+    onMessage(listener: (message: unknown, sender: unknown) => Promise<unknown> | undefined): void;
 }
 
 /**
@@ -321,7 +319,9 @@ export async function handleRequests(
         if (!handler) return undefined;
 
         try {
-            const result = await (handler as (payload: unknown) => Promise<unknown>)(envelope.payload);
+            const result = await (handler as (payload: unknown) => Promise<unknown>)(
+                envelope.payload,
+            );
             const response: ResponseEnvelope<unknown> = { id: envelope.id, result };
             return response;
         } catch (error) {

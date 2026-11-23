@@ -11,13 +11,7 @@ import { createIcon } from "../../components/icons";
 import { t } from "../../i18n";
 
 /** The states the popup can be in. */
-export type PopupState =
-    | "loading"
-    | "story"
-    | "no-story"
-    | "unsupported"
-    | "running"
-    | "error";
+export type PopupState = "loading" | "story" | "no-story" | "unsupported" | "running" | "error";
 
 /** What the popup shows. */
 export interface PopupViewState {
@@ -283,8 +277,7 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
     const showProgress = state.state === "running";
     elements.progress.hidden = !showProgress;
     elements.progressLabel.textContent = state.phase;
-    elements.progressCount.textContent =
-        state.total > 0 ? `${state.done} / ${state.total}` : "";
+    elements.progressCount.textContent = state.total > 0 ? `${state.done} / ${state.total}` : "";
     // The width is driven by a custom property rather than an inline
     // `width`, so the transition animates and the layout never jumps.
     elements.progressBar.style.setProperty("--k-progress", `${state.percent}%`);

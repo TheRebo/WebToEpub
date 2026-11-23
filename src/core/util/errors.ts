@@ -74,7 +74,11 @@ function hostOf(url: string | undefined): string | null {
 }
 
 /** A sentence describing the failure, with the site named where possible. */
-function describe(context: ErrorContext): { message: string; code: ErrorCode; actions?: ErrorAction[] } {
+function describe(context: ErrorContext): {
+    message: string;
+    code: ErrorCode;
+    actions?: ErrorAction[];
+} {
     const host = hostOf(context.url);
 
     if (context.challenge) {
@@ -104,7 +108,8 @@ function describe(context: ErrorContext): { message: string; code: ErrorCode; ac
     }
 
     if (context.status !== undefined && context.status >= 400) {
-        const attempts = context.attempts && context.attempts > 1 ? ` after ${context.attempts} tries` : "";
+        const attempts =
+            context.attempts && context.attempts > 1 ? ` after ${context.attempts} tries` : "";
         return {
             message: host
                 ? `${host} returned ${context.status}${attempts}.`

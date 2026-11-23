@@ -40,6 +40,13 @@
       "@assets/*": ["src/assets/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.js", "tests/**/*.ts", "tools/**/*.mjs", "*.config.ts", "*.config.mjs"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js",
+    "tests/**/*.ts",
+    "tools/**/*.mjs",
+    "*.config.ts",
+    "*.config.mjs"
+  ],
   "exclude": ["node_modules", "dist", "legacy"]
 }

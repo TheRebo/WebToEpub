@@ -65,10 +65,7 @@ const GLOBALS = [
 ];
 const counts = new Map();
 for (const file of files) {
-    const code = (await readFile(join(dir, file), "utf8")).replace(
-        /\/\*[\s\S]*?\*\//g,
-        "",
-    );
+    const code = (await readFile(join(dir, file), "utf8")).replace(/\/\*[\s\S]*?\*\//g, "");
     for (const g of GLOBALS) {
         const re = new RegExp(`\\b${g}\\b`, "g");
         const n = [...code.matchAll(re)].length;

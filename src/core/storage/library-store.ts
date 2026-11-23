@@ -50,9 +50,7 @@ export const LIBRARY_STORE = "books";
 /**
  * Open the library database, creating the schema if needed.
  */
-export function openLibraryDatabase(
-    factory: IDBFactory = indexedDB,
-): Promise<IDBDatabase> {
+export function openLibraryDatabase(factory: IDBFactory = indexedDB): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
         const request = factory.open(LIBRARY_DB_NAME, LIBRARY_DB_VERSION);
 
@@ -66,7 +64,8 @@ export function openLibraryDatabase(
         };
 
         request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error ?? new Error("Could not open the library database."));
+        request.onerror = () =>
+            reject(request.error ?? new Error("Could not open the library database."));
         request.onblocked = () =>
             reject(new Error("The library database is blocked by another open tab."));
     });
@@ -122,7 +121,9 @@ export class LibraryStore {
         const entries = await this.#withStore("readonly", (store) =>
             store.index("sourceUrl").getAll(sourceUrl),
         );
-        const matches = (entries as LibraryEntry[]).filter((entry) => entry.sourceUrl === sourceUrl);
+        const matches = (entries as LibraryEntry[]).filter(
+            (entry) => entry.sourceUrl === sourceUrl,
+        );
         return matches[0] ?? null;
     }
 

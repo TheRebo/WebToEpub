@@ -12,11 +12,7 @@
     justify-content: center;
     padding: var(--space-7) var(--space-5);
     background:
-        radial-gradient(
-            ellipse 80% 60% at 50% -10%,
-            var(--accent-subtle) 0%,
-            transparent 70%
-        ),
+        radial-gradient(ellipse 80% 60% at 50% -10%, var(--accent-subtle) 0%, transparent 70%),
         var(--bg);
 }
 

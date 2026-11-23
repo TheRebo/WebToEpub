@@ -19,7 +19,7 @@ way to unit-test a core module in isolation.
 
 The mission brief requires that the revamp be **written from scratch** — not
 copied, auto-converted, or lightly refactored — while remaining
-*source-compatible* with the 437 site parsers, because those parsers are the
+_source-compatible_ with the 437 site parsers, because those parsers are the
 product's real asset.
 
 ## Decision
@@ -40,13 +40,13 @@ Within the new tree:
 
 ## Alternatives considered
 
-| Alternative | Why rejected |
-|---|---|
-| **Refactor in place** | Explicitly disallowed by the brief; and the ambient-global architecture would have to be dismantled incrementally, which is slower and leaves dead code behind. |
-| **Keep the global-script architecture, modernise the CSS only** | Leaves the untestable core, the 466-entry script list, and the "no background worker" constraint in place. The UI work alone would not fix the download-abort problem. |
-| **Adopt a UI framework (React/Svelte/Vue)** | Would deliver the design system faster, but the extension's whole value proposition is being *small and dependency-light*. A framework plus a runtime would roughly triple the bundle for capabilities a hand-rolled Web Component layer provides. Rejected. |
-| **Keep plain JavaScript, add JSDoc** | Loses the compiler's ability to catch contract violations across 437 parser files — precisely the place where a type error would be most valuable. |
-| **Rewrite the parser contract freely** | Would require rewriting all 437 parsers. That is the entire effort budget, spent on something with no user-visible gain. Rejected in favour of a *compat shim*. |
+| Alternative                                                     | Why rejected                                                                                                                                                                                                                                                 |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Refactor in place**                                           | Explicitly disallowed by the brief; and the ambient-global architecture would have to be dismantled incrementally, which is slower and leaves dead code behind.                                                                                              |
+| **Keep the global-script architecture, modernise the CSS only** | Leaves the untestable core, the 466-entry script list, and the "no background worker" constraint in place. The UI work alone would not fix the download-abort problem.                                                                                       |
+| **Adopt a UI framework (React/Svelte/Vue)**                     | Would deliver the design system faster, but the extension's whole value proposition is being _small and dependency-light_. A framework plus a runtime would roughly triple the bundle for capabilities a hand-rolled Web Component layer provides. Rejected. |
+| **Keep plain JavaScript, add JSDoc**                            | Loses the compiler's ability to catch contract violations across 437 parser files — precisely the place where a type error would be most valuable.                                                                                                           |
+| **Rewrite the parser contract freely**                          | Would require rewriting all 437 parsers. That is the entire effort budget, spent on something with no user-visible gain. Rejected in favour of a _compat shim_.                                                                                              |
 
 ## Consequences
 

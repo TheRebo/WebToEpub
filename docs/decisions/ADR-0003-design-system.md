@@ -95,13 +95,13 @@ enforcement**, not from the component implementation technology.
 
 ## Alternatives considered
 
-| Alternative | Why rejected |
-|---|---|
-| **Plain CSS + a shared stylesheet, no components** | The baseline proved this fails: markup drifts, states are re-implemented per screen, and ARIA is never applied consistently. |
-| **React / Preact** | A runtime dependency and a build step for 15 components. Rejected on bundle size. |
-| **Tailwind** | Utility classes keep the markup honest, but they push design decisions into the markup rather than into a token system, and they make the "no raw colours" enforcement impossible. |
-| **CSS custom properties only, no components** | Solves theming but not the state, ARIA, and focus-management problems. |
-| **Shadow DOM everywhere** | Adopted, with the caveat that it makes cross-component styling harder; mitigated by a documented token contract and `part`/`exportparts` only where genuinely needed. |
+| Alternative                                        | Why rejected                                                                                                                                                                       |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Plain CSS + a shared stylesheet, no components** | The baseline proved this fails: markup drifts, states are re-implemented per screen, and ARIA is never applied consistently.                                                       |
+| **React / Preact**                                 | A runtime dependency and a build step for 15 components. Rejected on bundle size.                                                                                                  |
+| **Tailwind**                                       | Utility classes keep the markup honest, but they push design decisions into the markup rather than into a token system, and they make the "no raw colours" enforcement impossible. |
+| **CSS custom properties only, no components**      | Solves theming but not the state, ARIA, and focus-management problems.                                                                                                             |
+| **Shadow DOM everywhere**                          | Adopted, with the caveat that it makes cross-component styling harder; mitigated by a documented token contract and `part`/`exportparts` only where genuinely needed.              |
 
 ## Consequences
 

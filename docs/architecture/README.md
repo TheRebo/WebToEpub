@@ -39,8 +39,8 @@ graph TB
     core --> parsers
 ```
 
-**The one structural idea:** *the worker owns the work; the page owns the
-pixels.* Everything else follows from that.
+**The one structural idea:** _the worker owns the work; the page owns the
+pixels._ Everything else follows from that.
 
 ---
 
@@ -82,7 +82,7 @@ graph TD
 ```
 
 **The dependency rule:** dependencies point downward only. Layer 4 (the UI)
-may *read* from Layer 1 (adapters) for status, but never reaches into
+may _read_ from Layer 1 (adapters) for status, but never reaches into
 Layer 2 internals, and Layer 3 (parsers) knows nothing about Layers 1 or 4
 beyond the adapter surface it is handed.
 
@@ -97,47 +97,47 @@ anything.
 
 ### 3.1 `src/core/` — the domain
 
-| Module | Responsibility |
-|---|---|
-| `fetch/client.ts` | `FetchClient`: `fetch`, `fetchJson`, `fetchText`, `fetchHtml`. Owns the `AbortController`, the retry policy, and the cookie scoping. |
-| `fetch/retry.ts` | The single retry policy and its backoff schedule. |
-| `fetch/cookies.ts` | Partitioned → unpartitioned cookie bridging, with `finally` cleanup. |
-| `fetch/errors.ts` | `FetchError`, `UserFacingError`, and the mapping from a technical failure to a message a user can act on. |
-| `net/headers.ts` | The declarativeNetRequest rule manager (static rules, additive, scoped). |
-| `parser/base.ts` | The abstract `Parser` class, the chapter-fetch orchestration, and the DOM → content pipeline. |
-| `parser/factory.ts` | The parser registry and the selection strategy (host → URL rule → confidence rule → default). |
-| `parser/default.ts` | The heuristic fallback parser. |
-| `parser/context.ts` | `ParserContext`: the adapter surface a parser is given. |
-| `epub/document.ts` | The typed EPUB document model. |
-| `epub/reader.ts` | `EpubDocumentReader`: parse a container into the model. |
-| `epub/writer.ts` | `EpubDocumentWriter`: serialise the model, canonically. |
-| `epub/packer.ts` | Assemble the model into a container. |
-| `epub/merge.ts` | Structural merge of two EPUBs. |
-| `epub/items.ts` | `ChapterEpubItem`, `ImageInfo`, `FontInfo`. |
-| `story/chapter.ts` | The `Chapter` type and its validation. |
-| `story/story.ts` | `StoryDescriptor`: the metadata + chapter list for one book. |
-| `pipeline/download.ts` | `DownloadPipeline`: the orchestrator that runs in the worker. |
-| `pipeline/progress.ts` | Progress events and the phase model. |
-| `storage/settings.ts` | `SettingsStore`: schema-validated settings in `browser.storage.local`. |
-| `storage/library.ts` | `LibraryStore`: IndexedDB, transactional. |
-| `storage/migrate.ts` | One-time import from the legacy storage layout. |
-| `metadata/lookup.ts` | Optional NovelUpdates metadata lookup — opt-in, documented. |
-| `util/*` | Focused utilities: `dom.ts`, `url.ts`, `text.ts`, `file.ts`. |
+| Module                 | Responsibility                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `fetch/client.ts`      | `FetchClient`: `fetch`, `fetchJson`, `fetchText`, `fetchHtml`. Owns the `AbortController`, the retry policy, and the cookie scoping. |
+| `fetch/retry.ts`       | The single retry policy and its backoff schedule.                                                                                    |
+| `fetch/cookies.ts`     | Partitioned → unpartitioned cookie bridging, with `finally` cleanup.                                                                 |
+| `fetch/errors.ts`      | `FetchError`, `UserFacingError`, and the mapping from a technical failure to a message a user can act on.                            |
+| `net/headers.ts`       | The declarativeNetRequest rule manager (static rules, additive, scoped).                                                             |
+| `parser/base.ts`       | The abstract `Parser` class, the chapter-fetch orchestration, and the DOM → content pipeline.                                        |
+| `parser/factory.ts`    | The parser registry and the selection strategy (host → URL rule → confidence rule → default).                                        |
+| `parser/default.ts`    | The heuristic fallback parser.                                                                                                       |
+| `parser/context.ts`    | `ParserContext`: the adapter surface a parser is given.                                                                              |
+| `epub/document.ts`     | The typed EPUB document model.                                                                                                       |
+| `epub/reader.ts`       | `EpubDocumentReader`: parse a container into the model.                                                                              |
+| `epub/writer.ts`       | `EpubDocumentWriter`: serialise the model, canonically.                                                                              |
+| `epub/packer.ts`       | Assemble the model into a container.                                                                                                 |
+| `epub/merge.ts`        | Structural merge of two EPUBs.                                                                                                       |
+| `epub/items.ts`        | `ChapterEpubItem`, `ImageInfo`, `FontInfo`.                                                                                          |
+| `story/chapter.ts`     | The `Chapter` type and its validation.                                                                                               |
+| `story/story.ts`       | `StoryDescriptor`: the metadata + chapter list for one book.                                                                         |
+| `pipeline/download.ts` | `DownloadPipeline`: the orchestrator that runs in the worker.                                                                        |
+| `pipeline/progress.ts` | Progress events and the phase model.                                                                                                 |
+| `storage/settings.ts`  | `SettingsStore`: schema-validated settings in `browser.storage.local`.                                                               |
+| `storage/library.ts`   | `LibraryStore`: IndexedDB, transactional.                                                                                            |
+| `storage/migrate.ts`   | One-time import from the legacy storage layout.                                                                                      |
+| `metadata/lookup.ts`   | Optional NovelUpdates metadata lookup — opt-in, documented.                                                                          |
+| `util/*`               | Focused utilities: `dom.ts`, `url.ts`, `text.ts`, `file.ts`.                                                                         |
 
 ### 3.2 `src/ui/` — the presentation
 
-| Module | Responsibility |
-|---|---|
-| `styles/tokens.css` | Layer 1 primitives + Layer 2 semantics for both themes. |
-| `styles/base.css` | Resets, typography defaults, the app shell, focus policy. |
-| `components/*.ts` | The 15 Web Components (`k-button`, `k-field`, `k-dialog`, …). |
-| `components/icons.ts` | The icon set — 24×24, 2 px stroke, `currentColor`. |
-| `shell/workbench.ts` | The workbench page: mounts the components, owns the view state. |
-| `shell/options.ts` | The options page: settings, library, reading list, site permissions. |
-| `shell/popup.ts` | The popup: the launcher and the live progress indicator. |
-| `shell/onboarding.ts` | The first-run experience. |
-| `state/store.ts` | A tiny observable store — no framework. |
-| `i18n/index.ts` | `t(key, subs)` — memoised, substitution-based. |
+| Module                | Responsibility                                                       |
+| --------------------- | -------------------------------------------------------------------- |
+| `styles/tokens.css`   | Layer 1 primitives + Layer 2 semantics for both themes.              |
+| `styles/base.css`     | Resets, typography defaults, the app shell, focus policy.            |
+| `components/*.ts`     | The 15 Web Components (`k-button`, `k-field`, `k-dialog`, …).        |
+| `components/icons.ts` | The icon set — 24×24, 2 px stroke, `currentColor`.                   |
+| `shell/workbench.ts`  | The workbench page: mounts the components, owns the view state.      |
+| `shell/options.ts`    | The options page: settings, library, reading list, site permissions. |
+| `shell/popup.ts`      | The popup: the launcher and the live progress indicator.             |
+| `shell/onboarding.ts` | The first-run experience.                                            |
+| `state/store.ts`      | A tiny observable store — no framework.                              |
+| `i18n/index.ts`       | `t(key, subs)` — memoised, substitution-based.                       |
 
 ### 3.3 `src/parsers/` — the sites
 
@@ -193,7 +193,7 @@ sequenceDiagram
   `minimumThrottle` defaults to 500 ms. This is politeness, not a tuning
   knob — it is not configurable by the user beyond a floor.
 - **Cancel is real.** `controller.abort()` aborts the in-flight `fetch`
-  *and* the throttle delay.
+  _and_ the throttle delay.
 - **Checkpoints after every chapter.** A worker restart or browser crash
   resumes from the last completed chapter.
 - **Deterministic output.** The same book built twice differs only in the
@@ -225,23 +225,29 @@ graph LR
 ```ts
 // Requests (page → worker)
 type Request =
-  | { type: "story.analyse"; url: string }
-  | { type: "download.start"; story: StoryDescriptor }
-  | { type: "download.cancel" }
-  | { type: "download.resume" }
-  | { type: "library.list" }
-  | { type: "library.put"; record: LibraryRecord }
-  | { type: "library.delete"; id: string }
-  | { type: "settings.get" }
-  | { type: "settings.set"; patch: DeepPartial<Settings> };
+    | { type: "story.analyse"; url: string }
+    | { type: "download.start"; story: StoryDescriptor }
+    | { type: "download.cancel" }
+    | { type: "download.resume" }
+    | { type: "library.list" }
+    | { type: "library.put"; record: LibraryRecord }
+    | { type: "library.delete"; id: string }
+    | { type: "settings.get" }
+    | { type: "settings.set"; patch: DeepPartial<Settings> };
 
 // Events (worker → page)
 type Event =
-  | { type: "progress"; phase: Phase; done: number; total: number; label: string }
-  | { type: "chapter.state"; sourceUrl: string; state: ChapterState }
-  | { type: "done"; fileName: string; bytes: number }
-  | { type: "error"; error: UserFacingError }
-  | { type: "settings.changed"; settings: Settings };
+    | {
+          type: "progress";
+          phase: Phase;
+          done: number;
+          total: number;
+          label: string;
+      }
+    | { type: "chapter.state"; sourceUrl: string; state: ChapterState }
+    | { type: "done"; fileName: string; bytes: number }
+    | { type: "error"; error: UserFacingError }
+    | { type: "settings.changed"; settings: Settings };
 ```
 
 ---
@@ -347,46 +353,46 @@ pure function**, so it is exhaustively testable. The UI never renders a
 
 ## 10. Error codes
 
-| Code | Cause | User-facing message | Offered actions |
-|---|---|---|---|
-| `NETWORK` | The request failed at the transport level | "Could not reach `site.com`." | Retry, Cancel |
-| `HTTP_STATUS` | A non-2xx response | "`site.com` returned 503." | Retry, Open URL |
-| `RATE_LIMITED` | HTTP 429 | "`site.com` is rate limiting requests." | Retry later, Cancel |
-| `CHALLENGE` | A captcha / bot-check page | "This site is asking the browser to verify you." | Open URL, Retry |
-| `EMPTY_CONTENT` | The page had no extractable content | "Chapter 42 came back empty." | Skip, Retry |
-| `TOO_MANY_CHAPTERS` | The book exceeds the configured cap | "This book has 3 218 chapters; the limit is 500." | Raise limit, Cancel |
-| `STORAGE_FULL` | The disk or quota is full | "There is not enough space to save this book." | — |
-| `PARSE_FAILED` | The page could not be parsed | "Could not read the chapter list on this page." | Use the selector builder |
-| `CANCELLED` | The user cancelled | "Download cancelled." | — |
+| Code                | Cause                                     | User-facing message                               | Offered actions          |
+| ------------------- | ----------------------------------------- | ------------------------------------------------- | ------------------------ |
+| `NETWORK`           | The request failed at the transport level | "Could not reach `site.com`."                     | Retry, Cancel            |
+| `HTTP_STATUS`       | A non-2xx response                        | "`site.com` returned 503."                        | Retry, Open URL          |
+| `RATE_LIMITED`      | HTTP 429                                  | "`site.com` is rate limiting requests."           | Retry later, Cancel      |
+| `CHALLENGE`         | A captcha / bot-check page                | "This site is asking the browser to verify you."  | Open URL, Retry          |
+| `EMPTY_CONTENT`     | The page had no extractable content       | "Chapter 42 came back empty."                     | Skip, Retry              |
+| `TOO_MANY_CHAPTERS` | The book exceeds the configured cap       | "This book has 3 218 chapters; the limit is 500." | Raise limit, Cancel      |
+| `STORAGE_FULL`      | The disk or quota is full                 | "There is not enough space to save this book."    | —                        |
+| `PARSE_FAILED`      | The page could not be parsed              | "Could not read the chapter list on this page."   | Use the selector builder |
+| `CANCELLED`         | The user cancelled                        | "Download cancelled."                             | —                        |
 
 ---
 
 ## 11. Performance budget
 
-| Metric | Budget | How it is met |
-|---|---|---|
-| Popup open to interactive | < 100 ms | Lazy message lookup; the popup ships no parser code |
-| Workbench open to interactive | < 400 ms | The parser for the current host is code-split and loaded on demand |
-| Chapter list with 5 000 rows | 60 fps scrolling | Virtualised list; ~30 DOM nodes at any time |
-| Memory for a 3 000-chapter book | < 300 MB | Chapters are converted to XHTML and released; the raw DOM is dropped after extraction |
-| Bundle size | < 400 KB gzipped, excl. parsers | `zip.js` + DOMPurify are the only runtime dependencies |
-| Cold install → first EPUB | < 90 s for 100 chapters | Sequential + throttled by design; the throttle is the floor, not a bug |
+| Metric                          | Budget                          | How it is met                                                                         |
+| ------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------- |
+| Popup open to interactive       | < 100 ms                        | Lazy message lookup; the popup ships no parser code                                   |
+| Workbench open to interactive   | < 400 ms                        | The parser for the current host is code-split and loaded on demand                    |
+| Chapter list with 5 000 rows    | 60 fps scrolling                | Virtualised list; ~30 DOM nodes at any time                                           |
+| Memory for a 3 000-chapter book | < 300 MB                        | Chapters are converted to XHTML and released; the raw DOM is dropped after extraction |
+| Bundle size                     | < 400 KB gzipped, excl. parsers | `zip.js` + DOMPurify are the only runtime dependencies                                |
+| Cold install → first EPUB       | < 90 s for 100 chapters         | Sequential + throttled by design; the throttle is the floor, not a bug                |
 
 ---
 
 ## 12. Security posture
 
-| Concern | Measure |
-|---|---|
-| XSS in the extension page | No `innerHTML` with untrusted content. DOMPurify at the EPUB boundary *and* at every DOM insertion point in the UI. |
-| Content Security Policy | `script-src 'self'; object-src 'none'; base-uri 'none'` — no inline scripts, no remote code. |
-| Remote code | None. The extension ships all of its code. |
-| Prototype pollution | Structured-clone storage values; schemas validated on read; no `Object.assign` of parsed JSON onto a live object. |
-| URL injection | Every URL a parser returns is validated (`new URL`, scheme allow-list, same registrable domain unless explicitly permitted). |
-| Regex denial of service | User-supplied patterns are compiled with a length cap and executed with a timeout, and validated before use. |
-| Cookie leakage | Unpartitioned copies are removed in a `finally`, scoped to the registrable domain of the URL being fetched. |
-| Sensitive data | No telemetry, no accounts, no sync. `data_collection_permissions: { required: ["none"] }`. |
-| Third-party requests | Only the site being read, plus an explicitly opt-in metadata lookup. |
+| Concern                   | Measure                                                                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| XSS in the extension page | No `innerHTML` with untrusted content. DOMPurify at the EPUB boundary _and_ at every DOM insertion point in the UI.          |
+| Content Security Policy   | `script-src 'self'; object-src 'none'; base-uri 'none'` — no inline scripts, no remote code.                                 |
+| Remote code               | None. The extension ships all of its code.                                                                                   |
+| Prototype pollution       | Structured-clone storage values; schemas validated on read; no `Object.assign` of parsed JSON onto a live object.            |
+| URL injection             | Every URL a parser returns is validated (`new URL`, scheme allow-list, same registrable domain unless explicitly permitted). |
+| Regex denial of service   | User-supplied patterns are compiled with a length cap and executed with a timeout, and validated before use.                 |
+| Cookie leakage            | Unpartitioned copies are removed in a `finally`, scoped to the registrable domain of the URL being fetched.                  |
+| Sensitive data            | No telemetry, no accounts, no sync. `data_collection_permissions: { required: ["none"] }`.                                   |
+| Third-party requests      | Only the site being read, plus an explicitly opt-in metadata lookup.                                                         |
 
 ---
 

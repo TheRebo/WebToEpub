@@ -34,14 +34,14 @@ will credit you in the advisory unless you prefer otherwise.
 
 ### What we consider a vulnerability
 
-| In scope | Out of scope |
-|---|---|
-| Remote code execution in the extension context | A site blocking the extension from reading its content |
-| Reading data from a site the user did not grant access to | The extension failing to parse a specific novel site |
-| Leaking cookies, credentials, or browsing data | A parser returning incorrect chapter titles |
-| Bypassing the Content Security Policy | A novel site serving misleading content to its own readers |
-| Writing files outside the intended output | Slow performance on an unsupported or very large site |
-| Privilege escalation between extension surfaces | Missing a parser for a site the user visits |
+| In scope                                                  | Out of scope                                               |
+| --------------------------------------------------------- | ---------------------------------------------------------- |
+| Remote code execution in the extension context            | A site blocking the extension from reading its content     |
+| Reading data from a site the user did not grant access to | The extension failing to parse a specific novel site       |
+| Leaking cookies, credentials, or browsing data            | A parser returning incorrect chapter titles                |
+| Bypassing the Content Security Policy                     | A novel site serving misleading content to its own readers |
+| Writing files outside the intended output                 | Slow performance on an unsupported or very large site      |
+| Privilege escalation between extension surfaces           | Missing a parser for a site the user visits                |
 
 ---
 
@@ -51,11 +51,11 @@ will credit you in the advisory unless you prefer otherwise.
 
 Kintsugi handles three distinct classes of data:
 
-| Class | Examples | Trust |
-|---|---|---|
-| **The user's own settings** | Theme, accent, delays, custom selectors | Trusted |
-| **Remote page content** | Chapter HTML, images, titles, covers | **Untrusted** |
-| **The site's own cookies** | Session cookies for the site being read | **Untrusted** |
+| Class                       | Examples                                | Trust         |
+| --------------------------- | --------------------------------------- | ------------- |
+| **The user's own settings** | Theme, accent, delays, custom selectors | Trusted       |
+| **Remote page content**     | Chapter HTML, images, titles, covers    | **Untrusted** |
+| **The site's own cookies**  | Session cookies for the site being read | **Untrusted** |
 
 Remote page content is the primary risk. It is attacker-controlled by
 definition — the site being read may be hostile, compromised, or simply

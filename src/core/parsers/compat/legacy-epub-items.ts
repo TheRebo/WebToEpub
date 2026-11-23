@@ -48,7 +48,12 @@ export class EpubItem {
 
     /** The item's path within the archive. */
     getZipHref(): string {
-        return util.makeStorageFileName("OEBPS/Text/", this.index, this.chapterTitle ?? "", "xhtml");
+        return util.makeStorageFileName(
+            "OEBPS/Text/",
+            this.index,
+            this.chapterTitle ?? "",
+            "xhtml",
+        );
     }
 
     /** The item's ID in the manifest. */
@@ -134,7 +139,11 @@ export class ChapterEpubItem extends EpubItem {
     /** The arc the chapter starts, if any. */
     newArc: unknown = null;
 
-    constructor(chapter: { sourceUrl: string; title?: string; newArc?: unknown }, content: Element, index: number) {
+    constructor(
+        chapter: { sourceUrl: string; title?: string; newArc?: unknown },
+        content: Element,
+        index: number,
+    ) {
         super(chapter.sourceUrl);
         this.setIndex(index);
         this.nodes = Array.from(content.childNodes);

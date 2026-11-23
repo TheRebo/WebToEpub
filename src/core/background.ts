@@ -327,7 +327,9 @@ class BackgroundWorker {
      * than in the extension page: the worker already owns the fetch layer, with
      * its cookies and its retry policy.
      */
-    async #suggestSelectors(url: string): Promise<RequestMap["site-selectors:suggest"]["response"]> {
+    async #suggestSelectors(
+        url: string,
+    ): Promise<RequestMap["site-selectors:suggest"]["response"]> {
         const validated = validateFetchableUrl(url);
         if (!validated) {
             return { status: "failed", contentCss: "", titleCss: "", error: "Unsupported URL." };
@@ -404,10 +406,12 @@ function sanitizeFileName(title: string, maxLength: number): string {
         .replace(/^[\s.]+|[\s.]+$/g, "")
         .replace(/\s+/g, " ")
         .trim();
-    safe = [...safe].filter((character) => {
-        const code = character.charCodeAt(0);
-        return code > 0x1f && !(code >= 0x7f && code <= 0x9f);
-    }).join("");
+    safe = [...safe]
+        .filter((character) => {
+            const code = character.charCodeAt(0);
+            return code > 0x1f && !(code >= 0x7f && code <= 0x9f);
+        })
+        .join("");
     if (!safe) safe = "untitled";
     if (safe.length > maxLength) safe = safe.slice(0, maxLength).trim();
     return safe;

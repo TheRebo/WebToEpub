@@ -63,9 +63,9 @@ function lazyInstance(name: string, args: unknown[]): object {
         // The arguments may themselves be lazy instances — `ZipReader` takes a
         // reader — so they are unwrapped before the real constructor sees them.
         const resolved = await Promise.all(args);
-        const constructor = (module as unknown as Record<string, new (...values: unknown[]) => object>)[
-            name
-        ];
+        const constructor = (
+            module as unknown as Record<string, new (...values: unknown[]) => object>
+        )[name];
         if (typeof constructor !== "function") {
             throw new Error(`zip.js does not export ${name}.`);
         }
@@ -87,7 +87,10 @@ function lazyInstance(name: string, args: unknown[]): object {
                     instance.then((resolved) => {
                         const value = (resolved as Record<string | symbol, unknown>)[property];
                         if (typeof value === "function") {
-                            return (value as (...values: unknown[]) => unknown).apply(resolved, callArgs);
+                            return (value as (...values: unknown[]) => unknown).apply(
+                                resolved,
+                                callArgs,
+                            );
                         }
                         return value;
                     });

@@ -44,11 +44,25 @@ interface BrowserNamespace {
         };
     };
     tabs: {
-        query(query: Record<string, unknown>): Promise<Array<{ id?: number; url?: string; title?: string; active?: boolean; windowId?: number }>>;
+        query(query: Record<string, unknown>): Promise<
+            Array<{
+                id?: number;
+                url?: string;
+                title?: string;
+                active?: boolean;
+                windowId?: number;
+            }>
+        >;
         create(options: { url?: string; active?: boolean }): Promise<{ id?: number }>;
         sendMessage(tabId: number, message: unknown): Promise<unknown>;
         onUpdated: {
-            addListener(listener: (tabId: number, changeInfo: Record<string, unknown>, tab: unknown) => void): void;
+            addListener(
+                listener: (
+                    tabId: number,
+                    changeInfo: Record<string, unknown>,
+                    tab: unknown,
+                ) => void,
+            ): void;
         };
         onActivated: {
             addListener(listener: (activeInfo: { tabId: number; windowId: number }) => void): void;
@@ -61,19 +75,41 @@ interface BrowserNamespace {
         getAll(): Promise<{ origins?: string[]; permissions?: string[] }>;
     };
     cookies: {
-        getAll(details: { url: string; name?: string }): Promise<Array<{ name: string; value: string; domain?: string; path?: string; secure?: boolean; sameSite?: string; partitionKey?: unknown }>>;
+        getAll(details: { url: string; name?: string }): Promise<
+            Array<{
+                name: string;
+                value: string;
+                domain?: string;
+                path?: string;
+                secure?: boolean;
+                sameSite?: string;
+                partitionKey?: unknown;
+            }>
+        >;
         set(details: Record<string, unknown>): Promise<void>;
         remove(details: { url: string; name: string; partitionKey?: unknown }): Promise<void>;
     };
     downloads: {
-        download(options: { url: string; filename?: string; saveAs?: boolean; conflictAction?: string }): Promise<number>;
+        download(options: {
+            url: string;
+            filename?: string;
+            saveAs?: boolean;
+            conflictAction?: string;
+        }): Promise<number>;
     };
     declarativeNetRequest: {
-        updateDynamicRules(options: { removeRuleIds?: number[]; addRules?: unknown[] }): Promise<void>;
+        updateDynamicRules(options: {
+            removeRuleIds?: number[];
+            addRules?: unknown[];
+        }): Promise<void>;
         getDynamicRules(): Promise<Array<{ id: number }>>;
     };
     scripting?: {
-        executeScript(options: { target: { tabId: number }; func?: (...args: never[]) => unknown; files?: string[] }): Promise<unknown[]>;
+        executeScript(options: {
+            target: { tabId: number };
+            func?: (...args: never[]) => unknown;
+            files?: string[];
+        }): Promise<unknown[]>;
     };
     i18n: {
         getMessage(key: string, substitutions?: string | string[]): string;
@@ -172,7 +208,9 @@ export function onMessage(
 /**
  * The active tab in the current window.
  */
-export async function activeTab(): Promise<{ id?: number; url?: string; title?: string } | undefined> {
+export async function activeTab(): Promise<
+    { id?: number; url?: string; title?: string } | undefined
+> {
     const api = getNamespace();
     if (!api) return undefined;
     const tabs = await api.tabs.query({ active: true, currentWindow: true });

@@ -238,7 +238,8 @@ export function renderGroups(
     for (const group of groups) {
         const controls = needle
             ? group.controls.filter(
-                  (control) => matches(control, needle) || t(group.title).toLowerCase().includes(needle),
+                  (control) =>
+                      matches(control, needle) || t(group.title).toLowerCase().includes(needle),
               )
             : group.controls;
 

@@ -199,7 +199,10 @@ describe("isTableOfContents", () => {
     it("recognises a page that is mostly links", () => {
         const dom = parse(
             "<body><ul>" +
-                Array.from({ length: 20 }, (_, index) => `<li><a href='/c/${index}'>Chapter ${index}</a></li>`).join("") +
+                Array.from(
+                    { length: 20 },
+                    (_, index) => `<li><a href='/c/${index}'>Chapter ${index}</a></li>`,
+                ).join("") +
                 "</ul></body>",
         );
         expect(isTableOfContents(dom)).toBe(true);
@@ -271,7 +274,10 @@ describe("scanDocument", () => {
     it("reports a table of contents instead of guessing", () => {
         const dom = parse(
             "<body><ul>" +
-                Array.from({ length: 20 }, (_, index) => `<li><a href='/c/${index}'>Chapter ${index}</a></li>`).join("") +
+                Array.from(
+                    { length: 20 },
+                    (_, index) => `<li><a href='/c/${index}'>Chapter ${index}</a></li>`,
+                ).join("") +
                 "</ul></body>",
         );
         expect(scanDocument(dom).status).toBe("toc_detected");

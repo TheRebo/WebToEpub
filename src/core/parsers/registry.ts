@@ -83,7 +83,11 @@ export class ParserRegistry {
     }
 
     /** Register a URL rule. */
-    registerUrlRule(test: (url: string) => boolean, constructor: ParserConstructor, name?: string): void {
+    registerUrlRule(
+        test: (url: string) => boolean,
+        constructor: ParserConstructor,
+        name?: string,
+    ): void {
         this.#urlRules.push({ test, constructor, name });
     }
 

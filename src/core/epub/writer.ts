@@ -99,10 +99,7 @@ export function buildPackageXml(document: EpubDocument): string {
     const uniqueIdentifier = document.package.uniqueIdentifier;
 
     const creators = metadata.creators
-        .map(
-            (creator) =>
-                `    <dc:creator opf:role="aut">${escapeXml(creator)}</dc:creator>`,
-        )
+        .map((creator) => `    <dc:creator opf:role="aut">${escapeXml(creator)}</dc:creator>`)
         .join("\n");
 
     const subjects = metadata.subjects
@@ -111,7 +108,9 @@ export function buildPackageXml(document: EpubDocument): string {
 
     const manifestXml = manifest
         .map((item) => {
-            const properties = item.properties ? ` properties="${escapeXmlAttribute(item.properties)}"` : "";
+            const properties = item.properties
+                ? ` properties="${escapeXmlAttribute(item.properties)}"`
+                : "";
             return `    <item id="${escapeXmlAttribute(item.id)}" href="${escapeXmlAttribute(item.href)}" media-type="${escapeXmlAttribute(item.mediaType)}"${properties}/>`;
         })
         .join("\n");
@@ -154,9 +153,7 @@ ${spineXml}
 
 /** The NCX document, for EPUB 2 readers. */
 export function buildNcxXml(document: EpubDocument): string {
-    const points = document.toc
-        .map((point, index) => buildNcxPoint(point, index + 1))
-        .join("\n");
+    const points = document.toc.map((point, index) => buildNcxPoint(point, index + 1)).join("\n");
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">

@@ -71,9 +71,15 @@ export type JobPhase =
 /** The dependencies the manager needs. */
 export interface DownloadManagerDependencies {
     /** Fetch a page and parse it as HTML. */
-    fetchHtml(url: string, options: { signal?: AbortSignal }): Promise<{ dom: Document; url: string }>;
+    fetchHtml(
+        url: string,
+        options: { signal?: AbortSignal },
+    ): Promise<{ dom: Document; url: string }>;
     /** Fetch a resource's bytes. */
-    fetchBytes(url: string, options: { signal?: AbortSignal }): Promise<{ data: Uint8Array; mediaType: string }>;
+    fetchBytes(
+        url: string,
+        options: { signal?: AbortSignal },
+    ): Promise<{ data: Uint8Array; mediaType: string }>;
     /** Save a file, returning its name and size. */
     saveFile(fileName: string, bytes: Uint8Array): Promise<{ fileName: string; fileSize: number }>;
     /** The parser for a URL. */
@@ -228,7 +234,10 @@ export class DownloadManager {
                 const dom = await this.#fetchChapter(parser, chapter.sourceUrl, signal);
                 if (dom === null) {
                     packed.push(
-                        buildPlaceholderChapter(chapter.sourceUrl, "The chapter could not be read."),
+                        buildPlaceholderChapter(
+                            chapter.sourceUrl,
+                            "The chapter could not be read.",
+                        ),
                     );
                     job.failed += 1;
                 } else {
@@ -281,7 +290,9 @@ export class DownloadManager {
                 packed.push(
                     buildPlaceholderChapter(
                         chapter.sourceUrl,
-                        error instanceof Error ? error.message : "The chapter could not be fetched.",
+                        error instanceof Error
+                            ? error.message
+                            : "The chapter could not be fetched.",
                     ),
                 );
                 job.failed += 1;
@@ -446,7 +457,9 @@ export class DownloadManager {
 
     /** Zip the EPUB's files. */
     async #zip(files: EpubFile[]): Promise<Uint8Array> {
-        const { ZipWriter, BlobWriter, TextReader, Uint8ArrayReader } = await import("@zip.js/zip.js");
+        const { ZipWriter, BlobWriter, TextReader, Uint8ArrayReader } = await import(
+            "@zip.js/zip.js"
+        );
         const writer = new ZipWriter(new BlobWriter("application/epub+zip"));
         for (const file of files) {
             // The two content kinds need different readers: XML is text, and

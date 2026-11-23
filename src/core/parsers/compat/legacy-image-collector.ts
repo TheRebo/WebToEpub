@@ -57,7 +57,12 @@ export class ImageInfo {
     /** Whether the image has been queued for a fetch. */
     queuedForFetch = false;
 
-    constructor(wrappingUrl: string, index: number, sourceUrl: string, dataOrigFileUrl: string | null = null) {
+    constructor(
+        wrappingUrl: string,
+        index: number,
+        sourceUrl: string,
+        dataOrigFileUrl: string | null = null,
+    ) {
         this.wrappingUrl = wrappingUrl;
         this.index = index;
         this.sourceUrl = sourceUrl;

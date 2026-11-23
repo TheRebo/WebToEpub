@@ -86,16 +86,14 @@ const PATHS: Record<IconName, string[]> = {
         "m18.5 15.5.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z",
     ],
     spinner: ["M12 3a9 9 0 1 0 9 9"],
-    warning: ["M10.3 4.3 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z", "M12 9v4", "M12 17h.01"],
-    wrench: [
-        "M14.7 6.3a4 4 0 0 0 5 5l-9 9a2.8 2.8 0 0 1-4-4l9-9Z",
-        "m14.7 6.3-3-3",
+    warning: [
+        "M10.3 4.3 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z",
+        "M12 9v4",
+        "M12 17h.01",
     ],
+    wrench: ["M14.7 6.3a4 4 0 0 0 5 5l-9 9a2.8 2.8 0 0 1-4-4l9-9Z", "m14.7 6.3-3-3"],
     "empty-circle": ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"],
-    "half-circle": [
-        "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z",
-        "M12 3a9 9 0 0 1 0 18Z",
-    ],
+    "half-circle": ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z", "M12 3a9 9 0 0 1 0 18Z"],
     "filled-circle": ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"],
     "check-circle": ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z", "m8.5 12 2.5 2.5 4.5-5"],
     "alert-triangle": [
@@ -104,15 +102,17 @@ const PATHS: Record<IconName, string[]> = {
         "M12 17h.01",
     ],
     "arrow-right": ["M4 12h16", "m14 6 6 6-6 6"],
-    "external-link": ["M14 4h6v6", "m20 4-9 9", "M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"],
+    "external-link": [
+        "M14 4h6v6",
+        "m20 4-9 9",
+        "M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
+    ],
 };
 
 /** The SVG markup for an icon. */
 export function iconSvg(name: IconName, size = 20): string {
     const paths = PATHS[name] ?? PATHS.info;
-    const body = paths
-        .map((d) => `<path d="${d}"/>`)
-        .join("");
+    const body = paths.map((d) => `<path d="${d}"/>`).join("");
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
 }
 

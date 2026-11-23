@@ -12,14 +12,14 @@ The baseline's network layer (`HttpClient.js`, 438 lines) has four defects
 that materially damage the product:
 
 1. **Cancellation does not work.** `util.sleep` listens to an
-   `AbortController`, so the *inter-chapter delay* is cancellable — but
+   `AbortController`, so the _inter-chapter delay_ is cancellable — but
    `HttpClient.wrapFetchImpl` calls `fetch(url, {credentials: "include"})`
    with **no `signal`**. An in-flight request therefore continues to
    completion, and its result is still processed. The user presses "Pause"
    and the download keeps going.
 
 2. **Cookie cleanup is not in a `finally`.** `setPartitionCookies` creates
-   *unpartitioned* copies of the site's partitioned (CHIPS) cookies so that
+   _unpartitioned_ copies of the site's partitioned (CHIPS) cookies so that
    extension fetches can authenticate against Cloudflare-protected sites.
    `unsetPartitionCookies` is only called on the success path. On any network
    failure — DNS failure, offline, abort — those unpartitioned cookies are
@@ -59,7 +59,7 @@ class FetchController {
 
 The controller is created once per "Pack EPUB" operation and passed into
 every `fetch` call as `signal`. Cancelling it aborts the in-flight request
-*and* the inter-chapter delay, so **Cancel actually stops the work**.
+_and_ the inter-chapter delay, so **Cancel actually stops the work**.
 
 `AbortSignal.any()` composes the operation signal with a per-request timeout
 signal, so every request has both a deadline and a cancellation path.
@@ -67,13 +67,17 @@ signal, so every request has both a deadline and a cancellation path.
 ### 2. Cookie handling is scoped and always cleaned up
 
 ```ts
-async function withUnpartitionedCookies<T>(url: URL, signal: AbortSignal, fn: () => Promise<T>): Promise<T> {
+async function withUnpartitionedCookies<T>(
+    url: URL,
+    signal: AbortSignal,
+    fn: () => Promise<T>,
+): Promise<T> {
     const cookies = await readPartitionedCookies(url);
     const created = await installUnpartitionedCopies(cookies, url);
     try {
         return await fn();
     } finally {
-        await removeUnpartitionedCopies(created);   // always
+        await removeUnpartitionedCopies(created); // always
     }
 }
 ```
@@ -111,7 +115,10 @@ interface RetryPolicy {
     /** Delays in ms before each retry, in order. */
     delays: number[];
     /** Called before each retry; may return false to abort the retry chain. */
-    beforeRetry?: (attempt: number, error: FetchError) => boolean | Promise<boolean>;
+    beforeRetry?: (
+        attempt: number,
+        error: FetchError,
+    ) => boolean | Promise<boolean>;
 }
 ```
 
@@ -132,13 +139,13 @@ the extension's own `initiatorDomains`.
 
 ## Alternatives considered
 
-| Alternative | Why rejected |
-|---|---|
-| Patch the baseline `HttpClient` in place | The module's shape (globals, mutable `blockedSites`, callback-style handlers) is the problem, not its individual bugs. |
-| Use a library (`got`, `axios`) | ~15–40 KB for functionality we need in ~250 lines, and it would hide the `signal`/`finally` discipline we are trying to make explicit. |
+| Alternative                                                                  | Why rejected                                                                                                                                                         |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Patch the baseline `HttpClient` in place                                     | The module's shape (globals, mutable `blockedSites`, callback-style handlers) is the problem, not its individual bugs.                                               |
+| Use a library (`got`, `axios`)                                               | ~15–40 KB for functionality we need in ~250 lines, and it would hide the `signal`/`finally` discipline we are trying to make explicit.                               |
 | Keep the `cookies` permission but skip the unpartitioned workaround entirely | The workaround is required for a meaningful subset of Cloudflare-protected sites; dropping it is a product regression. We keep it but make it correct and leak-free. |
-| Implement cancellation only via `util.sleep` | That is the baseline's approach and it does not work. Rejected. |
-| Retry only at the parser level | Duplicates the policy in 437 places. Rejected. |
+| Implement cancellation only via `util.sleep`                                 | That is the baseline's approach and it does not work. Rejected.                                                                                                      |
+| Retry only at the parser level                                               | Duplicates the policy in 437 places. Rejected.                                                                                                                       |
 
 ## Consequences
 

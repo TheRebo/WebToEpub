@@ -135,10 +135,7 @@ export class LegacyParserFactory {
      * chapters on another. Each host gets its own parser, and the state is
      * copied from the first one so that the user preferences travel with it.
      */
-    async addParsersToPages(
-        initialParser: LegacyParser,
-        webPages: LegacyChapter[],
-    ): Promise<void> {
+    async addParsersToPages(initialParser: LegacyParser, webPages: LegacyChapter[]): Promise<void> {
         const pagesByHost = new Map<string, LegacyChapter[]>();
         const initialUrl = initialParser.state.chapterListUrl ?? "";
         const initialHostName = hostNameForParserSelection(initialUrl);
