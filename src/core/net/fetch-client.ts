@@ -94,6 +94,18 @@ export interface JsonFetchResult {
     url: string;
 }
 
+/** A response whose body is binary, such as an image. */
+export interface BinaryFetchResult {
+    /** The raw response. */
+    response: Response;
+    /** The body. */
+    data: Uint8Array;
+    /** The response's `Content-Type`, without any parameters. */
+    mediaType: string;
+    /** The final URL, after redirects. */
+    url: string;
+}
+
 /** The error thrown by the fetch layer. */
 export class FetchError extends Error {
     readonly status: number | undefined;
@@ -357,8 +369,8 @@ export class FetchClient {
         return result.text;
     }
 
-    /** Fetch a body as an `ArrayBuffer`, for images. */
-    async fetchBinary(url: string, options: FetchOptions = {}): Promise<ArrayBuffer> {
+    /** Fetch a body as bytes, for images. */
+    async fetchBinary(url: string, options: FetchOptions = {}): Promise<BinaryFetchResult> {
         const policy = { ...DEFAULT_RETRY_POLICY, ...options.retry };
         for (let attempt = 1; attempt <= policy.maxAttempts; attempt += 1) {
             if (options.signal?.aborted) throw abortError();
@@ -376,7 +388,13 @@ export class FetchClient {
                     }
                     throw error;
                 }
-                return await response.arrayBuffer();
+                const buffer = await response.arrayBuffer();
+                return {
+                    response,
+                    data: new Uint8Array(buffer),
+                    mediaType: mediaTypeOf(response.headers.get("content-type")),
+                    url: response.url || url,
+                };
             } catch (error) {
                 if (isAbort(error)) throw error;
                 if (attempt >= policy.maxAttempts) throw error;
@@ -441,6 +459,18 @@ function domainOf(url: string): string | null {
     } catch {
         return null;
     }
+}
+
+/**
+ * The media type of a response, without its parameters.
+ *
+ * A server that omits `Content-Type` gives us an empty string, which the
+ * packer treats as "unknown" and stores with a `.bin` extension. Guessing from
+ * the URL is better than nothing, so the extension is used as a fallback.
+ */
+function mediaTypeOf(contentType: string | null): string {
+    if (!contentType) return "";
+    return contentType.split(";")[0]?.trim().toLowerCase() ?? "";
 }
 
 /** An abort error, so the caller can distinguish a cancel from a failure. */

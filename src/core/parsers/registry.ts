@@ -15,9 +15,10 @@
  * See ADR-0002.
  */
 import type { Parser } from "./parser";
+import type { ParserServices } from "./parser";
 
 /** A parser constructor. */
-export type ParserConstructor = (services: never) => Parser;
+export type ParserConstructor = (services: ParserServices) => Parser;
 
 /** A rule that tests a URL alone. */
 export interface UrlRule {
@@ -167,9 +168,7 @@ export class ParserRegistry {
     #construct(constructor: ParserConstructor): Parser {
         // The constructor signature takes services; the registry injects
         // them at call time through the active context.
-        return (constructor as unknown as (services: unknown) => Parser)(
-            getParserServices(),
-        );
+        return constructor(getParserServices());
     }
 }
 
@@ -180,15 +179,15 @@ export class ParserRegistry {
  * constructed before the services exist, so this indirection avoids
  * threading the services through every registration.
  */
-let parserServices: unknown;
+let parserServices: ParserServices | undefined;
 
 /** Set the services the registry injects. */
-export function setParserServices(services: unknown): void {
+export function setParserServices(services: ParserServices): void {
     parserServices = services;
 }
 
 /** The services the registry injects. */
-function getParserServices(): unknown {
+function getParserServices(): ParserServices {
     if (parserServices === undefined) {
         throw new Error("Parser services have not been set. Call setParserServices() first.");
     }
