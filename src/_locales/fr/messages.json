@@ -690,5 +690,107 @@
   "filterInvalidPattern": {
     "message": "Ce motif n'est pas valide.",
     "description": "Quand la regex ne compile pas."
+  },
+  "siteSelectorBannerTitle": {
+    "message": "Aucun analyseur pour ce site",
+    "description": "Le titre de la bannière quand l'analyseur de secours est utilisé."
+  },
+  "siteSelectorBannerText": {
+    "message": "Kintsugi devine où se trouve le texte. Dites-le-lui une fois et il s'en souviendra.",
+    "description": "L'explication de la bannière."
+  },
+  "siteSelectorOpen": {
+    "message": "Configurer ce site",
+    "description": "Le bouton qui ouvre le dialogue des sélecteurs."
+  },
+  "siteSelectorDialogTitle": {
+    "message": "Sélecteurs CSS",
+    "description": "Le titre du dialogue des sélecteurs."
+  },
+  "siteSelectorIntro": {
+    "message": "Ces sélecteurs CSS indiquent à Kintsugi où se trouve le texte d'un chapitre. Ils sont mémorisés pour ce site uniquement.",
+    "description": "L'introduction du dialogue."
+  },
+  "siteSelectorContent": {
+    "message": "Texte du chapitre",
+    "description": "Le libellé du champ de sélecteur de contenu."
+  },
+  "siteSelectorContentHint": {
+    "message": "L'élément qui contient le texte du chapitre, sous forme de sélecteur CSS.",
+    "description": "L'aide du sélecteur de contenu."
+  },
+  "siteSelectorTitle": {
+    "message": "Titre du chapitre",
+    "description": "Le libellé du champ de sélecteur de titre."
+  },
+  "siteSelectorTitleHint": {
+    "message": "L'élément qui contient le titre du chapitre. Facultatif.",
+    "description": "L'aide du sélecteur de titre."
+  },
+  "siteSelectorRemove": {
+    "message": "Éléments à supprimer",
+    "description": "Le libellé du champ de sélecteur de suppression."
+  },
+  "siteSelectorRemoveHint": {
+    "message": "Commentaires, publicités et navigation à retirer. Facultatif.",
+    "description": "L'aide du sélecteur de suppression."
+  },
+  "siteSelectorSuggest": {
+    "message": "Proposer",
+    "description": "Le bouton qui demande une suggestion au scanner."
+  },
+  "siteSelectorSuggested": {
+    "message": "Deviné depuis la page. Testez-le avant d'enregistrer.",
+    "description": "Affiché après que le scanner a proposé des sélecteurs."
+  },
+  "siteSelectorTest": {
+    "message": "Tester",
+    "description": "Le bouton qui teste les sélecteurs sur la page."
+  },
+  "siteSelectorTestResult": {
+    "message": "$CHARS$ caractères correspondus.",
+    "description": "Le volume de texte trouvé par le sélecteur de contenu.",
+    "placeholders": {
+      "chars": {
+        "content": "$1",
+        "example": "4210"
+      }
+    }
+  },
+  "siteSelectorTestFailed": {
+    "message": "Ce sélecteur n'a rien trouvé sur cette page.",
+    "description": "Quand le test ne trouve rien."
+  },
+  "siteSelectorInvalid": {
+    "message": "Ce n'est pas un sélecteur CSS valide.",
+    "description": "Quand un sélecteur ne se compile pas."
+  },
+  "siteSelectorSave": {
+    "message": "Enregistrer",
+    "description": "Enregistre les sélecteurs."
+  },
+  "siteSelectorSaved": {
+    "message": "Enregistré. Kintsugi les utilisera pour ce site.",
+    "description": "Confirmation après l'enregistrement."
+  },
+  "siteSelectorForget": {
+    "message": "Oublier ce site",
+    "description": "Supprime les sélecteurs enregistrés."
+  },
+  "siteSelectorForgotten": {
+    "message": "Oublié. Kintsugi devinera à nouveau.",
+    "description": "Confirmation après l'oubli."
+  },
+  "siteSelectorList": {
+    "message": "Sélecteurs de site",
+    "description": "La section des sélecteurs de site de la page des options."
+  },
+  "siteSelectorListEmpty": {
+    "message": "Aucun site n'a encore été configuré.",
+    "description": "L'état vide de la liste des sélecteurs."
+  },
+  "siteSelectorTocDetected": {
+    "message": "Cette page ressemble à un sommaire, pas à un chapitre. Ouvrez un chapitre et réessayez.",
+    "description": "Quand le scanner reconnaît un sommaire."
   }
 }

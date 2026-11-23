@@ -16,6 +16,8 @@
  * See ADR-0011.
  */
 
+import { escapeCssIdentifier, isParsableSelector } from "../util/css";
+
 /** What the scanner found. */
 export type ScanStatus = "success" | "toc_detected" | "failed";
 
@@ -194,7 +196,7 @@ export function generateSelector(node: Element): string {
     let selector = "";
 
     if (node.id) {
-        selector = `#${escapeIdentifier(node.id)}`;
+        selector = `#${escapeCssIdentifier(node.id)}`;
     } else {
         const className = node.className;
         if (typeof className === "string" && className.trim() !== "") {
@@ -202,23 +204,15 @@ export function generateSelector(node: Element): string {
                 .trim()
                 .split(/\s+/)
                 .filter((value) => value !== "")
-                .map((value) => `.${escapeIdentifier(value)}`);
+                .map((value) => `.${escapeCssIdentifier(value)}`);
             if (classes.length > 0) selector = classes.join("");
         }
     }
 
-    if (selector === undefined) selector = node.tagName.toLowerCase();
+    // An element with neither an id nor a class can only be named by its tag.
+    if (selector === "") selector = node.tagName.toLowerCase();
 
-    try {
-        document.createDocumentFragment().querySelector(selector);
-        return selector;
-    } catch {
-        return node.tagName.toLowerCase();
-    }
-}
-
-/** Escape a string for use in a CSS selector. */
-function escapeIdentifier(value: string): string {
-    if (typeof CSS !== "undefined" && typeof CSS.escape === "function") return CSS.escape(value);
-    return value.replace(/[^a-zA-Z0-9_-]/g, (character) => `\\${character}`);
+    // A selector that throws would take the chapter down with it, so it is
+    // checked before it is handed back.
+    return isParsableSelector(selector) ? selector : node.tagName.toLowerCase();
 }

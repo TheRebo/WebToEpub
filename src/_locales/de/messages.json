@@ -690,5 +690,107 @@
   "filterInvalidPattern": {
     "message": "Das ist kein gültiges Muster.",
     "description": "Wenn der Regex nicht kompiliert."
+  },
+  "siteSelectorBannerTitle": {
+    "message": "Kein Parser für diese Seite",
+    "description": "Der Titel des Hinweises, wenn der Ersatzparser verwendet wird."
+  },
+  "siteSelectorBannerText": {
+    "message": "Kintsugi errät, wo der Text steht. Sagen Sie es ihm einmal, und er merkt es sich.",
+    "description": "Die Erklärung des Hinweises."
+  },
+  "siteSelectorOpen": {
+    "message": "Diese Seite einrichten",
+    "description": "Die Schaltfläche, die den Selektor-Dialog öffnet."
+  },
+  "siteSelectorDialogTitle": {
+    "message": "CSS-Selektoren",
+    "description": "Die Überschrift des Selektor-Dialogs."
+  },
+  "siteSelectorIntro": {
+    "message": "Diese CSS-Selektoren zeigen Kintsugi, wo der Text eines Kapitels steht. Sie werden nur für diese Seite gespeichert.",
+    "description": "Die Einleitung des Dialogs."
+  },
+  "siteSelectorContent": {
+    "message": "Kapiteltext",
+    "description": "Die Beschriftung des Inhalts-Selektors."
+  },
+  "siteSelectorContentHint": {
+    "message": "Das Element, das den Kapiteltext enthält, als CSS-Selektor.",
+    "description": "Der Hinweis zum Inhalts-Selektor."
+  },
+  "siteSelectorTitle": {
+    "message": "Kapiteltitel",
+    "description": "Die Beschriftung des Titel-Selektors."
+  },
+  "siteSelectorTitleHint": {
+    "message": "Das Element, das den Kapiteltitel enthält. Optional.",
+    "description": "Der Hinweis zum Titel-Selektor."
+  },
+  "siteSelectorRemove": {
+    "message": "Zu entfernende Elemente",
+    "description": "Die Beschriftung des Entfernungs-Selektors."
+  },
+  "siteSelectorRemoveHint": {
+    "message": "Kommentare, Werbung und Navigation, die entfernt werden. Optional.",
+    "description": "Der Hinweis zum Entfernungs-Selektor."
+  },
+  "siteSelectorSuggest": {
+    "message": "Vorschlagen",
+    "description": "Die Schaltfläche, die den Scanner nach einem Vorschlag fragt."
+  },
+  "siteSelectorSuggested": {
+    "message": "Von der Seite geraten. Testen Sie ihn vor dem Speichern.",
+    "description": "Wird angezeigt, nachdem der Scanner Selektoren vorgeschlagen hat."
+  },
+  "siteSelectorTest": {
+    "message": "Testen",
+    "description": "Die Schaltfläche, die die Selektoren auf der Seite prüft."
+  },
+  "siteSelectorTestResult": {
+    "message": "$CHARS$ Zeichen gefunden.",
+    "description": "Wie viel Text der Inhalts-Selektor gefunden hat.",
+    "placeholders": {
+      "chars": {
+        "content": "$1",
+        "example": "4210"
+      }
+    }
+  },
+  "siteSelectorTestFailed": {
+    "message": "Dieser Selektor hat auf dieser Seite nichts gefunden.",
+    "description": "Wenn der Test nichts findet."
+  },
+  "siteSelectorInvalid": {
+    "message": "Das ist kein gültiger CSS-Selektor.",
+    "description": "Wenn ein Selektor nicht kompiliert."
+  },
+  "siteSelectorSave": {
+    "message": "Speichern",
+    "description": "Speichert die Selektoren."
+  },
+  "siteSelectorSaved": {
+    "message": "Gespeichert. Kintsugi verwendet sie ab jetzt für diese Seite.",
+    "description": "Bestätigung nach dem Speichern."
+  },
+  "siteSelectorForget": {
+    "message": "Diese Seite vergessen",
+    "description": "Entfernt die gespeicherten Selektoren."
+  },
+  "siteSelectorForgotten": {
+    "message": "Vergessen. Kintsugi wird wieder raten.",
+    "description": "Bestätigung nach dem Vergessen."
+  },
+  "siteSelectorList": {
+    "message": "Seiten-Selektoren",
+    "description": "Der Abschnitt der Seiten-Selektoren auf der Optionsseite."
+  },
+  "siteSelectorListEmpty": {
+    "message": "Noch keine Seite eingerichtet.",
+    "description": "Der leere Zustand der Selektorliste."
+  },
+  "siteSelectorTocDetected": {
+    "message": "Diese Seite sieht wie ein Inhaltsverzeichnis aus, nicht wie ein Kapitel. Öffnen Sie ein Kapitel und versuchen Sie es erneut.",
+    "description": "Wenn der Scanner ein Inhaltsverzeichnis erkennt."
   }
 }

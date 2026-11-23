@@ -71,6 +71,14 @@ export interface WorkbenchState {
     filter: FilterState;
     /** Whether the metadata has unsaved edits. */
     dirty: boolean;
+    /**
+     * Whether the fallback parser was used.
+     *
+     * When it was, the workbench offers the site-selector panel: the user can
+     * teach the extension where this site's chapters are, once, instead of
+     * accepting a guess on every visit.
+     */
+    usedDefaultParser: boolean;
     /** The progress of the running download. */
     progress: DownloadProgressState | undefined;
     /** The error, if anything failed. */
@@ -145,6 +153,13 @@ export class WorkbenchStore {
     markDirty(dirty: boolean): void {
         this.update((state) => {
             state.dirty = dirty;
+        });
+    }
+
+    /** Record whether the fallback parser was used. */
+    setUsedDefaultParser(used: boolean): void {
+        this.update((state) => {
+            state.usedDefaultParser = used;
         });
     }
 

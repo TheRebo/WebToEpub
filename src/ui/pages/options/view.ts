@@ -58,6 +58,8 @@ export interface OptionsElements {
     content: HTMLElement;
     /** The library section. */
     library: HTMLElement;
+    /** The site-selector section. */
+    siteSelectors: HTMLElement;
     /** The search box. */
     search: HTMLInputElement;
     /** The toast host. */
@@ -135,15 +137,35 @@ export function buildOptions(root: HTMLElement): OptionsElements {
     library.appendChild(libraryBar);
     library.appendChild(libraryActions);
 
+    // --- The site selectors ---
+    //
+    // A peer of the library and the settings groups: it lists the sites the
+    // user has taught Kintsugi about, so they can take one back.
+    const siteSelectors = document.createElement("section");
+    siteSelectors.className = "options-site-selectors";
+    siteSelectors.id = "site-selectors";
+    siteSelectors.hidden = true;
+
+    const siteSelectorsBar = document.createElement("div");
+    siteSelectorsBar.className = "options-library-bar";
+
+    const siteSelectorsTitle = document.createElement("h2");
+    siteSelectorsTitle.className = "options-library-title";
+    siteSelectorsTitle.textContent = t("siteSelectorList");
+
+    siteSelectorsBar.appendChild(siteSelectorsTitle);
+    siteSelectors.appendChild(siteSelectorsBar);
+
     const toastHost = document.createElement("div");
     toastHost.className = "options-toasts";
 
     root.appendChild(bar);
     root.appendChild(layout);
     root.appendChild(library);
+    root.appendChild(siteSelectors);
     root.appendChild(toastHost);
 
-    return { root, nav, content, library, search, toastHost };
+    return { root, nav, content, library, siteSelectors, search, toastHost };
 }
 
 /**
@@ -152,7 +174,7 @@ export function buildOptions(root: HTMLElement): OptionsElements {
 export function renderNav(
     elements: OptionsElements,
     groups: GroupSpec[],
-    active: GroupId | "library",
+    active: GroupId | "library" | "site-selectors",
 ): void {
     elements.nav.replaceChildren();
 
@@ -181,6 +203,17 @@ export function renderNav(
     libraryLink.setAttribute("aria-current", active === "library" ? "true" : "false");
     libraryItem.appendChild(libraryLink);
     list.appendChild(libraryItem);
+
+    // So are the site selectors.
+    const selectorItem = document.createElement("li");
+    const selectorLink = document.createElement("button");
+    selectorLink.type = "button";
+    selectorLink.className = "options-nav-link";
+    selectorLink.textContent = t("siteSelectorList");
+    selectorLink.dataset["group"] = "site-selectors";
+    selectorLink.setAttribute("aria-current", active === "site-selectors" ? "true" : "false");
+    selectorItem.appendChild(selectorLink);
+    list.appendChild(selectorItem);
 
     elements.nav.appendChild(list);
 }
@@ -428,6 +461,75 @@ export function renderLibrary(
     }
 
     elements.library.appendChild(body);
+}
+
+/**
+ * Render the site-selector list.
+ *
+ * Each entry is a host name the user has taught Kintsugi about. The Forget
+ * button emits a `k-forget` event on the container, so the controller can do
+ * the work without the view knowing about the message bus.
+ */
+export function renderSiteSelectors(
+    elements: OptionsElements,
+    entries: Array<{
+        hostname: string;
+        contentCss: string;
+        titleCss: string;
+        removeCss: string;
+    }>,
+): void {
+    const container = elements.siteSelectors.querySelector(".options-site-selectors-body");
+    if (container) container.remove();
+
+    const body = document.createElement("div");
+    body.className = "options-site-selectors-body";
+
+    if (entries.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "options-library-empty";
+
+        const icon = document.createElement("span");
+        icon.setAttribute("aria-hidden", "true");
+        icon.className = "options-library-empty-icon";
+        icon.appendChild(createIcon("search", 40));
+
+        const heading = document.createElement("p");
+        heading.className = "options-library-empty-title";
+        heading.textContent = t("siteSelectorListEmpty");
+
+        empty.append(icon, heading);
+        body.appendChild(empty);
+    } else {
+        const list = document.createElement("ul");
+        list.className = "options-site-selectors-list";
+
+        for (const entry of entries) {
+            const item = document.createElement("li");
+            item.className = "options-site-selectors-item";
+
+            const name = document.createElement("span");
+            name.className = "options-site-selectors-host";
+            name.textContent = entry.hostname;
+
+            const detail = document.createElement("span");
+            detail.className = "options-site-selectors-css";
+            detail.textContent = entry.contentCss;
+
+            const forget = document.createElement("k-button");
+            forget.setAttribute("variant", "ghost");
+            forget.setAttribute("size", "sm");
+            forget.textContent = t("siteSelectorForget");
+            forget.dataset["hostname"] = entry.hostname;
+
+            item.append(name, detail, forget);
+            list.appendChild(item);
+        }
+
+        body.appendChild(list);
+    }
+
+    elements.siteSelectors.appendChild(body);
 }
 
 /** A human-readable file size. */

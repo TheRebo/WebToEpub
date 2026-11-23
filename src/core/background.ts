@@ -173,6 +173,8 @@ class BackgroundWorker {
                     return { revoked };
                 },
                 "site-selectors:suggest": async (payload) => this.#suggestSelectors(payload.url),
+                "site-selectors:test": async (payload) =>
+                    this.#testSelectors(payload.url, payload.contentCss, payload.titleCss),
                 "site-selectors:save": async (payload) => {
                     await siteSelectors.setForHost(payload.hostname, {
                         contentCss: payload.contentCss,
@@ -286,11 +288,44 @@ class BackgroundWorker {
     }
 
     /**
+     * Test a set of selectors against a page.
+     *
+     * The worker fetches the page, because it owns the fetch layer — with its
+     * cookies, its retry policy and its rate limiting — and because the
+     * extension page has no access to the site's DOM.
+     */
+    async #testSelectors(
+        url: string,
+        contentCss: string,
+        titleCss: string,
+    ): Promise<RequestMap["site-selectors:test"]["response"]> {
+        const validated = validateFetchableUrl(url);
+        if (!validated) {
+            return { ok: false, contentChars: 0, titleText: "", error: "Unsupported URL." };
+        }
+        try {
+            const result = await this.#fetch.fetchHtml(url);
+            const content = querySafely(result.dom, contentCss);
+            const title = querySafely(result.dom, titleCss);
+            const contentChars = (content?.textContent ?? "").trim().length;
+            const titleText = (title?.textContent ?? "").trim();
+            return { ok: contentChars > 0, contentChars, titleText };
+        } catch (error) {
+            return {
+                ok: false,
+                contentChars: 0,
+                titleText: "",
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
+    }
+
+    /**
      * Suggest the CSS selectors for a site.
      *
      * The scanner works on the page's DOM, so the page is fetched here rather
-     * than in the extension page: the worker already owns the fetch layer,
-     * with its cookies and its retry policy.
+     * than in the extension page: the worker already owns the fetch layer, with
+     * its cookies and its retry policy.
      */
     async #suggestSelectors(url: string): Promise<RequestMap["site-selectors:suggest"]["response"]> {
         const validated = validateFetchableUrl(url);
@@ -316,6 +351,16 @@ class BackgroundWorker {
                 error: error instanceof Error ? error.message : String(error),
             };
         }
+    }
+}
+
+/** Query for the first element that matches, ignoring a bad selector. */
+function querySafely(dom: Document, selector: string): Element | null {
+    if (selector.trim() === "") return null;
+    try {
+        return dom.querySelector(selector);
+    } catch {
+        return null;
     }
 }
 

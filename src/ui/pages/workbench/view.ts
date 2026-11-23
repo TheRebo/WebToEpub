@@ -120,6 +120,30 @@ export interface WorkbenchElements {
     filterClear: HTMLElement;
     /** The filter's apply button. */
     filterApply: HTMLElement;
+    /** The banner that offers the site-selector dialog. */
+    selectorBanner: HTMLElement;
+    /** The banner's "set up this site" button. */
+    selectorBannerButton: KButton;
+    /** The site-selector dialog. */
+    selectorDialog: HTMLElement;
+    /** The dialog's content-selector field. */
+    selectorContent: HTMLInputElement;
+    /** The dialog's title-selector field. */
+    selectorTitle: HTMLInputElement;
+    /** The dialog's remove-selector field. */
+    selectorRemove: HTMLInputElement;
+    /** The dialog's "suggest" button. */
+    selectorSuggest: KButton;
+    /** The dialog's "test" button. */
+    selectorTest: KButton;
+    /** The dialog's "save" button. */
+    selectorSave: KButton;
+    /** The dialog's "forget this site" button. */
+    selectorForget: KButton;
+    /** The dialog's status line. */
+    selectorStatus: HTMLElement;
+    /** The toast host. */
+    toastHost: HTMLElement;
 }
 
 /** The languages offered in the language field. */
@@ -312,6 +336,34 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     optionsPanel.append(optionsSummary, optionsBody);
     sidebar.appendChild(optionsPanel);
 
+    // --- The site-selector banner ---
+    //
+    // The banner is the extension's way of saying "I am guessing here". It is
+    // deliberately a banner and not an error: the workbench still works, it is
+    // just guessing, and the user can make it stop guessing in one click.
+    const selectorBanner = el("div", "selector-banner");
+    selectorBanner.hidden = true;
+    selectorBanner.setAttribute("role", "status");
+
+    const selectorBannerIcon = el("div", "selector-banner__icon");
+    selectorBannerIcon.setAttribute("aria-hidden", "true");
+    selectorBannerIcon.appendChild(createIcon("sparkle", 18));
+
+    const selectorBannerBody = el("div", "selector-banner__body");
+    const selectorBannerTitle = el("p", "selector-banner__title");
+    selectorBannerTitle.textContent = t("siteSelectorBannerTitle");
+    const selectorBannerText = el("p", "selector-banner__text");
+    selectorBannerText.textContent = t("siteSelectorBannerText");
+    selectorBannerBody.append(selectorBannerTitle, selectorBannerText);
+
+    const selectorBannerButton = document.createElement("k-button") as KButton;
+    selectorBannerButton.setAttribute("variant", "secondary");
+    selectorBannerButton.setAttribute("size", "sm");
+    selectorBannerButton.textContent = t("siteSelectorOpen");
+
+    selectorBanner.append(selectorBannerIcon, selectorBannerBody, selectorBannerButton);
+    main.appendChild(selectorBanner);
+
     // --- Chapters panel ---
     const chaptersPanel = el("section", "chapters-panel");
     const chaptersHeader = el("header", "chapters-header");
@@ -437,6 +489,85 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
 
     root.appendChild(filterDialog);
 
+    // --- The site-selector dialog ---
+    //
+    // The dialog edits the selectors for one host name. It offers three ways
+    // to fill them in — a guess from the scanner, a manual entry, and a test
+    // against the live page — because the user may know the answer, may not,
+    // and may want to know before committing either way.
+    const selectorDialog = document.createElement("k-dialog");
+    selectorDialog.setAttribute("heading", t("siteSelectorDialogTitle"));
+    selectorDialog.setAttribute("size", "md");
+
+    const selectorBody = el("div", "selector-body");
+
+    const selectorIntro = el("p", "selector-intro");
+    selectorIntro.textContent = t("siteSelectorIntro");
+
+    const contentField = makeSelectorField(
+        t("siteSelectorContent"),
+        t("siteSelectorContentHint"),
+        "selector-content",
+    );
+    const selectorTitleField = makeSelectorField(
+        t("siteSelectorTitle"),
+        t("siteSelectorTitleHint"),
+        "selector-title",
+    );
+    const removeField = makeSelectorField(
+        t("siteSelectorRemove"),
+        t("siteSelectorRemoveHint"),
+        "selector-remove",
+    );
+
+    const selectorStatus = el("p", "selector-status");
+    selectorStatus.setAttribute("role", "status");
+    selectorStatus.setAttribute("aria-live", "polite");
+    selectorStatus.hidden = true;
+
+    selectorBody.append(
+        selectorIntro,
+        contentField.wrapper,
+        selectorTitleField.wrapper,
+        removeField.wrapper,
+        selectorStatus,
+    );
+    selectorDialog.appendChild(selectorBody);
+
+    const selectorFooter = document.createElement("div");
+    selectorFooter.setAttribute("slot", "footer");
+    selectorFooter.className = "selector-footer";
+
+    const selectorForget = document.createElement("k-button") as KButton;
+    selectorForget.setAttribute("variant", "ghost");
+    selectorForget.setAttribute("size", "md");
+    selectorForget.textContent = t("siteSelectorForget");
+
+    const selectorSuggest = document.createElement("k-button") as KButton;
+    selectorSuggest.setAttribute("variant", "ghost");
+    selectorSuggest.setAttribute("size", "md");
+    selectorSuggest.textContent = t("siteSelectorSuggest");
+
+    const selectorTest = document.createElement("k-button") as KButton;
+    selectorTest.setAttribute("variant", "secondary");
+    selectorTest.setAttribute("size", "md");
+    selectorTest.textContent = t("siteSelectorTest");
+
+    const selectorSave = document.createElement("k-button") as KButton;
+    selectorSave.setAttribute("variant", "primary");
+    selectorSave.setAttribute("size", "md");
+    selectorSave.textContent = t("siteSelectorSave");
+
+    selectorFooter.append(selectorForget, selectorSuggest, selectorTest, selectorSave);
+    selectorDialog.appendChild(selectorFooter);
+
+    root.appendChild(selectorDialog);
+
+    // --- The toast host ---
+    const toastHost = el("div", "workbench-toasts");
+
+    root.appendChild(toastHost);
+
     return {
         title,
         author,
@@ -480,6 +611,18 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         filterError,
         filterClear,
         filterApply,
+        selectorBanner,
+        selectorBannerButton,
+        selectorDialog,
+        selectorContent: contentField.input,
+        selectorTitle: selectorTitleField.input,
+        selectorRemove: removeField.input,
+        selectorSuggest,
+        selectorTest,
+        selectorSave,
+        selectorForget,
+        selectorStatus,
+        toastHost,
     };
 }
 
@@ -521,6 +664,13 @@ export function renderWorkbench(
 
     // --- Cover ---
     renderCover(elements, state.story.coverUrl);
+
+    // --- The site-selector banner ---
+    //
+    // The banner is only shown while the fallback parser is in charge. Once
+    // the user has saved selectors for the site, the extension stops guessing
+    // there, and the banner has nothing left to say.
+    elements.selectorBanner.hidden = !state.usedDefaultParser;
 
     // --- Buttons ---
     elements.saveButton.hidden = !state.dirty;
@@ -691,4 +841,38 @@ function makeToolbarButton(label: string): HTMLElement {
     button.setAttribute("size", "sm");
     button.textContent = label;
     return button;
+}
+
+/**
+ * A labelled text field with a hint.
+ *
+ * The hint is a real paragraph rather than a `title` attribute: a tooltip is
+ * invisible to a keyboard user and to a screen reader until the pointer
+ * happens to be over it.
+ */
+function makeSelectorField(
+    labelText: string,
+    hintText: string,
+    id: string,
+): { wrapper: HTMLElement; input: HTMLInputElement } {
+    const wrapper = el("div", "selector-field");
+
+    const label = el("label", "selector-field__label");
+    label.htmlFor = id;
+    label.textContent = labelText;
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = id;
+    input.className = "selector-field__input";
+    input.spellcheck = false;
+    input.autocomplete = "off";
+
+    const hint = el("p", "selector-field__hint");
+    hint.id = `${id}-hint`;
+    input.setAttribute("aria-describedby", hint.id);
+    hint.textContent = hintText;
+
+    wrapper.append(label, input, hint);
+    return { wrapper, input };
 }

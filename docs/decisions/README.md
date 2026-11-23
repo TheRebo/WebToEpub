@@ -16,6 +16,8 @@ consequences — positive *and* negative.
 | [0008](./ADR-0008-epub-pipeline.md) | Rebuild the EPUB pipeline on a real EPUB reader/writer | Accepted | No regex touches XML; a failed image can never corrupt the EPUB |
 | [0009](./ADR-0009-testing.md) | A headless test stack: Vitest + Playwright + axe-core | Accepted | Tests run in CI; accessibility failures break the build |
 | [0010](./ADR-0010-i18n.md) | Internationalisation: one catalogue, four locales, graceful fallback | Accepted | The `__MSG_` sweep is gone; missing keys fall back to English |
+| [0011](./ADR-0011-site-selectors.md) | The default parser: a visible guess, and a way to replace it with an answer | Accepted | Unknown sites announce the guess and can be taught once |
+| [0012](./ADR-0012-lazy-zip.md) | Load the ZIP library on demand, behind a lazy facade | Accepted | 155 KB of ZIP code is fetched only by the one parser that needs it |
 
 ---
 

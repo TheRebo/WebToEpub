@@ -196,6 +196,32 @@ export const MESSAGES = {
     filterClear: "filterClear",
     filterApply: "filterApply",
     filterInvalidPattern: "filterInvalidPattern",
+
+    // Site selectors
+    siteSelectorBannerTitle: "siteSelectorBannerTitle",
+    siteSelectorBannerText: "siteSelectorBannerText",
+    siteSelectorOpen: "siteSelectorOpen",
+    siteSelectorDialogTitle: "siteSelectorDialogTitle",
+    siteSelectorIntro: "siteSelectorIntro",
+    siteSelectorContent: "siteSelectorContent",
+    siteSelectorContentHint: "siteSelectorContentHint",
+    siteSelectorTitle: "siteSelectorTitle",
+    siteSelectorTitleHint: "siteSelectorTitleHint",
+    siteSelectorRemove: "siteSelectorRemove",
+    siteSelectorRemoveHint: "siteSelectorRemoveHint",
+    siteSelectorSuggest: "siteSelectorSuggest",
+    siteSelectorSuggested: "siteSelectorSuggested",
+    siteSelectorTest: "siteSelectorTest",
+    siteSelectorTestResult: "siteSelectorTestResult",
+    siteSelectorTestFailed: "siteSelectorTestFailed",
+    siteSelectorInvalid: "siteSelectorInvalid",
+    siteSelectorSave: "siteSelectorSave",
+    siteSelectorSaved: "siteSelectorSaved",
+    siteSelectorForget: "siteSelectorForget",
+    siteSelectorForgotten: "siteSelectorForgotten",
+    siteSelectorList: "siteSelectorList",
+    siteSelectorListEmpty: "siteSelectorListEmpty",
+    siteSelectorTocDetected: "siteSelectorTocDetected",
 } as const;
 
 /** A message name. */

@@ -22,6 +22,8 @@
  * See ADR-0002, ADR-0004 and ADR-0011.
  */
 
+import { isParsableSelector } from "../util/css";
+
 /** The selectors saved for one host name. */
 export interface SiteSelectorConfig {
     /** The selector that holds the chapter's body. */
@@ -62,7 +64,7 @@ export function validateSiteSelectorConfig(value: unknown): SiteSelectorConfig |
 
     const contentCss = source.contentCss;
     if (typeof contentCss !== "string" || contentCss.trim() === "") return null;
-    if (!isUsableSelector(contentCss)) return null;
+    if (!isParsableSelector(contentCss)) return null;
 
     return {
         contentCss,
@@ -70,16 +72,6 @@ export function validateSiteSelectorConfig(value: unknown): SiteSelectorConfig |
         removeCss: typeof source.removeCss === "string" ? source.removeCss : "",
         testUrl: typeof source.testUrl === "string" ? source.testUrl : "",
     };
-}
-
-/** Whether a CSS selector parses. */
-function isUsableSelector(selector: string): boolean {
-    try {
-        document.createDocumentFragment().querySelector(selector);
-        return true;
-    } catch {
-        return false;
-    }
 }
 
 /** The host name a URL belongs to, lower-cased and without a leading `www.`. */

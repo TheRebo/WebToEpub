@@ -533,6 +533,162 @@ details[open] > .workbench-panel__summary .workbench-panel__chevron {
     gap: var(--space-2);
 }
 
+/* --- The site-selector banner ----------------------------------------- */
+
+/*
+ * The banner says "I am guessing here". It is warm rather than alarming: the
+ * extension still works, and the banner is offering a way to make it stop
+ * guessing rather than reporting a failure.
+ */
+.selector-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+    background: var(--accent-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    flex-shrink: 0;
+}
+
+.selector-banner[hidden] {
+    display: none;
+}
+
+.selector-banner__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--accent-text);
+}
+
+.selector-banner__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.selector-banner__title {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-snug);
+    color: var(--text);
+}
+
+.selector-banner__text {
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
+    color: var(--text-secondary);
+}
+
+/* --- The site-selector dialog ----------------------------------------- */
+
+.selector-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.selector-intro {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--text-secondary);
+}
+
+.selector-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.selector-field__label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text);
+}
+
+.selector-field__input {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--text);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.selector-field__input::placeholder {
+    color: var(--text-muted);
+}
+
+.selector-field__input:hover {
+    border-color: var(--border-strong);
+}
+
+.selector-field__input:focus-visible {
+    outline: none;
+    border-color: var(--focus-ring);
+    box-shadow: var(--ring);
+}
+
+.selector-field__hint {
+    margin: 0;
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
+    color: var(--text-muted);
+}
+
+.selector-status {
+    margin: 0;
+    padding: var(--space-3);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--text-secondary);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+}
+
+.selector-status[hidden] {
+    display: none;
+}
+
+.selector-status[data-variant="error"] {
+    color: var(--danger);
+    background: var(--danger-subtle);
+}
+
+.selector-footer {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.selector-footer k-button:first-child {
+    margin-right: auto;
+}
+
+/* --- Toasts ------------------------------------------------------------ */
+
+.workbench-toasts {
+    position: fixed;
+    right: var(--space-5);
+    bottom: var(--space-5);
+    z-index: var(--z-toast);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
 /* --- Narrow screens --------------------------------------------------- */
 
 @media (max-width: 559px) {

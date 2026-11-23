@@ -14,12 +14,44 @@ Format: newest entries at the top of each section.
 | 0 — Setup | ✅ | `legacy` branch + `legacy/v-original` tag created; `main` branched from the original |
 | 1 — Discovery | ✅ | Product inventory, technical audit, UX/visual audit written |
 | 2 — Vision & design | ✅ | Vision, design system, UX guidelines, screen designs, architecture, 10 ADRs, permissions rationale |
-| 3 — Build from scratch | ⏳ | Core, UI, and all four pages built. Next: the 437-parser migration, tests, and the release tooling |
+| 3 — Build from scratch | ⏳ | Core, UI, all four pages, 434 migrated parsers, 146 tests. Next: release tooling, CI, E2E, screenshots |
 | 4 — Docs & release | 🔄 | `PRIVACY.md` and `SECURITY.md` drafted ahead of schedule because Phase 2 documents link to them |
 
 ---
 
 ## Decisions log
+
+### 2026-11-23 — Phase 3, third pass: the site selectors, and a DOM-free worker
+
+- **The fallback parser guessed silently.** When no parser matched a site, the
+  extension produced a plausible chapter list and said nothing. The user
+  could not tell a read list from a guessed one, and found out only after the
+  download finished. The workbench now shows a **banner** whenever the
+  fallback parser is in charge, and the banner opens a **site-selector
+  dialog**: *Suggest* (the scanner proposes selectors), *Test* (they are run
+  against the live page and the matched character count is reported), *Save*,
+  and *Forget this site*. The options page lists every taught site.
+  See ADR-0011.
+- **Two bugs fell out of writing the feature.** Both were found by asking
+  "does this work in the background worker?", and neither was visible to
+  `tsc` or `eslint`:
+  - `validateSiteSelectorConfig` called `document.createDocumentFragment()`.
+    A worker is not guaranteed a DOM, so the check would have *always* failed
+    there and every save would have been rejected.
+  - `generateSelector` had `if (selector === undefined)`, but `selector` was
+    initialised to `""` — the branch was dead, and the empty selector was
+    only rescued by the DOM check that happened to throw on `""`.
+  Both are now fixed by `core/util/css.ts`, whose authority is a **syntactic**
+  check that works with or without a DOM, with the DOM used as a second
+  opinion when one is there.
+- **The locale catalogue has a hole.** `en` is complete at 186 keys, but
+  `fr`, `de` and `ja` carry only 88 of them: the newer settings, onboarding,
+  chapter-state and phase strings fall back to English. The fallback works,
+  so this is a quality gap rather than a defect — but it is a visible gap, and
+  it is tracked below.
+- **The ZIP library is loaded on demand.** One migrated parser reads a ZIP
+  archive; `zip.js` is 155 KB. It is now a dynamic import behind a lazy
+  facade, so the worker bundle does not carry it. See ADR-0012.
 
 ### 2026-11-23 — Phase 3, second pass: i18n, the filter, and the build
 

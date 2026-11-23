@@ -25,6 +25,7 @@ import "../../components/k-switch";
 import "../../components/k-toast";
 
 import { sendRequest } from "../../../core/message/bus";
+import { isParsableSelector } from "../../../core/util/css";
 import { localStorageAdapter, activeTab } from "../../../core/browser-api";
 import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
@@ -56,6 +57,7 @@ function initialState(): WorkbenchState {
         loadingChapters: false,
         filter: { query: "", useRegex: false, include: [], exclude: [] },
         dirty: false,
+        usedDefaultParser: false,
         progress: undefined,
         error: undefined,
     };
@@ -119,6 +121,7 @@ class WorkbenchController {
                 sourceUrl: url,
                 parserName: analysis.parserName ?? "",
             });
+            this.#store.setUsedDefaultParser(analysis.usedDefaultParser === true);
         } catch (error) {
             this.#store.setError(error instanceof Error ? error.message : t("errorGeneric"));
         }
@@ -251,6 +254,23 @@ class WorkbenchController {
             this.#resetFilterDraft();
         });
 
+        // --- The site-selector dialog ---
+        elements.selectorBannerButton.addEventListener("k-click", () => {
+            void this.#openSelectorDialog();
+        });
+        elements.selectorSuggest.addEventListener("k-click", () => {
+            void this.#suggestSelectors();
+        });
+        elements.selectorTest.addEventListener("k-click", () => {
+            void this.#testSelectors();
+        });
+        elements.selectorSave.addEventListener("k-click", () => {
+            void this.#saveSelectors();
+        });
+        elements.selectorForget.addEventListener("k-click", () => {
+            void this.#forgetSelectors();
+        });
+
         // The Cancel button lives in the status bar and is rebuilt each time
         // the bar is rendered, so it never carries stale state.
         elements.statusActions.addEventListener("k-click", (event) => {
@@ -350,6 +370,209 @@ class WorkbenchController {
         elements.filterExclude.value = filter.exclude.join(", ");
         elements.filterRegex.toggleAttribute("checked", filter.useRegex);
     }
+    // --- The site selectors ---
+    //
+    // The flow is deliberately forgiving. The user can accept the scanner's
+    // guess, write the selectors by hand, or test what they have before
+    // committing it. Nothing is saved until the user says so, and the banner
+    // stays visible for as long as the extension is still guessing.
+
+    /** The host name the selectors belong to. */
+    #selectorHost(): string {
+        const source = this.#store.state.story.sourceUrl;
+        try {
+            return new URL(source).hostname.replace(/^www\./, "").toLowerCase();
+        } catch {
+            return "";
+        }
+    }
+
+    /** Open the site-selector dialog, seeded with what is already saved. */
+    async #openSelectorDialog(): Promise<void> {
+        const elements = this.#elements;
+        elements.selectorContent.value = "";
+        elements.selectorTitle.value = "";
+        elements.selectorRemove.value = "";
+        this.#setSelectorStatus("");
+
+        const host = this.#selectorHost();
+        if (host) {
+            try {
+                const { entries } = await sendRequest(
+                    { sendMessage: (message) => sendMessageToWorker(message) },
+                    "site-selectors:list",
+                    {},
+                );
+                const entry = entries.find((candidate) => candidate.hostname === host);
+                if (entry) {
+                    elements.selectorContent.value = entry.contentCss;
+                    elements.selectorTitle.value = entry.titleCss;
+                    elements.selectorRemove.value = entry.removeCss;
+                }
+            } catch {
+                // The list is a convenience; not being able to read it must not
+                // stop the user from setting the selectors up by hand.
+            }
+        }
+
+        (elements.selectorDialog as unknown as { open(): void }).open();
+    }
+
+    /** Ask the scanner for a suggestion. */
+    async #suggestSelectors(): Promise<void> {
+        const elements = this.#elements;
+        const url = this.#store.state.story.sourceUrl;
+        if (!url) return;
+
+        this.#setSelectorStatus(t("workbenchWaitingForChapters"));
+        try {
+            const suggestion = await sendRequest(
+                { sendMessage: (message) => sendMessageToWorker(message) },
+                "site-selectors:suggest",
+                { url },
+            );
+            if (suggestion.status === "toc_detected") {
+                this.#setSelectorStatus(t("siteSelectorTocDetected"), "error");
+                return;
+            }
+            if (suggestion.status === "failed") {
+                this.#setSelectorStatus(suggestion.error ?? t("errorGeneric"), "error");
+                return;
+            }
+            elements.selectorContent.value = suggestion.contentCss;
+            elements.selectorTitle.value = suggestion.titleCss;
+            this.#setSelectorStatus(t("siteSelectorSuggested"));
+        } catch (error) {
+            this.#setSelectorStatus(error instanceof Error ? error.message : t("errorGeneric"), "error");
+        }
+    }
+
+    /** Test the selectors against the live page. */
+    async #testSelectors(): Promise<void> {
+        const elements = this.#elements;
+        const url = this.#store.state.story.sourceUrl;
+        if (!url) return;
+
+        const contentCss = elements.selectorContent.value.trim();
+        if (contentCss === "" || !isValidSelector(contentCss)) {
+            this.#setSelectorStatus(t("siteSelectorInvalid"), "error");
+            return;
+        }
+
+        this.#setSelectorStatus(t("workbenchWaitingForChapters"));
+        try {
+            const result = await sendRequest(
+                { sendMessage: (message) => sendMessageToWorker(message) },
+                "site-selectors:test",
+                {
+                    url,
+                    contentCss,
+                    titleCss: elements.selectorTitle.value.trim(),
+                    removeCss: elements.selectorRemove.value.trim(),
+                },
+            );
+            if (result.error) {
+                this.#setSelectorStatus(result.error, "error");
+                return;
+            }
+            if (result.ok) {
+                this.#setSelectorStatus(t("siteSelectorTestResult", [String(result.contentChars)]));
+            } else {
+                this.#setSelectorStatus(t("siteSelectorTestFailed"), "error");
+            }
+        } catch (error) {
+            this.#setSelectorStatus(error instanceof Error ? error.message : t("errorGeneric"), "error");
+        }
+    }
+
+    /** Save the selectors for the host name. */
+    async #saveSelectors(): Promise<void> {
+        const elements = this.#elements;
+        const host = this.#selectorHost();
+        if (host === "") return;
+
+        const contentCss = elements.selectorContent.value.trim();
+        if (contentCss === "" || !isValidSelector(contentCss)) {
+            this.#setSelectorStatus(t("siteSelectorInvalid"), "error");
+            return;
+        }
+        const titleCss = elements.selectorTitle.value.trim();
+        const removeCss = elements.selectorRemove.value.trim();
+        if (titleCss !== "" && !isValidSelector(titleCss)) {
+            this.#setSelectorStatus(t("siteSelectorInvalid"), "error");
+            return;
+        }
+        if (removeCss !== "" && !isValidSelector(removeCss)) {
+            this.#setSelectorStatus(t("siteSelectorInvalid"), "error");
+            return;
+        }
+
+        try {
+            await sendRequest(
+                { sendMessage: (message) => sendMessageToWorker(message) },
+                "site-selectors:save",
+                {
+                    hostname: host,
+                    contentCss,
+                    titleCss,
+                    removeCss,
+                    testUrl: this.#store.state.story.sourceUrl,
+                },
+            );
+        } catch (error) {
+            this.#setSelectorStatus(error instanceof Error ? error.message : t("errorGeneric"), "error");
+            return;
+        }
+
+        (elements.selectorDialog as unknown as { close(): void }).close();
+        this.#toast(t("siteSelectorSaved"), "success");
+        this.#store.setUsedDefaultParser(false);
+
+        // The saved selectors change what the extension sees on this site, so
+        // the page is analysed again and the chapter list is rebuilt from it.
+        await this.#analyse(this.#store.state.story.sourceUrl);
+        await this.#loadChapters(this.#store.state.story.sourceUrl);
+    }
+
+    /** Forget the selectors for the host name. */
+    async #forgetSelectors(): Promise<void> {
+        const elements = this.#elements;
+        const host = this.#selectorHost();
+        if (host === "") return;
+
+        try {
+            await sendRequest(
+                { sendMessage: (message) => sendMessageToWorker(message) },
+                "site-selectors:remove",
+                { hostname: host },
+            );
+        } catch (error) {
+            this.#setSelectorStatus(error instanceof Error ? error.message : t("errorGeneric"), "error");
+            return;
+        }
+
+        (elements.selectorDialog as unknown as { close(): void }).close();
+        this.#toast(t("siteSelectorForgotten"), "info");
+        this.#store.setUsedDefaultParser(true);
+    }
+
+    /** Show a message in the site-selector dialog. */
+    #setSelectorStatus(message: string, variant: "info" | "error" = "info"): void {
+        const status = this.#elements.selectorStatus;
+        status.textContent = message;
+        status.hidden = message === "";
+        status.dataset["variant"] = variant;
+    }
+
+    /** Show a toast. */
+    #toast(message: string, variant: "success" | "info" | "warning" | "error"): void {
+        const toast = document.createElement("k-toast");
+        toast.setAttribute("message", message);
+        toast.setAttribute("variant", variant);
+        toast.setAttribute("duration", "4000");
+        this.#elements.toastHost.appendChild(toast);
+    }
+
     /** Save one story option. */
     async #saveStoryOption(key: "removeAuthorNotes" | "includeTocPage", value: boolean): Promise<void> {
         const current = await this.#settings.get();
@@ -469,6 +692,17 @@ class WorkbenchController {
             this.#store.selectedCount,
         );
     }
+}
+
+/**
+ * Whether a string is a CSS selector the browser can parse.
+ *
+ * A selector that throws when it is used takes the whole chapter down with it,
+ * so it is checked here — in the page, where the error is visible — rather
+ * than in the worker, where it would only be a failed download.
+ */
+function isValidSelector(selector: string): boolean {
+    return isParsableSelector(selector);
 }
 
 /**

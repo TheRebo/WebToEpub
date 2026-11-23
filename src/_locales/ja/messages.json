@@ -690,5 +690,107 @@
   "filterInvalidPattern": {
     "message": "有効なパターンではありません。",
     "description": "正規表現がコンパイルできないときに表示。"
+  },
+  "siteSelectorBannerTitle": {
+    "message": "このサイトに対応するパーサーがありません",
+    "description": "フォールバックパーサーが使われたときのバナー見出し。"
+  },
+  "siteSelectorBannerText": {
+    "message": "Kintsugi は物語の本文位置を推測しています。一度教えておけば、記憶しています。",
+    "description": "バナーの説明。"
+  },
+  "siteSelectorOpen": {
+    "message": "このサイトを設定",
+    "description": "サイトセレクターのダイアログを開くボタン。"
+  },
+  "siteSelectorDialogTitle": {
+    "message": "サイトセレクター",
+    "description": "セレクターのダイアログの見出し。"
+  },
+  "siteSelectorIntro": {
+    "message": "これらの CSS セレクターは、章の本文がどこにあるかを Kintsugi に伝えます。このサイトだけに保存されます。",
+    "description": "ダイアログの導入文。"
+  },
+  "siteSelectorContent": {
+    "message": "章の本文",
+    "description": "本文セレクターのラベル。"
+  },
+  "siteSelectorContentHint": {
+    "message": "章の本文を格納する要素を CSS セレクターで指定します。",
+    "description": "本文セレクターのヒント。"
+  },
+  "siteSelectorTitle": {
+    "message": "章のタイトル",
+    "description": "タイトルセレクターのラベル。"
+  },
+  "siteSelectorTitleHint": {
+    "message": "章のタイトルを格納する要素。任意です。",
+    "description": "タイトルセレクターのヒント。"
+  },
+  "siteSelectorRemove": {
+    "message": "削除する要素",
+    "description": "削除セレクターのラベル。"
+  },
+  "siteSelectorRemoveHint": {
+    "message": "取り除くコメント・広告・ナビゲーション。任意です。",
+    "description": "削除セレクターのヒント。"
+  },
+  "siteSelectorSuggest": {
+    "message": "推測する",
+    "description": "スキャナーに推測を求めるボタン。"
+  },
+  "siteSelectorSuggested": {
+    "message": "ページから推測しました。保存する前にテストしてください。",
+    "description": "スキャナーがセレクターを提案した後に表示。"
+  },
+  "siteSelectorTest": {
+    "message": "テスト",
+    "description": "ページにセレクターを試すボタン。"
+  },
+  "siteSelectorTestResult": {
+    "message": "$CHARS$ 文字が一致しました。",
+    "description": "本文セレクターが拾った文字数。",
+    "placeholders": {
+      "chars": {
+        "content": "$1",
+        "example": "4210"
+      }
+    }
+  },
+  "siteSelectorTestFailed": {
+    "message": "このページではそのセレクターに一致するものがありませんでした。",
+    "description": "テストが何も見つからないとき。"
+  },
+  "siteSelectorInvalid": {
+    "message": "有効な CSS セレクターではありません。",
+    "description": "セレクターが解釈できないとき。"
+  },
+  "siteSelectorSave": {
+    "message": "保存",
+    "description": "セレクターを保存します。"
+  },
+  "siteSelectorSaved": {
+    "message": "保存しました。このサイトには今後これらのセレクターを使います。",
+    "description": "保存後の確認。"
+  },
+  "siteSelectorForget": {
+    "message": "このサイトを忘れる",
+    "description": "保存済みのセレクターを削除します。"
+  },
+  "siteSelectorForgotten": {
+    "message": "忘れました。もう一度推測します。",
+    "description": "削除後の確認。"
+  },
+  "siteSelectorList": {
+    "message": "サイトセレクター",
+    "description": "オプションページのサイトセレクターのセクション。"
+  },
+  "siteSelectorListEmpty": {
+    "message": "まだ設定されたサイトはありません。",
+    "description": "セレクター一覧の空の状態。"
+  },
+  "siteSelectorTocDetected": {
+    "message": "このページの目次です。章を開いてからやり直してください。",
+    "description": "スキャナーが目次と判定したとき。"
   }
 }

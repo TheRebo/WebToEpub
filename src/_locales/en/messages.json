@@ -690,5 +690,107 @@
   "filterInvalidPattern": {
     "message": "That is not a valid pattern.",
     "description": "Shown when the regex does not compile."
+  },
+  "siteSelectorBannerTitle": {
+    "message": "No parser for this site",
+    "description": "The title of the banner shown when the fallback parser is used."
+  },
+  "siteSelectorBannerText": {
+    "message": "Kintsugi is guessing where the story is. Tell it once and it will remember.",
+    "description": "The banner's explanation."
+  },
+  "siteSelectorOpen": {
+    "message": "Set up this site",
+    "description": "The button that opens the site selector dialog."
+  },
+  "siteSelectorDialogTitle": {
+    "message": "Site selectors",
+    "description": "The site selector dialog's heading."
+  },
+  "siteSelectorIntro": {
+    "message": "These CSS selectors tell Kintsugi where a chapter's text is. They are remembered for this site alone.",
+    "description": "The dialog's introduction."
+  },
+  "siteSelectorContent": {
+    "message": "Chapter text",
+    "description": "The label of the content selector field."
+  },
+  "siteSelectorContentHint": {
+    "message": "The element that holds the chapter's text, as a CSS selector.",
+    "description": "The content selector's hint."
+  },
+  "siteSelectorTitle": {
+    "message": "Chapter title",
+    "description": "The label of the title selector field."
+  },
+  "siteSelectorTitleHint": {
+    "message": "The element that holds the chapter's title. Optional.",
+    "description": "The title selector's hint."
+  },
+  "siteSelectorRemove": {
+    "message": "Elements to remove",
+    "description": "The label of the remove selector field."
+  },
+  "siteSelectorRemoveHint": {
+    "message": "Comments, ads and navigation to strip out. Optional.",
+    "description": "The remove selector's hint."
+  },
+  "siteSelectorSuggest": {
+    "message": "Suggest",
+    "description": "The button that asks the scanner for a suggestion."
+  },
+  "siteSelectorSuggested": {
+    "message": "Guessed from the page. Test it before you save.",
+    "description": "Shown after the scanner has proposed selectors."
+  },
+  "siteSelectorTest": {
+    "message": "Test",
+    "description": "The button that tests the selectors against the page."
+  },
+  "siteSelectorTestResult": {
+    "message": "Matched $CHARS$ characters.",
+    "description": "How much text the content selector matched.",
+    "placeholders": {
+      "chars": {
+        "content": "$1",
+        "example": "4210"
+      }
+    }
+  },
+  "siteSelectorTestFailed": {
+    "message": "That selector did not match anything on this page.",
+    "description": "Shown when the test finds nothing."
+  },
+  "siteSelectorInvalid": {
+    "message": "That is not a valid CSS selector.",
+    "description": "Shown when a selector does not parse."
+  },
+  "siteSelectorSave": {
+    "message": "Save",
+    "description": "Saves the selectors."
+  },
+  "siteSelectorSaved": {
+    "message": "Saved. Kintsugi will use these for this site from now on.",
+    "description": "Confirmation after saving."
+  },
+  "siteSelectorForget": {
+    "message": "Forget this site",
+    "description": "Removes the saved selectors."
+  },
+  "siteSelectorForgotten": {
+    "message": "Forgotten. Kintsugi will guess again.",
+    "description": "Confirmation after forgetting."
+  },
+  "siteSelectorList": {
+    "message": "Site selectors",
+    "description": "The options page's site selector section."
+  },
+  "siteSelectorListEmpty": {
+    "message": "No site has been set up yet.",
+    "description": "The empty state of the site selector list."
+  },
+  "siteSelectorTocDetected": {
+    "message": "That page looks like a table of contents, not a chapter. Open a chapter and try again.",
+    "description": "Shown when the scanner recognises a table of contents."
   }
 }

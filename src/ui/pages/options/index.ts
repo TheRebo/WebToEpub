@@ -31,11 +31,13 @@ import {
 import { themeController } from "../../styles/theme-controller";
 import { sendRequest } from "../../../core/message/bus";
 import { installI18n } from "../../i18n-bootstrap";
+import { t } from "../../i18n";
 import {
     buildOptions,
     renderGroups,
     renderLibrary,
     renderNav,
+    renderSiteSelectors,
     type GroupId,
     type GroupSpec,
     type OptionsElements,
@@ -228,7 +230,7 @@ class OptionsController {
     #elements: OptionsElements;
     #store = new SettingsStore(localStorageAdapter);
     #settings: Settings | undefined;
-    #active: GroupId | "library" = "appearance";
+    #active: GroupId | "library" | "site-selectors" = "appearance";
     #query = "";
 
     constructor(root: HTMLElement) {
@@ -244,11 +246,13 @@ class OptionsController {
 
         const hash = window.location.hash.replace("#", "");
         if (hash === "library") this.#active = "library";
+        else if (hash === "site-selectors") this.#active = "site-selectors";
         else if (GROUPS.some((group) => group.id === hash)) this.#active = hash as GroupId;
 
         this.#render();
 
         if (this.#active === "library") await this.#loadLibrary();
+        if (this.#active === "site-selectors") await this.#loadSiteSelectors();
     }
 
     /** Wire the events. */
@@ -257,9 +261,15 @@ class OptionsController {
             const target = (event.target as HTMLElement)?.closest<HTMLElement>("[data-group]");
             const group = target?.dataset["group"];
             if (!group) return;
-            this.#active = group === "library" ? "library" : (group as GroupId);
+            this.#active =
+                group === "library"
+                    ? "library"
+                    : group === "site-selectors"
+                      ? "site-selectors"
+                      : (group as GroupId);
             this.#render();
             if (this.#active === "library") void this.#loadLibrary();
+            if (this.#active === "site-selectors") void this.#loadSiteSelectors();
         });
 
         this.#elements.search.addEventListener("input", () => {
@@ -291,6 +301,13 @@ class OptionsController {
             if (!path) return;
             const value = (target as HTMLInputElement).value;
             void this.#write(path, value);
+        });
+
+        // The Forget button in the site-selector list.
+        this.#elements.siteSelectors.addEventListener("k-click", (event) => {
+            const target = (event.target as HTMLElement)?.closest<HTMLElement>("[data-hostname]");
+            const hostname = target?.dataset["hostname"];
+            if (hostname) void this.#forgetSiteSelectors(hostname);
         });
     }
 
@@ -354,16 +371,68 @@ class OptionsController {
         }
     }
 
+    /** Load the saved site selectors. */
+    async #loadSiteSelectors(): Promise<void> {
+        try {
+            const { entries } = await sendRequest(
+                { sendMessage: (message) => sendMessage(message) },
+                "site-selectors:list",
+                {},
+            );
+            renderSiteSelectors(
+                this.#elements,
+                entries.map((entry) => ({
+                    hostname: entry.hostname,
+                    contentCss: entry.contentCss,
+                    titleCss: entry.titleCss,
+                    removeCss: entry.removeCss,
+                })),
+            );
+        } catch {
+            renderSiteSelectors(this.#elements, []);
+        }
+    }
+
+    /** Forget one site's saved selectors. */
+    async #forgetSiteSelectors(hostname: string): Promise<void> {
+        try {
+            await sendRequest(
+                { sendMessage: (message) => sendMessage(message) },
+                "site-selectors:remove",
+                { hostname },
+            );
+        } catch {
+            // Nothing to do: the list is reloaded below either way.
+        }
+        await this.#loadSiteSelectors();
+        this.#toast(t("siteSelectorForgotten"), "info");
+    }
+
+    /** Show a toast. */
+    #toast(message: string, variant: "success" | "info" | "warning" | "error"): void {
+        const toast = document.createElement("k-toast");
+        toast.setAttribute("message", message);
+        toast.setAttribute("variant", variant);
+        toast.setAttribute("duration", "4000");
+        this.#elements.toastHost.appendChild(toast);
+    }
+
     /** Render. */
     #render(): void {
         if (!this.#settings) return;
 
         const values = flatten(this.#settings);
-        renderNav(this.#elements, GROUPS, this.#active === "library" ? "appearance" : this.#active);
+        const active = this.#active === "library" || this.#active === "site-selectors"
+            ? "appearance"
+            : this.#active;
+        renderNav(this.#elements, GROUPS, active);
         renderGroups(this.#elements, GROUPS, values, this.#query);
 
-        this.#elements.content.hidden = this.#active === "library";
-        this.#elements.library.hidden = this.#active !== "library";
+        const onLibrary = this.#active === "library";
+        const onSelectors = this.#active === "site-selectors";
+        this.#elements.content.hidden = onLibrary || onSelectors;
+        this.#elements.library.hidden = !onLibrary;
+        this.#elements.siteSelectors.hidden = !onSelectors;
     }
 }
 

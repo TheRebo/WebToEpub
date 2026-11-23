@@ -93,6 +93,16 @@ export interface RequestMap {
         request: { url: string };
         response: SiteSelectorSuggestion;
     };
+    /** Test CSS selectors against a page. */
+    "site-selectors:test": {
+        request: {
+            url: string;
+            contentCss: string;
+            titleCss: string;
+            removeCss: string;
+        };
+        response: SiteSelectorTest;
+    };
     /** Save the CSS selectors for a host name. */
     "site-selectors:save": {
         request: {
@@ -200,7 +210,6 @@ export interface SiteSelectorSuggestion {
     error?: string;
 }
 
-/** A saved set of selectors. */
 export interface SiteSelectorEntry {
     /** The host name the selectors belong to. */
     hostname: string;
@@ -212,6 +221,18 @@ export interface SiteSelectorEntry {
     removeCss: string;
     /** The URL the selectors were tested against. */
     testUrl: string;
+}
+
+/** The result of testing a set of selectors against a page. */
+export interface SiteSelectorTest {
+    /** Whether the selectors found the content. */
+    ok: boolean;
+    /** How many characters the content selector matched. */
+    contentChars: number;
+    /** The text the title selector matched. */
+    titleText: string;
+    /** The error, when the page could not be read. */
+    error?: string;
 }
 
 /** A message envelope. */
