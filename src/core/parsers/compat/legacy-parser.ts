@@ -38,7 +38,7 @@
 "use strict";
 
 import { Parser } from "../parser";
-import type { ParserServices, TocProgress } from "../parser";
+import type { ParserServices, TocProgress, WebPage } from "../parser";
 import type { ChapterLink } from "../../util/dom";
 import { util } from "./legacy-util";
 import { HttpClient } from "./legacy-http-client";
@@ -671,13 +671,33 @@ export class LegacyParser extends Parser {
      * The user's manual delay wins over the parser's own minimum, unless
      * the parser asks for its minimum to be authoritative.
      */
-    getRateLimit(): number {
+    override getRateLimit(): number {
         const manual = Number.parseInt(this.userPreferences?.manualDelayPerChapter?.value ?? "", 10);
         const manualDelay = Number.isNaN(manual) ? this.minimumThrottle : manual;
         if (!this.userPreferences.overrideMinimumDelay.value) {
             return Math.max(this.minimumThrottle, manualDelay);
         }
         return manualDelay;
+    }
+
+    /**
+     * Turn a chapter's DOM into the content element that will be packed.
+     *
+     * The baseline ran a longer cleanup pipeline than the rewrite's default:
+     * it decoded Cloudflare-protected email addresses, removed the next and
+     * previous chapter links, added the chapter's title when the page did not
+     * already carry it, made the hyperlinks relative, and prepared the content
+     * for conversion to XHTML.
+     *
+     * All of that is preserved here, because it is what makes the migrated
+     * parsers produce the same books they always did.
+     */
+    override extractChapterContent(dom: Document, chapter: WebPage): Element | null {
+        const webPage = chapter as LegacyChapter;
+        webPage.rawDom = dom;
+        this.preprocessRawDom(dom);
+        this.removeUnusedElementsToReduceMemoryConsumption(dom);
+        return this.convertRawDomToContent(webPage);
     }
 
     /** Wait for the rate limit to expire. */

@@ -9,7 +9,7 @@
  *
  * See ADR-0005.
  */
-import { DownloadManager, toDownloadChapters } from "./download-manager";
+import { DownloadManager } from "./download-manager";
 import { FetchClient } from "./net/fetch-client";
 import { legacyRegistry } from "./parsers/compat/legacy-factory";
 import { installFetchClient } from "./parsers/compat/legacy-http-client";
@@ -238,9 +238,12 @@ class BackgroundWorker {
     async #startDownload(
         payload: RequestMap["download:start"]["request"],
     ): Promise<RequestMap["download:start"]["response"]> {
-        const chapters = toDownloadChapters(
-            payload.chapterUrls.map((url) => ({ sourceUrl: url, title: "" })),
-        );
+        // The titles come from the chapter list the user picked from. Without
+        // them the book's table of contents would be a list of URLs.
+        const chapters = payload.chapters.map((chapter) => ({
+            sourceUrl: chapter.sourceUrl,
+            title: chapter.title || chapter.sourceUrl,
+        }));
         const jobId = this.#downloads.start(payload.url, payload.title, chapters);
         return { jobId };
     }

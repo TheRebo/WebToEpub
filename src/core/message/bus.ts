@@ -26,7 +26,11 @@ export interface RequestMap {
     };
     /** Start a download. */
     "download:start": {
-        request: { url: string; title: string; chapterUrls: string[] };
+        request: {
+            url: string;
+            title: string;
+            chapters: Array<{ sourceUrl: string; title: string }>;
+        };
         response: { jobId: string };
     };
     /** Cancel a download. */

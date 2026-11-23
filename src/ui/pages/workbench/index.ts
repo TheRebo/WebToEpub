@@ -381,7 +381,10 @@ class WorkbenchController {
                 {
                     url: state.story.sourceUrl,
                     title: state.story.title,
-                    chapterUrls: selected.map((chapter) => chapter.sourceUrl),
+                    chapters: selected.map((chapter) => ({
+                        sourceUrl: chapter.sourceUrl,
+                        title: chapter.title,
+                    })),
                 },
             );
             this.#jobId = jobId;

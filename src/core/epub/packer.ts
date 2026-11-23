@@ -209,10 +209,28 @@ function buildChapterBody(chapter: ChapterToPack, author?: string): string {
     if (author) {
         parts.push(`    <p class="chapter-author">${escapeText(author)}</p>`);
     }
-    parts.push(`    <h1>${escapeText(chapter.title)}</h1>`);
+
+    // A parser that puts the chapter's own title into the content has already
+    // written it. Adding it again would show the reader the same heading
+    // twice, which is the sort of small wrongness that makes a generated
+    // book feel machine-made.
+    if (!startsWithHeading(chapter.contentHtml)) {
+        parts.push(`    <h1>${escapeText(chapter.title)}</h1>`);
+    }
     parts.push(chapter.contentHtml);
 
     return parts.join("\n");
+}
+
+/**
+ * Whether the content already opens with a heading.
+ *
+ * The legacy cleanup pipeline inserts the chapter title as an `<h1>` when the
+ * page did not already carry it, so this check keeps the two paths from
+ * overlapping.
+ */
+function startsWithHeading(contentHtml: string): boolean {
+    return /^\s*<h[1-6][\s>]/i.test(contentHtml);
 }
 
 /** The body of the information page. */

@@ -20,7 +20,6 @@ import type { ChapterToPack, ImageData } from "./epub/packer";
 import { buildPlaceholderChapter, buildPlaceholderImage, packEpub } from "./epub/packer";
 import type { EpubFile } from "./epub/document";
 import { sanitizeHtml } from "./util/sanitize";
-import type { ChapterLink } from "./util/dom";
 import type { Parser } from "./parsers/parser";
 import { toUserFacingError, type UserFacingError } from "./util/errors";
 
@@ -200,7 +199,7 @@ export class DownloadManager {
 
     /** Run a job. */
     async #run(job: Job): Promise<void> {
-        const { fetchHtml, fetchBytes, saveFile, parserFor, util, throttle } = this.#dependencies;
+        const { fetchBytes, saveFile, parserFor, util, throttle } = this.#dependencies;
         const signal = job.controller.signal;
 
         job.phase = "fetching-chapters";
@@ -210,6 +209,10 @@ export class DownloadManager {
         // workbench used to build the chapter list apply to the content.
         const storyDom = await this.#fetchStoryDom(job.sourceUrl, signal);
         const parser = storyDom ? parserFor(job.sourceUrl, storyDom) : null;
+
+        // The parser owns the politeness budget. Some sites need seconds
+        // between requests, and the baseline's parsers said so.
+        const delay = parser ? Math.max(parser.getRateLimit(), 0) : 500;
 
         const packed: ChapterToPack[] = [];
         const images = new Map<string, ImageData>();
@@ -222,32 +225,50 @@ export class DownloadManager {
             }
 
             try {
-                const { dom } = await fetchHtml(chapter.sourceUrl, { signal });
-                const content = parser ? parser.findContent(dom) : null;
-
-                if (!content) {
-                    // A chapter that yields no content is a placeholder, not a
-                    // silent omission: the reader can see that it is missing.
+                const dom = await this.#fetchChapter(parser, chapter.sourceUrl, signal);
+                if (dom === null) {
                     packed.push(
                         buildPlaceholderChapter(chapter.sourceUrl, "The chapter could not be read."),
                     );
                     job.failed += 1;
                 } else {
-                    parser?.removeUnwantedElementsFromContentElement(content);
-                    const html = sanitizeContent(content);
-                    packed.push({
-                        sourceUrl: chapter.sourceUrl,
-                        title: chapter.title,
-                        contentHtml: html,
-                    });
+                    // The parser decides what the content is and how it is
+                    // cleaned up. The pipeline does not second-guess it.
+                    const content = parser
+                        ? parser.extractChapterContent(dom, {
+                              sourceUrl: chapter.sourceUrl,
+                              title: chapter.title,
+                          })
+                        : null;
 
-                    // Collect the images the chapter references.
-                    for (const image of content.querySelectorAll("img")) {
-                        const src = image.getAttribute("src");
-                        if (!src) continue;
-                        const absolute = resolveUrl(src, chapter.sourceUrl);
-                        if (absolute && !images.has(absolute)) {
-                            images.set(absolute, { data: new Uint8Array(), mediaType: "", url: absolute });
+                    if (content === null) {
+                        packed.push(
+                            buildPlaceholderChapter(
+                                chapter.sourceUrl,
+                                "The chapter could not be read.",
+                            ),
+                        );
+                        job.failed += 1;
+                    } else {
+                        const html = sanitizeContent(content);
+                        packed.push({
+                            sourceUrl: chapter.sourceUrl,
+                            title: chapter.title,
+                            contentHtml: html,
+                        });
+
+                        // Collect the images the chapter references.
+                        for (const image of content.querySelectorAll("img")) {
+                            const src = image.getAttribute("src");
+                            if (!src) continue;
+                            const absolute = resolveUrl(src, chapter.sourceUrl);
+                            if (absolute && !images.has(absolute)) {
+                                images.set(absolute, {
+                                    data: new Uint8Array(),
+                                    mediaType: "",
+                                    url: absolute,
+                                });
+                            }
                         }
                     }
                 }
@@ -271,7 +292,7 @@ export class DownloadManager {
 
             // The throttle is the site's politeness budget. It is honoured
             // after every request, and it aborts immediately when cancelled.
-            await throttle(500, signal);
+            await throttle(delay, signal);
         }
 
         // --- Images ---
@@ -304,11 +325,8 @@ export class DownloadManager {
         job.phase = "building-epub";
         this.#report(job);
 
-        const result = packEpub(packed, {
-            title: job.title || "Untitled",
-            language: "en",
-            version: 3,
-        });
+        const metadata = this.#buildMetadata(job, storyDom, parser, downloaded);
+        const result = packEpub(packed, metadata);
 
         // --- Save ---
         job.phase = "saving";
@@ -322,6 +340,98 @@ export class DownloadManager {
         job.fileSize = saved.fileSize;
         job.phase = "complete";
         this.#report(job);
+    }
+
+    /**
+     * Build the EPUB's metadata from the story's page.
+     *
+     * The parser knows the site, so it knows the author, the language and
+     * where the cover is. The baseline wrote all of this into the EPUB; a
+     * rewrite that dropped it would produce a worse book.
+     */
+    #buildMetadata(
+        job: Job,
+        storyDom: Document | null,
+        parser: Parser | null,
+        images: Map<string, ImageData>,
+    ): {
+        title: string;
+        author?: string;
+        language?: string;
+        publisher?: string;
+        description?: string;
+        subjects?: string[];
+        date?: string;
+        cover?: ImageData;
+        version: 2 | 3;
+    } {
+        const metadata: {
+            title: string;
+            author?: string;
+            language?: string;
+            publisher?: string;
+            description?: string;
+            subjects?: string[];
+            date?: string;
+            cover?: ImageData;
+            version: 2 | 3;
+        } = {
+            title: job.title || "Untitled",
+            version: 3,
+        };
+
+        if (!parser || !storyDom) return metadata;
+
+        const author = parser.extractAuthor(storyDom);
+        if (author) metadata.author = author;
+
+        const language = parser.extractLanguage(storyDom);
+        if (language) metadata.language = language;
+
+        const publisher = parser.extractPublisher(storyDom);
+        if (publisher) metadata.publisher = publisher;
+
+        const description = parser.extractDescription(storyDom);
+        if (description) metadata.description = description;
+
+        const subject = parser.extractSubject(storyDom);
+        if (subject) metadata.subjects = [subject];
+
+        const date = parser.extractDatePublished(storyDom);
+        if (date) metadata.date = date;
+
+        // The cover is one of the images the chapters referenced, if the
+        // parser named one that was downloaded.
+        const coverUrl = parser.findCoverImageUrl(storyDom);
+        if (coverUrl) {
+            const absolute = resolveUrl(coverUrl, job.sourceUrl);
+            const cover = absolute ? images.get(absolute) : undefined;
+            if (cover) metadata.cover = cover;
+        }
+
+        return metadata;
+    }
+
+    /**
+     * Fetch a chapter's DOM.
+     *
+     * The parser fetches the chapter when there is one, because a parser may
+     * need a content script, an API, or its own error handling. Without a
+     * parser the pipeline falls back to a plain fetch.
+     */
+    async #fetchChapter(
+        parser: Parser | null,
+        url: string,
+        signal: AbortSignal,
+    ): Promise<Document | null> {
+        if (!parser) {
+            const result = await this.#dependencies.fetchHtml(url, { signal });
+            return result.dom;
+        }
+        // The parser carries the abort signal, so that a cancelled run stops
+        // the request rather than waiting for it.
+        parser.signal = signal;
+        return parser.fetchChapter(url);
     }
 
     /** Fetch the story's page, tolerating a failure. */
@@ -402,14 +512,4 @@ export function resolveUrl(src: string, base: string): string | null {
  */
 function sanitizeContent(content: Element): string {
     return sanitizeHtml(content.innerHTML);
-}
-
-/**
- * Convert a parser's chapter links into download chapters.
- */
-export function toDownloadChapters(chapters: ChapterLink[]): DownloadChapter[] {
-    return chapters.map((chapter) => ({
-        sourceUrl: chapter.sourceUrl,
-        title: chapter.title || chapter.sourceUrl,
-    }));
 }

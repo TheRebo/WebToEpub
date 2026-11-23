@@ -289,21 +289,58 @@ export abstract class Parser {
         // Overridden by parsers that need to reformat the raw page.
     }
 
+    /**
+     * The delay between requests to this site, in milliseconds.
+     *
+     * The legacy contract lets the user override a parser's minimum delay, so
+     * the effective delay is asked for here rather than read from
+     * `minimumThrottle` directly.
+     */
+    getRateLimit(): number {
+        return this.minimumThrottle;
+    }
+
+    /**
+     * Turn a chapter's DOM into the content element that will be packed.
+     *
+     * This is the one place that knows the order of the cleanup steps, so
+     * that the download pipeline does not have to know it:
+     *
+     *  1. `preprocessRawDom` — the parser reformats the raw page.
+     *  2. `findContent` — the content element is located.
+     *  3. `customRawDomToContentStep` — the parser's own transformation.
+     *  4. `removeUnwantedElementsFromContentElement` — the shared cleanup.
+     *
+     * The legacy base class overrides this with the baseline's full pipeline,
+     * which is longer. See ADR-0002.
+     *
+     * @param dom The chapter's DOM.
+     * @param chapter The chapter being processed.
+     * @returns The content element, or `null` when the page has no content.
+     */
+    extractChapterContent(dom: Document, chapter: WebPage): Element | null {
+        this.preprocessRawDom(dom);
+        const content = this.findContent(dom);
+        if (content === null) return null;
+        this.customRawDomToContentStep(chapter, content);
+        this.removeUnwantedElementsFromContentElement(content);
+        return content;
+    }
+
     /* ------------------------------------------------------------------
      * Helpers the baseline provided, preserved for parser compatibility
      * ------------------------------------------------------------------ */
 
     /**
      * Fetch a chapter's DOM.
+     *
+     * A failure is thrown, not swallowed: the download pipeline needs to tell
+     * "the site refused" from "the chapter is empty", and only the caller
+     * knows how to report that.
      */
     async fetchChapter(url: string): Promise<Document | null> {
-        try {
-            const result = await this.services.fetchHtml(url, { signal: this.signal });
-            return result.dom;
-        } catch (error) {
-            if (this.isCustomErrorResponse(error)) throw error;
-            return null;
-        }
+        const result = await this.services.fetchHtml(url, { signal: this.signal });
+        return result.dom;
     }
 
     /**
