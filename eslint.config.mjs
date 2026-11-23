@@ -63,13 +63,17 @@ export default defineConfig([
     },
     {
         // Component CSS may only reference semantic tokens.
-        files: ["src/ui/components/**/*.css"],
+        //
+        // The component stylesheets are inline template strings inside the
+        // component's TypeScript file, not standalone `.css` files, so the
+        // rule has to match the string literals in those files.
+        files: ["src/ui/components/**/*.ts"],
         rules: {
             "no-restricted-syntax": [
                 "error",
                 {
                     selector:
-                        "Literal[value=/#[0-9a-fA-F]{3,8}\\b/]:not([value=/var\\(--/])",
+                        "TemplateElement[value.raw=/(^|[^-\\w])(#[0-9a-fA-F]{3,8})\\b/]:not([value.raw=/var\\(--/])",
                     message:
                         "Raw colours are not allowed in component CSS. Use a Layer 2 semantic token (e.g. var(--accent)) from src/ui/styles/tokens.css.",
                 },

@@ -155,7 +155,7 @@ export abstract class Parser {
      * ------------------------------------------------------------------ */
 
     /** The story title. */
-    extractTitleImpl(dom: Document): Element | string | null {
+    extractTitleImpl(_dom: Document): Element | string | null {
         return null;
     }
 
@@ -205,7 +205,7 @@ export abstract class Parser {
     /**
      * The chapter title, when it lives outside the content element.
      */
-    findChapterTitle(dom: Document): Element | null {
+    findChapterTitle(_dom: Document): Element | null {
         return null;
     }
 
@@ -225,14 +225,14 @@ export abstract class Parser {
     /**
      * A custom transformation applied to the content after extraction.
      */
-    customRawDomToContentStep(chapter: WebPage, content: Element): void {
+    customRawDomToContentStep(_chapter: WebPage, _content: Element): void {
         // Overridden by parsers that need to reformat the content.
     }
 
     /**
      * Whether the response represents a challenge or custom site failure.
      */
-    isCustomError(response: Response, bodyText: string): boolean {
+    isCustomError(_response: Response, _bodyText: string): boolean {
         return false;
     }
 
@@ -243,9 +243,9 @@ export abstract class Parser {
      * for an automatic retry after `retryDelay` milliseconds.
      */
     setCustomErrorResponse(
-        url: string,
-        status: number,
-        bodyText: string,
+        _url: string,
+        _status: number,
+        _bodyText: string,
     ): { status: number; retryDelay?: number } | undefined {
         return undefined;
     }

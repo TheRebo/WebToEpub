@@ -134,7 +134,7 @@ async function bundleScripts() {
         onboarding: join(SRC, "ui", "pages", "onboarding.ts"),
     };
 
-    for (const [name, entry] of Object.entries(entryPoints)) {
+    for (const entry of Object.values(entryPoints)) {
         if (!existsSync(entry)) {
             throw new Error(`Missing entry point: ${relative(ROOT, entry)}`);
         }

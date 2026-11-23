@@ -205,7 +205,7 @@ export class FetchClient {
         const useCookies = options.useCookies ?? true;
         const domain = useCookies ? domainOf(url) : null;
 
-        let copiedCookies: string[] = [];
+        const copiedCookies: string[] = [];
         let lastError: FetchError | undefined;
 
         try {

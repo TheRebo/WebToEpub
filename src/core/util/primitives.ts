@@ -50,17 +50,32 @@ export function trimmedOrNull(value: Maybe<string>): string | null {
  */
 const RESERVED_FILENAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 
+/**
+ * Whether a character is a control character.
+ *
+ * C0 controls (U+0000–U+001F), the delete character (U+007F), and the C1
+ * range (U+0080–U+009F) are all illegal or dangerous in a filename. This is a
+ * function rather than a regular expression because `no-control-regex` (rightly)
+ * refuses to let control characters live inside a pattern literal, and
+ * escaping them does not satisfy the rule.
+ */
+function isControlCharacter(character: string): boolean {
+    const code = character.charCodeAt(0);
+    return code <= 0x1f || (code >= 0x7f && code <= 0x9f);
+}
+
 export function safeForFileName(title: string, maxLength = 120): string {
     let safe = title
         // Path separators and characters that are illegal on Windows.
         .replace(/[\\/:*?"<>|]/g, "-")
-        // Control characters.
-        .replace(/[\x00-\x1f\x7f]/g, "")
         // Leading and trailing dots and spaces, which Windows silently strips.
         .replace(/^[\s.]+|[\s.]+$/g, "")
         // Collapse runs of whitespace to a single space.
         .replace(/\s+/g, " ")
         .trim();
+
+    // Control characters, removed by code point rather than by pattern.
+    safe = [...safe].filter((character) => !isControlCharacter(character)).join("");
 
     if (safe.length === 0) safe = "untitled";
     if (RESERVED_FILENAMES.test(safe)) safe = `_${safe}`;
@@ -95,7 +110,7 @@ export function normalizeUrlForCompare(url: string): string {
         if (/^(utm_|fbclid|gclid|ref|source|spm)/i.test(key)) params.delete(key);
     }
 
-    let path = parsed.pathname.replace(/\/+$/, "");
+    const path = parsed.pathname.replace(/\/+$/, "");
     const query = params.toString();
 
     return `${parsed.host.toLowerCase()}${path}${query ? `?${query}` : ""}`;

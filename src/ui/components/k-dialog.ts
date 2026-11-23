@@ -1,0 +1,192 @@
+/**
+ * `<k-dialog>`.
+ *
+ * A modal dialog built on the native `<dialog>` element, so focus trapping,
+ * `Escape` handling, and the top layer all come for free — with the
+ * background correctly inert.
+ */
+import { KComponent, defineComponent } from "./base";
+
+const STYLES = `
+:host { display: contents; }
+
+dialog {
+    width: min(480px, calc(100vw - 32px));
+    max-height: calc(100vh - 64px);
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--surface-raised);
+    color: var(--text);
+    box-shadow: var(--shadow-3);
+    overflow: hidden;
+}
+
+dialog::backdrop {
+    background: rgb(0 0 0 / 55%);
+    backdrop-filter: blur(2px);
+}
+
+.dialog {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 64px);
+}
+
+.header {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-5) var(--space-3);
+}
+
+.heading {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-snug);
+}
+
+.close {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background-color var(--dur-instant) var(--ease-out);
+}
+
+.close:hover { background: var(--bg-subtle); color: var(--text); }
+.close:focus-visible { outline: none; box-shadow: var(--ring); }
+
+.body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 var(--space-5) var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+}
+
+.footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--border-subtle);
+    background: var(--surface);
+}
+
+.footer .spacer { flex: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+    dialog[open] { animation: none; }
+}
+`;
+
+export class KDialog extends KComponent {
+    static override styles = STYLES;
+    static override observedAttributes = ["heading", "open"];
+
+    private dialog: HTMLDialogElement | undefined;
+
+    protected override render(): void {
+        if (!this.dialog) {
+            this.root.replaceChildren();
+            this.dialog = document.createElement("dialog");
+            this.#build();
+        }
+
+        const heading = this.root.querySelector(".heading");
+        if (heading) heading.textContent = this.getAttribute("heading") ?? "";
+
+        if (this.hasAttribute("open")) {
+            if (!this.dialog.open) this.dialog.showModal();
+        } else if (this.dialog.open) {
+            this.dialog.close();
+        }
+    }
+
+    /** Build the component's structure. */
+    #build(): void {
+        const dialog = this.dialog as HTMLDialogElement;
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "dialog";
+
+        const header = document.createElement("div");
+        header.className = "header";
+
+        const heading = document.createElement("h2");
+        heading.className = "heading";
+
+        const close = document.createElement("button");
+        close.type = "button";
+        close.className = "close";
+        close.setAttribute("aria-label", "Close");
+        close.innerHTML =
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+        close.addEventListener("click", () => this.close());
+
+        header.appendChild(heading);
+        header.appendChild(close);
+
+        const body = document.createElement("div");
+        body.className = "body";
+        body.appendChild(document.createElement("slot"));
+
+        const footer = document.createElement("div");
+        footer.className = "footer";
+        const footerSlot = document.createElement("slot");
+        footerSlot.name = "footer";
+        footer.appendChild(footerSlot);
+
+        wrapper.appendChild(header);
+        wrapper.appendChild(body);
+        wrapper.appendChild(footer);
+        dialog.appendChild(wrapper);
+        this.root.appendChild(dialog);
+
+        dialog.addEventListener("close", () => {
+            this.removeAttribute("open");
+            this.emit("k-close", {});
+        });
+
+        dialog.addEventListener("cancel", (event) => {
+            // The `cancel` event fires on Escape; the default action is to
+            // close, which also fires `close`, so nothing extra is needed.
+            event.preventDefault();
+            this.close();
+        });
+    }
+
+    /** Open the dialog. */
+    open(): void {
+        this.setAttribute("open", "");
+        if (this.dialog && !this.dialog.open) this.dialog.showModal();
+    }
+
+    /** Close the dialog. */
+    close(): void {
+        this.removeAttribute("open");
+        if (this.dialog?.open) this.dialog.close();
+    }
+}
+
+defineComponent("k-dialog", KDialog);
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "k-dialog": KDialog;
+    }
+}

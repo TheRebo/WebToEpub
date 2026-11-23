@@ -91,7 +91,7 @@ const ALLOWED_ATTRIBUTES = [
  * approach here means a URL that somehow survives the tag filter is still
  * checked.
  */
-function sanitiseHook(domPurify: typeof DOMPurify): void {
+function sanitiseHook(_domPurify: typeof DOMPurify): void {
     DOMPurify.addHook("afterSanitizeAttributes", (node) => {
         if (node.nodeType !== 1 /* ELEMENT_NODE */) return;
         const element = node as Element;

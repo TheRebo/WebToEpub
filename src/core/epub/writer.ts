@@ -17,7 +17,6 @@ import {
     OPF_PATH,
     type EpubDocument,
     type EpubFile,
-    type ManifestItem,
     type NavigationPoint,
     escapeXml,
     escapeXmlAttribute,
