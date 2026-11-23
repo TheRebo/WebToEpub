@@ -17,7 +17,14 @@ import { defineConfig } from "eslint/config";
  */
 export default defineConfig([
     {
-        ignores: ["dist/**", "node_modules/**", "legacy/**", "plugin/**", "coverage/**", "test-results/**", "playwright-report/**"],
+        ignores: [
+            "dist/**",
+            "node_modules/**",
+            "coverage/**",
+            "test-results/**",
+            "playwright-report/**",
+            "src/core/parsers/legacy/**",
+        ],
     },
     js.configs.recommended,
     ...tseslint.configs.recommended,
