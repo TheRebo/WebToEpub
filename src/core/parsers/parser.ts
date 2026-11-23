@@ -1,0 +1,381 @@
+/**
+ * The parser contract.
+ *
+ * This is the interface every one of the 437 site parsers implements, and
+ * the single most valuable asset the project owns. It is preserved
+ * **verbatim** from the baseline so that every parser keeps working
+ * unchanged.
+ *
+ * The baseline's contract was a bag of global ambient functions
+ * (`Parser`, `util`, `HttpClient`, `parserFactory`) with no types. The
+ * rewrite keeps the *shape* of every method a parser overrides, but makes
+ * the dependencies explicit and injected.
+ *
+ * See ADR-0002.
+ */
+import type { ChapterLink } from "../util/dom";
+
+/** The chapter object a parser produces. */
+export interface WebPage {
+    /** The absolute URL of the chapter. */
+    sourceUrl: string;
+    /** The chapter's title, as it should appear in the book. */
+    title?: string;
+    /**
+     * Whether the chapter should be included by default.
+     *
+     * `false` marks a locked or paywalled chapter: it appears unchecked in
+     * the UI, so a run does not fail on it, but the user can still select it.
+     */
+    isIncludeable?: boolean;
+    /** The fetched DOM, once the chapter has been loaded. */
+    rawDom?: Document | null;
+    /** The failure, if the chapter could not be loaded. */
+    error?: Error | null;
+    /** The next and previous chapter URLs, for the "remove navigation links" step. */
+    nextPrevChapters?: Set<string>;
+    /** Extra data a parser wants to carry through to the EPUB stage. */
+    data?: Record<string, unknown>;
+}
+
+/** The progress reporter the TOC helpers call. */
+export interface TocProgress {
+    /** Report the chapters found so far. */
+    showTocProgress(chapters: ChapterLink[]): void;
+}
+
+/** The image collector, which parsers use to gather chapter images. */
+export interface ImageCollector {
+    /** Add an image to the collection. */
+    addImage(url: string, context?: { isCover?: boolean }): Promise<void>;
+    /** The images collected so far. */
+    readonly images: Map<string, unknown>;
+}
+
+/** The services a parser may use. */
+export interface ParserServices {
+    /** Fetch a page and parse it as HTML. */
+    fetchHtml(url: string, options?: { signal?: AbortSignal }): Promise<{ dom: Document; url: string }>;
+    /** Fetch a JSON body. */
+    fetchJson(url: string, options?: { signal?: AbortSignal }): Promise<{ json: unknown }>;
+    /** The utility functions. */
+    util: ParserUtilities;
+    /** The image collector. */
+    imageCollector: ImageCollector;
+    /** Report progress to the UI. */
+    progress?: TocProgress;
+}
+
+/** The utility functions a parser may call. */
+export interface ParserUtilities {
+    hyperlinksToChapterList(element: Element): ChapterLink[];
+    hyperLinkToChapter(anchor: Element): ChapterLink | null;
+    removeChildElementsMatchingSelector(element: Element, selector: string): void;
+    removeElements(nodes: ArrayLike<Element> | null | undefined): void;
+    removeComments(node: Node): void;
+    removeUnwantedWordpressElements(element: Element): void;
+    removeShareLinkElements(element: Element): void;
+    removeEmptyDivElements(element: Element): void;
+    removeLeadingWhiteSpace(element: Element): void;
+    removeTrailingWhiteSpace(element: Element): void;
+    moveChildElements(source: Element, target: Element): void;
+    getFirstImgSrc(dom: Document, containerSelector: string): string | null;
+    convertPreTagToPTags(dom: Document, preElement: Element, delimiter?: string): void;
+    normalizeUrlForCompare(url: string): string;
+    safeForFileName(title: string, maxLength?: number): string;
+    isNullOrEmpty(value: string | null | undefined): boolean;
+}
+
+/**
+ * The base class every parser extends.
+ *
+ * A parser overrides a small, well-defined set of methods:
+ *
+ *  - `getChapterUrls(dom, chapterUrlsUI)` — required. The chapter list.
+ *  - `findContent(dom)` — required. The element holding the chapter body.
+ *  - `extractTitleImpl(dom)` — optional. The story title.
+ *  - `extractAuthor(dom)` — optional. The author.
+ *  - `findCoverImageUrl(dom)` — optional. The cover.
+ *  - `findChapterTitle(dom)` — optional. A title outside the content element.
+ *  - `removeUnwantedElementsFromContentElement(element)` — optional. Site-specific cleanup.
+ *  - `customRawDomToContentStep(chapter, content)` — optional. Custom transformation.
+ */
+export abstract class Parser {
+    /**
+     * The minimum delay between HTTP requests, in milliseconds.
+     *
+     * Raise this for heavily rate-limited or Cloudflare-protected sites. The
+     * baseline used 500 ms; several parsers raise it to 3–12 seconds.
+     */
+    minimumThrottle = 500;
+
+    /**
+     * The number of concurrent chapter fetches.
+     *
+     * This must stay at 1. Concurrent fetching gets users rate-limited.
+     */
+    maxSimultanousFetchSize = 1;
+
+    /** The services this parser uses. */
+    protected readonly services: ParserServices;
+
+    /** The signal that aborts an in-flight download. */
+    signal?: AbortSignal;
+
+    constructor(services: ParserServices) {
+        this.services = services;
+    }
+
+    /** The utility functions, for parsers that use them. */
+    protected get util(): ParserUtilities {
+        return this.services.util;
+    }
+
+    /** The image collector. */
+    protected get imageCollector(): ImageCollector {
+        return this.services.imageCollector;
+    }
+
+    /**
+     * Extract the chapter list from the table of contents.
+     *
+     * The one method every parser must implement.
+     */
+    abstract getChapterUrls(dom: Document, chapterUrlsUI?: TocProgress): Promise<ChapterLink[]> | ChapterLink[];
+
+    /**
+     * Find the element holding the chapter's content.
+     *
+     * The other method every parser must implement.
+     */
+    abstract findContent(dom: Document): Element | null;
+
+    /* ------------------------------------------------------------------
+     * Optional overrides
+     * ------------------------------------------------------------------ */
+
+    /** The story title. */
+    extractTitleImpl(dom: Document): Element | string | null {
+        return null;
+    }
+
+    /** The author. */
+    extractAuthor(dom: Document): string | null {
+        const element = dom.querySelector('[rel="author"], .author, [itemprop="author"]');
+        return element?.textContent?.trim() ?? null;
+    }
+
+    /** The language, as an ISO 639 code. */
+    extractLanguage(dom: Document): string | null {
+        const element = dom.querySelector('html[lang]');
+        return element?.getAttribute("lang") ?? null;
+    }
+
+    /** The subject or genre. */
+    extractSubject(dom: Document): string | null {
+        const element = dom.querySelector('[property="genre"], .genre, .tags a');
+        return element?.textContent?.trim() ?? null;
+    }
+
+    /** The description. */
+    extractDescription(dom: Document): string | null {
+        const element = dom.querySelector('[property="description"], meta[name="description"]');
+        return element?.getAttribute("content") ?? element?.textContent?.trim() ?? null;
+    }
+
+    /** The publisher. */
+    extractPublisher(dom: Document): string | null {
+        const element = dom.querySelector('[property="publisher"], .publisher');
+        return element?.textContent?.trim() ?? null;
+    }
+
+    /** The publication date. */
+    extractDatePublished(dom: Document): string | null {
+        const element = dom.querySelector('[property="published"], time[datetime]');
+        return element?.getAttribute("datetime") ?? element?.textContent?.trim() ?? null;
+    }
+
+    /** The cover image URL. */
+    findCoverImageUrl(dom: Document): string | null {
+        const content = this.findContent(dom);
+        const image = content?.querySelector("img");
+        return image?.getAttribute("src") ?? null;
+    }
+
+    /**
+     * The chapter title, when it lives outside the content element.
+     */
+    findChapterTitle(dom: Document): Element | null {
+        return null;
+    }
+
+    /**
+     * Strip site-specific elements from the extracted content.
+     *
+     * The default removes scripts and comments, which no EPUB should ever
+     * contain.
+     */
+    removeUnwantedElementsFromContentElement(element: Element): void {
+        element.querySelectorAll("script, style, noscript, iframe, object, embed").forEach((node) => {
+            node.remove();
+        });
+        this.services.util.removeComments(element);
+    }
+
+    /**
+     * A custom transformation applied to the content after extraction.
+     */
+    customRawDomToContentStep(chapter: WebPage, content: Element): void {
+        // Overridden by parsers that need to reformat the content.
+    }
+
+    /**
+     * Whether the response represents a challenge or custom site failure.
+     */
+    isCustomError(response: Response, bodyText: string): boolean {
+        return false;
+    }
+
+    /**
+     * The custom response for a detected error.
+     *
+     * Returning `403` asks the user to solve a captcha; returning `999` asks
+     * for an automatic retry after `retryDelay` milliseconds.
+     */
+    setCustomErrorResponse(
+        url: string,
+        status: number,
+        bodyText: string,
+    ): { status: number; retryDelay?: number } | undefined {
+        return undefined;
+    }
+
+    /**
+     * Whether an empty page should be treated as a 403.
+     */
+    isNoContentToError403AndContentNull(dom: Document): boolean {
+        return this.findContent(dom) === null;
+    }
+
+    /* ------------------------------------------------------------------
+     * Helpers the baseline provided, preserved for parser compatibility
+     * ------------------------------------------------------------------ */
+
+    /**
+     * Fetch a chapter's DOM.
+     */
+    async fetchChapter(url: string): Promise<Document | null> {
+        try {
+            const result = await this.services.fetchHtml(url, { signal: this.signal });
+            return result.dom;
+        } catch (error) {
+            if (this.isCustomErrorResponse(error)) throw error;
+            return null;
+        }
+    }
+
+    /**
+     * Walk a paginated table of contents, accumulating chapters.
+     *
+     * @param dom The first page's DOM.
+     * @param chaptersFromDom Extracts the chapters from one page.
+     * @param nextTocPageUrl Returns the next page's URL, or `null` at the end.
+     * @param chapterUrlsUI The progress reporter.
+     */
+    async walkTocPages(
+        dom: Document,
+        chaptersFromDom: (dom: Document) => ChapterLink[],
+        nextTocPageUrl: (dom: Document) => string | null,
+        chapterUrlsUI?: TocProgress,
+    ): Promise<ChapterLink[]> {
+        let chapters = chaptersFromDom(dom);
+        chapterUrlsUI?.showTocProgress(chapters);
+
+        let nextUrl = nextTocPageUrl(dom);
+        let guard = 0;
+        while (nextUrl !== null) {
+            // A site with a broken pagination loop would otherwise fetch
+            // forever.
+            if (++guard > 1000) break;
+            const result = await this.services.fetchHtml(nextUrl, { signal: this.signal });
+            chapters = chapters.concat(chaptersFromDom(result.dom));
+            chapterUrlsUI?.showTocProgress(chapters);
+            nextUrl = nextTocPageUrl(result.dom);
+        }
+        return chapters;
+    }
+
+    /**
+     * Fetch a known list of TOC pages and aggregate their chapters.
+     */
+    async getChaptersFromAllTocPages(
+        chapters: ChapterLink[],
+        extractPartialChapterList: (dom: Document) => ChapterLink[],
+        urlsOfTocPages: string[],
+        chapterUrlsUI?: TocProgress,
+    ): Promise<ChapterLink[]> {
+        if (chapters.length > 0) chapterUrlsUI?.showTocProgress(chapters);
+
+        for (const url of urlsOfTocPages) {
+            const result = await this.services.fetchHtml(url, { signal: this.signal });
+            const partial = extractPartialChapterList(result.dom);
+            chapters = chapters.concat(partial);
+            chapterUrlsUI?.showTocProgress(chapters);
+        }
+        return chapters;
+    }
+
+    /**
+     * Extract the TOC page URLs, then fetch them all.
+     */
+    async getChapterUrlsFromMultipleTocPages(
+        dom: Document,
+        extractPartialChapterList: (dom: Document) => ChapterLink[],
+        getUrlsOfTocPages: (dom: Document) => string[],
+        chapterUrlsUI?: TocProgress,
+    ): Promise<ChapterLink[]> {
+        const chapters = extractPartialChapterList(dom);
+        const urls = getUrlsOfTocPages(dom);
+        return this.getChaptersFromAllTocPages(
+            chapters,
+            extractPartialChapterList,
+            urls,
+            chapterUrlsUI,
+        );
+    }
+
+    /**
+     * Handle a chapter split across several pages.
+     *
+     * @param url The first page's URL.
+     * @param moreChapterTextUrl Returns the next page's URL from the DOM, or
+     *   `null` when the chapter ends.
+     */
+    async walkPagesOfChapter(
+        url: string,
+        moreChapterTextUrl: (dom: Document) => string | null,
+    ): Promise<Document> {
+        const first = await this.services.fetchHtml(url, { signal: this.signal });
+        let dom = first.dom;
+        let count = 2;
+        let nextUrl = moreChapterTextUrl(dom);
+
+        while (nextUrl !== null && count < 1000) {
+            const result = await this.services.fetchHtml(nextUrl, { signal: this.signal });
+            const content = this.findContent(result.dom);
+            if (content) {
+                const target = this.findContent(dom);
+                if (target) this.services.util.moveChildElements(content, target);
+            }
+            dom = result.dom;
+            nextUrl = moreChapterTextUrl(dom);
+            count += 1;
+        }
+        return dom;
+    }
+
+    /** Whether the error is a custom error raised by the parser. */
+    protected isCustomErrorResponse(error: unknown): boolean {
+        return error instanceof Error && error.name === "FetchError";
+    }
+}
