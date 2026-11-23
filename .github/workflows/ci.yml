@@ -58,6 +58,12 @@ jobs:
       - name: Lint the extension
         run: npm run web-ext:lint
 
+      - name: Install the browser for the end-to-end tests
+        run: npm run test:e2e:install-firefox
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
       - name: Package
         run: npm run package
 

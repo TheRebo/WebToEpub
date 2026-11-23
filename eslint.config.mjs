@@ -73,6 +73,20 @@ export default defineConfig([
         },
     },
     {
+        // The end-to-end checks are plain modules run by Node, but the scripts
+        // they inject into the page run in the browser: both sets of globals
+        // are therefore in scope.
+        files: ["tests/**/*.mjs"],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: "module",
+            globals: { ...globals.node, ...globals.browser },
+        },
+        rules: {
+            "no-console": "off",
+        },
+    },
+    {
         // Component CSS may only reference semantic tokens.
         //
         // The component stylesheets are inline template strings inside the

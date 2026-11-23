@@ -21,12 +21,13 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
-    "test:a11y": "playwright test tests/e2e/a11y",
+    "test:e2e": "node tools/e2e-harness.mjs run",
+    "test:e2e:shots": "node tools/e2e-harness.mjs shots",
+    "test:e2e:install-firefox": "playwright-core install firefox",
     "web-ext:lint": "node tools/lint-extension.mjs",
     "web-ext:lint:raw": "web-ext lint --source-dir dist",
     "web-ext:run": "web-ext run --source-dir dist",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run build && npm run web-ext:lint",
+    "verify": "npm run lint && npm run typecheck && npm run test && npm run build && npm run web-ext:lint && npm run test:e2e",
     "precommit": "npm run lint && npm run typecheck",
     "prepare": "husky || true"
   },
@@ -35,9 +36,7 @@
     "dompurify": "3.2.7"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.11.0",
     "@eslint/js": "9.39.1",
-    "@playwright/test": "1.56.1",
     "@types/chrome": "0.1.28",
     "@types/node": "24.10.1",
     "@vitest/coverage-v8": "3.2.4",
@@ -48,6 +47,7 @@
     "happy-dom": "20.0.11",
     "husky": "9.1.7",
     "lint-staged": "16.2.4",
+    "playwright-core": "1.65.1",
     "prettier": "3.6.2",
     "typescript": "5.9.3",
     "typescript-eslint": "8.46.4",
@@ -66,6 +66,10 @@
       "prettier --write"
     ],
     "tests/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "tests/**/*.mjs": [
       "eslint --fix",
       "prettier --write"
     ],
