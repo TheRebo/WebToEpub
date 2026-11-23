@@ -16,6 +16,9 @@
  */
 import type { Parser } from "./parser";
 import type { ParserServices } from "./parser";
+import { getParserServices } from "./services-context";
+
+export { setParserServices } from "./services-context";
 
 /** A parser constructor. */
 export type ParserConstructor = (services: ParserServices) => Parser;
@@ -173,26 +176,12 @@ export class ParserRegistry {
 }
 
 /**
- * The services the registry injects into a parser.
+ * The services the registry injects.
  *
- * Set once at startup by the background worker. The registry is
- * constructed before the services exist, so this indirection avoids
- * threading the services through every registration.
+ * The services live in `services-context.ts`, because the legacy parsers
+ * resolve them the same way: their constructors call `super()` with no
+ * arguments.
  */
-let parserServices: ParserServices | undefined;
-
-/** Set the services the registry injects. */
-export function setParserServices(services: ParserServices): void {
-    parserServices = services;
-}
-
-/** The services the registry injects. */
-function getParserServices(): ParserServices {
-    if (parserServices === undefined) {
-        throw new Error("Parser services have not been set. Call setParserServices() first.");
-    }
-    return parserServices;
-}
 
 /** The host name used for parser selection. */
 export function hostNameForParserSelection(url: string): string {

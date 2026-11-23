@@ -103,6 +103,8 @@ declare namespace browser {
     const declarativeNetRequest: {
         updateDynamicRules(options: { removeRuleIds?: number[]; addRules?: unknown[] }): Promise<void>;
         getDynamicRules(): Promise<Array<{ id: number }>>;
+        updateSessionRules(options: { removeRuleIds?: number[]; addRules?: unknown[] }): Promise<void>;
+        getSessionRules(): Promise<Array<{ id: number }>>;
     };
 
     /** The scripting namespace. */

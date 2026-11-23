@@ -131,8 +131,15 @@ export abstract class Parser {
         return this.services.util;
     }
 
-    /** The image collector. */
-    protected get imageCollector(): ImageCollector {
+    /**
+     * The image collector service.
+     *
+     * The name is not `imageCollector` because the legacy contract uses that
+     * name for a richer object — the collector that owns the whole image
+     * pipeline. The legacy base class shadows it with its own, more capable
+     * version. See ADR-0002.
+     */
+    protected get collector(): ImageCollector {
         return this.services.imageCollector;
     }
 
@@ -204,8 +211,11 @@ export abstract class Parser {
 
     /**
      * The chapter title, when it lives outside the content element.
+     *
+     * The second parameter is the chapter being processed. The legacy
+     * contract passes it, and a parser that needs it may declare it.
      */
-    findChapterTitle(_dom: Document): Element | null {
+    findChapterTitle(_dom: Document, _webPage?: unknown): Element | null {
         return null;
     }
 
@@ -231,30 +241,52 @@ export abstract class Parser {
 
     /**
      * Whether the response represents a challenge or custom site failure.
+     *
+     * The parameter is deliberately loose. The legacy contract passes the
+     * baseline's response wrapper, which carries the parsed document; the
+     * rewrite's fetch client passes the raw `Response` and the body text.
+     * Both are accepted, because the legacy parsers are the contract.
      */
-    isCustomError(_response: Response, _bodyText: string): boolean {
+    isCustomError(_response: unknown, _bodyText?: string): boolean {
         return false;
     }
 
     /**
      * The custom response for a detected error.
      *
-     * Returning `403` asks the user to solve a captcha; returning `999` asks
-     * for an automatic retry after `retryDelay` milliseconds.
+     * Returning a status of `403` asks the user to solve a captcha;
+     * returning `999` asks for an automatic retry after `retryDelay`
+     * milliseconds.
+     *
+     * The parameters are loose for the same reason as `isCustomError`: the
+     * legacy contract passes the URL, the wrap options, and the response.
      */
     setCustomErrorResponse(
         _url: string,
-        _status: number,
-        _bodyText: string,
-    ): { status: number; retryDelay?: number } | undefined {
+        _wrapOptions?: unknown,
+        _checkedResponse?: unknown,
+    ): unknown {
         return undefined;
     }
 
     /**
      * Whether an empty page should be treated as a 403.
+     *
+     * Accepts either a document or the legacy response wrapper.
      */
-    isNoContentToError403AndContentNull(dom: Document): boolean {
-        return this.findContent(dom) === null;
+    isNoContentToError403AndContentNull(response: unknown): boolean {
+        const dom = documentFromResponse(response);
+        return dom === null ? false : this.findContent(dom) === null;
+    }
+
+    /**
+     * Modify the raw DOM before the content is extracted.
+     *
+     * A parser that needs to reformat author notes, or decrypt content, does
+     * it here.
+     */
+    preprocessRawDom(_webPageDom: Document): void {
+        // Overridden by parsers that need to reformat the raw page.
     }
 
     /* ------------------------------------------------------------------
@@ -378,4 +410,23 @@ export abstract class Parser {
     protected isCustomErrorResponse(error: unknown): boolean {
         return error instanceof Error && error.name === "FetchError";
     }
+}
+
+/**
+ * Get the document from either a document or the legacy response wrapper.
+ *
+ * The legacy contract's `isNoContentToError403AndContentNull` received the
+ * baseline's response wrapper, which carries the parsed document as
+ * `responseXML`. The rewrite's contract passes the document itself.
+ */
+function documentFromResponse(response: unknown): Document | null {
+    if (response === null || response === undefined) return null;
+    if (typeof (response as Document).querySelector === "function") {
+        return response as Document;
+    }
+    const wrapper = response as { responseXML?: Document };
+    if (wrapper.responseXML && typeof wrapper.responseXML.querySelector === "function") {
+        return wrapper.responseXML;
+    }
+    return null;
 }

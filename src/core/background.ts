@@ -11,7 +11,9 @@
  */
 import { DownloadManager, toDownloadChapters } from "./download-manager";
 import { FetchClient } from "./net/fetch-client";
-import { ParserRegistry, setParserServices } from "./parsers/registry";
+import { legacyRegistry } from "./parsers/compat/legacy-factory";
+import { installFetchClient } from "./parsers/compat/legacy-http-client";
+import { setParserServices } from "./parsers/services-context";
 import { buildParserUtilities } from "./util/parser-utilities";
 import { handleRequests, type RequestMap } from "./message/bus";
 import { localStorageAdapter, onMessage, getNamespace } from "./browser-api";
@@ -25,13 +27,25 @@ import type { ParserServices } from "./parsers/parser";
 
 /** The worker. */
 class BackgroundWorker {
-    #registry = new ParserRegistry();
+    /**
+     * The registry.
+     *
+     * The migrated parsers register themselves with the legacy factory, which
+     * writes into this registry.
+     */
+    #registry = legacyRegistry;
     #fetch = new FetchClient();
     #downloads: DownloadManager;
     #settings = new SettingsStore(localStorageAdapter);
     #library = new LibraryStore();
 
     constructor() {
+        // The legacy HTTP facade needs the rewrite's fetch client, so that
+        // every request — whether it comes from the new pipeline or from a
+        // migrated parser — goes through the same cookie handling, retry
+        // policy and abort plumbing.
+        installFetchClient(this.#fetch);
+
         this.#downloads = new DownloadManager({
             fetchHtml: async (url, options) => {
                 const result = await this.#fetch.fetchHtml(url, options);

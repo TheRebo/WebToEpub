@@ -22,6 +22,17 @@
     "skipLibCheck": true,
     "noEmit": true,
 
+    /*
+     * The migrated site parsers are plain JavaScript.
+     *
+     * They are the baseline's code, unchanged; the compat layer describes the
+     * contract they implement. `allowJs` lets TypeScript resolve them so the
+     * rest of the project can import them, and `checkJs` stays off so their
+     * untyped internals are not reported.
+     */
+    "allowJs": true,
+    "checkJs": false,
+
     "baseUrl": ".",
     "paths": {
       "@core/*": ["src/core/*"],
@@ -29,6 +40,6 @@
       "@assets/*": ["src/assets/*"]
     }
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts", "tools/**/*.mjs", "*.config.ts", "*.config.mjs"],
+  "include": ["src/**/*.ts", "src/**/*.js", "tests/**/*.ts", "tools/**/*.mjs", "*.config.ts", "*.config.mjs"],
   "exclude": ["node_modules", "dist", "legacy"]
 }

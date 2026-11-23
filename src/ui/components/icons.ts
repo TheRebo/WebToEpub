@@ -120,13 +120,32 @@ export function iconSvg(name: IconName, size = 20): string {
 export const ICON_NAMES = Object.keys(PATHS) as IconName[];
 
 /**
- * The icon element for a name, as an SVG string.
+ * The icon element for a name, as an SVG element.
  *
- * The markup is inserted with `innerHTML` only from this module, where every
- * path is a literal constant. No untrusted data reaches it.
+ * The SVG is built node by node rather than parsed from a markup string.
+ * The paths are literal constants, so neither approach is a security
+ * question — but building the tree directly means the extension linter's
+ * `innerHTML` check stays quiet and the icon set cannot grow a string
+ * injection by accident.
  */
 export function createIcon(name: IconName, size = 20): SVGElement {
-    const template = document.createElement("template");
-    template.innerHTML = iconSvg(name, size);
-    return template.content.firstElementChild as SVGElement;
+    const namespace = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(namespace, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("width", String(size));
+    svg.setAttribute("height", String(size));
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+
+    for (const d of PATHS[name] ?? PATHS.info) {
+        const path = document.createElementNS(namespace, "path");
+        path.setAttribute("d", d);
+        svg.appendChild(path);
+    }
+    return svg;
 }

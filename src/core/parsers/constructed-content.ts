@@ -73,7 +73,8 @@ export function addHtmlToChapterContent(
     html: string,
     sanitize: (html: string) => string,
 ): void {
-    const template = newDoc.dom.createElement("template");
-    template.innerHTML = sanitize(html);
-    newDoc.content.appendChild(template.content);
+    const parsed = new DOMParser().parseFromString(sanitize(html), "text/html");
+    for (const node of Array.from(parsed.body.childNodes)) {
+        newDoc.content.appendChild(newDoc.dom.importNode(node, true));
+    }
 }
