@@ -1,0 +1,485 @@
+/*
+ * The workbench.
+ *
+ * The main tool surface: an app bar, a metadata sidebar, the chapter list,
+ * and a status bar that only exists while something is happening.
+ */
+
+.k-page--workbench {
+    height: 100vh;
+    overflow: hidden;
+}
+
+.k-page--workbench .k-shell {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    height: 100vh;
+}
+
+/* --- App bar ---------------------------------------------------------- */
+
+.workbench-title {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-width: 0;
+    flex: 1;
+}
+
+.workbench-title__name {
+    font-size: var(--text-md);
+    font-weight: var(--weight-medium);
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.workbench-title__author {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.workbench-title__placeholder {
+    font-size: var(--text-md);
+    color: var(--text-muted);
+}
+
+/* The Pack button never changes size, so the bar never reflows. */
+.workbench-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+/* --- Layout ----------------------------------------------------------- */
+
+.workbench-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-5);
+    align-items: start;
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    padding: var(--space-5);
+}
+
+@media (min-width: 960px) {
+    .workbench-layout {
+        grid-template-columns: 320px minmax(0, 1fr);
+        padding: var(--space-6);
+        overflow: hidden;
+    }
+}
+
+.workbench-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
+}
+
+@media (min-width: 960px) {
+    .workbench-sidebar {
+        overflow-y: auto;
+        height: 100%;
+        padding-right: var(--space-2);
+    }
+}
+
+.workbench-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+}
+
+/* --- Panels ----------------------------------------------------------- */
+
+.workbench-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-1);
+    overflow: hidden;
+}
+
+.workbench-panel__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    padding: var(--space-5);
+}
+
+.workbench-panel__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+}
+
+.workbench-panel__summary::-webkit-details-marker {
+    display: none;
+}
+
+.workbench-panel__summary:hover .workbench-panel__title {
+    color: var(--accent-text);
+}
+
+.workbench-panel__title {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    transition: color var(--dur-fast) var(--ease-out);
+}
+
+.workbench-panel__chevron {
+    display: flex;
+    color: var(--text-muted);
+    transition: transform var(--dur-base) var(--ease-out);
+}
+
+details[open] > .workbench-panel__summary .workbench-panel__chevron {
+    transform: rotate(180deg);
+}
+
+.workbench-panel__badge {
+    font-size: var(--text-2xs);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- Story details ---------------------------------------------------- */
+
+.story-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.story-field__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.story-field__reset {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background-color var(--dur-instant) var(--ease-out),
+                color var(--dur-instant) var(--ease-out);
+}
+
+.story-field__reset:hover {
+    background: var(--bg-subtle);
+    color: var(--text);
+}
+
+.story-field__reset:focus-visible {
+    outline: none;
+    box-shadow: var(--ring);
+}
+
+/* --- Cover ------------------------------------------------------------ */
+
+.cover-row {
+    display: flex;
+    gap: var(--space-4);
+    align-items: flex-start;
+}
+
+/* The preview frame is the EPUB cover ratio, 1 : 1.414. */
+.cover-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 84px;
+    height: 120px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-sunken);
+    color: var(--text-muted);
+}
+
+.cover-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cover-side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    flex: 1;
+    min-width: 0;
+}
+
+.cover-actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+/* --- Options ---------------------------------------------------------- */
+
+.option-rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.option-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.option-row__label {
+    font-size: var(--text-sm);
+    color: var(--text);
+}
+
+.option-row__hint {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.workbench-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--accent-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.workbench-link:hover {
+    text-decoration: underline;
+}
+
+.workbench-link:focus-visible {
+    outline: none;
+    box-shadow: var(--ring);
+    border-radius: var(--radius-xs);
+}
+
+/* --- Chapters panel --------------------------------------------------- */
+
+.chapters-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-1);
+    overflow: hidden;
+}
+
+.chapters-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    height: 44px;
+    padding: 0 var(--space-4);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.chapters-header__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--text);
+}
+
+.chapters-header__count {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.chapters-header__spacer {
+    flex: 1;
+}
+
+.chapters-list {
+    flex: 1;
+    min-height: 240px;
+}
+
+.chapters-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-top: 1px solid var(--border);
+    background: var(--surface-sunken);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.chapters-toolbar__spacer {
+    flex: 1;
+}
+
+/* --- Status bar ------------------------------------------------------- */
+
+.status-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-4);
+    height: 44px;
+    padding: 0 var(--space-5);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    font-size: var(--text-sm);
+    flex-shrink: 0;
+}
+
+.status-bar[hidden] {
+    display: none;
+}
+
+.status-bar__icon {
+    display: flex;
+    color: var(--accent);
+}
+
+.status-bar[data-variant="success"] .status-bar__icon { color: var(--success); }
+.status-bar[data-variant="danger"] .status-bar__icon { color: var(--danger); }
+
+.status-bar__body {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-width: 0;
+}
+
+.status-bar__label {
+    color: var(--text);
+    white-space: nowrap;
+}
+
+.status-bar__count {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.status-bar__track {
+    flex: 1;
+    min-width: 60px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--border);
+    overflow: hidden;
+}
+
+.status-bar__fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: var(--accent);
+    /* Only `transform` is animated, which never triggers a layout pass. */
+    transition: transform var(--dur-base) var(--ease-out);
+    transform-origin: left center;
+}
+
+.status-bar__percent {
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    min-width: 36px;
+    text-align: right;
+}
+
+.status-bar__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+/* --- Empty and loading states ----------------------------------------- */
+
+.workbench-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    flex: 1;
+    min-height: 240px;
+    padding: var(--space-8) var(--space-5);
+    text-align: center;
+}
+
+.workbench-state__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    background: var(--accent-subtle);
+    color: var(--accent-text);
+}
+
+.workbench-state__title {
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    color: var(--text);
+}
+
+.workbench-state__body {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    max-width: 42ch;
+}
+
+/* --- Narrow screens --------------------------------------------------- */
+
+@media (max-width: 559px) {
+    .workbench-title__author {
+        display: none;
+    }
+
+    .k-app-bar {
+        padding: 0 var(--space-4);
+    }
+}

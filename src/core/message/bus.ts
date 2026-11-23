@@ -170,9 +170,13 @@ export interface ResponseEnvelope<T> {
     error?: UserFacingError;
 }
 
-/** The messaging API the bus depends on. */
+/** The messaging API a client needs to send a request. */
 export interface MessagingApi {
     sendMessage(message: unknown): Promise<unknown>;
+}
+
+/** The messaging API a server needs to receive a request. */
+export interface MessagingListenerApi {
     onMessage(
         listener: (message: unknown, sender: unknown) => Promise<unknown> | undefined,
     ): void;
@@ -215,7 +219,7 @@ export async function sendRequest<N extends RequestName>(
  * raw exception.
  */
 export async function handleRequests(
-    api: MessagingApi,
+    api: MessagingListenerApi,
     handlers: Partial<{
         [K in RequestName]: (
             payload: RequestMap[K]["request"],

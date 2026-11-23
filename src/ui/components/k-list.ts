@@ -24,6 +24,8 @@ export interface ListItemData {
     icon?: IconName;
     /** The row's secondary text, right-aligned. */
     meta?: string;
+    /** Whether the row's checkbox is in the indeterminate state. */
+    indeterminate?: boolean;
     /** The row's accessible name, when it differs from the title. */
     accessibleName?: string;
 }
@@ -112,6 +114,49 @@ const ITEM_STYLES = `
 .row:hover { background: var(--surface-sunken); }
 .row[data-selected="true"] { background: var(--accent-subtle); }
 .row[data-selected="true"]:hover { background: var(--accent-subtle); filter: brightness(0.98); }
+
+/*
+ * The checkbox is drawn with borders and a background rather than with a
+ * glyph, so the check mark is a pseudo-element. It inherits the current
+ * text colour.
+ */
+.check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin: 0 auto;
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-xs);
+    background: var(--surface-raised);
+    color: var(--text-on-accent);
+    transition: background-color var(--dur-instant) var(--ease-out),
+                border-color var(--dur-instant) var(--ease-out);
+}
+
+.row[data-selected="true"] .check {
+    border-color: var(--accent);
+    background: var(--accent);
+}
+
+.check[data-indeterminate="true"]::after {
+    content: "";
+    width: 8px;
+    height: 2px;
+    border-radius: 1px;
+    background: currentColor;
+}
+
+.row[data-selected="true"] .check:not([data-indeterminate="true"])::after {
+    content: "";
+    width: 4px;
+    height: 8px;
+    margin-top: -2px;
+    border: solid currentColor;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
 
 .state {
     display: flex;
@@ -283,17 +328,9 @@ export class KList extends KComponent {
         row.tabIndex = index === this.#focusIndex ? 0 : -1;
 
         const checkbox = document.createElement("span");
-        const box = document.createElement("span");
-        box.className = "box";
-        box.setAttribute("aria-hidden", "true");
-        box.style.cssText = `position:relative;width:16px;height:16px;border:1.5px solid ${
-            item.selected ? "var(--accent)" : "var(--border-strong)"
-        };border-radius:var(--radius-xs);background:${item.selected ? "var(--accent)" : "var(--surface-raised)"};`;
-        if (item.selected) {
-            box.innerHTML =
-                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-on-accent)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;inset:0;margin:auto"><path d="m5 13 4 4L19 7"/></svg>';
-        }
-        checkbox.appendChild(box);
+        checkbox.className = "check";
+        checkbox.setAttribute("aria-hidden", "true");
+        if (item.indeterminate) checkbox.dataset.indeterminate = "true";
 
         const state = document.createElement("span");
         state.className = "state";

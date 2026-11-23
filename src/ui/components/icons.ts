@@ -26,6 +26,7 @@ export type IconName =
     | "link"
     | "list"
     | "menu"
+    | "minus"
     | "pause"
     | "play"
     | "plus"
@@ -70,6 +71,7 @@ const PATHS: Record<IconName, string[]> = {
     ],
     list: ["M8 6h13M8 12h13M8 18h13", "M3.5 6h.01M3.5 12h.01M3.5 18h.01"],
     menu: ["M4 6h16M4 12h16M4 18h16"],
+    minus: ["M6 12h12"],
     pause: ["M9 5v14M15 5v14"],
     play: ["m7 4 12 8-12 8V4Z"],
     plus: ["M12 5v14M5 12h14"],

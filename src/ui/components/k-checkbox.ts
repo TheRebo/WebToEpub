@@ -12,6 +12,7 @@
  *    mode made disabled look enabled
  */
 import { KComponent, defineComponent } from "./base";
+import { createIcon } from "./icons";
 
 const STYLES = `
 :host {
@@ -62,12 +63,15 @@ input {
     color: var(--text-on-accent);
 }
 
+.box .check, .box .dash { position: absolute; inset: 0; margin: auto; }
+.box .check svg, .box .dash svg { position: static; margin: 0; }
+
 input:checked + .box {
     background: var(--accent);
     border-color: var(--accent);
 }
 
-input:checked + .box svg {
+input:checked + .box .check {
     opacity: 1;
     transform: scale(1);
 }
@@ -139,22 +143,13 @@ export class KCheckbox extends KComponent {
         box.setAttribute("aria-hidden", "true");
 
         const check = document.createElement("span");
-        check.style.position = "absolute";
-        check.style.inset = "0";
-        check.style.margin = "auto";
-        check.style.opacity = "0";
-        check.innerHTML =
-            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>';
+        check.className = "check";
+        check.appendChild(createIcon("check", 12));
         box.appendChild(check);
 
         const dash = document.createElement("span");
         dash.className = "dash";
-        dash.style.position = "absolute";
-        dash.style.inset = "0";
-        dash.style.margin = "auto";
-        dash.style.opacity = "0";
-        dash.innerHTML =
-            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"><path d="M6 12h12"/></svg>';
+        dash.appendChild(createIcon("minus", 12));
         box.appendChild(dash);
 
         const text = document.createElement("span");
