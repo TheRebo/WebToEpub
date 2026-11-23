@@ -257,7 +257,9 @@ const SETTINGS_SCHEMA = {
  * anything missing or invalid.
  */
 export function validateSettings(value: unknown): Settings {
-    const validated = SETTINGS_SCHEMA as unknown as Validator<Record<string, unknown>>;
+    // The schema is a *shape* — a record of validators — so it has to be
+    // wrapped before it can validate anything.
+    const validated = shape(SETTINGS_SCHEMA as unknown as Record<string, Validator<unknown>>);
     const result = validated(value);
 
     // Merge the validated result over the defaults so a partially-written

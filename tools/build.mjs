@@ -144,7 +144,6 @@ async function copyDir(from, to) {
 async function bundleScripts() {
     const entryPoints = {
         background: join(SRC, "core", "background.ts"),
-        "content-script": join(SRC, "core", "content-script.ts"),
         workbench: join(SRC, "ui", "pages", "workbench", "index.ts"),
         popup: join(SRC, "ui", "pages", "popup", "index.ts"),
         options: join(SRC, "ui", "pages", "options", "index.ts"),
@@ -183,6 +182,39 @@ async function bundleScripts() {
     });
 
     await buildVendorBundle();
+    await buildContentScript();
+}
+
+/**
+ * Build the content script.
+ *
+ * The content script is the one file that runs in the *page's* world, where
+ * Firefox does not support ES modules — so it is bundled as a classic script
+ * rather than as a module. Bundling it with the rest would ship an `export`
+ * statement into a classic script, which the browser rejects with a syntax
+ * error, and the content script would silently never run.
+ *
+ * It is built on its own because a classic script cannot be code-split.
+ *
+ * @returns {Promise<void>} Resolves when the bundle is written.
+ */
+async function buildContentScript() {
+    await build({
+        entryPoints: { "content-script": join(SRC, "core", "content-script.ts") },
+        outfile: join(DIST, "assets", "content-script.js"),
+        bundle: true,
+        format: "iife",
+        target: ["firefox140"],
+        platform: "browser",
+        splitting: false,
+        minify: !isDev,
+        sourcemap: isDev ? "inline" : false,
+        legalComments: "none",
+        logLevel: "info",
+        define: {
+            "process.env.NODE_ENV": JSON.stringify(isDev ? "development" : "production"),
+        },
+    });
 }
 
 /**

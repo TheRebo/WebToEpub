@@ -46,6 +46,16 @@ const CONTENT_SELECTORS = [
     "div.text",
 ];
 
+/** The selectors that commonly hold a novel's title, in order of confidence. */
+const TITLE_SELECTORS = [
+    "h1.title",
+    "h1.entry-title",
+    "h1.post-title",
+    "h1",
+    ".novel-title",
+    ".story-title",
+];
+
 /** The default parser. */
 export class DefaultParser extends Parser {
     /** The selectors saved for the host name, if there are any. */
@@ -114,6 +124,34 @@ export class DefaultParser extends Parser {
             return querySafely(dom, saved.titleCss);
         }
         return null;
+    }
+
+    /**
+     * Find the story's title.
+     *
+     * The default parser has to guess, so it tries the shapes a novel site's
+     * title takes, in order of confidence, and falls back to the document's own
+     * title. A guess is better than nothing: the workbench shows the title in
+     * the file name, and an empty one is called "untitled.epub".
+     */
+    override extractTitleImpl(dom: Document): Element | string | null {
+        const saved = this.#savedSelectors(dom);
+        if (saved && saved.titleCss !== "") {
+            const element = querySafely(dom, saved.titleCss);
+            if (element) return element;
+        }
+
+        for (const selector of TITLE_SELECTORS) {
+            const element = dom.querySelector(selector);
+            const text = element?.textContent?.trim();
+            if (text) return text;
+        }
+
+        const meta = dom.querySelector('meta[property="og:title"], meta[name="title"]');
+        const content = meta?.getAttribute("content")?.trim();
+        if (content) return content;
+
+        return dom.title?.trim() ?? null;
     }
 
     /** Remove the elements the user does not want. */

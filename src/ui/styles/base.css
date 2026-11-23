@@ -249,6 +249,9 @@ p {
 
 /* --- Reduced motion --------------------------------------------------- */
 
+/*
+ * The system preference.
+ */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -258,4 +261,22 @@ p {
         transition-duration: 1ms !important;
         scroll-behavior: auto !important;
     }
+}
+
+/*
+ * The explicit switch in the settings.
+ *
+ * The switch has to work even when the operating system says nothing: a
+ * reader who finds the animation distracting cannot fix that by changing a
+ * system setting they may not know exists. The attribute is on the document
+ * root, so this covers the whole page, including the shadow roots of the
+ * components — a shadow root inherits the cascade from its host.
+ */
+[data-reduce-motion="true"] *,
+[data-reduce-motion="true"] *::before,
+[data-reduce-motion="true"] *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
 }

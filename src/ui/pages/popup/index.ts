@@ -18,7 +18,14 @@ import "../../components/k-progress";
 import "../../components/k-toast";
 
 import { sendRequest } from "../../../core/message/bus";
-import { activeTab, openTab, sendMessage, getURL } from "../../../core/browser-api";
+import {
+    activeTab,
+    openTab,
+    sendMessage,
+    getURL,
+    localStorageAdapter,
+} from "../../../core/browser-api";
+import { SettingsStore } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
 import { t } from "../../i18n";
 import { installI18n } from "../../i18n-bootstrap";
@@ -50,7 +57,13 @@ class PopupController {
 
     /** Start the popup. */
     async start(): Promise<void> {
+        // The popup honours the user's theme, accent, density and reduced-motion
+        // setting. It has to read them before it renders: the popup is the
+        // first thing a user sees, and a popup that ignores the settings looks
+        // like a different product from the one they configured.
+        const settings = await new SettingsStore(localStorageAdapter).get();
         themeController.start();
+        themeController.applySettings(settings.appearance);
         this.#render();
 
         // The popup can be torn down while a poll is in flight, so the timer

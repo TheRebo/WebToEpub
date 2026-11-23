@@ -122,6 +122,10 @@ export interface WorkbenchElements {
     filterApply: HTMLElement;
     /** The banner that offers the site-selector dialog. */
     selectorBanner: HTMLElement;
+    /** The error banner. */
+    errorBanner: HTMLElement;
+    /** The error banner's message. */
+    errorText: HTMLElement;
     /** The banner's "set up this site" button. */
     selectorBannerButton: KButton;
     /** The site-selector dialog. */
@@ -225,6 +229,24 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const main = el("main", "workbench-main");
     layout.append(sidebar, main);
     shell.appendChild(layout);
+
+    // --- The error banner ---
+    //
+    // An error that is stored but never shown is a silent failure: the user
+    // would see an empty chapter list and no idea why. The banner is the one
+    // place the workbench says what went wrong.
+    const errorBanner = el("div", "workbench-error");
+    errorBanner.setAttribute("role", "alert");
+    errorBanner.hidden = true;
+
+    const errorIcon = el("span", "workbench-error__icon");
+    errorIcon.setAttribute("aria-hidden", "true");
+    errorIcon.appendChild(createIcon("alert-triangle", 18));
+
+    const errorText = el("p", "workbench-error__text");
+
+    errorBanner.append(errorIcon, errorText);
+    main.appendChild(errorBanner);
 
     // --- Story details panel ---
     const storyPanel = el("details", "workbench-panel");
@@ -620,6 +642,8 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         filterApply,
         selectorBanner,
         selectorBannerButton,
+        errorBanner,
+        errorText,
         selectorDialog,
         selectorContent: contentField.input,
         selectorTitle: selectorTitleField.input,
@@ -674,10 +698,14 @@ export function renderWorkbench(
 
     // --- The site-selector banner ---
     //
-    // The banner is only shown while the fallback parser is in charge. Once
-    // the user has saved selectors for the site, the extension stops guessing
+    // The banner is only shown while the fallback parser is in charge. Once the
+    // user has saved selectors for the site, the extension stops guessing
     // there, and the banner has nothing left to say.
     elements.selectorBanner.hidden = !state.usedDefaultParser;
+
+    // --- The error banner ---
+    elements.errorBanner.hidden = !state.error;
+    elements.errorText.textContent = state.error ?? "";
 
     // --- Buttons ---
     elements.saveButton.hidden = !state.dirty;

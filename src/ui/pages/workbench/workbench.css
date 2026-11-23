@@ -538,6 +538,48 @@ details[open] > .workbench-panel__summary .workbench-panel__chevron {
     gap: var(--space-2);
 }
 
+/* --- The error banner -------------------------------------------------- */
+
+/*
+ * Unlike the site-selector banner, this one is a failure, and it says so. It
+ * is warm red rather than alarming red: the extension is still usable, and the
+ * banner's job is to explain, not to frighten.
+ */
+.workbench-error {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+    background: var(--danger-subtle);
+    border: 1px solid var(--danger-border);
+    border-radius: var(--radius-lg);
+    flex-shrink: 0;
+}
+
+.workbench-error[hidden] {
+    display: none;
+}
+
+.workbench-error__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--danger);
+}
+
+.workbench-error__text {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--text);
+}
+
 /* --- The site-selector banner ----------------------------------------- */
 
 /*

@@ -13,7 +13,7 @@
  *
  * See ADR-0002.
  */
-import type { ChapterLink } from "../util/dom";
+import { resolveUrl, type ChapterLink } from "../util/dom";
 
 /** The chapter object a parser produces. */
 export interface WebPage {
@@ -208,11 +208,18 @@ export abstract class Parser {
         return element?.getAttribute("datetime") ?? element?.textContent?.trim() ?? null;
     }
 
-    /** The cover image URL. */
+    /**
+     * The cover image URL.
+     *
+     * The URL is resolved against the page's base, because a relative `src` is
+     * useless to the downloader: it has no idea what the page's address was.
+     */
     findCoverImageUrl(dom: Document): string | null {
         const content = this.findContent(dom);
         const image = content?.querySelector("img");
-        return image?.getAttribute("src") ?? null;
+        const source = image?.getAttribute("src");
+        if (!source) return null;
+        return resolveUrl(source, dom.baseURI);
     }
 
     /**

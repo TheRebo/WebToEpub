@@ -157,6 +157,7 @@
     --warning-subtle: #fdf1de;
     --danger: var(--danger-light);
     --danger-subtle: #fbe9e8;
+    --danger-border: #f2c9c6;
     --info: var(--info-light);
     --info-subtle: #e7f0fa;
 
@@ -212,6 +213,7 @@
     --warning-subtle: #33240a;
     --danger: var(--danger-dark);
     --danger-subtle: #3a1614;
+    --danger-border: #6d2a25;
     --info: var(--info-dark);
     --info-subtle: #10243c;
 
@@ -293,4 +295,19 @@
         --dur-base: 1ms;
         --dur-slow: 1ms;
     }
+}
+
+/*
+ * The same, but because the user asked for it rather than because the system
+ * did.
+ *
+ * The duration tokens are custom properties, and custom properties inherit
+ * across the shadow boundary — so this reaches the components' shadow roots,
+ * which a `*` selector in the document's own stylesheet could never do.
+ */
+[data-reduce-motion="true"] {
+    --dur-instant: 1ms;
+    --dur-fast: 1ms;
+    --dur-base: 1ms;
+    --dur-slow: 1ms;
 }

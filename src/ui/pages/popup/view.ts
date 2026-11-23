@@ -192,6 +192,7 @@ export function buildPopup(root: HTMLElement): PopupElements {
     library.setAttribute("variant", "ghost");
     library.setAttribute("size", "sm");
     library.setAttribute("icon", "book");
+    library.setAttribute("aria-label", t("popupAddToLibrary"));
     library.dataset["action"] = "library";
 
     const workbench = document.createElement("k-button");
@@ -199,6 +200,7 @@ export function buildPopup(root: HTMLElement): PopupElements {
     workbench.setAttribute("variant", "ghost");
     workbench.setAttribute("size", "sm");
     workbench.setAttribute("icon", "list");
+    workbench.setAttribute("aria-label", t("popupOpenWorkbench"));
     workbench.dataset["action"] = "workbench";
 
     actions.appendChild(library);

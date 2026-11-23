@@ -158,10 +158,25 @@ describe("convertPreTagToPTags", () => {
 describe("hyperLinkToChapter", () => {
     it("reads the href and the text", () => {
         const dom = parse("<a href='/chapter-1'>Chapter One</a>");
-        expect(hyperLinkToChapter(dom.querySelector("a") as Element)).toEqual({
-            sourceUrl: "/chapter-1",
-            title: "Chapter One",
-        });
+        const chapter = hyperLinkToChapter(dom.querySelector("a") as Element);
+        expect(chapter?.title).toBe("Chapter One");
+        // The URL is absolute: the fetcher cannot use a relative one.
+        expect(chapter?.sourceUrl).toBe("http://localhost:3000/chapter-1");
+    });
+
+    it("resolves a relative link against the document's base", () => {
+        const dom = parse("<a href='chapter-2'>Two</a>");
+        const base = dom.createElement("base");
+        base.setAttribute("href", "https://example.com/novel/");
+        dom.head?.prepend(base);
+        const chapter = hyperLinkToChapter(dom.querySelector("a") as Element);
+        expect(chapter?.sourceUrl).toBe("https://example.com/novel/chapter-2");
+    });
+
+    it("keeps an absolute link as it is", () => {
+        const dom = parse("<a href='https://example.com/c/3'>Three</a>");
+        const chapter = hyperLinkToChapter(dom.querySelector("a") as Element);
+        expect(chapter?.sourceUrl).toBe("https://example.com/c/3");
     });
 
     it("rejects a link that is not a chapter", () => {

@@ -192,16 +192,26 @@ export function hyperlinksToChapterList(element: Element): ChapterLink[] {
     return chapters;
 }
 
-/** Convert a single anchor into a chapter, or `null` if it is not usable. */
+/**
+ * Convert a single anchor into a chapter, or `null` if it is not usable.
+ *
+ * The URL is resolved against the document's base URI. Most novel sites link
+ * to their chapters relatively (`/chapter/12`), and the fetcher needs an
+ * absolute URL — the fetch layer gives every document a `<base>` element, so
+ * the base URI is the page's own address.
+ */
 export function hyperLinkToChapter(anchor: Element): ChapterLink | null {
-    const href = anchor.getAttribute("href");
-    if (!href) return null;
-    const trimmed = href.trim();
+    const raw = anchor.getAttribute("href");
+    if (!raw) return null;
+    const trimmed = raw.trim();
     if (trimmed.length === 0 || trimmed.startsWith("#")) return null;
     if (/^(javascript|mailto|tel):/i.test(trimmed)) return null;
 
+    const base = anchor.ownerDocument?.baseURI ?? "";
+    const sourceUrl = base ? (resolveUrl(trimmed, base) ?? trimmed) : trimmed;
+
     const title = (anchor.textContent ?? "").trim();
-    return { sourceUrl: trimmed, title };
+    return { sourceUrl, title };
 }
 
 /**
