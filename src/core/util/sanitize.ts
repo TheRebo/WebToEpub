@@ -7,7 +7,7 @@
  *
  * See `SECURITY.md` §3.3.
  */
-import DOMPurify from "dompurify";
+import DOMPurify from "../vendor/dompurify";
 
 /**
  * The tags that survive sanitisation.

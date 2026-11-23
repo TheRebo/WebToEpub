@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+#
+# The pre-commit hook.
+#
+# A commit that does not build is a commit that breaks someone else. The
+# checks here are the two that catch the mistakes a human reviewer will not:
+# a type error and a lint error. The full test suite runs in CI, because it
+# is slow enough that running it on every commit would train people to skip
+# commits.
+#
+# The hook can be bypassed with `--no-verify`, but it should pass. If it
+# fails, fix the code rather than skipping the hook.
+
+npx lint-staged
+npm run typecheck

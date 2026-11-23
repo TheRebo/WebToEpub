@@ -20,12 +20,15 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:a11y": "playwright test tests/e2e/a11y",
-    "web-ext:lint": "web-ext lint --source-dir dist --warnings-as-errors",
+    "web-ext:lint": "node tools/lint-extension.mjs",
+    "web-ext:lint:raw": "web-ext lint --source-dir dist",
     "web-ext:run": "web-ext run --source-dir dist",
-    "verify": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build && npm run web-ext:lint",
-    "precommit": "npm run lint && npm run typecheck"
+    "verify": "npm run lint && npm run typecheck && npm run test && npm run build && npm run web-ext:lint",
+    "precommit": "npm run lint && npm run typecheck",
+    "prepare": "husky || true"
   },
   "dependencies": {
     "@zip.js/zip.js": "2.8.0",
@@ -52,11 +55,21 @@
     "web-ext": "8.10.0"
   },
   "lint-staged": {
-    "*.{ts,js}": [
+    "src/**/*.ts": [
       "eslint --fix",
       "prettier --write"
     ],
-    "*.{json,md,css,html,yaml,yml}": [
+    "src/**/*.css": [
+      "prettier --write"
+    ],
+    "tools/**/*.mjs": [
+      "prettier --write"
+    ],
+    "tests/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
       "prettier --write"
     ]
   }

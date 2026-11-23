@@ -110,7 +110,8 @@ async function buildManifest() {
         ],
 
         content_security_policy: {
-            extension_pages: "script-src 'self'; object-src 'none'; base-uri 'none'; frame-src 'none'",
+            extension_pages:
+                "script-src 'self'; object-src 'none'; base-uri 'none'; frame-src 'none'",
         },
 
         incognito: "spanning",
@@ -177,6 +178,62 @@ async function bundleScripts() {
         loader: {
             ".svg": "dataurl",
             ".png": "dataurl",
+        },
+        plugins: [vendorPlugin()],
+    });
+
+    await buildVendorBundle();
+}
+
+/**
+ * An esbuild plugin that points the vendor module at the built vendor file.
+ *
+ * The import path is **root-relative** (`/assets/vendor/purify.js`) rather
+ * than file-relative, because the importer may be a shared chunk that lives
+ * in `assets/chunks/` while the vendor file lives in `assets/vendor/`. A
+ * root-relative URL resolves to the extension's own root from anywhere in the
+ * package, so it works no matter how the bundler lays the files out.
+ *
+ * @returns The plugin.
+ */
+function vendorPlugin() {
+    return {
+        name: "kintsugi-vendor",
+        setup(build) {
+            build.onResolve({ filter: /vendor[\\/]dompurify$/ }, () => ({
+                path: "/assets/vendor/purify.js",
+                external: true,
+            }));
+        },
+    };
+}
+
+/**
+ * Build the vendored third-party dependencies as their own file.
+ *
+ * DOMPurify ships verbatim, and its source contains one `innerHTML`
+ * assignment in a fallback path. When it is bundled into a shared chunk, the
+ * extension linter flags it — and the only ways to silence that are to mute a
+ * rule for our own code or to edit a third-party library. Neither is
+ * acceptable.
+ *
+ * Emitting it as its own file lets the linter skip exactly that file, by
+ * path, and leaves the rule fully in force everywhere else.
+ */
+async function buildVendorBundle() {
+    await build({
+        entryPoints: { "vendor/purify": join(SRC, "core", "vendor", "dompurify.ts") },
+        outdir: join(DIST, "assets"),
+        bundle: true,
+        format: "esm",
+        target: ["firefox140"],
+        platform: "browser",
+        splitting: false,
+        minify: !isDev,
+        legalComments: "none",
+        logLevel: "info",
+        define: {
+            "process.env.NODE_ENV": JSON.stringify(isDev ? "development" : "production"),
         },
     });
 }
