@@ -29,8 +29,16 @@ import { localStorageAdapter, activeTab } from "../../../core/browser-api";
 import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
 import { t } from "../../i18n";
+import { installI18n } from "../../i18n-bootstrap";
 import { buildWorkbench, renderWorkbench, type WorkbenchElements } from "./view";
-import { WorkbenchStore, type Chapter, type WorkbenchState } from "./state";
+import {
+    WorkbenchStore,
+    compilePattern,
+    matchingIndices,
+    type Chapter,
+    type FilterState,
+    type WorkbenchState,
+} from "./state";
 
 /** The initial state. */
 function initialState(): WorkbenchState {
@@ -73,18 +81,21 @@ class WorkbenchController {
     async start(): Promise<void> {
         this.#settingsValue = await this.#settings.get();
         themeController.start();
-        themeController.applySettings({ appearance: this.#settingsValue.appearance });
+        themeController.applySettings(this.#settingsValue.appearance);
         this.#render();
 
-        const tab = await activeTab();
-        if (!tab?.url) {
+        // The popup hands over the URL it was invoked on. When the workbench is
+        // opened directly, there is no query string and the active tab is the
+        // right source.
+        const url = requestedUrl() ?? (await activeTab())?.url;
+        if (!url) {
             this.#store.setError(t("errorGeneric"));
             this.#render();
             return;
         }
 
-        await this.#analyse(tab.url);
-        await this.#loadChapters(tab.url);
+        await this.#analyse(url);
+        await this.#loadChapters(url);
     }
 
     /** Analyse the page, to fill in the metadata. */
@@ -216,8 +227,28 @@ class WorkbenchController {
         elements.selectNoneButton.addEventListener("k-click", () => this.#store.setAllSelected(false));
         elements.invertButton.addEventListener("k-click", () => this.#store.invertSelection());
         elements.filterButton.addEventListener("k-click", () => {
-            const dialog = elements.filterDialog as unknown as { open(): void };
-            dialog.open();
+            this.#openFilter();
+        });
+
+        // --- The filter dialog ---
+        //
+        // The dialog edits a *draft* filter. The live chapter list only changes
+        // when the user applies it, so a half-typed query never makes the
+        // selection jump around underneath them.
+        elements.filterRegex.addEventListener("k-change", () => {
+            this.#previewFilter();
+        });
+        for (const input of [elements.filterSearch, elements.filterInclude, elements.filterExclude]) {
+            input.addEventListener("input", () => this.#previewFilter());
+        }
+        elements.filterClear.addEventListener("k-click", () => {
+            this.#clearFilter();
+        });
+        elements.filterApply.addEventListener("k-click", () => {
+            this.#applyFilter();
+        });
+        elements.filterDialog.addEventListener("k-close", () => {
+            this.#resetFilterDraft();
         });
 
         // The Cancel button lives in the status bar and is rebuilt each time
@@ -229,6 +260,96 @@ class WorkbenchController {
         });
     }
 
+    /**
+     * Open the filter dialog.
+     *
+     * The draft is seeded from the filter that is currently in effect, so the
+     * dialog always opens showing what is actually applied.
+     */
+    #openFilter(): void {
+        const elements = this.#elements;
+        const filter = this.#store.state.filter;
+
+        elements.filterSearch.value = filter.query;
+        elements.filterInclude.value = filter.include.join(", ");
+        elements.filterExclude.value = filter.exclude.join(", ");
+        elements.filterRegex.toggleAttribute("checked", filter.useRegex);
+
+        this.#previewFilter();
+
+        const dialog = elements.filterDialog as unknown as { open(): void };
+        dialog.open();
+    }
+
+    /**
+     * Preview the draft filter.
+     *
+     * Shows how many chapters would match, and reports an invalid regular
+     * expression inline instead of letting it throw.
+     */
+    #previewFilter(): void {
+        const elements = this.#elements;
+        const draft = this.#filterDraft();
+
+        const pattern = draft.useRegex ? compilePattern(draft.query) : null;
+        if (draft.useRegex && draft.query.trim() && !pattern) {
+            elements.filterError.hidden = false;
+            elements.filterError.textContent = t("filterInvalidPattern");
+            elements.filterCount.textContent = "";
+            return;
+        }
+
+        elements.filterError.hidden = true;
+
+        const matches = matchingIndices(this.#store.state.chapters, draft).length;
+        elements.filterCount.textContent = t("filterMatchCount", [String(matches)]);
+    }
+
+    /** The filter the dialog is currently editing. */
+    #filterDraft(): FilterState {
+        const elements = this.#elements;
+        const split = (value: string): string[] =>
+            value
+                .split(",")
+                .map((term) => term.trim())
+                .filter(Boolean);
+
+        return {
+            query: elements.filterSearch.value,
+            useRegex: elements.filterRegex.hasAttribute("checked"),
+            include: split(elements.filterInclude.value),
+            exclude: split(elements.filterExclude.value),
+        };
+    }
+
+    /** Apply the draft filter. */
+    #applyFilter(): void {
+        this.#store.setFilter(this.#filterDraft());
+        (this.#elements.filterDialog as unknown as { close(): void }).close();
+    }
+
+    /** Clear the filter, both in the draft and in effect. */
+    #clearFilter(): void {
+        const empty: FilterState = { query: "", useRegex: false, include: [], exclude: [] };
+        this.#store.setFilter(empty);
+
+        const elements = this.#elements;
+        elements.filterSearch.value = "";
+        elements.filterInclude.value = "";
+        elements.filterExclude.value = "";
+        elements.filterRegex.toggleAttribute("checked", false);
+        this.#previewFilter();
+    }
+
+    /** Reset the draft, so the next open starts from the applied filter. */
+    #resetFilterDraft(): void {
+        const filter = this.#store.state.filter;
+        const elements = this.#elements;
+        elements.filterSearch.value = filter.query;
+        elements.filterInclude.value = filter.include.join(", ");
+        elements.filterExclude.value = filter.exclude.join(", ");
+        elements.filterRegex.toggleAttribute("checked", filter.useRegex);
+    }
     /** Save one story option. */
     async #saveStoryOption(key: "removeAuthorNotes" | "includeTocPage", value: boolean): Promise<void> {
         const current = await this.#settings.get();
@@ -348,6 +469,24 @@ class WorkbenchController {
 }
 
 /**
+ * The URL the workbench was opened for, if it was passed one.
+ *
+ * The popup opens `workbench.html?url=<encoded>`. Reading it here means the
+ * workbench analyses the exact page the user was looking at, even if they
+ * have since switched tabs.
+ */
+function requestedUrl(): string | undefined {
+    const raw = new URLSearchParams(window.location.search).get("url");
+    if (!raw) return undefined;
+    try {
+        const url = new URL(raw);
+        return url.protocol === "http:" || url.protocol === "https:" ? url.href : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+/**
  * Send a message to the background worker.
  *
  * Kept in one place so the message bus's `MessagingApi` contract has a single
@@ -360,6 +499,7 @@ async function sendMessageToWorker(message: unknown): Promise<unknown> {
 
 /** Start the page. */
 async function main(): Promise<void> {
+    installI18n();
     const root = document.body;
     const controller = new WorkbenchController(root);
     await controller.start();

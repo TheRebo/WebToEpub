@@ -108,10 +108,18 @@ export interface WorkbenchElements {
     filterSearch: HTMLInputElement;
     /** The filter's regex switch. */
     filterRegex: HTMLElement;
+    /** The filter's include field. */
+    filterInclude: HTMLInputElement;
+    /** The filter's exclude field. */
+    filterExclude: HTMLInputElement;
     /** The filter's match count. */
     filterCount: HTMLElement;
     /** The filter's error. */
     filterError: HTMLElement;
+    /** The filter's clear button. */
+    filterClear: HTMLElement;
+    /** The filter's apply button. */
+    filterApply: HTMLElement;
 }
 
 /** The languages offered in the language field. */
@@ -383,18 +391,49 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     shell.appendChild(statusBar);
 
     // --- Filter dialog ---
+    //
+    // The filter narrows the chapter list without changing the selection, so
+    // it has its own Apply and Clear buttons rather than acting on every
+    // keystroke: typing a query should not silently change what is selected.
     const filterDialog = document.createElement("k-dialog");
     filterDialog.setAttribute("heading", t("workbenchFilter"));
     filterDialog.setAttribute("size", "md");
+
     const filterBody = el("div", "filter-body");
+
     const filterSearch = makeTextField(t("filterSearch"), "filter-search").input;
+
     const filterRegex = document.createElement("k-switch");
-    filterRegex.textContent = t("filterUseRegex");
+    filterRegex.setAttribute("label", t("filterUseRegex"));
+
+    const filterInclude = makeTextField(t("filterInclude"), "filter-include").input;
+    const filterExclude = makeTextField(t("filterExclude"), "filter-exclude").input;
+
     const filterError = el("p", "filter-error");
     filterError.setAttribute("role", "alert");
+    filterError.hidden = true;
+
     const filterCount = el("p", "filter-count");
-    filterBody.append(filterSearch, filterRegex, filterError, filterCount);
+
+    filterBody.append(filterSearch, filterRegex, filterInclude, filterExclude, filterError, filterCount);
     filterDialog.appendChild(filterBody);
+
+    const filterFooter = document.createElement("div");
+    filterFooter.setAttribute("slot", "footer");
+    filterFooter.className = "filter-footer";
+
+    const filterClear = document.createElement("k-button");
+    filterClear.setAttribute("variant", "ghost");
+    filterClear.setAttribute("size", "md");
+    filterClear.textContent = t("filterClear");
+
+    const filterApply = document.createElement("k-button");
+    filterApply.setAttribute("variant", "primary");
+    filterApply.setAttribute("size", "md");
+    filterApply.textContent = t("filterApply");
+
+    filterFooter.append(filterClear, filterApply);
+    filterDialog.appendChild(filterFooter);
 
     root.appendChild(filterDialog);
 
@@ -435,8 +474,12 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         filterDialog,
         filterSearch,
         filterRegex,
+        filterInclude,
+        filterExclude,
         filterCount,
         filterError,
+        filterClear,
+        filterApply,
     };
 }
 
@@ -494,7 +537,10 @@ export function renderWorkbench(
 
     // --- Chapters ---
     const total = state.chapters.length;
-    elements.chapterCount.textContent = `${visibleChapters.length} / ${total}`;
+    elements.chapterCount.textContent = t("workbenchChapterCount", [
+        String(visibleChapters.length),
+        String(total),
+    ]);
 
     const selected = state.chapters.filter((chapter) => chapter.selected).length;
     elements.selectAll.checked = total > 0 && selected === total;

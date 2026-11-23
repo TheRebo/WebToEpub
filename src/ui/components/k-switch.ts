@@ -82,6 +82,12 @@ export class KSwitch extends KComponent {
         }
         this.input.checked = this.hasAttribute("checked");
         this.input.disabled = this.hasAttribute("disabled");
+
+        // The label lives in a shadow node that is built once, so it has to be
+        // updated on every render — otherwise a switch whose `label` attribute
+        // is set after construction shows nothing at all.
+        const text = this.root.querySelector(".text");
+        if (text) text.textContent = this.getAttribute("label") ?? "";
     }
 
     /** Build the component's structure. */

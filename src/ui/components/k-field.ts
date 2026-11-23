@@ -154,6 +154,15 @@ export class KField extends KComponent {
             this.#build();
         }
 
+        // A `<select>`'s options are supplied as light DOM children, so they
+        // have to be moved into the control whenever it is (re)built.
+        if (this.input instanceof HTMLSelectElement) {
+            const options = Array.from(this.querySelectorAll("option"));
+            for (const option of options) {
+                if (option.parentElement !== this.input) this.input.appendChild(option);
+            }
+        }
+
         const input = this.input;
         input.id = this.inputId;
         input.disabled = disabled;
@@ -165,6 +174,10 @@ export class KField extends KComponent {
             else input.removeAttribute("placeholder");
             const type2 = input.getAttribute("type");
             if (type2 !== type) input.setAttribute("type", type);
+        } else if (input instanceof HTMLSelectElement) {
+            // The value is set by the option list, not by an attribute, so it
+            // is only applied when the select has options.
+            if (input.options.length > 0 && input.value !== value) input.value = value;
         }
 
         const descriptions: string[] = [];

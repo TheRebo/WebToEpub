@@ -472,6 +472,67 @@ details[open] > .workbench-panel__summary .workbench-panel__chevron {
     max-width: 42ch;
 }
 
+/* --- Filter dialog ---------------------------------------------------- */
+
+.filter-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/*
+ * The filter's text fields reuse the sidebar's field styling, but they live
+ * inside the dialog rather than the sidebar, so they are scoped explicitly.
+ */
+.filter-body .story-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.filter-body .story-field__label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+}
+
+.filter-body .story-field__input {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--text-base);
+    transition: border-color var(--dur-instant) var(--ease-out);
+}
+
+.filter-body .story-field__input:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: var(--ring);
+}
+
+.filter-error {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--danger);
+}
+
+.filter-count {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.filter-footer {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
 /* --- Narrow screens --------------------------------------------------- */
 
 @media (max-width: 559px) {

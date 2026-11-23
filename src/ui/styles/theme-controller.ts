@@ -14,8 +14,6 @@
  * ever sees a resolved value. This is the fix for the baseline's biggest
  * dark-mode fragility.
  */
-import type { Settings } from "../../core/storage/settings-store";
-
 /** The themes. */
 export type ThemeName = "system" | "light" | "dark";
 
@@ -58,12 +56,15 @@ export class ThemeController {
 
     /** Apply the settings. */
     applySettings(settings: {
-        appearance: Pick<Settings["appearance"], "theme" | "accent" | "density" | "reduceMotion">;
+        theme: ThemeName;
+        accent: AccentName;
+        density: DensityName;
+        reduceMotion: boolean;
     }): void {
-        this.#theme = settings.appearance.theme;
-        document.documentElement.dataset.accent = settings.appearance.accent;
-        document.documentElement.dataset.density = settings.appearance.density;
-        document.documentElement.dataset.reduceMotion = String(settings.appearance.reduceMotion);
+        this.#theme = settings.theme;
+        document.documentElement.dataset.accent = settings.accent;
+        document.documentElement.dataset.density = settings.density;
+        document.documentElement.dataset.reduceMotion = String(settings.reduceMotion);
         this.#apply();
     }
 
