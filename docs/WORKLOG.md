@@ -14,12 +14,42 @@ Format: newest entries at the top of each section.
 | 0 — Setup | ✅ | `legacy` branch + `legacy/v-original` tag created; `main` branched from the original |
 | 1 — Discovery | ✅ | Product inventory, technical audit, UX/visual audit written |
 | 2 — Vision & design | ✅ | Vision, design system, UX guidelines, screen designs, architecture, 10 ADRs, permissions rationale |
-| 3 — Build from scratch | ⏳ | Next |
+| 3 — Build from scratch | ⏳ | Core, UI, and all four pages built. Next: the 437-parser migration, tests, and the release tooling |
 | 4 — Docs & release | 🔄 | `PRIVACY.md` and `SECURITY.md` drafted ahead of schedule because Phase 2 documents link to them |
 
 ---
 
 ## Decisions log
+
+### 2026-11-23 — Phase 3, second pass: i18n, the filter, and the build
+
+- **The i18n API was never installed.** `t()` had nothing to talk to, so
+  every string on every page fell through to the raw message key — the user
+  saw `popupSettings` instead of "Settings". `installI18n()` now wires the
+  real `browser.i18n` in at the top of each page, before anything renders.
+  This was a runtime bug, invisible to `tsc` and to `eslint`, and only
+  findable by reading the code.
+- **The options and onboarding pages were hardcoded in English.** Both are
+  now driven by message keys, resolved at render time. The settings
+  *search* now matches against the translated label and hint, so it works
+  in the user's own language rather than only in English.
+- **Placeholders are numbered positionally.** Firefox substitutes
+  placeholders positionally, and refuses to load a locale whose `$TOKEN$`
+  has no declaration. The generator emits the declaration block *and*
+  numbers each placeholder by its position in the message — two placeholders
+  both mapped to `$1` would have silently overwritten one another.
+- **The manifest version is normalised at build time.** Firefox rejects
+  pre-release suffixes outright, so `2.0.0-alpha.1` is published as
+  `2.0.0`. The pre-release identity stays in `package.json` and in the
+  release tag.
+- **The filter dialog was decoration.** It opened, showed a search box, and
+  did nothing — the store's filtering logic was written but never called by
+  the UI. It now edits a *draft* filter and applies it on Apply, rather
+  than acting on every keystroke, and reports an invalid regex inline
+  instead of letting it throw.
+- **`<k-switch>` never updated its label.** The text was written into the
+  shadow root once at construction, so a switch whose `label` attribute was
+  set afterwards showed nothing at all.
 
 ### 2026-11-23 — Phase 2 complete: vision, design system, architecture
 
