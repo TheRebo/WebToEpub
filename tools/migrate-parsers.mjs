@@ -52,12 +52,20 @@ function git(args) {
  * committed with CRLF, and the rewrites below are written with LF; normalising
  * here keeps one representation in the tool and one in the output. The
  * repository's `.gitattributes` asks for LF everywhere anyway.
+ *
+ * A file that cannot be read is a failure, not a shrug: a parser that is
+ * quietly skipped is a parser that is quietly missing from the extension.
+ *
+ * @throws When the file cannot be read from the legacy branch.
+ * @returns {string} The file's contents.
  */
 function readLegacy(path) {
     try {
         return git(["show", `${LEGACY_REF}:${path}`]).replace(/\r\n/g, "\n");
-    } catch {
-        return null;
+    } catch (error) {
+        const stderr = error?.stderr ? String(error.stderr).trim() : "";
+        const detail = stderr || (error instanceof Error ? error.message : String(error));
+        throw new Error(`Could not read ${path} from the \`${LEGACY_REF}\` branch: ${detail}`);
     }
 }
 
@@ -69,7 +77,6 @@ function readLegacy(path) {
  */
 function legacyParserOrder() {
     const html = readLegacy("plugin/popup.html");
-    if (html === null) throw new Error("Could not read plugin/popup.html from the legacy branch.");
     const names = [];
     const pattern = /js\/parsers\/([A-Za-z0-9_]+\.js)/g;
     let match;
@@ -433,12 +440,10 @@ async function main() {
 
     const sources = new Map();
     for (const name of order) {
-        const source = readLegacy(`${LEGACY_PARSER_DIR}/${name}`);
-        if (source === null) {
-            console.warn(`  ! ${name} is listed in popup.html but is missing from the branch.`);
-            continue;
-        }
-        sources.set(name, source);
+        // A parser that the baseline's `popup.html` listed but that is not in
+        // the branch cannot be migrated. That is a failure: the parser would
+        // be dropped from the extension without anybody noticing.
+        sources.set(name, readLegacy(`${LEGACY_PARSER_DIR}/${name}`));
     }
 
     // Which file declares which name.

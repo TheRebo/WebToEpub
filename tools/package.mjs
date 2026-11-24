@@ -13,7 +13,7 @@
  *   node tools/package.mjs            package the current build
  */
 import { createReadStream } from "node:fs";
-import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Uint8ArrayWriter, ZipWriter, configure } from "@zip.js/zip.js";
@@ -21,6 +21,31 @@ import { Uint8ArrayWriter, ZipWriter, configure } from "@zip.js/zip.js";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = join(ROOT, "dist");
 const RELEASE = join(ROOT, "release");
+
+/**
+ * The timestamp every archive entry is stamped with.
+ *
+ * `zip.js` defaults `lastModDate` to the wall clock, which would make two
+ * packages of the same source differ byte for byte — and a release artefact
+ * that changes when you package it twice is not one anybody can verify.
+ *
+ * `SOURCE_DATE_EPOCH` is the reproducible-builds convention: a build system
+ * sets it once, and every artefact honours it. When it is not set, a fixed
+ * literal is used, so the default is still reproducible.
+ *
+ * @returns {Date} The timestamp to stamp the entries with.
+ */
+function entryTimestamp() {
+    const epoch = process.env.SOURCE_DATE_EPOCH;
+    if (epoch !== undefined && epoch.trim() !== "") {
+        const seconds = Number(epoch);
+        if (!Number.isFinite(seconds)) {
+            throw new Error(`SOURCE_DATE_EPOCH is not a number: ${epoch}`);
+        }
+        return new Date(seconds * 1000);
+    }
+    return new Date("2020-01-01T00:00:00Z");
+}
 
 // The archive is built on the main thread: packaging is a one-shot developer
 // action, and a worker pool would only add startup cost.
@@ -53,11 +78,15 @@ async function packageExtension(files, outPath) {
     const manifest = files.find((file) => file === "manifest.json");
     const ordered = manifest ? [manifest, ...files.filter((file) => file !== manifest)] : files;
 
+    // Every entry gets the same timestamp, so the archive's bytes depend only
+    // on its contents.
+    const lastModDate = entryTimestamp();
+
     for (const file of ordered) {
         // `zip.js` wants a web stream, and Node's file stream is not one.
         // `Response` is the bridge that needs no extra dependency.
         const body = new Response(createReadStream(join(DIST, file))).body;
-        await writer.add(file, body, { level: 9 });
+        await writer.add(file, body, { level: 9, lastModDate });
     }
 
     await writer.close();
@@ -77,6 +106,12 @@ async function main() {
     const manifest = JSON.parse(await readFile(join(DIST, "manifest.json"), "utf8"));
 
     const files = (await walk(DIST)).sort();
+
+    // A stale `.xpi` from an earlier version would otherwise stay on disk and
+    // be published alongside the new one. The release directory is rebuilt
+    // from scratch, so what is on disk afterwards is exactly what this run
+    // produced.
+    await rm(RELEASE, { recursive: true, force: true });
 
     const outDir = join(RELEASE, `kintsugi-${pkg.version}`);
     await mkdir(outDir, { recursive: true });

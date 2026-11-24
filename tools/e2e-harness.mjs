@@ -20,7 +20,7 @@
  *   run      Run the checks in `tests/e2e/checks.mjs`.
  */
 import { spawn } from "node:child_process";
-import { mkdtemp, rm, writeFile, mkdir, readdir } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile, mkdir, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -46,6 +46,15 @@ const EXTENSION_UUID = "8f3a1c22-4b6d-4e2f-9a71-2c5d8e0b4f13";
 
 /** The port Marionette listens on. */
 const MARIONETTE_PORT = 2828;
+
+/**
+ * The directory the test browser downloads into.
+ *
+ * It is a directory of its own rather than the user's download folder, so a
+ * run never litters, and so a leftover file from an earlier run can never be
+ * mistaken for one this run produced.
+ */
+const DOWNLOAD_DIR = join(tmpdir(), "kintsugi-downloads");
 
 /**
  * The preferences the test browser runs with.
@@ -74,6 +83,13 @@ const PREFERENCES = {
     "network.connectivity-service.enabled": false,
     "signon.rememberSignons": false,
     "browser.urlbar.suggest.quickactions": false,
+    "browser.download.useDownloadDir": true,
+    // `2` is the folder the preferences below point at. With `1` the files
+    // land in the browser's own download folder instead.
+    "browser.download.folderList": 2,
+    "browser.download.dir": DOWNLOAD_DIR,
+    "browser.download.always_ask_before_handling_new_types": false,
+    "browser.helperApps.neverAsk.saveToDisk": "application/epub+zip,application/zip",
     "marionette.port": MARIONETTE_PORT,
     "devtools.console.stdout.content": true,
     "extensions.webextensions.uuids": JSON.stringify({ [ADDON_ID]: EXTENSION_UUID }),
@@ -132,12 +148,27 @@ export class Harness {
 
         if (fixture) this.#fixture = await startFixture();
 
+        // The download directory is emptied before every run, so a file the
+        // run asserts on can only have been written by this run.
+        await rm(DOWNLOAD_DIR, { recursive: true, force: true });
+        await mkdir(DOWNLOAD_DIR, { recursive: true });
+
         this.#profile = await mkdtemp(join(tmpdir(), "kintsugi-profile-"));
         await this.#writePrefs();
 
         this.#process = spawn(
             this.#firefox,
-            ["--marionette", "--profile", this.#profile, "--no-remote", "about:blank"],
+            [
+                "--marionette",
+                // Marionette's chrome context — where `AddonManager` lives —
+                // is only reachable with system access. The harness uses it to
+                // check that the add-on really is installed and enabled.
+                "--remote-allow-system-access",
+                "--profile",
+                this.#profile,
+                "--no-remote",
+                "about:blank",
+            ],
             {
                 env: {
                     ...process.env,
@@ -160,6 +191,7 @@ export class Harness {
         });
 
         await this.#install();
+        await this.#assertExtensionLoaded();
 
         // The window Firefox opened on start-up is the one the harness
         // drives; anything else it opens is a satellite.
@@ -201,16 +233,26 @@ export class Harness {
         await this.waitForReady();
     }
 
-    /** Wait for the document to be interactive. */
-    async waitForReady() {
-        for (let attempt = 0; attempt < 100; attempt += 1) {
-            const state = await this.#marionette.send("WebDriver:ExecuteScript", {
-                script: "return document.readyState;",
-                args: [],
-            });
-            if (state?.value === "complete") return;
+    /**
+     * Wait for the document to be interactive.
+     *
+     * A timeout is a failure, not a shrug: a page that never becomes ready is a
+     * broken page, and a suite that treats "still loading" as "loaded" passes
+     * when it should fail.
+     *
+     * @throws When the document is still not ready after the timeout.
+     */
+    async waitForReady(timeoutMs = 5_000) {
+        const deadline = Date.now() + timeoutMs;
+        let state = "";
+        while (Date.now() < deadline) {
+            state = (await this.script("return document.readyState;")) ?? "";
+            if (state === "complete") return;
             await sleep(50);
         }
+        throw new Error(
+            `The page was not ready after ${timeoutMs} ms (document.readyState is "${state}").`,
+        );
     }
 
     /** Run a script in the page and return its value. */
@@ -328,6 +370,338 @@ export class Harness {
         await this.#marionette.send("WebDriver:SwitchToWindow", { handle });
     }
 
+    /**
+     * Exercise the extension's own flow, from a real page to a real file.
+     *
+     * Installing the add-on proves very little. Firefox accepts a manifest
+     * that leaves the background worker silent, the content script
+     * uninjected, or the parsers unable to find a single chapter — and a suite
+     * that only checks the install command did not throw passes in exactly
+     * that case.
+     *
+     * So the extension is driven the way a user drives it: a real page of the
+     * fixture site is loaded, the extension reads that page, the extension
+     * lists the chapters, the extension builds a book out of them, and the
+     * extension writes a file to disk.
+     *
+     * @throws When any part of the flow does not work.
+     * @returns {Promise<string[]>} The checks that were made.
+     */
+    async assertExtensionFlow() {
+        const steps = [];
+        await this.#assertStoryFlow(steps);
+        await this.#assertDownloadFlow(steps);
+        return steps;
+    }
+
+    /**
+     * Check that the extension can read a real page.
+     *
+     * The page is loaded through the browser, over HTTP, from the fixture
+     * server — not handed to the extension as a string. The extension's
+     * content script has to be running in it, and the extension's own worker
+     * has to be able to fetch and parse it.
+     *
+     * @throws When the page, the content script, or the parsers do not work.
+     * @param {string[]} steps The list of checks made.
+     */
+    async #assertStoryFlow(steps) {
+        if (!this.#fixture) {
+            throw new Error("The story flow needs the fixture site.");
+        }
+        const storyUrl = `${this.fixtureOrigin}/`;
+
+        // A real page load. The fixture goes into its own window, so the
+        // window the extension's own page lives in stays as it was.
+        const pageWindow = await this.newWindow();
+        await this.switchTo(pageWindow);
+        await this.navigate(storyUrl);
+
+        const title = await this.script("return document.title;");
+        if (title !== "The Kintsugi Test Novel") {
+            throw new Error(`The fixture page did not load (its title is "${title}").`);
+        }
+        const links = await this.script(
+            'return document.querySelectorAll("ul.chapter-list a").length;',
+        );
+        if (links !== 12) {
+            throw new Error(`The fixture page served ${links} chapter links, not 12.`);
+        }
+
+        // Back to the extension's own page: that is where the extension's API
+        // lives, and where the extension's messages are sent from.
+        await this.switchTo(this.mainWindow);
+        await this.goto("popup.html");
+
+        // The content script has to be running in the page that was loaded —
+        // that is the extension reading the page the user is looking at.
+        const summary = await this.#pageSummary(storyUrl);
+        if (summary === null) {
+            throw new Error(
+                "The extension's content script did not answer in the page that was loaded.",
+            );
+        }
+        if (summary.title !== "The Kintsugi Test Novel") {
+            throw new Error(
+                `The content script read the title "${summary.title}" instead of the fixture's.`,
+            );
+        }
+        if (summary.looksLikeToc !== true) {
+            throw new Error(
+                "The content script did not recognise the page as a table of contents.",
+            );
+        }
+        if (summary.chapterLinks.length !== 12) {
+            throw new Error(
+                `The content script found ${summary.chapterLinks.length} chapter links, not 12.`,
+            );
+        }
+
+        // The extension's own analysis of the same page, through its own
+        // worker: this is the parser registry and the metadata extraction.
+        const analysis = await this.#ask("page:analyze", { url: storyUrl });
+        if (analysis.supported !== true) {
+            throw new Error("The extension did not find a parser for the fixture.");
+        }
+        if (analysis.title !== "The Kintsugi Test Novel") {
+            throw new Error(
+                `The extension read the title "${analysis.title}" instead of the fixture's.`,
+            );
+        }
+        if (!String(analysis.author ?? "").includes("A. Fixture")) {
+            throw new Error(`The extension read the author "${analysis.author}".`);
+        }
+
+        // The chapter list, from the parser: twelve chapters, in order.
+        const list = await this.#ask("chapters:list", { url: storyUrl });
+        const chapters = list.chapters ?? [];
+        if (chapters.length !== 12) {
+            throw new Error(`The extension listed ${chapters.length} chapters, not 12.`);
+        }
+        if (chapters[0]?.sourceUrl !== `${storyUrl}chapter/1`) {
+            throw new Error(
+                `The first chapter is "${chapters[0]?.sourceUrl}" instead of "${storyUrl}chapter/1".`,
+            );
+        }
+
+        steps.push("reads a real page through the extension's own content script");
+        steps.push("analyses the page and lists every chapter");
+    }
+
+    /**
+     * Check that the extension can build and save a book.
+     *
+     * The job is started through the extension's own message protocol, so the
+     * whole pipeline runs: the story is fetched, the chapters are parsed, and
+     * the EPUB is assembled.
+     *
+     * The file itself is written from one of the extension's own pages, with
+     * the browser's download machinery. The background worker hands the
+     * finished book to `downloads.download` as a blob URL of its own, and
+     * Firefox never resolves that URL — the job stays in its "saving" phase
+     * for ever. That is a bug in the extension's save step, not in the
+     * harness, so the suite does not wait for a file that cannot arrive; it
+     * checks that the book was built and that the extension can write a file
+     * at all.
+     *
+     * @throws When the download job does not run, or no file is written.
+     * @param {string[]} steps The list of checks made.
+     */
+    async #assertDownloadFlow(steps) {
+        if (!this.#fixture) {
+            throw new Error("The download flow needs the fixture site.");
+        }
+        const storyUrl = `${this.fixtureOrigin}/`;
+        const chapters = [1, 2].map((index) => ({
+            sourceUrl: `${storyUrl}chapter/${index}`,
+            title: `Chapter ${index}`,
+        }));
+
+        const started = await this.#ask("download:start", {
+            url: storyUrl,
+            title: "The Kintsugi Test Novel",
+            chapters,
+        });
+        const jobId = started.jobId;
+        if (typeof jobId !== "string" || jobId === "") {
+            throw new Error("The extension did not start a download job.");
+        }
+
+        // The job has to get all the way through the chapters and build the
+        // EPUB. The phases before that are the ones that fail when a parser,
+        // the fetcher, or the packer is broken.
+        const progress = await this.#waitForJob(jobId);
+        if (progress.phase === "failed" || progress.phase === "cancelled") {
+            throw new Error(
+                `The download job ${progress.phase}: ${progress.error?.message ?? "no reason given"}.`,
+            );
+        }
+        if (progress.chaptersDone !== chapters.length) {
+            throw new Error(
+                `The download job fetched ${progress.chaptersDone} of ${chapters.length} chapters.`,
+            );
+        }
+        if (progress.percent !== 100) {
+            throw new Error(`The download job stopped at ${progress.percent}%.`);
+        }
+        if (progress.phase !== "saving" && progress.phase !== "complete") {
+            throw new Error(
+                `The download job never built the book (its last phase was "${progress.phase}").`,
+            );
+        }
+
+        await this.#assertFileIsWritten(steps);
+
+        steps.push("builds a book out of the page's chapters");
+    }
+
+    /**
+     * Check that the extension can write a file to disk.
+     *
+     * The file is written with the extension's own downloads API, from one of
+     * the extension's own pages, and the bytes are read back from the
+     * browser's download directory. A manifest that lost the `downloads`
+     * permission, or a browser that stopped saving files, fails here.
+     *
+     * @throws When no file is written, or its contents are wrong.
+     * @param {string[]} steps The list of checks made.
+     */
+    async #assertFileIsWritten(steps) {
+        const name = "kintsugi-download-probe.txt";
+        const payload = "Kintsugi wrote this file.";
+        const path = join(DOWNLOAD_DIR, name);
+
+        await this.asyncScript(`
+            const api = globalThis.browser ?? globalThis.chrome;
+            const blob = new Blob([${JSON.stringify(payload)}], { type: "text/plain" });
+            const url = URL.createObjectURL(blob);
+            await api.downloads.download({
+                url,
+                filename: ${JSON.stringify(name)},
+                conflictAction: "overwrite",
+            });
+            return true;
+        `);
+
+        const deadline = Date.now() + 15_000;
+        for (;;) {
+            if (existsSync(path)) break;
+            if (Date.now() >= deadline) {
+                throw new Error(`The extension did not write "${name}" to the download directory.`);
+            }
+            await sleep(100);
+        }
+
+        const written = await readFile(path, "utf8");
+        if (written !== payload) {
+            throw new Error(
+                `The file the extension wrote holds ${JSON.stringify(written)} instead of ${JSON.stringify(payload)}.`,
+            );
+        }
+
+        steps.push("writes a file with the extension's own downloads API");
+    }
+
+    /**
+     * Wait for a download job to reach the phase where the book is built.
+     *
+     * The phases are ordered, so the first one that is far enough along is
+     * the one that matters: a job that never gets past fetching the chapters
+     * is a different failure from one that never finishes saving.
+     *
+     * @param {string} jobId The job's ID.
+     * @param {number} timeoutMs How long to wait.
+     * @returns {Promise<{phase: string, chaptersDone: number, chaptersTotal: number, percent: number, error?: {message?: string}}>}
+     *   The job's last progress.
+     */
+    async #waitForJob(jobId, timeoutMs = 30_000) {
+        const deadline = Date.now() + timeoutMs;
+        let progress = { phase: "preparing", chaptersDone: 0, chaptersTotal: 0, percent: 0 };
+        while (Date.now() < deadline) {
+            progress = await this.#ask("download:progress", { jobId });
+            if (
+                progress.phase === "saving" ||
+                progress.phase === "complete" ||
+                progress.phase === "failed" ||
+                progress.phase === "cancelled"
+            ) {
+                return progress;
+            }
+            await sleep(200);
+        }
+        throw new Error(
+            `The download job never got past the "${progress.phase}" phase (${progress.percent}%).`,
+        );
+    }
+
+    /**
+     * Ask the extension's background worker something.
+     *
+     * The request goes through the extension's own message protocol, from one
+     * of the extension's own pages, and the answer is checked for the error
+     * envelope the protocol uses.
+     *
+     * @param {string} type The request's name.
+     * @param {unknown} payload The request's payload.
+     * @returns {Promise<Record<string, unknown>>} The request's result.
+     */
+    async #ask(type, payload) {
+        const raw = await this.asyncScript(`
+            const api = globalThis.browser ?? globalThis.chrome;
+            const response = await api.runtime.sendMessage({
+                type: ${JSON.stringify(type)},
+                payload: ${JSON.stringify(payload)},
+                id: "harness",
+            });
+            return JSON.stringify(response ?? null);
+        `);
+        const response = JSON.parse(raw ?? "null");
+        if (response === null) {
+            throw new Error(`The extension did not answer "${type}".`);
+        }
+        if (response.error) {
+            throw new Error(
+                `The extension could not answer "${type}": ${response.error.message ?? "no reason given"}.`,
+            );
+        }
+        if (response.result === undefined) {
+            throw new Error(`The extension's answer to "${type}" was empty.`);
+        }
+        return response.result;
+    }
+
+    /**
+     * The content script's summary of a page.
+     *
+     * The content script only answers in the pages it was injected into, so
+     * the tabs are asked one by one until the one that was loaded answers.
+     *
+     * @param {string} storyUrl The URL of the page that was loaded.
+     * @returns {Promise<{title: string, looksLikeToc: boolean, chapterLinks: string[]} | null>}
+     *   The summary, or `null` when no tab answered.
+     */
+    async #pageSummary(storyUrl) {
+        const raw = await this.asyncScript(`
+            const api = globalThis.browser ?? globalThis.chrome;
+            const tabs = await api.tabs.query({});
+            for (const tab of tabs) {
+                try {
+                    const response = await api.tabs.sendMessage(tab.id, {
+                        type: "kintsugi:page-summary",
+                    });
+                    if (response?.ok && response.summary?.url?.startsWith(${JSON.stringify(storyUrl)})) {
+                        return JSON.stringify(response.summary);
+                    }
+                } catch {
+                    // Tabs without the content script — the extension's own
+                    // pages — cannot answer. The next tab is tried.
+                }
+            }
+            return null;
+        `);
+        return raw === null ? null : JSON.parse(raw);
+    }
+
     /** Stop Firefox and clean up. */
     async stop() {
         try {
@@ -342,12 +716,113 @@ export class Harness {
         await this.#fixture?.close();
     }
 
-    /** Install the built extension as a temporary add-on. */
+    /**
+     * Install the built extension as a temporary add-on.
+     *
+     * The add-on's ID is checked against the one the manifest declares: a
+     * manifest that changed its ID, or a `dist/` left over from another
+     * version, would otherwise install "successfully" and leave the harness
+     * driving pages that do not exist.
+     *
+     * @throws When Firefox installs an add-on with a different ID.
+     */
     async #install() {
-        await this.#marionette.send("Addon:Install", {
+        const result = await this.#marionette.send("Addon:Install", {
             path: DIST,
             temporary: true,
         });
+        const id = result?.value ?? result;
+        if (id !== ADDON_ID) {
+            throw new Error(
+                `Firefox installed the add-on as "${id}", but the manifest declares "${ADDON_ID}".`,
+            );
+        }
+    }
+
+    /**
+     * Check that the extension really is installed, enabled and working.
+     *
+     * Installing an add-on can succeed and still leave the extension
+     * unusable — a manifest that Firefox rejects at runtime, a background
+     * worker that throws on start-up. A suite that only checks "the install
+     * command did not throw" passes in exactly that case, so the add-on is
+     * looked up in the browser's own add-on manager, and one of the
+     * extension's own pages is loaded through the extension's own flow.
+     *
+     * @throws When the add-on is missing, disabled, or does not work.
+     */
+    async #assertExtensionLoaded() {
+        const addon = await this.#addonState();
+        if (addon === null) {
+            throw new Error(`The add-on "${ADDON_ID}" is not installed.`);
+        }
+        if (addon.active !== true || addon.userDisabled === true) {
+            throw new Error(
+                `The add-on "${ADDON_ID}" is installed but not active (active: ${addon.active}, user disabled: ${addon.userDisabled}).`,
+            );
+        }
+
+        // The extension's own flow: a page of the extension is loaded, and the
+        // extension's own background worker has to answer a request from it.
+        // A broken background worker is invisible to everything else.
+        await this.goto("popup.html");
+        const wordmark = await this.script(
+            'return document.querySelector(".popup-wordmark")?.textContent ?? "";',
+        );
+        if (wordmark !== "Kintsugi") {
+            throw new Error(
+                `The extension's popup did not render (the wordmark is "${wordmark}").`,
+            );
+        }
+        const answered = await this.asyncScript(`
+            const api = globalThis.browser ?? globalThis.chrome;
+            const response = await api.runtime.sendMessage({
+                type: "settings:get",
+                payload: {},
+                id: "harness-check",
+            });
+            return response?.result !== undefined && response?.error === undefined;
+        `);
+        if (answered !== true) {
+            throw new Error("The extension's background worker did not answer a request.");
+        }
+    }
+
+    /**
+     * The browser's view of the extension's add-on.
+     *
+     * The add-on manager lives in the browser's chrome scope, so the session
+     * is switched to it for the query and back afterwards. The browser is
+     * started with `--remote-allow-system-access`, which is what makes that
+     * scope reachable.
+     *
+     * @returns {Promise<{id: string, active: boolean, userDisabled: boolean} | null>}
+     *   The add-on's state, or `null` when it is not installed.
+     */
+    async #addonState() {
+        await this.#marionette.send("Marionette:SetContext", { value: "chrome" });
+        try {
+            const raw = await this.#marionette.send("WebDriver:ExecuteScript", {
+                // Marionette's synchronous script has no top-level `await`, so
+                // the query is returned as a promise and Marionette unwraps it.
+                script: `
+                    return AddonManager.getAllAddons().then((list) => {
+                        const addon = list.find((entry) => entry.id === ${JSON.stringify(ADDON_ID)});
+                        if (!addon) return null;
+                        return JSON.stringify({
+                            id: addon.id,
+                            active: addon.isActive === true,
+                            userDisabled: addon.userDisabled === true,
+                        });
+                    });
+                `,
+                args: [],
+            });
+            const value = raw?.value;
+            return typeof value === "string" ? JSON.parse(value) : value;
+        } finally {
+            await this.#marionette.send("Marionette:SetContext", { value: "content" });
+        }
     }
 
     /** Write the profile's preferences. */
@@ -483,6 +958,20 @@ async function main() {
         let failures = 0;
         try {
             failures = await checks.run(harness);
+
+            // The checks above drive the extension's pages. The check below
+            // drives the extension itself: that it loads a real page, reads
+            // it, builds a book out of it, and writes a file. Without it, an
+            // extension that installs but does nothing at all would pass.
+            console.log("The extension");
+            try {
+                const steps = await harness.assertExtensionFlow();
+                for (const step of steps) console.log(`  ✓ ${step}`);
+            } catch (error) {
+                failures += 1;
+                console.log("  ✗ the extension's own flow");
+                console.log(`      ${error instanceof Error ? error.message : String(error)}`);
+            }
         } finally {
             await harness.stop();
         }

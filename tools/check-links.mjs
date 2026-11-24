@@ -11,7 +11,7 @@
  */
 import { readFile, readdir, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -19,7 +19,14 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 /** The directories that are walked. */
 const ROOTS = ["."];
 
-/** The directories that are skipped. */
+/**
+ * The directories that are skipped, as paths relative to the repository's
+ * root.
+ *
+ * The paths are relative on purpose: a bare name would skip every directory
+ * with that name, so a `docs/dist/` would be skipped along with the
+ * repository's own `dist/`.
+ */
 const SKIP = new Set([
     "node_modules",
     ".git",
@@ -39,8 +46,8 @@ const SKIP = new Set([
 async function markdownFiles(dir) {
     const found = [];
     for (const entry of await readdir(dir, { withFileTypes: true })) {
-        if (SKIP.has(entry.name)) continue;
         const path = join(dir, entry.name);
+        if (SKIP.has(repositoryPath(path))) continue;
         if (entry.isDirectory()) {
             found.push(...(await markdownFiles(path)));
         } else if (entry.name.endsWith(".md")) {
@@ -48,6 +55,16 @@ async function markdownFiles(dir) {
         }
     }
     return found;
+}
+
+/**
+ * A path relative to the repository's root, with forward slashes.
+ *
+ * @param {string} path The path.
+ * @returns {string} The relative path.
+ */
+function repositoryPath(path) {
+    return relative(ROOT, path).split(sep).join("/");
 }
 
 /**

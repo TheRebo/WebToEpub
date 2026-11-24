@@ -60,7 +60,12 @@ function assertEqual(actual, expected, message) {
     }
 }
 
-/** Sleep. */
+/**
+ * Sleep.
+ *
+ * @param {number} ms How long to sleep.
+ * @returns {Promise<void>} A promise that resolves after the delay.
+ */
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -263,6 +268,12 @@ export async function run(harness) {
                 `),
             );
 
+        /**
+         * Click a button in the chapter list's toolbar.
+         *
+         * @param {number} index The button's index.
+         * @returns {Promise<void>} A promise that resolves once it is clicked.
+         */
         const click = async (index) => {
             await harness.script(`
                 const toolbar = document.querySelector(".chapters-toolbar");

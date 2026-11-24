@@ -42,6 +42,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install the browser for the end-to-end tests
+        # `npm run verify` includes the end-to-end tests, and those tests drive
+        # a real Firefox. Without the browser installed the release fails on a
+        # missing browser rather than on anything to do with the release.
+        run: npm run test:e2e:install-firefox
+
       - name: Verify
         run: npm run verify
 
@@ -66,11 +72,29 @@ jobs:
             echo "No signing secrets configured; publishing an unsigned package."
           fi
 
+      - name: Collect the release artifacts
+        # The exact files that are published, rather than a glob. A glob would
+        # happily pick up a `.xpi` left over from an earlier version, and
+        # `fail_on_unmatched_files` only catches the case where *nothing*
+        # matches.
+        run: |
+          set -eu
+          files=$(find release -type f -name '*.xpi' | sort)
+          if [ -z "$files" ]; then
+            echo "::error::The packaging step produced no .xpi to publish."
+            exit 1
+          fi
+          echo "Publishing:"
+          echo "$files"
+          {
+            echo "RELEASE_FILES<<EOF"
+            echo "$files"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
       - name: Publish the release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            release/**/*.xpi
-            release/signed/*.xpi
-          fail_on_unmatched_files: false
+          files: ${{ env.RELEASE_FILES }}
+          fail_on_unmatched_files: true
           generate_release_notes: true
