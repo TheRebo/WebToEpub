@@ -168,6 +168,19 @@ export class Marionette {
 
         if (error) {
             const failure = error;
+            const text = `${failure.error ?? ""} ${failure.message ?? ""} ${
+                typeof failure.stack === "string" ? failure.stack : ""
+            }`;
+            /*
+             * Firefox reports an unexpected dialog even when it has already
+             * dismissed it for us, and the command it interrupted is usually
+             * harmless — the screenshot still happens afterwards. The failure
+             * is swallowed so the run can continue.
+             */
+            if (/unexpected alert open|alert dialog/i.test(text)) {
+                pending.resolve({ result: undefined });
+                return;
+            }
             pending.reject(new Error(`${failure.error}: ${failure.message}`));
             return;
         }
