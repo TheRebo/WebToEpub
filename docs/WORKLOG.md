@@ -85,9 +85,10 @@ URL was not resolved.
 
 ### 2026-11-23 — Phase 3, fourth pass: the locale catalogue is closed
 
-- **The locale hole is closed.** `fr`, `de` and `ja` carried 88 of the 186
-  keys; `id` carried none. All four are now **complete at 186/186**, and the
-  fallback to English is a safety net rather than the normal case.
+- **The locale hole is closed.** `fr`, `de` and `ja` carried 88 of the
+  keys that existed at the time; `id` carried none. All four are now
+  **complete**, and the fallback to English is a safety net rather than the
+  normal case.
 - **The translations moved out of the generator.** `tools/make-locales.mjs`
   used to hold the English source _and_ every translation inline, which made a
   400-line file that mixed two unrelated concerns. The translations now live
@@ -130,12 +131,12 @@ URL was not resolved.
       Both are now fixed by `core/util/css.ts`, whose authority is a **syntactic**
       check that works with or without a DOM, with the DOM used as a second
       opinion when one is there.
-- **The locale catalogue was incomplete.** `en` is complete at 186 keys,
-  but `fr`, `de` and `ja` carried only 88 of them: the newer settings,
+- **The locale catalogue was incomplete.** `en` was complete, but
+  `fr`, `de` and `ja` carried only a partial set of keys: the newer settings,
   onboarding, chapter-state and phase strings fell back to English. The
   fallback worked, so this was a quality gap rather than a defect — but it was
-  a visible gap. **Closed in the fourth pass**: all four locales are now at
-  186/186 and the gap is covered by a test.
+  a visible gap. **Closed in the fourth pass**: all four locales are now
+  complete and the gap is covered by a test.
 - **The ZIP library is loaded on demand.** One migrated parser reads a ZIP
   archive; `zip.js` is 155 KB. It is now a dynamic import behind a lazy
   facade, so the worker bundle does not carry it. See ADR-0012.
@@ -260,7 +261,8 @@ URL was not resolved.
    **Resolved in Phase 2:** ADR-0010 — ship `en` as the source, with graceful
    fallback for any key a locale has not translated.
    **Resolved in Phase 3:** the shipped locales are `en`, `de`, `fr`, `id` and
-   `ja`, and **all five are complete at 186/186 keys**. The baseline's `ru`,
+   `ja`, and **all five are complete**, with every key covered in each.
+   The baseline's `ru`,
    `uk` and `vi` catalogues were dropped rather than carried forward, because
    every string they covered was rewritten and a stale partial catalogue is
    worse than an honest fallback. The fallback stays as a safety net for a
@@ -279,6 +281,53 @@ URL was not resolved.
    Firefox refuses to navigate to a `moz-extension://` URL from outside the
    chrome scope. `KINTSUGI_FIREFOX` overrides the choice for anyone with a
    browser they would rather use.
+
+---
+
+## 2026-11-24 — Phase 4: the release
+
+The revamp is merged, tagged and pushed. This entry records what the release
+contains and what is deliberately still open.
+
+### What shipped
+
+- `main` is at the merge commit `1159a397`, tagged `v2.0.0-alpha.1`.
+- `legacy` and the `legacy/v-original` tag preserve the original tree
+  (`31cc8714`), untouched, for comparison.
+- The branches `docs/vision` and `feat/scaffolding` are kept on the remote so
+  the history stays navigable; `feat/scaffolding` is the branch that was
+  merged.
+- The artifact is `release/kintsugi-2.0.0-alpha.1/kintsugi-2.0.0-alpha.1.xpi`
+  — 41 files, 343.2 KB, built by `npm run package`. `release/` is gitignored;
+  the artifact is produced by CI, not committed.
+
+### Corrections made at release time
+
+Three figures in the documentation had drifted from the code and were wrong
+in the reader's favour. Corrected before tagging:
+
+| Claim                             | Was    | Actual |
+| --------------------------------- | ------ | ------ |
+| Unit and integration tests        | 155    | 169    |
+| Message keys per locale           | 186    | 188    |
+| Script tags in the original popup | 466    | 461    |
+| Packaged `.xpi` size              | 337 KB | 343 KB |
+
+The `155 KB` figure for `zip.js` in ADR-0012 is unrelated and correct.
+
+### Still open
+
+1. **The library migration is not implemented.** The library store, the
+   IndexedDB schema and the read/write API all exist, but no code moves a
+   saved book from the baseline's `localStorage` shape into it. The upgrade
+   path for a user who has 200 books in the original extension is therefore
+   manual. This is the single largest gap between the documentation's promise
+   and the shipped code.
+2. **The artifact is unsigned.** It installs through `about:debugging` with
+   the temporary add-on loader, or through a signed AMO build once a
+   `gecko` id and an AMO account exist.
+3. **Firefox only.** The manifest and the extension APIs are Firefox-shaped;
+   the Chromium path was not ported and is not claimed.
 
 ---
 

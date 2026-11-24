@@ -100,9 +100,9 @@ Kintsugi splits that in two: a **popup that is only a launcher**, and a
 | **Parsers loaded at once** | Every parser script in the popup's document                                 | None in the popup — the background worker owns all 434                       |
 | **Theming**                | Dark mode as five inverted background rules                                 | Light, dark, and system themes, each designed, plus an accent colour         |
 | **Keyboard support**       | Effectively none                                                            | Every action has a keyboard path; focus rings are a token, never removed     |
-| **Languages**              | English only                                                                | English, French, German, Japanese, Indonesian — 186 keys each, none partial  |
+| **Languages**              | English only                                                                | English, French, German, Japanese, Indonesian — 188 keys each, none partial  |
 | **Permissions**            | 7, including `webRequest`, `unlimitedStorage`, and a permanent `<all_urls>` | 5, no static host permissions; `*://*/*` is optional and granted per site    |
-| **Bundle size**            | One 1090-line HTML file plus a 466-entry hand-maintained script list        | `dist/` ≈ 1.18 MB; packaged `.xpi` ≈ 337 KB                                  |
+| **Bundle size**            | One 1090-line HTML file plus a 461-entry hand-maintained script list        | `dist/` ≈ 1.17 MB; packaged `.xpi` ≈ 343 KB                                  |
 
 The permission reduction is the part worth being precise about. The original
 held a permanent, install-time grant to every site you visit. Kintsugi holds
@@ -147,7 +147,7 @@ options page. The reasoning is written out in
   surfaces, elevation, and accent tuning. Plus a choice of accent colour and
   a density setting.
 - **Five languages**: English (source), French, German, Japanese, Indonesian —
-  186 keys each, complete, with a catalogue test that fails on any gap.
+  188 keys each, complete, with a catalogue test that fails on any gap.
 - **No telemetry, no remote code, no account.** No server, no sync, no update
   check. Everything stays on your machine.
 
@@ -166,7 +166,7 @@ npm run package
 ```
 
 That writes `release/kintsugi-2.0.0-alpha.1/kintsugi-2.0.0-alpha.1.xpi`
-(≈ 337 KB). Then:
+(≈ 343 KB). Then:
 
 1. Open `about:debugging#/runtime/this-firefox`.
 2. Click **Load Temporary Add-on…**.
@@ -282,7 +282,7 @@ npm install        # install dependencies
 npm run verify     # lint + typecheck + tests + build + extension lint + e2e
 npm run build      # build dist/
 npm run web-ext:run  # launch Firefox with the extension loaded
-npm test           # 155 unit and integration tests (vitest)
+npm test           # 169 unit and integration tests (vitest)
 npm run test:e2e   # 14 end-to-end checks against a real Firefox (Marionette)
 ```
 
