@@ -183,8 +183,28 @@
  * The stylesheet only ever sees "light" or "dark" — there is no third
  * stylesheet and no cascade-order dependency. The theme controller resolves
  * "system" to one of the two before the class lands on <html>.
+ *
+ * The neutral ramp is *reversed* rather than re-declared. The ramp is
+ * ordered light to dark, so in the dark theme "the lightest step" is the
+ * background and "the darkest step" is the text — and the same token names
+ * mean the opposite thing. Reversing the ramp in one place keeps the
+ * semantic tokens below readable: they still say "the background", not
+ * "gray-900".
  */
 [data-theme="dark"] {
+    /* The reversed ramp. */
+    --gray-0: #14120f;
+    --gray-50: #1c1915;
+    --gray-100: #262219;
+    --gray-200: #342f25;
+    --gray-300: #494236;
+    --gray-400: #6b6355;
+    --gray-500: #8d8577;
+    --gray-600: #aca493;
+    --gray-700: #cbc3b2;
+    --gray-800: #e6e0d3;
+    --gray-900: #f7f3ea;
+
     --bg: var(--gray-0);
     --bg-subtle: var(--gray-50);
     --surface: var(--gray-50);

@@ -189,19 +189,21 @@ export function buildPopup(root: HTMLElement): PopupElements {
 
     const library = document.createElement("k-button");
     library.className = "popup-action";
-    library.setAttribute("variant", "ghost");
+    library.setAttribute("variant", "secondary");
     library.setAttribute("size", "sm");
     library.setAttribute("icon", "book");
     library.setAttribute("aria-label", t("popupAddToLibrary"));
     library.dataset["action"] = "library";
+    library.appendChild(document.createTextNode(t("popupLibraryShort")));
 
     const workbench = document.createElement("k-button");
     workbench.className = "popup-action";
-    workbench.setAttribute("variant", "ghost");
+    workbench.setAttribute("variant", "secondary");
     workbench.setAttribute("size", "sm");
     workbench.setAttribute("icon", "list");
     workbench.setAttribute("aria-label", t("popupOpenWorkbench"));
     workbench.dataset["action"] = "workbench";
+    workbench.appendChild(document.createTextNode(t("popupWorkbenchShort")));
 
     actions.appendChild(library);
     actions.appendChild(workbench);

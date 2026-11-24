@@ -75,14 +75,19 @@ class PopupController {
         // so it is checked first: it needs no network at all.
         await this.#checkRunningJob();
 
+        // The popup normally looks at the tab the user is on. A URL on the
+        // query string overrides that, which is what makes the popup
+        // linkable: a site can offer "add this chapter to your library"
+        // without sending the user to the workbench first.
         const tab = await activeTab();
-        if (!tab?.url) {
+        const url = requestedUrl() ?? tab?.url;
+        if (!url) {
             this.#set({ state: "no-story", error: t("popupNoStory") });
             return;
         }
 
-        this.#set({ hostName: hostOf(tab.url) });
-        await this.#analyse(tab.url);
+        this.#set({ hostName: hostOf(url) });
+        await this.#analyse(url);
     }
 
     /** Ask the worker what is on the page. */
@@ -210,10 +215,9 @@ class PopupController {
         switch (action) {
             case "primary": {
                 const tab = await activeTab();
+                const url = requestedUrl() ?? tab?.url;
                 await openTab(
-                    getURL(
-                        `workbench.html${tab?.url ? `?url=${encodeURIComponent(tab.url)}` : ""}`,
-                    ),
+                    getURL(`workbench.html${url ? `?url=${encodeURIComponent(url)}` : ""}`),
                 );
                 window.close();
                 return;
@@ -269,6 +273,29 @@ function hostOf(url: string): string {
         return new URL(url).hostname.replace(/^www\./, "");
     } catch {
         return "";
+    }
+}
+
+/**
+ * The URL the popup was asked to look at.
+ *
+ * Read from the query string, so the popup can be pointed at a specific page
+ * without the user having to be on it.
+ *
+ * @returns The URL, or undefined when there is none.
+ */
+function requestedUrl(): string | undefined {
+    const value = new URLSearchParams(window.location.search).get("url");
+    if (!value) return undefined;
+    try {
+        const url = new URL(value);
+        // Only http and https are meaningful: an extension page is not a
+        // story, and following one would be a way to make the popup fetch
+        // something from inside the extension.
+        if (url.protocol !== "http:" && url.protocol !== "https:") return undefined;
+        return url.href;
+    } catch {
+        return undefined;
     }
 }
 

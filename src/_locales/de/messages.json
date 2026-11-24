@@ -227,6 +227,14 @@
     "message": "Zur Bibliothek hinzufügen",
     "description": "Die Bibliotheksschaltfläche des Popups."
   },
+  "popupLibraryShort": {
+    "message": "Bibliothek",
+    "description": "Die sichtbare Beschriftung der Bibliotheksschaltfläche."
+  },
+  "popupWorkbenchShort": {
+    "message": "Werkbank",
+    "description": "Die sichtbare Beschriftung der Werkbankschaltfläche."
+  },
   "popupSettings": {
     "message": "Einstellungen",
     "description": "Die Einstellungsschaltfläche des Popups."

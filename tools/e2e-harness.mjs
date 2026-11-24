@@ -121,6 +121,7 @@ export class Harness {
     #profile;
     #firefox = "";
     #fixture;
+    #mainWindow = "";
 
     /** Start Firefox and install the extension. */
     async start({ fixture = false } = {}) {
@@ -159,6 +160,12 @@ export class Harness {
         });
 
         await this.#install();
+
+        // The window Firefox opened on start-up is the one the harness
+        // drives; anything else it opens is a satellite.
+        const handles = await this.windowHandles();
+        if (handles[0]) this.#mainWindow = handles[0];
+
         return this;
     }
 
@@ -294,9 +301,25 @@ export class Harness {
         return Array.isArray(result) ? result : [];
     }
 
+    /**
+     * The handle of the window the extension was installed into.
+     *
+     * It is the first window Firefox opens, so its handle is the first one
+     * the browser reports.
+     */
+    get mainWindow() {
+        return this.#mainWindow;
+    }
+
     /** Open a new tab and return its handle. */
     async newTab() {
         const result = await this.#marionette.send("WebDriver:NewWindow", { type: "tab" });
+        return result?.handle;
+    }
+
+    /** Open a new window and return its handle. */
+    async newWindow() {
+        const result = await this.#marionette.send("WebDriver:NewWindow", { type: "window" });
         return result?.handle;
     }
 
@@ -368,7 +391,11 @@ export async function setTheme(harness, theme) {
         await api.storage.local.set({ "kintsugi.settings": settings });
         return true;
     `);
-    await harness.goto(await harness.script("return location.pathname.split('/').pop();"));
+    // The page is reloaded so it picks the theme up the way it does when a
+    // user changes it in the settings. The query string is kept: the popup
+    // and the workbench read the story's URL from it.
+    const target = await harness.script("return location.pathname + location.search;");
+    await harness.navigate(`${harness.baseUrl}/${target}`);
     await sleep(400);
 }
 
@@ -396,15 +423,42 @@ async function main() {
         const themes = command === "shots" ? ["light", "dark"] : [options.theme ?? "light"];
 
         const harness = new Harness();
-        await harness.start();
+        await harness.start({ fixture: true });
         try {
+            // The popup reads the *active* tab, so the fixture's index page
+            // has to be the active one for the popup to show a story rather
+            // than the extension's own page.
+            //
+            // The fixture goes into its own window and stays active there.
+            // The extension's page stays active in the window being
+            // photographed, which is a different window — Firefox's "active
+            // tab" is a per-window notion, so each window has its own.
+            const fixtureWindow = await harness.newWindow();
+            await harness.switchTo(fixtureWindow);
+            await harness.navigate(`${harness.fixtureOrigin}/`);
+            await harness.switchTo(harness.mainWindow);
+
             for (const page of targets) {
                 for (const theme of themes) {
                     await harness.setViewport(page.width, page.height);
-                    await harness.goto(page.file);
+
+                    // The workbench and the popup both take the story's URL on
+                    // the query string, so they do not depend on the active
+                    // tab — which is the extension's own page while the
+                    // harness is driving it.
+                    const storyUrl = encodeURIComponent(`${harness.fixtureOrigin}/`);
+                    const storyQuery =
+                        page.name === "workbench" || page.name === "popup"
+                            ? `?url=${storyUrl}`
+                            : "";
+                    await harness.goto(`${page.file}${storyQuery}`);
                     await sleep(600);
+
+                    // The theme is set last: it reloads the page, and the
+                    // reload has to keep the story's URL.
                     await setTheme(harness, theme);
-                    await sleep(400);
+                    await sleep(1200);
+
                     const suffix = themes.length > 1 ? `-${theme}` : "";
                     const out = resolve(
                         ROOT,

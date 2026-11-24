@@ -69,6 +69,8 @@ export default {
 
     popupOpenWorkbench: ["ワークベンチを開く", "ポップアップの主ボタン。"],
     popupAddToLibrary: ["ライブラリに追加", "ポップアップのライブラリボタン。"],
+    popupLibraryShort: ["ライブラリ", "ポップアップのライブラリボタンのラベル。"],
+    popupWorkbenchShort: ["ワークベンチ", "ポップアップのワークベンチボタンのラベル。"],
     popupSettings: ["設定", "ポップアップの設定ボタン。"],
     popupNoStory: ["このページに物語は検出されませんでした。", "ページが物語ではないときに表示。"],
     popupUnsupported: [

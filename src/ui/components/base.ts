@@ -18,21 +18,25 @@ export abstract class KComponent extends HTMLElement {
     /** The shadow root. */
     protected readonly root: ShadowRoot;
 
-    /** The stylesheet, injected once per document. */
+    /**
+     * The component's stylesheet.
+     *
+     * It is applied through `adoptedStyleSheets` rather than as a `<style>`
+     * element, because most components rebuild their shadow root from
+     * scratch. A `<style>` element would be deleted along with the old
+     * markup, and the component would render unstyled — a bug that is
+     * invisible in a code review and glaring on screen. An adopted stylesheet
+     * belongs to the shadow root, not to its contents, so it survives.
+     */
     static styles: string | undefined;
 
-    /** The observed attributes. */
+    /** The static observed attributes. */
     static observedAttributes: string[] = [];
 
     constructor() {
         super();
         this.root = this.attachShadow({ mode: "open" });
-        const styles = (this.constructor as typeof KComponent).styles;
-        if (styles) {
-            const style = document.createElement("style");
-            style.textContent = styles;
-            this.root.appendChild(style);
-        }
+        this.applyStyles();
     }
 
     /** Called when the element is connected to the document. */
@@ -56,6 +60,32 @@ export abstract class KComponent extends HTMLElement {
 
     /** Render the component's contents. */
     protected abstract render(): void;
+
+    /**
+     * Apply the component's stylesheet to its shadow root.
+     *
+     * `adoptedStyleSheets` is used where the browser supports it, and a
+     * `<style>` element is the fallback. Both live outside the shadow root's
+     * *contents*, so a component is free to rebuild its markup without
+     * losing its styling.
+     */
+    protected applyStyles(): void {
+        const styles = this.styleText;
+        if (!styles) return;
+
+        if (supportsAdoptedStyleSheets(this.root)) {
+            const sheet = new CSSStyleSheet();
+            sheet.replaceSync(styles);
+            this.root.adoptedStyleSheets = [...this.root.adoptedStyleSheets, sheet];
+            return;
+        }
+
+        if (this.root.querySelector("style[data-kintsugi]")) return;
+        const style = document.createElement("style");
+        style.dataset["kintsugi"] = "";
+        style.textContent = styles;
+        this.root.prepend(style);
+    }
 
     /**
      * Move focus to the component's focusable inner element.
@@ -120,4 +150,18 @@ export abstract class KComponent extends HTMLElement {
 export function defineComponent(name: string, constructor: CustomElementConstructor): void {
     if (customElements.get(name)) return;
     customElements.define(name, constructor);
+}
+
+/**
+ * Whether the shadow root can adopt a stylesheet.
+ *
+ * Firefox 101 and every Chromium-based browser can. The check is a feature
+ * test rather than a version test, so a browser that adds the capability
+ * later is picked up without a change here.
+ *
+ * @param root The shadow root.
+ * @returns True when the shadow root supports adopted stylesheets.
+ */
+function supportsAdoptedStyleSheets(root: ShadowRoot): boolean {
+    return "adoptedStyleSheets" in root && "replaceSync" in CSSStyleSheet.prototype;
 }

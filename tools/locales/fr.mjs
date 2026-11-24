@@ -76,6 +76,8 @@ export default {
     phaseCancelled: ["Annulé", "Affiché quand le téléchargement a été arrêté."],
     popupOpenWorkbench: ["Ouvrir l'atelier", "Le bouton principal du popup."],
     popupAddToLibrary: ["Ajouter à la bibliothèque", "Le bouton de bibliothèque du popup."],
+    popupLibraryShort: ["Bibliothèque", "Le libellé visible du bouton de bibliothèque."],
+    popupWorkbenchShort: ["Atelier", "Le libellé visible du bouton d'atelier."],
     popupSettings: ["Paramètres", "Le bouton de paramètres du popup."],
     popupNoStory: [
         "Aucune histoire détectée sur cette page.",

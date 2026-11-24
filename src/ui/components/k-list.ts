@@ -57,7 +57,19 @@ const LIST_STYLES = `
 :host {
     display: block;
     position: relative;
-    contain: strict;
+    /*
+     * The rows are absolutely positioned inside a spacer of a computed
+     * height, so the host needs a size of its own — otherwise it collapses
+     * and the rows spill out of the panel.
+     *
+     * The containment is deliberately "content" rather than "strict":
+     * "strict" implies "size", which makes the element's size independent of
+     * its contents and stops the flex algorithm from sizing it at all. The
+     * list is a flex item that has to grow with the panel.
+     */
+    flex: 1 1 0;
+    min-height: 240px;
+    contain: content;
 }
 
 :host([hidden]) { display: none; }
@@ -72,6 +84,13 @@ const LIST_STYLES = `
 .spacer {
     position: relative;
     width: 100%;
+    /*
+     * The rows are absolutely positioned, so a margin on the spacer is the
+     * only way to give the first and last row some breathing room. The
+     * virtualiser adds the same offset to the spacer's height, so the scroll
+     * range stays exact.
+     */
+    margin-block: var(--space-2);
 }
 
 .rows {

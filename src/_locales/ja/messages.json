@@ -227,6 +227,14 @@
     "message": "ライブラリに追加",
     "description": "ポップアップのライブラリボタン。"
   },
+  "popupLibraryShort": {
+    "message": "ライブラリ",
+    "description": "ポップアップのライブラリボタンのラベル。"
+  },
+  "popupWorkbenchShort": {
+    "message": "ワークベンチ",
+    "description": "ポップアップのワークベンチボタンのラベル。"
+  },
   "popupSettings": {
     "message": "設定",
     "description": "ポップアップの設定ボタン。"

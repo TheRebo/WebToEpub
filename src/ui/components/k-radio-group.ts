@@ -114,6 +114,14 @@ export class KRadioGroup extends KComponent {
             this.root.appendChild(this.fieldset);
         }
 
+        // The group's accessible name comes from the label beside it when
+        // there is one, and from the hidden legend otherwise. A hidden legend
+        // is still announced by a screen reader, so the group is never
+        // nameless.
+        const labelledBy = this.getAttribute("aria-labelledby");
+        if (labelledBy) this.fieldset.setAttribute("aria-labelledby", labelledBy);
+        else this.fieldset.removeAttribute("aria-labelledby");
+
         const disabled = this.hasAttribute("disabled");
         const value = this.getAttribute("value") ?? "";
 

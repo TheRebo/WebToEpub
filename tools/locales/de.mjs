@@ -82,6 +82,8 @@ export default {
     phaseCancelled: ["Abgebrochen", "Wird angezeigt, wenn der Download gestoppt wurde."],
     popupOpenWorkbench: ["Werkbank öffnen", "Die Hauptschaltfläche des Popups."],
     popupAddToLibrary: ["Zur Bibliothek hinzufügen", "Die Bibliotheksschaltfläche des Popups."],
+    popupLibraryShort: ["Bibliothek", "Die sichtbare Beschriftung der Bibliotheksschaltfläche."],
+    popupWorkbenchShort: ["Werkbank", "Die sichtbare Beschriftung der Werkbankschaltfläche."],
     popupSettings: ["Einstellungen", "Die Einstellungsschaltfläche des Popups."],
     popupNoStory: [
         "Auf dieser Seite wurde keine Story erkannt.",

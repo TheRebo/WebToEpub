@@ -227,6 +227,14 @@
     "message": "Tambahkan ke pustaka",
     "description": "Tombol pustaka pada popup."
   },
+  "popupLibraryShort": {
+    "message": "Pustaka",
+    "description": "Label tombol pustaka pada popup."
+  },
+  "popupWorkbenchShort": {
+    "message": "Meja kerja",
+    "description": "Label tombol meja kerja pada popup."
+  },
   "popupSettings": {
     "message": "Pengaturan",
     "description": "Tombol pengaturan pada popup."

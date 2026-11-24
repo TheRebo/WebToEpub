@@ -227,6 +227,14 @@
     "message": "Add to library",
     "description": "The popup's library button."
   },
+  "popupLibraryShort": {
+    "message": "Library",
+    "description": "The popup's library button's visible label."
+  },
+  "popupWorkbenchShort": {
+    "message": "Workbench",
+    "description": "The popup's workbench button's visible label."
+  },
   "popupSettings": {
     "message": "Settings",
     "description": "The popup's settings button."

@@ -104,6 +104,8 @@ const SOURCE = {
     // --- Popup ---
     popupOpenWorkbench: ["Open workbench", "The popup's main button."],
     popupAddToLibrary: ["Add to library", "The popup's library button."],
+    popupLibraryShort: ["Library", "The popup's library button's visible label."],
+    popupWorkbenchShort: ["Workbench", "The popup's workbench button's visible label."],
     popupSettings: ["Settings", "The popup's settings button."],
     popupNoStory: ["No story detected on this page.", "Shown when the page is not a story."],
     popupUnsupported: ["This site is not supported yet.", "Shown when no parser matched."],

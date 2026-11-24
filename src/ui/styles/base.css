@@ -11,6 +11,21 @@
     box-sizing: border-box;
 }
 
+/*
+ * The hidden attribute wins.
+ *
+ * The browser's own rule for [hidden] is `display: none`, but it lives in
+ * the user-agent stylesheet, so *any* author rule that sets `display` beats
+ * it — including a class rule like `.workbench-state { display: flex }`. The
+ * element then stays in the layout while claiming to be hidden, which
+ * pushes everything below it out of the panel.
+ *
+ * This rule restores the browser's intent with author-level specificity.
+ */
+[hidden] {
+    display: none !important;
+}
+
 html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;

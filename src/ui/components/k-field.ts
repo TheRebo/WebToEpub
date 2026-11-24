@@ -10,6 +10,9 @@
  *  - the error is wired via `aria-describedby` plus `aria-invalid="true"`,
  *    and is not conveyed by colour alone
  *  - the `horizontal` variant puts the label to the left, for dense forms
+ *  - the `group` variant renders **only** a label and a hint, for a row that
+ *    is controlled by another element — a segmented choice, say — and labels
+ *    it with `aria-labelledby` rather than with a `for`
  */
 import { KComponent, defineComponent } from "./base";
 
@@ -145,6 +148,9 @@ export class KField extends KComponent {
     /** The control's ID, used to wire the label and the descriptions. */
     readonly inputId = `k-field-${crypto.randomUUID().slice(0, 8)}`;
 
+    /** The ID of the label, for a row that is labelled rather than labelled-for. */
+    readonly labelId = `${this.inputId}-label`;
+
     private input: HTMLInputElement | HTMLSelectElement | undefined;
     private hintId = `${this.inputId}-hint`;
     private errorId = `${this.inputId}-error`;
@@ -153,6 +159,18 @@ export class KField extends KComponent {
         const type = this.getAttribute("type") ?? "text";
         const value = this.getAttribute("value") ?? "";
         const disabled = this.hasAttribute("disabled");
+        const isGroup = this.hasAttribute("group");
+
+        // A grouped row has no control of its own: it is a label for a
+        // control that lives beside it.
+        if (isGroup) {
+            if (this.input) {
+                this.input = undefined;
+                this.root.replaceChildren();
+                this.#buildGroup();
+            }
+            return;
+        }
 
         // Recreate the control only when its type changes; otherwise the
         // user's cursor position and selection would be lost on every
@@ -259,6 +277,35 @@ export class KField extends KComponent {
         }
 
         field.appendChild(control);
+        this.root.appendChild(field);
+    }
+
+    /**
+     * Build a grouped field: a label and a hint, but no control.
+     *
+     * The label is a `<span>` rather than a `<label>`, because it does not
+     * point at a control — the control is the segmented choice beside it.
+     * The row is wired to that control with `aria-labelledby`.
+     */
+    #buildGroup(): void {
+        const field = document.createElement("div");
+        field.className = "field";
+
+        const label = document.createElement("span");
+        label.className = "label";
+        label.id = this.labelId;
+        this.setText(label, this.getAttribute("label") ?? "");
+        field.appendChild(label);
+
+        const hint = this.getAttribute("hint");
+        if (hint) {
+            const hintElement = document.createElement("div");
+            hintElement.className = "hint";
+            hintElement.id = this.hintId;
+            this.setText(hintElement, hint);
+            field.appendChild(hintElement);
+        }
+
         this.root.appendChild(field);
     }
 

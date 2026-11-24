@@ -310,11 +310,20 @@ export function renderGroups(
                 case "theme":
                 case "accent":
                 case "density": {
+                    // The row is a label for the segmented choice beside it,
+                    // so the field renders no control of its own.
                     const field = document.createElement("k-field");
+                    field.setAttribute("group", "");
                     field.setAttribute("label", t(control.label));
                     if (control.hint) field.setAttribute("hint", t(control.hint));
                     row.appendChild(field);
-                    row.appendChild(buildChoice(control, String(values[control.path] ?? "")));
+
+                    const choice = buildChoice(control, String(values[control.path] ?? ""));
+                    // The segmented control takes its name from the label
+                    // beside it, so the two are one group for a screen
+                    // reader rather than two unrelated things.
+                    choice.setAttribute("aria-labelledby", field.labelId);
+                    row.appendChild(choice);
                     break;
                 }
             }

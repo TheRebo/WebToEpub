@@ -84,6 +84,8 @@ export default {
     // --- Popup ---
     popupOpenWorkbench: ["Buka meja kerja", "Tombol utama pada popup."],
     popupAddToLibrary: ["Tambahkan ke pustaka", "Tombol pustaka pada popup."],
+    popupLibraryShort: ["Pustaka", "Label tombol pustaka pada popup."],
+    popupWorkbenchShort: ["Meja kerja", "Label tombol meja kerja pada popup."],
     popupSettings: ["Pengaturan", "Tombol pengaturan pada popup."],
     popupNoStory: [
         "Tidak ada cerita terdeteksi di halaman ini.",

@@ -6,7 +6,9 @@
  *
  *   /                a table of contents
  *   /chapter/<n>     a chapter, with a cover image and an author note
- *   /cover.png       a 1×1 PNG, so the cover pipeline has something to fetch
+ *   /cover.png       a small placeholder cover, so the cover pipeline has
+ *                    something real to fetch and the screenshots show a
+ *                    cover rather than an empty frame
  *   /slow            a page that never finishes, for the timeout path
  *
  * The markup is shaped so that the **default parser** finds it: a
@@ -19,11 +21,26 @@ import { createServer } from "node:http";
 /** The number of chapters the fixture serves. */
 export const CHAPTER_COUNT = 12;
 
-/** A 1×1 transparent PNG. */
-const PIXEL = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
-    "base64",
-);
+/**
+ * A small placeholder cover, as an SVG.
+ *
+ * The cover used to be a 1×1 transparent PNG, which scaled to a blank frame
+ * in every screenshot — the extension looked like it had failed to find a
+ * cover. A real picture makes the screenshots honest.
+ */
+const COVER = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="360" viewBox="0 0 240 360">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3a2f1c"/>
+      <stop offset="1" stop-color="#1b1610"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="360" fill="url(#g)"/>
+  <g fill="none" stroke="#d99224" stroke-width="3" stroke-linecap="round">
+    <path d="M40 300 L96 120 L150 220 L200 90"/>
+  </g>
+  <text x="120" y="336" text-anchor="middle" font-family="Georgia,serif" font-size="18" fill="#e6dfd0">The Kintsugi Test Novel</text>
+</svg>`;
 
 /** The page's shell. */
 function shell(title, body) {
@@ -122,8 +139,11 @@ export async function startFixture() {
         }
 
         if (path === "/cover.png") {
-            response.writeHead(200, { "content-type": "image/png" });
-            response.end(PIXEL);
+            response.writeHead(200, {
+                "content-type": "image/svg+xml",
+                "cache-control": "no-store",
+            });
+            response.end(COVER);
             return;
         }
 

@@ -227,6 +227,14 @@
     "message": "Ajouter à la bibliothèque",
     "description": "Le bouton de bibliothèque du popup."
   },
+  "popupLibraryShort": {
+    "message": "Bibliothèque",
+    "description": "Le libellé visible du bouton de bibliothèque."
+  },
+  "popupWorkbenchShort": {
+    "message": "Atelier",
+    "description": "Le libellé visible du bouton d'atelier."
+  },
   "popupSettings": {
     "message": "Paramètres",
     "description": "Le bouton de paramètres du popup."
