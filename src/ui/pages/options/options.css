@@ -137,7 +137,8 @@
     color: var(--text);
 }
 
-.options-nav-link[aria-current="true"] {
+.options-nav-link[aria-current="true"],
+.options-nav-link[aria-selected="true"] {
     background: var(--accent-subtle);
     color: var(--accent-text);
     font-weight: var(--weight-semibold);
@@ -191,6 +192,20 @@
     border-bottom: 1px solid var(--border-subtle);
 }
 
+/*
+ * The hidden attribute has to win.
+ *
+ * The user agent's `[hidden] { display: none }` rule loses to any author rule
+ * that sets `display`, and `.options-row` sets `display: flex`. A hidden row
+ * would therefore still be drawn, and the navigation would filter nothing.
+ */
+.options-row[hidden],
+.options-group[hidden],
+.options-status[hidden],
+.options-no-results[hidden] {
+    display: none;
+}
+
 .options-row:last-child {
     border-bottom: 0;
 }
@@ -223,6 +238,70 @@
     text-align: center;
     color: var(--text-muted);
     font-size: var(--text-sm);
+}
+
+/* --- The grouped choices ---------------------------------------------- */
+
+/*
+ * A theme, an accent, or a density: a field that is only a label, and the
+ * segmented choice beneath it.
+ */
+.options-choice {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: 100%;
+}
+
+.options-choice k-radio-group {
+    width: 100%;
+}
+
+/* --- The status panels ----------------------------------------------- */
+
+.options-status {
+    display: flex;
+    flex-direction: column;
+}
+
+.options-status-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-7) var(--space-5);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.options-status-panel--error {
+    border-color: var(--danger);
+}
+
+.options-status-label {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+}
+
+.options-status-title {
+    margin: 0;
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    color: var(--text);
+}
+
+.options-status-text {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: var(--leading-relaxed);
+}
+
+.options-status-actions {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
 }
 
 /* --- The site selectors ----------------------------------------------- */
