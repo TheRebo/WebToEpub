@@ -13,13 +13,13 @@ itself.
 
 ## 1. The short version
 
-| | Baseline (WebToEpub 1.x) | Kintsugi 2.0 |
-|---|---|---|
-| Permissions | 7 | **5** |
-| Static host permissions | `<all_urls>` (every site, forever) | **none** |
-| Optional host permissions | — | `*://*/*`, granted per site, revocable |
-| Telemetry | none | none |
-| Accounts / sync | none | none |
+|                           | Baseline (WebToEpub 1.x)           | Kintsugi 2.0                           |
+| ------------------------- | ---------------------------------- | -------------------------------------- |
+| Permissions               | 7                                  | **5**                                  |
+| Static host permissions   | `<all_urls>` (every site, forever) | **none**                               |
+| Optional host permissions | —                                  | `*://*/*`, granted per site, revocable |
+| Telemetry                 | none                               | none                                   |
+| Accounts / sync           | none                               | none                                   |
 
 Kintsugi asks for **fewer** permissions than the baseline and removes the
 broadest one of all — the permanent grant to every site on the web.
@@ -47,7 +47,7 @@ controls, into whatever folder their browser is already configured to use.
 
 ### `scripting`
 
-**Why.** To read the source page the way the *user* sees it. Many novel sites
+**Why.** To read the source page the way the _user_ sees it. Many novel sites
 render chapter content with JavaScript, so the HTML that `fetch` returns is an
 empty shell. The extension must inject a small script into the tab and read the
 live DOM.
@@ -60,7 +60,7 @@ the DOM and sends it back. It does not modify the page, does not inject UI
 into the page, does not read other tabs, and does not observe navigation.
 
 **Without it.** The extension would only work on server-rendered sites — a
-small fraction of the 437 supported sites.
+small fraction of the 434 supported sites.
 
 ---
 
@@ -73,7 +73,7 @@ builder, and the reading list's metadata.
 
 **What we do not do with it.** Settings are stored under a single namespaced
 key (`kintsugi.settings`) and are **validated against a schema on read**. The
-library's EPUB bytes are *not* stored here — they live in IndexedDB, which is
+library's EPUB bytes are _not_ stored here — they live in IndexedDB, which is
 why `unlimitedStorage` is not needed. Nothing is synced, and nothing leaves the
 machine.
 
@@ -157,7 +157,7 @@ for that site:
 1. The user opens the workbench on a story page.
 2. The extension checks whether it already holds access to that origin.
 3. If not, it shows a one-line banner:
-   *"Kintsugi needs access to `novelsite.com` to read the chapters."*
+   _"Kintsugi needs access to `novelsite.com` to read the chapters."_
    with **Allow** and **Not now**.
 4. **Allow** triggers Firefox's own permission prompt. **Not now** dismisses
    the banner and the workbench stays open, offering the selector builder as a
@@ -178,16 +178,16 @@ the wrong side of it.
 
 ## 4. Permissions the baseline had, and what happened to them
 
-| Baseline permission | Fate | Reason |
-|---|---|---|
-| `webRequest` | **Removed** | Used for exactly one thing — stripping the extension's `Origin` header — which a scoped DNR rule does better. `webRequest` granted blocking read/write access to the headers of *every request in the browser*. |
-| `unlimitedStorage` | **Removed** | Nothing called it. It existed only because the baseline stored EPUBs as base64 data URLs in `chrome.storage.local`, inflating them by a third and blowing past the per-item quota. IndexedDB stores the bytes directly. |
-| `<all_urls>` (static) | **Removed** | Replaced by optional, per-origin, revocable host access. |
-| `cookies` | **Kept**, behaviour tightened | Still required for protected sites, but now scoped to the registrable domain of the URL being fetched and cleaned up in a `finally`. |
-| `downloads` | **Kept** | The product's output. |
-| `scripting` | **Kept** | Reading the live, JS-rendered DOM. |
-| `storage` | **Kept** | Preferences and per-site parser configs. |
-| `declarativeNetRequest` | **Kept**, scope made explicit | Header spoofing and the origin-stripping replacement for `webRequest`. |
+| Baseline permission     | Fate                          | Reason                                                                                                                                                                                                                  |
+| ----------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `webRequest`            | **Removed**                   | Used for exactly one thing — stripping the extension's `Origin` header — which a scoped DNR rule does better. `webRequest` granted blocking read/write access to the headers of _every request in the browser_.         |
+| `unlimitedStorage`      | **Removed**                   | Nothing called it. It existed only because the baseline stored EPUBs as base64 data URLs in `chrome.storage.local`, inflating them by a third and blowing past the per-item quota. IndexedDB stores the bytes directly. |
+| `<all_urls>` (static)   | **Removed**                   | Replaced by optional, per-origin, revocable host access.                                                                                                                                                                |
+| `cookies`               | **Kept**, behaviour tightened | Still required for protected sites, but now scoped to the registrable domain of the URL being fetched and cleaned up in a `finally`.                                                                                    |
+| `downloads`             | **Kept**                      | The product's output.                                                                                                                                                                                                   |
+| `scripting`             | **Kept**                      | Reading the live, JS-rendered DOM.                                                                                                                                                                                      |
+| `storage`               | **Kept**                      | Preferences and per-site parser configs.                                                                                                                                                                                |
+| `declarativeNetRequest` | **Kept**, scope made explicit | Header spoofing and the origin-stripping replacement for `webRequest`.                                                                                                                                                  |
 
 **Net: 3 permissions removed, 0 added.**
 
@@ -197,19 +197,19 @@ the wrong side of it.
 
 ```json
 {
-  "manifest_version": 3,
-  "permissions": [
-    "downloads",
-    "scripting",
-    "storage",
-    "declarativeNetRequest",
-    "cookies"
-  ],
-  "host_permissions": [],
-  "optional_host_permissions": ["*://*/*"],
-  "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'"
-  }
+    "manifest_version": 3,
+    "permissions": [
+        "downloads",
+        "scripting",
+        "storage",
+        "declarativeNetRequest",
+        "cookies"
+    ],
+    "host_permissions": [],
+    "optional_host_permissions": ["*://*/*"],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'"
+    }
 }
 ```
 
@@ -242,12 +242,12 @@ gave the extension a separate, non-private view of private browsing.
 
 ## 6. Network requests the extension makes
 
-| Request | When | To whom |
-|---|---|---|
-| Chapter HTML | During a download | The site being read — and only that site |
-| Chapter images | During a download | The same site, or a CDN it links to (requires host access to that origin) |
-| Table-of-contents pages | While building the chapter list | The site being read |
-| Metadata lookup | **Off by default**, user opt-in | A public metadata service — the story URL is sent only if the user enables it |
+| Request                 | When                            | To whom                                                                       |
+| ----------------------- | ------------------------------- | ----------------------------------------------------------------------------- |
+| Chapter HTML            | During a download               | The site being read — and only that site                                      |
+| Chapter images          | During a download               | The same site, or a CDN it links to (requires host access to that origin)     |
+| Table-of-contents pages | While building the chapter list | The site being read                                                           |
+| Metadata lookup         | **Off by default**, user opt-in | A public metadata service — the story URL is sent only if the user enables it |
 
 There is no analytics endpoint, no error-reporting endpoint, no update check,
 and no "phone home" of any kind. The extension works fully offline once

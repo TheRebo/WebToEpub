@@ -42,17 +42,17 @@ new theme rewrites **Layer 2 only**.
 A 1.200 (major third-ish) scale, base 14 px, with a **1.25 ratio** used for
 the display sizes so headings do not balloon in a narrow panel.
 
-| Token | Size | Line height | Weight | Use |
-|---|---|---|---|---|
-| `--text-3xs` | 10 px | 1.4 | 500 | Legal, badge counters |
-| `--text-2xs` | 11 px | 1.45 | 500 | Meta, captions, timestamps |
-| `--text-xs` | 12 px | 1.5 | 500 | Dense table cells, helper text |
-| `--text-sm` | 13 px | 1.5 | 400 | Secondary UI, table headers |
-| `--text-base` | **14 px** | 1.55 | 400 | Body, inputs, buttons |
-| `--text-md` | 15 px | 1.5 | 500 | Card titles |
-| `--text-lg` | 17 px | 1.4 | 600 | Section headings |
-| `--text-xl` | 20 px | 1.3 | 650 | Page titles |
-| `--text-2xl` | 25 px | 1.25 | 680 | Hero numerals, splash |
+| Token         | Size      | Line height | Weight | Use                            |
+| ------------- | --------- | ----------- | ------ | ------------------------------ |
+| `--text-3xs`  | 10 px     | 1.4         | 500    | Legal, badge counters          |
+| `--text-2xs`  | 11 px     | 1.45        | 500    | Meta, captions, timestamps     |
+| `--text-xs`   | 12 px     | 1.5         | 500    | Dense table cells, helper text |
+| `--text-sm`   | 13 px     | 1.5         | 400    | Secondary UI, table headers    |
+| `--text-base` | **14 px** | 1.55        | 400    | Body, inputs, buttons          |
+| `--text-md`   | 15 px     | 1.5         | 500    | Card titles                    |
+| `--text-lg`   | 17 px     | 1.4         | 600    | Section headings               |
+| `--text-xl`   | 20 px     | 1.3         | 650    | Page titles                    |
+| `--text-2xl`  | 25 px     | 1.25        | 680    | Hero numerals, splash          |
 
 **Font stack:** `system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
 Arial, sans-serif`. One stack, everywhere. The original's "Arial on buttons,
@@ -67,18 +67,18 @@ counts, byte totals, progress percentage) uses
 Base unit **4 px**. The scale is deliberately short — long scales invite
 off-scale values.
 
-| Token | Value | Typical use |
-|---|---|---|
-| `--space-0` | 0 | reset |
-| `--space-1` | 2 px | hairline nudges, icon gaps |
-| `--space-2` | 4 px | icon-to-label, dense list items |
-| `--space-3` | 8 px | between related controls, cell padding |
-| `--space-4` | 12 px | input padding, list item padding |
-| `--space-5` | 16 px | between groups, card padding (compact) |
+| Token       | Value | Typical use                             |
+| ----------- | ----- | --------------------------------------- |
+| `--space-0` | 0     | reset                                   |
+| `--space-1` | 2 px  | hairline nudges, icon gaps              |
+| `--space-2` | 4 px  | icon-to-label, dense list items         |
+| `--space-3` | 8 px  | between related controls, cell padding  |
+| `--space-4` | 12 px | input padding, list item padding        |
+| `--space-5` | 16 px | between groups, card padding (compact)  |
 | `--space-6` | 24 px | card padding (comfortable), section gap |
-| `--space-7` | 32 px | major section separation |
-| `--space-8` | 48 px | hero / splash spacing |
-| `--space-9` | 64 px | oversized empty-state spacing |
+| `--space-7` | 32 px | major section separation                |
+| `--space-8` | 48 px | hero / splash spacing                   |
+| `--space-9` | 64 px | oversized empty-state spacing           |
 
 **Rule:** every margin, padding, and gap in the product is one of these
 values. `--space-half` (2 px) and `--space-double` (32 px) are aliases for
@@ -86,59 +86,60 @@ components that need them.
 
 ### 1.4 Radius scale
 
-| Token | Value | Use |
-|---|---|---|
-| `--radius-xs` | 4 px | checkboxes, small chips, table cells |
-| `--radius-sm` | 6 px | inputs, small buttons, badges |
-| `--radius-md` | 10 px | buttons, dropdown menus, popovers |
-| `--radius-lg` | 14 px | cards, panels |
-| `--radius-xl` | 20 px | dialogs, hero surfaces |
-| `--radius-full` | 9999 px | pills, avatars, spinner |
+| Token           | Value   | Use                                  |
+| --------------- | ------- | ------------------------------------ |
+| `--radius-xs`   | 4 px    | checkboxes, small chips, table cells |
+| `--radius-sm`   | 6 px    | inputs, small buttons, badges        |
+| `--radius-md`   | 10 px   | buttons, dropdown menus, popovers    |
+| `--radius-lg`   | 14 px   | cards, panels                        |
+| `--radius-xl`   | 20 px   | dialogs, hero surfaces               |
+| `--radius-full` | 9999 px | pills, avatars, spinner              |
 
 ### 1.5 Elevation
 
 Two real shadows plus a border, because flat-but-separated is the modern
 idiom and pure flat loses hierarchy in dark mode.
 
-| Token | Light | Dark | Use |
-|---|---|---|---|
-| `--shadow-1` | `0 1px 2px rgb(16 12 4 / .06), 0 1px 1px rgb(16 12 4 / .04)` | `0 1px 2px rgb(0 0 0 / .40)` | Resting card, button |
-| `--shadow-2` | `0 6px 16px -4px rgb(16 12 4 / .12), 0 2px 6px -2px rgb(16 12 4 / .06)` | `0 6px 16px -4px rgb(0 0 0 / .55)` | Popover, dropdown, sticky header when scrolled |
-| `--shadow-3` | `0 24px 48px -12px rgb(16 12 4 / .28)` | `0 24px 48px -12px rgb(0 0 0 / .70)` | Dialog |
-| `--ring` | `0 0 0 3px var(--focus-ring)` | same | Focus ring (offset from the element) |
+| Token        | Light                                                                   | Dark                                 | Use                                            |
+| ------------ | ----------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------- |
+| `--shadow-1` | `0 1px 2px rgb(16 12 4 / .06), 0 1px 1px rgb(16 12 4 / .04)`            | `0 1px 2px rgb(0 0 0 / .40)`         | Resting card, button                           |
+| `--shadow-2` | `0 6px 16px -4px rgb(16 12 4 / .12), 0 2px 6px -2px rgb(16 12 4 / .06)` | `0 6px 16px -4px rgb(0 0 0 / .55)`   | Popover, dropdown, sticky header when scrolled |
+| `--shadow-3` | `0 24px 48px -12px rgb(16 12 4 / .28)`                                  | `0 24px 48px -12px rgb(0 0 0 / .70)` | Dialog                                         |
+| `--ring`     | `0 0 0 3px var(--focus-ring)`                                           | same                                 | Focus ring (offset from the element)           |
 
 ### 1.6 Motion
 
-| Token | Value | Use |
-|---|---|---|
-| `--ease-out` | `cubic-bezier(.22, 1, .36, 1)` | Entrances, most transitions |
-| `--ease-in-out` | `cubic-bezier(.65, 0, .35, 1)` | Reversible state changes |
+| Token           | Value                             | Use                                                    |
+| --------------- | --------------------------------- | ------------------------------------------------------ |
+| `--ease-out`    | `cubic-bezier(.22, 1, .36, 1)`    | Entrances, most transitions                            |
+| `--ease-in-out` | `cubic-bezier(.65, 0, .35, 1)`    | Reversible state changes                               |
 | `--ease-spring` | `cubic-bezier(.34, 1.56, .64, 1)` | The **only** overshoot allowed, and only for the toast |
-| `--dur-instant` | 80 ms | hover, press |
-| `--dur-fast` | 140 ms | focus ring, small reveals |
-| `--dur-base` | 200 ms | panel transitions, dropdowns |
-| `--dur-slow` | 320 ms | dialogs, large reveals |
+| `--dur-instant` | 80 ms                             | hover, press                                           |
+| `--dur-fast`    | 140 ms                            | focus ring, small reveals                              |
+| `--dur-base`    | 200 ms                            | panel transitions, dropdowns                           |
+| `--dur-slow`    | 320 ms                            | dialogs, large reveals                                 |
 
 **Rules:**
+
 - Only `transform`, `opacity`, and `background-color`/`border-color` animate.
   Never `width`, `height`, `top`, `left`, or `margin` — those cause layout
   thrash and break the 60 fps budget.
 - Every animation is wrapped in
   `@media (prefers-reduced-motion: no-preference)`.
 - Under `prefers-reduced-motion: reduce`, transitions collapse to `1ms` and
-  transforms are removed, but the *end state* is always identical.
+  transforms are removed, but the _end state_ is always identical.
 
 ### 1.7 Layering
 
-| Token | z-index | Use |
-|---|---|---|
-| `--z-base` | 0 | Page content |
-| `--z-sticky` | 10 | Sticky header, sticky table header |
-| `--z-drawer` | 40 | Slide-over panels |
-| `--z-dropdown` | 50 | Menus, popovers |
-| `--z-toast` | 70 | Toasts |
-| `--z-dialog` | 80 | Modal dialogs |
-| `--z-tooltip` | 90 | Tooltips |
+| Token          | z-index | Use                                |
+| -------------- | ------- | ---------------------------------- |
+| `--z-base`     | 0       | Page content                       |
+| `--z-sticky`   | 10      | Sticky header, sticky table header |
+| `--z-drawer`   | 40      | Slide-over panels                  |
+| `--z-dropdown` | 50      | Menus, popovers                    |
+| `--z-toast`    | 70      | Toasts                             |
+| `--z-dialog`   | 80      | Modal dialogs                      |
+| `--z-tooltip`  | 90      | Tooltips                           |
 
 ---
 
@@ -157,8 +158,8 @@ Dark theme accent: `#F0B429` → contrast on `#17151200` **8.9:1** ✓
 
 Accent ramp (light theme is anchored at 600, dark theme at 400):
 
-| Step | Light | Dark |
-|---|---|---|
+| Step           | Light     | Dark      |
+| -------------- | --------- | --------- |
 | `--accent-100` | `#FDF3E0` | `#3A2C10` |
 | `--accent-200` | `#FAE5BE` | `#4E3B16` |
 | `--accent-300` | `#F4CE84` | `#6B511C` |
@@ -180,28 +181,28 @@ A **warm** neutral, so the interface sits in the same family as the gold
 accent and the paper-like subject matter. A pure grey ramp next to a gold
 accent looks cheap.
 
-| Step | Light | Dark | Typical role |
-|---|---|---|---|
-| `--gray-0` | `#FFFFFF` | `#171512` | Page background (light) / deepest surface (dark) |
-| `--gray-50` | `#FAF8F4` | `#201D19` | Subtle surface |
-| `--gray-100` | `#F2EFE8` | `#282420` | Panel background, input background |
-| `--gray-200` | `#E5E0D5` | `#353028` | Dividers, table borders |
-| `--gray-300` | `#CFC8B9` | `#4A443B` | Strong borders, disabled border |
-| `--gray-400` | `#A69E8D` | `#6A6355` | Placeholder text, icon |
-| `--gray-500` | `#7C7466` | `#8C8474` | Secondary text |
-| `--gray-600` | `#5A5348` | `#ADA595` | Body text (dark) |
-| `--gray-700` | `#403B33` | `#CFC8BA` | Strong text (dark) |
-| `--gray-800` | `#2A261F` | `#EDE8DD` | Heading text (dark) |
-| `--gray-900` | `#1A1713` | `#F7F4ED` | Heading text (light) |
+| Step         | Light     | Dark      | Typical role                                     |
+| ------------ | --------- | --------- | ------------------------------------------------ |
+| `--gray-0`   | `#FFFFFF` | `#171512` | Page background (light) / deepest surface (dark) |
+| `--gray-50`  | `#FAF8F4` | `#201D19` | Subtle surface                                   |
+| `--gray-100` | `#F2EFE8` | `#282420` | Panel background, input background               |
+| `--gray-200` | `#E5E0D5` | `#353028` | Dividers, table borders                          |
+| `--gray-300` | `#CFC8B9` | `#4A443B` | Strong borders, disabled border                  |
+| `--gray-400` | `#A69E8D` | `#6A6355` | Placeholder text, icon                           |
+| `--gray-500` | `#7C7466` | `#8C8474` | Secondary text                                   |
+| `--gray-600` | `#5A5348` | `#ADA595` | Body text (dark)                                 |
+| `--gray-700` | `#403B33` | `#CFC8BA` | Strong text (dark)                               |
+| `--gray-800` | `#2A261F` | `#EDE8DD` | Heading text (dark)                              |
+| `--gray-900` | `#1A1713` | `#F7F4ED` | Heading text (light)                             |
 
 ### 2.3 Status ramp
 
-| Role | Light | Dark | Contrast on surface |
-|---|---|---|---|
-| `--success` | `#1F7A4D` | `#5DD39E` | 4.9:1 / 9.2:1 ✓ |
-| `--warning` | `#9A5B00` | `#F5B740` | 5.1:1 / 10.1:1 ✓ |
-| `--danger` | `#B3261E` | `#FF8A80` | 5.6:1 / 8.4:1 ✓ |
-| `--info` | `#1D5FA8` | `#79B8FF` | 5.4:1 / 8.9:1 ✓ |
+| Role        | Light     | Dark      | Contrast on surface |
+| ----------- | --------- | --------- | ------------------- |
+| `--success` | `#1F7A4D` | `#5DD39E` | 4.9:1 / 9.2:1 ✓     |
+| `--warning` | `#9A5B00` | `#F5B740` | 5.1:1 / 10.1:1 ✓    |
+| `--danger`  | `#B3261E` | `#FF8A80` | 5.6:1 / 8.4:1 ✓     |
+| `--info`    | `#1D5FA8` | `#79B8FF` | 5.4:1 / 8.9:1 ✓     |
 
 Note the original's `#ff0000` warning text measured **4.00:1** — a WCAG AA
 failure. `--warning` here measures **5.1:1** on the light surface.
@@ -251,33 +252,33 @@ failure. `--warning` here measures **5.1:1** on the light surface.
 **Light** (`data-theme="light"`):
 
 ```css
---bg:            var(--gray-0);   /* #FFFFFF */
---bg-subtle:     var(--gray-50);
---surface:       var(--gray-0);
+--bg: var(--gray-0); /* #FFFFFF */
+--bg-subtle: var(--gray-50);
+--surface: var(--gray-0);
 --surface-raised: var(--gray-0);
 --surface-sunken: var(--gray-50);
---text:          var(--gray-900);
---text-secondary:var(--gray-600);
---text-muted:    var(--gray-500);
---border:        var(--gray-200);
+--text: var(--gray-900);
+--text-secondary: var(--gray-600);
+--text-muted: var(--gray-500);
+--border: var(--gray-200);
 --border-strong: var(--gray-300);
---accent:        var(--accent-600);
+--accent: var(--accent-600);
 ```
 
 **Dark** (`data-theme="dark"`):
 
 ```css
---bg:            var(--gray-0);   /* #171512 */
---bg-subtle:     var(--gray-50);
---surface:       var(--gray-50);
---surface-raised:var(--gray-100);
---surface-sunken:var(--gray-50);
---text:          var(--gray-800);
---text-secondary:var(--gray-700);
---text-muted:    var(--gray-600);
---border:        var(--gray-200);
+--bg: var(--gray-0); /* #171512 */
+--bg-subtle: var(--gray-50);
+--surface: var(--gray-50);
+--surface-raised: var(--gray-100);
+--surface-sunken: var(--gray-50);
+--text: var(--gray-800);
+--text-secondary: var(--gray-700);
+--text-muted: var(--gray-600);
+--border: var(--gray-200);
 --border-strong: var(--gray-300);
---accent:        var(--accent-400);
+--accent: var(--accent-400);
 ```
 
 **System** — the `data-theme` attribute is resolved at runtime by the theme
@@ -332,23 +333,23 @@ Collapsed panels show only the header. Expanded panels show the body.
 Panels are **not** all expanded by default. The default expansion depends on
 the panel's importance:
 
-| Panel | Default | Rationale |
-|---|---|---|
-| Story details | expanded | Needs review before packing |
-| Chapters | expanded | The main event |
-| Cover | collapsed | Usually right already |
-| Advanced metadata | collapsed | Rarely needed |
-| Options | collapsed | Rarely needed |
+| Panel             | Default   | Rationale                   |
+| ----------------- | --------- | --------------------------- |
+| Story details     | expanded  | Needs review before packing |
+| Chapters          | expanded  | The main event              |
+| Cover             | collapsed | Usually right already       |
+| Advanced metadata | collapsed | Rarely needed               |
+| Options           | collapsed | Rarely needed               |
 
 ### 3.3 Responsive behaviour
 
 The extension runs in a **tab**, so width varies a lot. Three breakpoints:
 
-| Range | Layout |
-|---|---|
-| `< 560px` | Single column. App bar collapses the title to nothing; the Pack button becomes icon+label. |
-| `560–959px` | Single column, full padding, two-column form grids where the label is short enough. |
-| `≥ 960px` | **Two-column**: a fixed 320 px sidebar (Story details, Cover, Options) beside a fluid main column (Chapters, Advanced metadata). This is the "reading room" layout. |
+| Range       | Layout                                                                                                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `< 560px`   | Single column. App bar collapses the title to nothing; the Pack button becomes icon+label.                                                                          |
+| `560–959px` | Single column, full padding, two-column form grids where the label is short enough.                                                                                 |
+| `≥ 960px`   | **Two-column**: a fixed 320 px sidebar (Story details, Cover, Options) beside a fluid main column (Chapters, Advanced metadata). This is the "reading room" layout. |
 
 The two-column layout at ≥960 px is the reason the revamp is worth doing in a
 tab: on a wide screen the chapter list gets room to breathe while the
@@ -384,13 +385,13 @@ here with its states, its accessibility contract, and its keyboard contract.
 
 **Variants:** `primary` · `secondary` · `ghost` · `danger` · `subtle`
 
-| Variant | Rest | Hover | Active | Use |
-|---|---|---|---|---|
-| `primary` | `--accent` bg, `--text-on-accent` | `--accent-hover` | `--accent-active`, `scale(.98)` | The one primary action |
-| `secondary` | `--surface` bg, `--border-strong` | `--bg-subtle` | `--surface-sunken` | Everything else |
-| `ghost` | transparent | `--bg-subtle` | `--surface-sunken` | Toolbar actions, dismiss |
-| `danger` | `--danger` bg, white text | `--danger-hover` | — | Destructive, confirmed first |
-| `subtle` | `--accent-subtle` bg, `--accent-text` | `--accent-bg-hover` | — | Inline, low emphasis |
+| Variant     | Rest                                  | Hover               | Active                          | Use                          |
+| ----------- | ------------------------------------- | ------------------- | ------------------------------- | ---------------------------- |
+| `primary`   | `--accent` bg, `--text-on-accent`     | `--accent-hover`    | `--accent-active`, `scale(.98)` | The one primary action       |
+| `secondary` | `--surface` bg, `--border-strong`     | `--bg-subtle`       | `--surface-sunken`              | Everything else              |
+| `ghost`     | transparent                           | `--bg-subtle`       | `--surface-sunken`              | Toolbar actions, dismiss     |
+| `danger`    | `--danger` bg, white text             | `--danger-hover`    | —                               | Destructive, confirmed first |
+| `subtle`    | `--accent-subtle` bg, `--accent-text` | `--accent-bg-hover` | —                               | Inline, low emphasis         |
 
 **Sizes:** `sm` (28 px, `--text-xs`) · `md` (34 px, `--text-sm`) ·
 `lg` (42 px, `--text-base`)
@@ -444,9 +445,7 @@ Native `<input type="checkbox">` with a custom 16 px box.
 The collapsible section described in §3.2.
 
 ```html
-<k-panel heading="Story details" summary="4 fields" ?open>
-  …body…
-</k-panel>
+<k-panel heading="Story details" summary="4 fields" ?open> …body… </k-panel>
 ```
 
 - Uses `<details>`/`<summary>` semantics under the hood → free keyboard
@@ -466,7 +465,7 @@ accessibility for free. The custom chevron is `pointer-events: none`.
 Determinate progress bar.
 
 - `<progress>` semantics with `aria-valuenow`/`aria-valuetext`.
-- The fill animates over `--dur-base` with `--ease-out`, so the bar *glides*
+- The fill animates over `--dur-base` with `--ease-out`, so the bar _glides_
   between chapter counts instead of teleporting. This is the single
   highest-value motion in the product: a run can take 30 minutes, and a
   teleporting bar reads as "stuck".
@@ -511,7 +510,7 @@ The designed empty state.
 
 - Centred composition: an inline SVG illustration (a 96 px line-art glyph
   drawn on a 2 px stroke grid, matching the icon system), a heading, a
-  sentence explaining *what would go here*, and — where relevant — a primary
+  sentence explaining _what would go here_, and — where relevant — a primary
   action that creates it.
 - Illustrations are **line art**, not filled cartoons, matching the icon
   system exactly.
@@ -531,7 +530,7 @@ The designed loading state.
 - Shown on hover **and** `:focus-visible`.
 - Positioned with a CSS anchor where available, with a JS fallback.
 - `role="tooltip"`, wired via `aria-describedby`.
-- Never the *only* way to get information — the download-state icon also
+- Never the _only_ way to get information — the download-state icon also
   carries a text label in its accessible name.
 
 ### 4.13 `<k-switch>`
@@ -585,17 +584,18 @@ six-button error row into two visible buttons plus a menu.
 The settings surface is a **grouped list**, not a flat wall of 45 controls.
 Each group is a panel with a heading.
 
-| Group | Contents |
-|---|---|
-| **Appearance** | Theme (system / light / dark), Accent colour, Density (comfortable / compact), Reduce motion override |
-| **Story** | Default filename template, Default language, Remove author notes, Remove chapter numbers, Include the TOC page as a chapter |
-| **EPUB** | EPUB version (2 / 3), Add an information page, Remove next/previous chapter links, Include the source URL in each chapter |
-| **Images** | Skip images, Remove duplicates, Prefer highest resolution, Use SVG, Compress images, Max resolution |
-| **Behaviour** | Skip chapters that fail to fetch, Retry on empty page, Minimum delay per request, Max chapters per EPUB, Custom delay per chapter |
-| **Privacy** | NovelUpdates metadata lookup (off by default), Send the story URL to the metadata service (off by default) |
-| **Advanced** | Developer diagnostics, Export settings, Import settings, Reset all settings |
+| Group          | Contents                                                                                                                          |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Appearance** | Theme (system / light / dark), Accent colour, Density (comfortable / compact), Reduce motion override                             |
+| **Story**      | Default filename template, Default language, Remove author notes, Remove chapter numbers, Include the TOC page as a chapter       |
+| **EPUB**       | EPUB version (2 / 3), Add an information page, Remove next/previous chapter links, Include the source URL in each chapter         |
+| **Images**     | Skip images, Remove duplicates, Prefer highest resolution, Use SVG, Compress images, Max resolution                               |
+| **Behaviour**  | Skip chapters that fail to fetch, Retry on empty page, Minimum delay per request, Max chapters per EPUB, Custom delay per chapter |
+| **Privacy**    | NovelUpdates metadata lookup (off by default), Send the story URL to the metadata service (off by default)                        |
+| **Advanced**   | Developer diagnostics, Export settings, Import settings, Reset all settings                                                       |
 
 Two new switches live here:
+
 - **Accent colour** — Gold / Ink / Verdigris / Plum. Applied by rewriting
   Layer 2 only.
 - **Density** — Comfortable / Compact. Scales `--space-*` by 1.0 / 0.75 and
@@ -605,18 +605,18 @@ Two new switches live here:
 
 ## 7. Motion catalogue
 
-| Interaction | Motion | Duration |
-|---|---|---|
-| Button hover | `background-color` | `--dur-instant` |
-| Button press | `scale(0.98)` | `--dur-instant` |
-| Focus ring | `box-shadow` fade-in | `--dur-fast` |
-| Panel expand/collapse | opacity + `translateY(4px)` | `--dur-base` |
-| Dialog open | opacity + `scale(.97)` + backdrop fade | `--dur-base` |
-| Dropdown open | opacity + `translateY(-4px)` | `--dur-fast` |
-| Progress fill | `width` via `transform: scaleX()` | `--dur-base` |
-| Toast in/out | `translateY(8px)` + opacity | `--dur-base` |
-| Skeleton shimmer | background-position sweep | 1.2 s loop |
-| List row selection | `background-color` | `--dur-instant` |
+| Interaction           | Motion                                 | Duration        |
+| --------------------- | -------------------------------------- | --------------- |
+| Button hover          | `background-color`                     | `--dur-instant` |
+| Button press          | `scale(0.98)`                          | `--dur-instant` |
+| Focus ring            | `box-shadow` fade-in                   | `--dur-fast`    |
+| Panel expand/collapse | opacity + `translateY(4px)`            | `--dur-base`    |
+| Dialog open           | opacity + `scale(.97)` + backdrop fade | `--dur-base`    |
+| Dropdown open         | opacity + `translateY(-4px)`           | `--dur-fast`    |
+| Progress fill         | `width` via `transform: scaleX()`      | `--dur-base`    |
+| Toast in/out          | `translateY(8px)` + opacity            | `--dur-base`    |
+| Skeleton shimmer      | background-position sweep              | 1.2 s loop      |
+| List row selection    | `background-color`                     | `--dur-instant` |
 
 **Nothing else moves.** No page transitions, no parallax, no animated icons.
 
@@ -647,17 +647,17 @@ Two new switches live here:
 
 ## 9. Anti-patterns (do not do these)
 
-| Anti-pattern | Why | Instead |
-|---|---|---|
-| Raw hex in component CSS | Breaks theming | Layer 2 tokens |
-| `opacity: 0.5` for disabled | Unreadable in dark mode | `--text-muted` + `--surface-sunken` |
-| `<td>label</td>` next to an input | Not a label; text isn't clickable | `<k-field>` |
-| `alert()` / `confirm()` | Unstyled, blocking, unfocusable | `<k-dialog>` |
-| A `<div>` as a close button | Not focusable, no name | `<k-button variant="ghost">` |
-| `visibility: hidden` tooltips | Not in the a11y tree | `:focus-visible` too |
-| Animating `width`/`height`/`top` | Layout thrash | `transform` / `opacity` |
-| `transition: all` | Animates unintended properties | Name the property |
-| `!important` in component CSS | Specificity wars | Custom properties |
-| `font-size` on the icon | Distorts stroke | Fixed icon sizes |
-| A permanently visible empty progress bar | Wastes the largest visual element | Hide until work starts |
-| Native `select`/`input` styled only by colour | Poor contrast | Tokenised variants |
+| Anti-pattern                                  | Why                               | Instead                             |
+| --------------------------------------------- | --------------------------------- | ----------------------------------- |
+| Raw hex in component CSS                      | Breaks theming                    | Layer 2 tokens                      |
+| `opacity: 0.5` for disabled                   | Unreadable in dark mode           | `--text-muted` + `--surface-sunken` |
+| `<td>label</td>` next to an input             | Not a label; text isn't clickable | `<k-field>`                         |
+| `alert()` / `confirm()`                       | Unstyled, blocking, unfocusable   | `<k-dialog>`                        |
+| A `<div>` as a close button                   | Not focusable, no name            | `<k-button variant="ghost">`        |
+| `visibility: hidden` tooltips                 | Not in the a11y tree              | `:focus-visible` too                |
+| Animating `width`/`height`/`top`              | Layout thrash                     | `transform` / `opacity`             |
+| `transition: all`                             | Animates unintended properties    | Name the property                   |
+| `!important` in component CSS                 | Specificity wars                  | Custom properties                   |
+| `font-size` on the icon                       | Distorts stroke                   | Fixed icon sizes                    |
+| A permanently visible empty progress bar      | Wastes the largest visual element | Hide until work starts              |
+| Native `select`/`input` styled only by colour | Poor contrast                     | Tokenised variants                  |

@@ -1,12 +1,33 @@
-eslint/*.xpi
-eslint/*.zip
-eslint/packed.js
-eslint/index.csv
-node_modules
-plugin/@zip.js/zip.js/dist/zip-no-worker.min.js
-package-lock.json
-.idea
-.vscode
-/plugin/dompurify/
-/plugin/@zip.js/
-docs/AI_CHANGELOG.md
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+release/
+coverage/
+*.xpi
+*.zip
+
+# Test artifacts
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+*.log
+npm-debug.log*
+
+# Legacy baseline — preserved on the `legacy` branch and in history.
+# It is not part of the active build, but it stays on disk for reference
+# until the migration is complete.
+/legacy/
+
+# Env
+.env
+.env.local

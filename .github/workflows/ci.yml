@@ -1,0 +1,79 @@
+# The Kintsugi build.
+#
+# The pipeline is ordered by how fast it fails: lint and typecheck before the
+# tests, the tests before the build, and the build before the extension lint.
+# A typo in a component should not cost a full test run to discover.
+#
+# The job produces a packaged `.xpi` and uploads it as an artifact, so a build
+# can be tried in Firefox without anyone having to check out the branch.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# A new push to the same branch cancels the previous run: the newer commit is
+# the only one anyone cares about.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check the formatting
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit and integration tests
+        run: npm run test
+
+      - name: Check the documentation's links
+        run: npm run links
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint the extension
+        run: npm run web-ext:lint
+
+      - name: Install the browser for the end-to-end tests
+        run: npm run test:e2e:install-firefox
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+      - name: Package
+        run: npm run package
+
+      - name: Upload the package
+        uses: actions/upload-artifact@v4
+        with:
+          name: kintsugi-xpi
+          path: release/**/*.xpi
+          if-no-files-found: error
+          retention-days: 30

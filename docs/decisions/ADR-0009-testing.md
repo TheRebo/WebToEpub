@@ -43,16 +43,16 @@ We adopt a modern, headless, CI-first test stack.
   real UI.
 - **@axe-core/playwright** runs against every surface and asserts
   **zero critical or serious violations**. This makes WCAG 2.2 AA a
-  *build-breaking* condition rather than an aspiration.
+  _build-breaking_ condition rather than an aspiration.
 - Component tests exercise the interactive and stateful elements:
-  - the primary button's loading state swaps its label but not its width,
-  - the chapter list's roving tabindex means one tab stop for 5 000 rows,
-  - the dialog traps focus and `Escape` closes it and restores focus,
-  - the filter popover validates a bad regular expression inline instead of
-    throwing,
-  - the theme switch updates `data-theme` on the root element,
-  - reduced-motion emulation removes the transitions,
-  - the progress bar's `aria-valuenow` tracks the fetch count.
+    - the primary button's loading state swaps its label but not its width,
+    - the chapter list's roving tabindex means one tab stop for 5 000 rows,
+    - the dialog traps focus and `Escape` closes it and restores focus,
+    - the filter popover validates a bad regular expression inline instead of
+      throwing,
+    - the theme switch updates `data-theme` on the root element,
+    - reduced-motion emulation removes the transitions,
+    - the progress bar's `aria-valuenow` tracks the fetch count.
 
 ### 3. End-to-end tests
 
@@ -79,19 +79,19 @@ registered parser against its fixture where one exists and asserts:
 - the chapters produced match the legacy implementation's output for the same
   fixture.
 
-This is the mechanism that lets the 437-parser migration proceed safely
+This is the mechanism that lets the 434-parser migration proceed safely
 ([ADR-0002](ADR-0002-parser-contract.md)).
 
 ### 5. Quality tooling
 
-| Tool | Purpose | Gate |
-|---|---|---|
-| **ESLint** (flat config) | Lint, with a custom rule banning raw colours in components | `npm run lint` |
-| **Prettier** | Formatting | `npm run format:check` |
-| **TypeScript** | `tsc --noEmit` over `src/` **and** the parsers | `npm run typecheck` |
-| **Vitest** | Unit + integration | `npm run test` |
-| **Playwright** | Component, a11y, e2e | `npm run test:e2e` |
-| **web-ext lint** | Extension manifest and packaging validity | `npm run lint:ext` |
+| Tool                     | Purpose                                                    | Gate                   |
+| ------------------------ | ---------------------------------------------------------- | ---------------------- |
+| **ESLint** (flat config) | Lint, with a custom rule banning raw colours in components | `npm run lint`         |
+| **Prettier**             | Formatting                                                 | `npm run format:check` |
+| **TypeScript**           | `tsc --noEmit` over `src/` **and** the parsers             | `npm run typecheck`    |
+| **Vitest**               | Unit + integration                                         | `npm run test`         |
+| **Playwright**           | Component, a11y, e2e                                       | `npm run test:e2e`     |
+| **web-ext lint**         | Extension manifest and packaging validity                  | `npm run lint:ext`     |
 
 A **pre-commit hook** (via `husky` + `lint-staged`) runs lint, format check,
 and typecheck on staged files. `npm run verify` runs everything and is what
@@ -99,15 +99,15 @@ CI calls.
 
 ## Alternatives considered
 
-| Alternative | Why rejected |
-|---|---|
-| **Keep QUnit in the browser** | Requires a human to read results; awkward in CI; the runner is a static HTML page. |
-| **Jest** | Mature, but Vitest's ESM-native, Vite-powered setup matches the bundler we already need and is faster. |
-| **Cypress** | Heavier, and its model (a persistent app + network interception) does not fit extension-context testing as well as Playwright's. |
-| **jsdom** | Less complete than happy-dom for the DOM features the EPUB pipeline relies on (serialization, `DOMParser` edge cases). |
-| **Playwright only** | Playwright is for browser-level tests; unit tests need to be fast and granular. Both layers are needed. |
-| **Manual a11y testing only** | Not enforceable and does not scale. axe-core in CI is what makes the accessibility contract binding. |
-| **No pre-commit hook** | The brief requires one. It catches the "forgot to run the formatter" class of noise before it reaches CI. |
+| Alternative                   | Why rejected                                                                                                                     |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Keep QUnit in the browser** | Requires a human to read results; awkward in CI; the runner is a static HTML page.                                               |
+| **Jest**                      | Mature, but Vitest's ESM-native, Vite-powered setup matches the bundler we already need and is faster.                           |
+| **Cypress**                   | Heavier, and its model (a persistent app + network interception) does not fit extension-context testing as well as Playwright's. |
+| **jsdom**                     | Less complete than happy-dom for the DOM features the EPUB pipeline relies on (serialization, `DOMParser` edge cases).           |
+| **Playwright only**           | Playwright is for browser-level tests; unit tests need to be fast and granular. Both layers are needed.                          |
+| **Manual a11y testing only**  | Not enforceable and does not scale. axe-core in CI is what makes the accessibility contract binding.                             |
+| **No pre-commit hook**        | The brief requires one. It catches the "forgot to run the formatter" class of noise before it reaches CI.                        |
 
 ## Consequences
 
@@ -115,7 +115,7 @@ CI calls.
 
 - `npm test` is headless and CI-ready.
 - Accessibility regressions **fail the build**.
-- The 437-parser migration has a safety net.
+- The 434-parser migration has a safety net.
 - The core engine, previously untested, gains a test suite.
 
 **Negative**

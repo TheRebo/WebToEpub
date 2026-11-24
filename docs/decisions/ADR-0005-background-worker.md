@@ -10,14 +10,14 @@
 
 The baseline has **no background worker**. Every byte of work — fetching
 chapters, downloading images, assembling the ZIP, writing to storage,
-triggering the download — happens inside the extension *page*.
+triggering the download — happens inside the extension _page_.
 
 This single fact drives most of the baseline's UX problems:
 
 1. **The popup cannot be the tool.** The browser destroys a popup when it
    loses focus. A 30-minute download would be killed the moment the user
    clicked away. So `main.isOpenInBrowserTab()` detects that the popup is a
-   popup, opens the *same page* in a new tab, and closes the popup
+   popup, opens the _same page_ in a new tab, and closes the popup
    (`main.js:389-402`). The user clicks the toolbar icon and sees the popup
    flash and vanish before a tab appears — and the whole UI then lives at
    `chrome-extension://…/popup.html?id=132`, an internal URL with a visible
@@ -29,7 +29,7 @@ This single fact drives most of the baseline's UX problems:
    crude substitute for a real background job.
 
 3. **The UI can wedge.** `fetchContentAndPackEpub` sets
-   `window.workInProgress = true` and disables the Pack button *before*
+   `window.workInProgress = true` and disables the Pack button _before_
    `await parser.fetchContent()`, with no `try/finally` around it. Any throw
    leaves the flag set and the button disabled — and the `beforeunload`
    guard then refuses to let the user close the tab. The UI is effectively
@@ -45,15 +45,15 @@ download pipeline, and make the page a pure client of it.
 
 ### Ownership
 
-| Concern | Owner |
-|---|---|
-| Fetching chapters | **Background worker** |
-| Downloading images | **Background worker** |
-| Assembling the EPUB | **Background worker** |
-| Saving the file | **Background worker** |
-| Persisting to the library | **Background worker** |
-| Rendering UI, editing metadata | Page |
-| Progress reporting | Background → page via `runtime.sendMessage` |
+| Concern                        | Owner                                       |
+| ------------------------------ | ------------------------------------------- |
+| Fetching chapters              | **Background worker**                       |
+| Downloading images             | **Background worker**                       |
+| Assembling the EPUB            | **Background worker**                       |
+| Saving the file                | **Background worker**                       |
+| Persisting to the library      | **Background worker**                       |
+| Rendering UI, editing metadata | Page                                        |
+| Progress reporting             | Background → page via `runtime.sendMessage` |
 
 ### Long-running work and MV3's service-worker lifetime
 
@@ -73,23 +73,29 @@ alive:
 If the worker is nonetheless terminated (browser restart, extension reload),
 the operation is **resumable**: progress is checkpointed to `sessionStorage`
 after each chapter, so a re-opened workbench can offer "Resume the download
-of *The Wandering Inn* (42/318)".
+of _The Wandering Inn_ (42/318)".
 
 ### Protocol
 
 ```ts
 // Page → worker
 type Request =
-  | { type: "start"; story: StoryDescriptor }
-  | { type: "cancel" }
-  | { type: "resume" };
+    | { type: "start"; story: StoryDescriptor }
+    | { type: "cancel" }
+    | { type: "resume" };
 
 // Worker → page
 type Event =
-  | { type: "progress"; phase: Phase; done: number; total: number; label: string }
-  | { type: "chapter-state"; sourceUrl: string; state: ChapterState }
-  | { type: "done"; fileName: string; bytes: number; location?: string }
-  | { type: "error"; error: UserFacingError };
+    | {
+          type: "progress";
+          phase: Phase;
+          done: number;
+          total: number;
+          label: string;
+      }
+    | { type: "chapter-state"; sourceUrl: string; state: ChapterState }
+    | { type: "done"; fileName: string; bytes: number; location?: string }
+    | { type: "error"; error: UserFacingError };
 ```
 
 Every message is a **discriminated union with a literal `type`**, validated at
@@ -113,13 +119,13 @@ behaviour: the popup now stays a popup, and the workbench opens in a tab
 
 ## Alternatives considered
 
-| Alternative | Why rejected |
-|---|---|
-| **Keep everything in the page** | This is the baseline. It is the root cause of the popup/tab dance, the unsafe cancel, and the wedge bug. |
-| **Use an MV2 background page** | Firefox still supports MV2, but MV2 is deprecated, Chrome has removed it, and MV3's service worker is the direction. MV2 also gives a long-lived background page, which is exactly what we are trying not to depend on. |
-| **Use `offscreen` documents for the ZIP assembly** | `offscreen` exists for DOM-dependent work. ZIP assembly does not need a DOM — `zip.js` runs fine in a worker. Unnecessary complexity. |
-| **Keep the popup as the whole UI and make it survive focus loss** | A popup is capped at roughly 800×600 in Firefox and cannot be resized by the user. The chapter list of a 3 000-chapter novel and the options surface both need more room. |
-| **Do not checkpoint; require the tab to stay open** | Simpler, but a browser crash loses a 30-minute download. Checkpointing is a few lines given the chapter list is already in memory. |
+| Alternative                                                       | Why rejected                                                                                                                                                                                                            |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Keep everything in the page**                                   | This is the baseline. It is the root cause of the popup/tab dance, the unsafe cancel, and the wedge bug.                                                                                                                |
+| **Use an MV2 background page**                                    | Firefox still supports MV2, but MV2 is deprecated, Chrome has removed it, and MV3's service worker is the direction. MV2 also gives a long-lived background page, which is exactly what we are trying not to depend on. |
+| **Use `offscreen` documents for the ZIP assembly**                | `offscreen` exists for DOM-dependent work. ZIP assembly does not need a DOM — `zip.js` runs fine in a worker. Unnecessary complexity.                                                                                   |
+| **Keep the popup as the whole UI and make it survive focus loss** | A popup is capped at roughly 800×600 in Firefox and cannot be resized by the user. The chapter list of a 3 000-chapter novel and the options surface both need more room.                                               |
+| **Do not checkpoint; require the tab to stay open**               | Simpler, but a browser crash loses a 30-minute download. Checkpointing is a few lines given the chapter list is already in memory.                                                                                      |
 
 ## Consequences
 

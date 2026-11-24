@@ -1,0 +1,76 @@
+# The release workflow.
+#
+# A release is made from a tag, not from a branch. The tag is the version:
+# `v2.0.0-alpha.1` publishes the artifact for that version, and the
+# changelog is expected to already describe it.
+#
+# The `.xpi` is signed by the workflow when the signing secrets are present,
+# and is published unsigned otherwise. Firefox will install an unsigned
+# `.xpi` temporarily, which is enough to try a release; a permanent install
+# needs a signature from addons.mozilla.org.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The tag to release (e.g. v2.0.0-alpha.1)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify
+        run: npm run verify
+
+      - name: Package
+        run: npm run package
+
+      - name: Sign the package
+        # The signing secrets are absent on a fork, and the release should
+        # still be published — an unsigned `.xpi` is installable temporarily.
+        env:
+          WEB_EXT_ID: ${{ secrets.WEB_EXT_ID }}
+          WEB_EXT_SECRET: ${{ secrets.WEB_EXT_SECRET }}
+        run: |
+          if [ -n "$WEB_EXT_ID" ] && [ -n "$WEB_EXT_SECRET" ]; then
+            npx web-ext sign \
+              --source-dir dist \
+              --api-key "$WEB_EXT_ID" \
+              --api-secret "$WEB_EXT_SECRET" \
+              --id "$WEB_EXT_ID" \
+              --artifacts-dir release/signed
+          else
+            echo "No signing secrets configured; publishing an unsigned package."
+          fi
+
+      - name: Publish the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/**/*.xpi
+            release/signed/*.xpi
+          fail_on_unmatched_files: false
+          generate_release_notes: true

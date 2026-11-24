@@ -8,25 +8,25 @@
 
 ## Context
 
-The extension's value is its 437 site parsers. The baseline parser contract
-is small and has proven itself across 437 implementations:
+The extension's value is its 434 site parsers. The baseline parser contract
+is small and has proven itself across 434 implementations:
 
 ```ts
 interface Parser {
-  getChapterUrls(dom, chapterUrlsUI): Chapter[] | Promise<Chapter[]>
-  findContent(dom): Element | null
-  extractTitleImpl(dom): Element | string
-  extractAuthor(dom): string
-  // …plus optional hooks
+    getChapterUrls(dom, chapterUrlsUI): Chapter[] | Promise<Chapter[]>;
+    findContent(dom): Element | null;
+    extractTitleImpl(dom): Element | string;
+    extractAuthor(dom): string;
+    // …plus optional hooks
 }
 ```
 
 with a `Chapter` shape of `{ sourceUrl, title, isIncludeable?, previousDownload? }`.
 
-A rewrite that changed this contract would need to rewrite all 437 parsers.
+A rewrite that changed this contract would need to rewrite all 434 parsers.
 A rewrite that preserved it exactly could leave every parser untouched — but
-the baseline's contract is defined by *ambient globals* and *implicit
-conventions* (for instance, `removeUnwantedElementsFromContentElement` must
+the baseline's contract is defined by _ambient globals_ and _implicit
+conventions_ (for instance, `removeUnwantedElementsFromContentElement` must
 call `super`; `extractTitleImpl` returns an `Element` in some parsers and a
 `string` in others; `Parser.WEB_TO_EPUB_CLASS_NAME` is a magic string).
 
@@ -55,7 +55,10 @@ export abstract class Parser {
     readonly maxSimultanousFetchSize = 1;
 
     // ── required ────────────────────────────────────────────────────────
-    abstract getChapterUrls(dom: Document, chapterUrlsUI: ChapterUrlsUI): Chapter[] | Promise<Chapter[]>;
+    abstract getChapterUrls(
+        dom: Document,
+        chapterUrlsUI: ChapterUrlsUI,
+    ): Chapter[] | Promise<Chapter[]>;
     abstract findContent(dom: Document): Element | null;
     abstract extractTitleImpl(dom: Document): Element | string;
     abstract extractAuthor(dom: Document): string;
@@ -77,9 +80,17 @@ export abstract class Parser {
 
     // ── error / challenge hooks ─────────────────────────────────────────
     isCustomError?(response: WrappedResponse): boolean;
-    setCustomErrorResponse?(url: string, wrapOptions: WrapOptions, checked: WrappedResponse): CustomErrorResponse | undefined;
+    setCustomErrorResponse?(
+        url: string,
+        wrapOptions: WrapOptions,
+        checked: WrappedResponse,
+    ): CustomErrorResponse | undefined;
     isNoContentToError403AndContentNull?(response: WrappedResponse): boolean;
-    setNoContentToError403Response?(url: string, wrapOptions: WrapOptions, checked: WrappedResponse): CustomErrorResponse;
+    setNoContentToError403Response?(
+        url: string,
+        wrapOptions: WrapOptions,
+        checked: WrappedResponse,
+    ): CustomErrorResponse;
 }
 ```
 
@@ -116,18 +127,18 @@ been migrated:
 
 ## Alternatives considered
 
-| Alternative | Why rejected |
-|---|---|
-| Redefine the contract freely | Would require rewriting all 437 parsers — the entire effort budget for no user-visible gain. |
-| Keep the baseline's implicit contract verbatim, with globals | Preserves the untestable, order-dependent architecture that [ADR-0001](ADR-0001-rewrite-from-scratch.md) rejects. The contract can be *preserved* without preserving the *mechanism*. |
-| Drop parsers that are hard to migrate | The parsers are the product. A parser that breaks is a lost site. Rejected. |
-| Only support the top 100 sites | Would be a significant product regression and a betrayal of the extension's purpose. Rejected. |
+| Alternative                                                  | Why rejected                                                                                                                                                                          |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Redefine the contract freely                                 | Would require rewriting all 434 parsers — the entire effort budget for no user-visible gain.                                                                                          |
+| Keep the baseline's implicit contract verbatim, with globals | Preserves the untestable, order-dependent architecture that [ADR-0001](ADR-0001-rewrite-from-scratch.md) rejects. The contract can be _preserved_ without preserving the _mechanism_. |
+| Drop parsers that are hard to migrate                        | The parsers are the product. A parser that breaks is a lost site. Rejected.                                                                                                           |
+| Only support the top 100 sites                               | Would be a significant product regression and a betrayal of the extension's purpose. Rejected.                                                                                        |
 
 ## Consequences
 
 **Positive**
 
-- The 437-site support surface survives the rewrite intact.
+- The 434-site support surface survives the rewrite intact.
 - The contract becomes compiler-checked, so a parser with a wrong signature
   is a build error.
 - The shim means the migration can be incremental and independently

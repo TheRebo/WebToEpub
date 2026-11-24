@@ -1,0 +1,333 @@
+/*
+ * Kintsugi design tokens.
+ *
+ * Three layers, as specified in docs/design/01-design-system.md:
+ *
+ *   Layer 1  primitives   --amber-500, --gray-100     raw values
+ *   Layer 2  semantics    --accent, --text, --border  role values
+ *   Layer 3  components   --button-bg, --panel-bg     component parts
+ *
+ * This file contains Layers 1 and 2. Components declare Layer 3 in their own
+ * stylesheets and may only reference Layer 2 or Layer 3.
+ *
+ * Theming works by rewriting Layer 2 only. A new accent colour, a new
+ * density, or a new theme never touches a component.
+ */
+
+:root {
+    /* ------------------------------------------------------------------
+     * Layer 1 — primitives
+     * ------------------------------------------------------------------ */
+
+    /* Accent: "Gold". A warm amber-gold, tuned so it passes WCAG AA as a
+       button background. The raw gold of a kintsugi repair (a yellow-brown)
+       reads as "warning" in a Western UI, so the ramp is pushed toward
+       amber and anchored at 600 for the light theme. */
+    --accent-100: #fdf3e0;
+    --accent-200: #fae5be;
+    --accent-300: #f4ce84;
+    --accent-400: #edb44a;
+    --accent-500: #d99224;
+    --accent-600: #b5751a;
+    --accent-700: #8e5a14;
+    --accent-800: #6b4310;
+    --accent-900: #4e300c;
+
+    /* Neutral: "Ash". A warm grey, so the interface sits in the same
+       family as the gold accent. A pure grey ramp next to gold looks cheap. */
+    --gray-0: #ffffff;
+    --gray-50: #faf8f4;
+    --gray-100: #f2efe8;
+    --gray-200: #e5e0d5;
+    --gray-300: #cfc8b9;
+    --gray-400: #a69e8d;
+    --gray-500: #7c7466;
+    --gray-600: #5a5348;
+    --gray-700: #403b33;
+    --gray-800: #2a261f;
+    --gray-900: #1a1713;
+
+    /* Status. Contrast measured against the surface in each theme. */
+    --success-light: #1f7a4d;
+    --success-dark: #5dd39e;
+    --warning-light: #9a5b00;
+    --warning-dark: #f5b740;
+    --danger-light: #b3261e;
+    --danger-dark: #ff8a80;
+    --info-light: #1d5fa8;
+    --info-dark: #79b8ff;
+
+    /* ------------------------------------------------------------------
+     * Layer 1 — non-colour primitives
+     * ------------------------------------------------------------------ */
+
+    /* Type. 1.200 scale, base 14px. */
+    --text-3xs: 10px;
+    --text-2xs: 11px;
+    --text-xs: 12px;
+    --text-sm: 13px;
+    --text-base: 14px;
+    --text-md: 15px;
+    --text-lg: 17px;
+    --text-xl: 20px;
+    --text-2xl: 25px;
+
+    --leading-tight: 1.3;
+    --leading-snug: 1.4;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.55;
+
+    --weight-regular: 400;
+    --weight-medium: 500;
+    --weight-semibold: 600;
+    --weight-bold: 700;
+
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    /* Spacing. Base 4px, deliberately short — long scales invite off-scale
+       values. */
+    --space-0: 0;
+    --space-1: 2px;
+    --space-2: 4px;
+    --space-3: 8px;
+    --space-4: 12px;
+    --space-5: 16px;
+    --space-6: 24px;
+    --space-7: 32px;
+    --space-8: 48px;
+    --space-9: 64px;
+
+    /* Radius. */
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+
+    /* Motion. */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    --dur-instant: 80ms;
+    --dur-fast: 140ms;
+    --dur-base: 200ms;
+    --dur-slow: 320ms;
+
+    /* Layering. */
+    --z-base: 0;
+    --z-sticky: 10;
+    --z-drawer: 40;
+    --z-dropdown: 50;
+    --z-toast: 70;
+    --z-dialog: 80;
+    --z-tooltip: 90;
+
+    /* ------------------------------------------------------------------
+     * Layer 2 — semantics (light theme is the default)
+     * ------------------------------------------------------------------ */
+
+    --bg: var(--gray-0);
+    --bg-subtle: var(--gray-50);
+    --surface: var(--gray-0);
+    --surface-raised: var(--gray-0);
+    --surface-sunken: var(--gray-50);
+
+    --text: var(--gray-900);
+    --text-secondary: var(--gray-600);
+    --text-muted: var(--gray-500);
+    --text-on-accent: #ffffff;
+    --text-inverse: var(--gray-50);
+
+    --border: var(--gray-200);
+    --border-strong: var(--gray-300);
+    --border-subtle: var(--gray-100);
+
+    --accent: var(--accent-600);
+    --accent-hover: var(--accent-700);
+    --accent-active: var(--accent-800);
+    --accent-subtle: var(--accent-100);
+    --accent-text: var(--accent-700);
+
+    --success: var(--success-light);
+    --success-subtle: #e6f4ec;
+    --warning: var(--warning-light);
+    --warning-subtle: #fdf1de;
+    --danger: var(--danger-light);
+    --danger-subtle: #fbe9e8;
+    --danger-border: #f2c9c6;
+    --info: var(--info-light);
+    --info-subtle: #e7f0fa;
+
+    --focus-ring: var(--accent-600);
+    --focus-ring-width: 3px;
+
+    --shadow-1: 0 1px 2px rgb(16 12 4 / 6%), 0 1px 1px rgb(16 12 4 / 4%);
+    --shadow-2: 0 6px 16px -4px rgb(16 12 4 / 12%), 0 2px 6px -2px rgb(16 12 4 / 6%);
+    --shadow-3: 0 24px 48px -12px rgb(16 12 4 / 28%);
+
+    --ring: 0 0 0 var(--focus-ring-width) var(--focus-ring);
+
+    /* Density. Comfortable by default; the compact theme overrides these. */
+    --density-scale: 1;
+    --density-font-base: var(--text-base);
+    --row-height: 32px;
+    --control-height-md: 34px;
+}
+
+/*
+ * Dark theme.
+ *
+ * The stylesheet only ever sees "light" or "dark" — there is no third
+ * stylesheet and no cascade-order dependency. The theme controller resolves
+ * "system" to one of the two before the class lands on <html>.
+ *
+ * The neutral ramp is *reversed* rather than re-declared. The ramp is
+ * ordered light to dark, so in the dark theme "the lightest step" is the
+ * background and "the darkest step" is the text — and the same token names
+ * mean the opposite thing. Reversing the ramp in one place keeps the
+ * semantic tokens below readable: they still say "the background", not
+ * "gray-900".
+ */
+[data-theme="dark"] {
+    /* The reversed ramp. */
+    --gray-0: #14120f;
+    --gray-50: #1c1915;
+    --gray-100: #262219;
+    --gray-200: #342f25;
+    --gray-300: #494236;
+    --gray-400: #6b6355;
+    --gray-500: #8d8577;
+    --gray-600: #aca493;
+    --gray-700: #cbc3b2;
+    --gray-800: #e6e0d3;
+    --gray-900: #f7f3ea;
+
+    --bg: var(--gray-0);
+    --bg-subtle: var(--gray-50);
+    --surface: var(--gray-50);
+    --surface-raised: var(--gray-100);
+    --surface-sunken: var(--gray-50);
+
+    --text: var(--gray-800);
+    --text-secondary: var(--gray-700);
+    --text-muted: var(--gray-600);
+    --text-on-accent: #1a1713;
+    --text-inverse: var(--gray-900);
+
+    --border: var(--gray-200);
+    --border-strong: var(--gray-300);
+    --border-subtle: var(--gray-100);
+
+    --accent: var(--accent-400);
+    --accent-hover: var(--accent-300);
+    --accent-active: var(--accent-200);
+    --accent-subtle: #3a2c10;
+    --accent-text: var(--accent-300);
+
+    --success: var(--success-dark);
+    --success-subtle: #14301f;
+    --warning: var(--warning-dark);
+    --warning-subtle: #33240a;
+    --danger: var(--danger-dark);
+    --danger-subtle: #3a1614;
+    --danger-border: #6d2a25;
+    --info: var(--info-dark);
+    --info-subtle: #10243c;
+
+    --focus-ring: var(--accent-400);
+
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow-2: 0 6px 16px -4px rgb(0 0 0 / 55%);
+    --shadow-3: 0 24px 48px -12px rgb(0 0 0 / 70%);
+}
+
+/*
+ * Accent overrides.
+ *
+ * The alternative accents are hue rotations of the gold ramp, which
+ * preserves lightness and therefore preserves contrast. The lightest and
+ * darkest steps are overridden so the ramp's endpoints still hold.
+ */
+[data-accent="ink"] {
+    --accent-100: #e8edf8;
+    --accent-200: #c9d4ee;
+    --accent-300: #9fb0e0;
+    --accent-400: #7489d0;
+    --accent-500: #5568c4;
+    --accent-600: #3d4fa8;
+    --accent-700: #2f3d85;
+    --accent-800: #243067;
+    --accent-900: #1a2348;
+}
+
+[data-accent="verdigris"] {
+    --accent-100: #dff4f0;
+    --accent-200: #b8e6de;
+    --accent-300: #83d2c5;
+    --accent-400: #4fb8a7;
+    --accent-500: #359c8b;
+    --accent-600: #257d6e;
+    --accent-700: #1d6357;
+    --accent-800: #164d44;
+    --accent-900: #103833;
+}
+
+[data-accent="plum"] {
+    --accent-100: #f7e6f3;
+    --accent-200: #ecc7e4;
+    --accent-300: #dc9dce;
+    --accent-400: #c772b4;
+    --accent-500: #b0529c;
+    --accent-600: #92397f;
+    --accent-700: #752c66;
+    --accent-800: #5c224f;
+    --accent-900: #42193a;
+}
+
+/*
+ * Compact density.
+ *
+ * Scales the spacing rhythm and drops the base font a point. Density
+ * changes only these two things, which is why it can be a data attribute
+ * rather than a separate stylesheet.
+ */
+[data-density="compact"] {
+    --density-scale: 0.75;
+    --density-font-base: var(--text-sm);
+    --row-height: 28px;
+    --control-height-md: 30px;
+}
+
+/*
+ * Reduced motion.
+ *
+ * The end state of every animation is identical; only the movement and the
+ * duration change. Components that animate transforms additionally check
+ * this media query directly when they need to remove a transform entirely.
+ */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --dur-instant: 1ms;
+        --dur-fast: 1ms;
+        --dur-base: 1ms;
+        --dur-slow: 1ms;
+    }
+}
+
+/*
+ * The same, but because the user asked for it rather than because the system
+ * did.
+ *
+ * The duration tokens are custom properties, and custom properties inherit
+ * across the shadow boundary — so this reaches the components' shadow roots,
+ * which a `*` selector in the document's own stylesheet could never do.
+ */
+[data-reduce-motion="true"] {
+    --dur-instant: 1ms;
+    --dur-fast: 1ms;
+    --dur-base: 1ms;
+    --dur-slow: 1ms;
+}

@@ -11,13 +11,13 @@
 The baseline splits storage across three mechanisms with no schema, no
 namespacing, and several correctness bugs:
 
-| Store | Contents | Problem |
-|---|---|---|
-| `localStorage` | 45 preferences | Booleans stored as the **strings** `"true"`/`"false"`; no key namespacing; no validation on read; a corrupt value silently becomes `false` |
-| `localStorage` | `ReadingList` | Un-namespaced key `"ReadingList"`; a hand-rolled `replacer`/`reviver` pair |
-| `localStorage` | `DefaultParserConfigs` | Un-namespaced key `"DefaultParserConfigs"` |
-| `chrome.storage.local` | The library | EPUBs stored as **base64 data URLs** (~33 % size inflation); `LibArray` and the per-book keys are written in **separate, unawaited `set` calls**, so `LibArray` can reference IDs whose book was never persisted; "Clear Library" calls `chrome.storage.local.clear()`, which **wipes every key in the extension's storage area** |
-| `sessionStorage` | — | Unused |
+| Store                  | Contents               | Problem                                                                                                                                                                                                                                                                                                                           |
+| ---------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `localStorage`         | 45 preferences         | Booleans stored as the **strings** `"true"`/`"false"`; no key namespacing; no validation on read; a corrupt value silently becomes `false`                                                                                                                                                                                        |
+| `localStorage`         | `ReadingList`          | Un-namespaced key `"ReadingList"`; a hand-rolled `replacer`/`reviver` pair                                                                                                                                                                                                                                                        |
+| `localStorage`         | `DefaultParserConfigs` | Un-namespaced key `"DefaultParserConfigs"`                                                                                                                                                                                                                                                                                        |
+| `chrome.storage.local` | The library            | EPUBs stored as **base64 data URLs** (~33 % size inflation); `LibArray` and the per-book keys are written in **separate, unawaited `set` calls**, so `LibArray` can reference IDs whose book was never persisted; "Clear Library" calls `chrome.storage.local.clear()`, which **wipes every key in the extension's storage area** |
+| `sessionStorage`       | —                      | Unused                                                                                                                                                                                                                                                                                                                            |
 
 Two of these are correctness bugs that lose user data:
 
@@ -57,13 +57,30 @@ to the declared default rather than to `false` or `undefined`.
 
 ```ts
 interface Settings {
-    appearance: { theme: "system" | "light" | "dark"; accent: AccentName; density: "comfortable" | "compact"; reduceMotion: boolean };
-    story:      { filenameTemplate: string; language: string; removeAuthorNotes: boolean; /* … */ };
-    epub:       { version: 2 | 3; addInformationPage: boolean; /* … */ };
-    images:     { skip: boolean; removeDuplicates: boolean; compress: boolean; /* … */ };
-    behaviour:  { skipFailedChapters: boolean; minDelayMs: number; maxChaptersPerEpub: number; /* … */ };
-    privacy:    { novelUpdatesLookup: boolean; sendStoryUrl: boolean };
-    advanced:   { diagnostics: boolean };
+    appearance: {
+        theme: "system" | "light" | "dark";
+        accent: AccentName;
+        density: "comfortable" | "compact";
+        reduceMotion: boolean;
+    };
+    story: {
+        filenameTemplate: string;
+        language: string;
+        removeAuthorNotes: boolean /* … */;
+    };
+    epub: { version: 2 | 3; addInformationPage: boolean /* … */ };
+    images: {
+        skip: boolean;
+        removeDuplicates: boolean;
+        compress: boolean /* … */;
+    };
+    behaviour: {
+        skipFailedChapters: boolean;
+        minDelayMs: number;
+        maxChaptersPerEpub: number /* … */;
+    };
+    privacy: { novelUpdatesLookup: boolean; sendStoryUrl: boolean };
+    advanced: { diagnostics: boolean };
 }
 ```
 
@@ -79,14 +96,14 @@ transactional, and has no blanket quota permission.
 
 ```ts
 interface LibraryRecord {
-    id: string;              // uuid
+    id: string; // uuid
     title: string;
     author: string;
     storyUrl: string;
     fileName: string;
     cover: Blob | null;
-    epub: Blob;              // the book itself, as bytes
-    chapters: ChapterRef[];  // for the "new chapters" diff
+    epub: Blob; // the book itself, as bytes
+    chapters: ChapterRef[]; // for the "new chapters" diff
     createdAt: number;
     updatedAt: number;
     newChapterCount: number;
@@ -113,8 +130,18 @@ should not outlive the browser session) and is explicitly namespaced.
 ### 4. One façade, one migration
 
 ```ts
-interface SettingsStore { get(): Promise<Settings>; set(patch: DeepPartial<Settings>): Promise<void>; reset(): Promise<void>; }
-interface LibraryStore { list(): Promise<LibraryRecord[]>; get(id): Promise<LibraryRecord|undefined>; put(rec): Promise<void>; delete(id): Promise<void>; clear(): Promise<void>; }
+interface SettingsStore {
+    get(): Promise<Settings>;
+    set(patch: DeepPartial<Settings>): Promise<void>;
+    reset(): Promise<void>;
+}
+interface LibraryStore {
+    list(): Promise<LibraryRecord[]>;
+    get(id): Promise<LibraryRecord | undefined>;
+    put(rec): Promise<void>;
+    delete(id): Promise<void>;
+    clear(): Promise<void>;
+}
 ```
 
 Both stores expose **promise-based, validated** APIs. No component ever
@@ -123,7 +150,7 @@ touches `browser.storage` or `indexedDB` directly.
 ### Migration from the baseline
 
 The baseline's data is not migrated automatically. The library's contents are
-EPUBs the user generated with the *old* extension; the new extension is a
+EPUBs the user generated with the _old_ extension; the new extension is a
 separate install. A **one-time import** is offered in the options page:
 "Import your library from WebToEpub", which reads the legacy
 `chrome.storage.local` keys and the legacy `localStorage` keys if present and
@@ -132,14 +159,14 @@ another extension's storage.
 
 ## Alternatives considered
 
-| Alternative | Why rejected |
-|---|---|
-| **Keep everything in `localStorage`** | Synchronous, string-only, 5 MB quota, no binary support, and it is shared with the page's origin. |
-| **Keep everything in `chrome.storage.local`** | Fixes the race (promises) but keeps the base64 bloat, which forces `unlimitedStorage`. |
-| **Keep base64 but drop `unlimitedStorage`** | `storage.local` has a 10 MB per-item quota by default; a 10 MB EPUB exceeds it. Not viable. |
-| **Use `browser.storage.sync`** | Syncs to a Mozilla account — a privacy and scope change the brief does not ask for. Rejected; see principle P7. |
+| Alternative                                                   | Why rejected                                                                                                                     |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Keep everything in `localStorage`**                         | Synchronous, string-only, 5 MB quota, no binary support, and it is shared with the page's origin.                                |
+| **Keep everything in `chrome.storage.local`**                 | Fixes the race (promises) but keeps the base64 bloat, which forces `unlimitedStorage`.                                           |
+| **Keep base64 but drop `unlimitedStorage`**                   | `storage.local` has a 10 MB per-item quota by default; a 10 MB EPUB exceeds it. Not viable.                                      |
+| **Use `browser.storage.sync`**                                | Syncs to a Mozilla account — a privacy and scope change the brief does not ask for. Rejected; see principle P7.                  |
 | **Store the library as files via the File System Access API** | Requires a user-chosen directory and a permission prompt per book. Far worse ergonomics for a fire-and-forget archive. Rejected. |
-| **Keep the baseline's separate stores** | Preserves the import race and the over-broad clear. Rejected. |
+| **Keep the baseline's separate stores**                       | Preserves the import race and the over-broad clear. Rejected.                                                                    |
 
 ## Consequences
 

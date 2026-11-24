@@ -18,8 +18,8 @@ on:
 # Before PR to upstream: set both to '' (empty) or remove the env block entirely
 # ──────────────────────────────────────────────────────────────
 env:
-  UPSTREAM_OWNER: 'dteviot'
-  UPSTREAM_REPO: 'WebToEpub'
+  UPSTREAM_OWNER: "dteviot"
+  UPSTREAM_REPO: "WebToEpub"
 
 permissions:
   issues: write
@@ -127,7 +127,9 @@ jobs:
 
             const parserSiteNames = []; // { name, filename }
             try {
-              const parserDir = path.join(process.env.GITHUB_WORKSPACE, 'plugin', 'js', 'parsers');
+              // The parsers live under `src/core/parsers/legacy/sites/` in the
+              // rewrite; the original tree kept them in `plugin/js/parsers/`.
+              const parserDir = path.join(process.env.GITHUB_WORKSPACE, 'src', 'core', 'parsers', 'legacy', 'sites');
               const files = fs.readdirSync(parserDir);
               for (const f of files) {
                 if (!f.endsWith('Parser.js')) continue;

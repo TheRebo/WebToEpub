@@ -3,8 +3,8 @@
 Version 2.0 · Status: **authoritative**
 
 Companion to the [design system](./01-design-system.md) and the
-[UX guidelines](./02-ux-guidelines.md). Those two documents define *rules*.
-This one defines *surfaces* — every screen, in wireframe form, with the
+[UX guidelines](./02-ux-guidelines.md). Those two documents define _rules_.
+This one defines _surfaces_ — every screen, in wireframe form, with the
 specific values each one uses.
 
 > **Note on imagery.** The diagrams here are wireframes drawn in text. The
@@ -16,16 +16,16 @@ specific values each one uses.
 
 ## 1. Surface inventory
 
-| # | Surface | Entry point | Contains |
-|---|---|---|---|
-| S1 | Workbench | Toolbar button, `workbench.html` | Capture, chapter list, pack |
-| S2 | Popup | Toolbar button (secondary) | Launcher + live progress |
-| S3 | Options | `options.html` | Settings, library, permissions |
-| S4 | Onboarding | First run | Three-step introduction |
-| S5 | Selector builder | From S1, on failure | Split-view CSS selector editor |
-| S6 | Chapter range dialog | From S1 | Named ranges |
-| S7 | Cover picker | From S1 | Grid of page images |
-| S8 | Shortcut sheet | `?` in S1 | Keyboard reference |
+| #   | Surface              | Entry point                      | Contains                       |
+| --- | -------------------- | -------------------------------- | ------------------------------ |
+| S1  | Workbench            | Toolbar button, `workbench.html` | Capture, chapter list, pack    |
+| S2  | Popup                | Toolbar button (secondary)       | Launcher + live progress       |
+| S3  | Options              | `options.html`                   | Settings, library, permissions |
+| S4  | Onboarding           | First run                        | Three-step introduction        |
+| S5  | Selector builder     | From S1, on failure              | Split-view CSS selector editor |
+| S6  | Chapter range dialog | From S1                          | Named ranges                   |
+| S7  | Cover picker         | From S1                          | Grid of page images            |
+| S8  | Shortcut sheet       | `?` in S1                        | Keyboard reference             |
 
 ---
 
@@ -78,19 +78,19 @@ The main tool. Everything of consequence happens here.
   ↑ product mark   ↑ live title + author, ellipsised         ↑ secondary ↑ primary
 ```
 
-| Element | Spec |
-|---|---|
-| Product mark | 20 px icon, `--accent-text`; `⌘`-shaped kintsugi seam glyph |
-| Title | `--text-md`, `--text`; ellipsised; `title` attribute carries the full value |
-| Author | `--text-sm`, `--text-secondary`; hidden below 560 px |
+| Element       | Spec                                                                               |
+| ------------- | ---------------------------------------------------------------------------------- |
+| Product mark  | 20 px icon, `--accent-text`; `⌘`-shaped kintsugi seam glyph                        |
+| Title         | `--text-md`, `--text`; ellipsised; `title` attribute carries the full value        |
+| Author        | `--text-sm`, `--text-secondary`; hidden below 560 px                               |
 | **Pack EPUB** | `<k-button variant="primary" size="md">`; **always visible, always the same size** |
-| Save | `<k-button variant="ghost">`; shown only when metadata has unsaved edits |
+| Save          | `<k-button variant="ghost">`; shown only when metadata has unsaved edits           |
 
 The Pack button is disabled with an **inline explanation** (not silently inert)
 when it cannot run:
 
-- *No chapters selected* → tooltip "Select at least one chapter."
-- *Still loading the chapter list* → tooltip "Waiting for the chapter list."
+- _No chapters selected_ → tooltip "Select at least one chapter."
+- _Still loading the chapter list_ → tooltip "Waiting for the chapter list."
 
 ### 2.3 Sidebar — 320 px
 
@@ -125,8 +125,8 @@ the remaining space.
 └───────────────────────────────────────────────────────┘
 ```
 
-- **● detected** is a 6 px accent dot with a tooltip: *"Filled in from the
-  page."* It disappears the moment the user edits the field, so "the
+- **● detected** is a 6 px accent dot with a tooltip: _"Filled in from the
+  page."_ It disappears the moment the user edits the field, so "the
   extension guessed" and "you typed this" are never confused.
 - **Filename** shows the extension explicitly. The **↺** button restores the
   derived name.
@@ -182,26 +182,26 @@ Two always-visible toggles, then a link into the full options page:
 
 #### Column geometry
 
-| Column | Width | Notes |
-|---|---|---|
-| Checkbox | 28 px | `<k-checkbox>`; click target 28×28 |
-| State | 20 px | Icon, `aria-hidden`; the state is in the row's accessible name |
-| Title | flexible | One line, ellipsised; double-click to edit |
-| Size | 56 px | Right-aligned, `--text-xs`, `tabular-nums`; `—` until loaded |
+| Column   | Width    | Notes                                                          |
+| -------- | -------- | -------------------------------------------------------------- |
+| Checkbox | 28 px    | `<k-checkbox>`; click target 28×28                             |
+| State    | 20 px    | Icon, `aria-hidden`; the state is in the row's accessible name |
+| Title    | flexible | One line, ellipsised; double-click to edit                     |
+| Size     | 56 px    | Right-aligned, `--text-xs`, `tabular-nums`; `—` until loaded   |
 
 #### State icons
 
 Every state has a **distinct shape**, so the list is readable with no colour
 at all:
 
-| State | Icon | Meaning |
-|---|---|---|
-| Not started | `○` hollow ring | Queued, not yet fetched |
-| Queued | `◔` half-filled ring | Scheduled |
-| Fetching | `◑` ring with a rotating arc | In flight |
-| Loaded | `●` filled disc | Content fetched |
-| Downloaded | `✓` check | Already in the library |
-| Failed | `!` in a triangle | Fetch or parse failed |
+| State       | Icon                         | Meaning                 |
+| ----------- | ---------------------------- | ----------------------- |
+| Not started | `○` hollow ring              | Queued, not yet fetched |
+| Queued      | `◔` half-filled ring         | Scheduled               |
+| Fetching    | `◑` ring with a rotating arc | In flight               |
+| Loaded      | `●` filled disc              | Content fetched         |
+| Downloaded  | `✓` check                    | Already in the library  |
+| Failed      | `!` in a triangle            | Fetch or parse failed   |
 
 #### Header
 
@@ -223,13 +223,13 @@ apply.
 
 #### Toolbar
 
-| Control | Action |
-|---|---|
-| **All** | Select every chapter |
-| **None** | Clear the selection |
-| **Invert** | Toggle every chapter |
+| Control     | Action                           |
+| ----------- | -------------------------------- |
+| **All**     | Select every chapter             |
+| **None**    | Clear the selection              |
+| **Invert**  | Toggle every chapter             |
 | **Ranges…** | Open the named-range dialog (S6) |
-| **Filter** | Open the filter popover |
+| **Filter**  | Open the filter popover          |
 
 #### Filters popover
 
@@ -275,13 +275,13 @@ an empty bar.
 
 Phases, in order:
 
-| Phase | Label |
-|---|---|
-| 1 | Preparing |
-| 2 | Fetching chapters |
-| 3 | Downloading images |
-| 4 | Building EPUB |
-| 5 | Saving |
+| Phase | Label              |
+| ----- | ------------------ |
+| 1     | Preparing          |
+| 2     | Fetching chapters  |
+| 3     | Downloading images |
+| 4     | Building EPUB      |
+| 5     | Saving             |
 
 Success state:
 
@@ -301,11 +301,11 @@ Failure state:
 
 ### 2.6 Responsive behaviour
 
-| Width | Layout |
-|---|---|
-| `< 560 px` | Single column. The author is hidden. The Pack button becomes icon + label. Panel summaries stay visible. |
+| Width        | Layout                                                                                                      |
+| ------------ | ----------------------------------------------------------------------------------------------------------- |
+| `< 560 px`   | Single column. The author is hidden. The Pack button becomes icon + label. Panel summaries stay visible.    |
 | `560–959 px` | Single column with `--space-6` page padding. The sidebar becomes an accordion stack above the chapter list. |
-| `≥ 960 px` | **Two columns**: a fixed 320 px sidebar, and a fluid main column. |
+| `≥ 960 px`   | **Two columns**: a fixed 320 px sidebar, and a fluid main column.                                           |
 
 ---
 
@@ -336,13 +336,13 @@ things.
 
 ### 3.1 States
 
-| State | Content |
-|---|---|
-| **Story detected** | The card above |
-| **No story here** | The card is replaced by: *"No story detected on this page."* + **Try anyway** (opens the workbench with the generic parser) |
-| **Unsupported site** | The card shows the site name and a "Use the selector builder" link |
-| **A download is running** | The card is replaced by a **live progress strip**: phase label, chapter count, a slim progress bar, and **Cancel**. This is the popup's most valuable job — it answers "is it still going?" without opening a tab. |
-| **Extension context invalidated** | A single line: *"Reload the page to use Kintsugi."* |
+| State                             | Content                                                                                                                                                                                                            |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Story detected**                | The card above                                                                                                                                                                                                     |
+| **No story here**                 | The card is replaced by: _"No story detected on this page."_ + **Try anyway** (opens the workbench with the generic parser)                                                                                        |
+| **Unsupported site**              | The card shows the site name and a "Use the selector builder" link                                                                                                                                                 |
+| **A download is running**         | The card is replaced by a **live progress strip**: phase label, chapter count, a slim progress bar, and **Cancel**. This is the popup's most valuable job — it answers "is it still going?" without opening a tab. |
+| **Extension context invalidated** | A single line: _"Reload the page to use Kintsugi."_                                                                                                                                                                |
 
 The popup never navigates itself to a tab. It opens one **on request**.
 
@@ -485,7 +485,7 @@ Shown once, in a tab. Three full-screen steps. No network calls, no account.
 │  ● ● ○   Step 2 of 3                                     │
 │                                                          │
 │  Which site are you reading?                             │
-│  [ Search 437 supported sites…                    ]      │
+│  [ Search 434 supported sites…                    ]      │
 │                                                          │
 │  ┌────────────────────────────────────────────────────┐  │
 │  │ Royal Road                          novelsite.com  │  │
@@ -678,12 +678,12 @@ after 6 s with a visible progress bar that pauses on hover. Errors use
 
 ## 12. Empty and loading states
 
-| Where | Empty | Loading |
-|---|---|---|
+| Where        | Empty                                                                                                                                       | Loading                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Chapter list | `<k-empty>` — "No chapters found on this page", an explanation, and two actions: **Try the default parser** / **Open the selector builder** | A skeleton of ~12 rows plus a live "Searching for URLs… N found" line |
-| Cover | A line-art placeholder inside the 84×120 frame | A shimmering placeholder |
-| Library | `<k-empty>` — "Your library is empty", with **Import an EPUB** | Shimmer grid |
-| Filters | "No chapters match these filters" + **Clear filters** | — |
+| Cover        | A line-art placeholder inside the 84×120 frame                                                                                              | A shimmering placeholder                                              |
+| Library      | `<k-empty>` — "Your library is empty", with **Import an EPUB**                                                                              | Shimmer grid                                                          |
+| Filters      | "No chapters match these filters" + **Clear filters**                                                                                       | —                                                                     |
 
 ---
 
@@ -692,14 +692,14 @@ after 6 s with a visible progress bar that pauses on hover. Errors use
 Every screen above is implemented with the components in the design system; no
 screen contains bespoke CSS.
 
-| Screen | Components used |
-|---|---|
-| Workbench | `k-panel`, `k-field`, `k-checkbox`, `k-switch`, `k-select`, `k-list`, `k-list-item`, `k-button`, `k-progress`, `k-empty`, `k-skeleton`, `k-dialog`, `k-menu`, `k-toast` |
-| Popup | `k-button`, `k-progress`, `k-card` (plain), `k-icon` |
-| Options | `k-field`, `k-switch`, `k-select`, `k-radio-group`, `k-button`, `k-panel`, `k-dialog`, `k-empty` |
-| Onboarding | `k-button`, `k-radio-group`, `k-icon` |
-| Selector builder | `k-field`, `k-button`, `k-split-view` (plain) |
-| Ranges / cover / shortcuts | `k-dialog`, `k-button`, `k-field`, `k-list` |
+| Screen                     | Components used                                                                                                                                                         |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workbench                  | `k-panel`, `k-field`, `k-checkbox`, `k-switch`, `k-select`, `k-list`, `k-list-item`, `k-button`, `k-progress`, `k-empty`, `k-skeleton`, `k-dialog`, `k-menu`, `k-toast` |
+| Popup                      | `k-button`, `k-progress`, `k-card` (plain), `k-icon`                                                                                                                    |
+| Options                    | `k-field`, `k-switch`, `k-select`, `k-radio-group`, `k-button`, `k-panel`, `k-dialog`, `k-empty`                                                                        |
+| Onboarding                 | `k-button`, `k-radio-group`, `k-icon`                                                                                                                                   |
+| Selector builder           | `k-field`, `k-button`, `k-split-view` (plain)                                                                                                                           |
+| Ranges / cover / shortcuts | `k-dialog`, `k-button`, `k-field`, `k-list`                                                                                                                             |
 
 ---
 

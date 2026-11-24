@@ -11,18 +11,18 @@
 
 **Kintsugi** is the name of the revamped extension.
 
-The original, WebToEpub, describes a mechanism. *Kintsugi* describes the
+The original, WebToEpub, describes a mechanism. _Kintsugi_ describes the
 philosophy we are bringing to it: the extension takes scattered, broken
 web pages — different markup, different structures, different languages — and
 mends them into one coherent, durable object. The seams between sites remain
 visible as the gold: each site keeps its own character, but the result is a
 single beautiful volume.
 
-The name also sets the bar. A kintsugi repair is *never* merely functional.
+The name also sets the bar. A kintsugi repair is _never_ merely functional.
 It is an argument that the object deserves more than it had. That is exactly
 the argument this revamp makes about the interface.
 
-**Positioning line:** *Turn any web novel into a book worth keeping.*
+**Positioning line:** _Turn any web novel into a book worth keeping._
 
 ---
 
@@ -32,22 +32,22 @@ A Firefox extension that turns episodic web fiction into well-formed EPUB
 files, and does it in an interface that feels like a product rather than a
 utility.
 
-The functional engine already exists and is genuinely good: 437 site parsers, a
+The functional engine already exists and is genuinely good: 434 site parsers, a
 paginated-TOC walker, a library that tracks new chapters, and a heuristic
 fallback that handles sites nobody wrote a parser for. **That engine is the
-asset.** The revamp is about everything *around* it:
+asset.** The revamp is about everything _around_ it:
 
-| Before | After |
-|---|---|
-| A 1090-line HTML file with a 466-entry hand-maintained script list | A component-based UI with a real build step |
-| 15 hardcoded hex colours, 3 font sizes, 6 border radii | A token-driven design system with scales, elevation, and motion |
-| "Dark mode" = 5 declarations of inverted background | Three first-class themes, each designed |
-| Primary action 13 rows below the fold, identical to every other button | A sticky header with one unmistakable primary action |
-| 0 ARIA attributes, 0 focus styles, 1 heading | WCAG 2.2 AA: landmarks, labels, focus rings, live regions, dialogs |
-| 1 animation, no reduced-motion support | A motion system with `prefers-reduced-motion` honoured throughout |
-| 6 equal-weight error buttons, raw stack traces | A designed error surface with human-readable messages |
-| No empty, loading, or error states anywhere | Every state designed |
-| 7 permissions incl. `webRequest` + `unlimitedStorage` | 4 permissions, host access made optional |
+| Before                                                                 | After                                                              |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| A 1090-line HTML file with a 466-entry hand-maintained script list     | A component-based UI with a real build step                        |
+| 15 hardcoded hex colours, 3 font sizes, 6 border radii                 | A token-driven design system with scales, elevation, and motion    |
+| "Dark mode" = 5 declarations of inverted background                    | Three first-class themes, each designed                            |
+| Primary action 13 rows below the fold, identical to every other button | A sticky header with one unmistakable primary action               |
+| 0 ARIA attributes, 0 focus styles, 1 heading                           | WCAG 2.2 AA: landmarks, labels, focus rings, live regions, dialogs |
+| 1 animation, no reduced-motion support                                 | A motion system with `prefers-reduced-motion` honoured throughout  |
+| 6 equal-weight error buttons, raw stack traces                         | A designed error surface with human-readable messages              |
+| No empty, loading, or error states anywhere                            | Every state designed                                               |
+| 7 permissions incl. `webRequest` + `unlimitedStorage`                  | 4 permissions, host access made optional                           |
 
 ---
 
@@ -64,17 +64,17 @@ the main thing it does is. There is exactly **one** primary action per
 screen, it is visually distinct from everything else, and it is always
 reachable without scrolling.
 
-> *In practice:* one filled accent button, top-right of a sticky header.
+> _In practice:_ one filled accent button, top-right of a sticky header.
 > Nothing else in the product uses that treatment.
 
 ### P2 — Design every state, or it doesn't exist
 
 A control that has only a happy path is a bug. Empty, loading, error, offline,
-success, disabled, focus, and "in progress" are all *designed* surfaces, not
+success, disabled, focus, and "in progress" are all _designed_ surfaces, not
 accidents. The user should never encounter a raw, unstyled, or default-looking
 state.
 
-> *In practice:* a skeleton list while the chapter list loads; an illustrated
+> _In practice:_ a skeleton list while the chapter list loads; an illustrated
 > empty state in the library; a designed dialog for errors; a spinner in the
 > primary button while it works.
 
@@ -85,17 +85,17 @@ a tight, consistent grid; a deliberate spacing scale; dense where density
 helps (chapter lists, tables) and generous where it matters (the primary form,
 empty states).
 
-> *In practice:* an 8 px base grid, a 4/8/12/16/24/32 spacing scale, and a
+> _In practice:_ an 8 px base grid, a 4/8/12/16/24/32 spacing scale, and a
 > user-facing density toggle that scales the base unit.
 
 ### P4 — Motion explains, never decorates
 
-Every animation must answer a question the user is asking: *did that work? is
-something happening? where did that go?* Anything purely decorative is cut.
+Every animation must answer a question the user is asking: _did that work? is
+something happening? where did that go?_ Anything purely decorative is cut.
 All motion is fast (80–240 ms), interruptible, and fully disabled under
 `prefers-reduced-motion: reduce`.
 
-> *In practice:* the progress bar eases between values; panels fade and lift;
+> _In practice:_ the progress bar eases between values; panels fade and lift;
 > the primary button shows a spinner while working. Nothing bounces.
 
 ### P5 — Dark mode is designed, not inverted
@@ -105,7 +105,7 @@ gets its own surfaces, its own elevation model, its own accent tuning, and
 `color-scheme: dark` so native widgets match. Light and dark must feel like
 two members of the same family.
 
-> *In practice:* one token file, two token sets, one component library.
+> _In practice:_ one token file, two token sets, one component library.
 
 ### P6 — Accessible by construction, not by audit
 
@@ -113,7 +113,7 @@ Labels, roles, focus order, focus visibility, and announcements are part of
 the component definition, not a cleanup pass. If a component cannot be built
 accessibly, the component is wrong.
 
-> *In practice:* every input has a `<label for>`; every icon-only control has
+> _In practice:_ every input has a `<label for>`; every icon-only control has
 > an accessible name; focus rings are a token, never removed; progress is
 > announced via `aria-live`.
 
@@ -123,7 +123,7 @@ No telemetry, no accounts, no sync, no remote code. Preferences, reading
 list, and library are local. Any request that leaves the machine for a
 third party is opt-in, explained, and reversible.
 
-> *In practice:* `data_collection_permissions: { required: ["none"] }` stays
+> _In practice:_ `data_collection_permissions: { required: ["none"] }` stays
 > exactly as it is.
 
 ### P8 — Keyboard first, mouse second
@@ -131,7 +131,7 @@ third party is opt-in, explained, and reversible.
 Every action has a keyboard path. Every mouse-only gesture has a keyboard
 equivalent. Focus is always visible.
 
-> *In practice:* `Ctrl/Cmd+Enter` packs the EPUB; `Escape` closes any overlay;
+> _In practice:_ `Ctrl/Cmd+Enter` packs the EPUB; `Escape` closes any overlay;
 > shift-click range selection has a keyboard equivalent; a skip link jumps
 > past the chapter list.
 
@@ -141,7 +141,7 @@ If something failed, say what failed and what the user can do about it. If an
 action is in progress, show it. If a control is unavailable, say why. Never
 show a raw stack trace. Never silently produce a partial result.
 
-> *In practice:* errors are a designed dialog with a human message, the
+> _In practice:_ errors are a designed dialog with a human message, the
 > technical detail behind a disclosure, and up to two clear next actions.
 
 ### P10 — One system, not a collection of screens
@@ -149,7 +149,7 @@ show a raw stack trace. Never silently produce a partial result.
 Every surface uses the same tokens and the same components. A new screen is
 assembled from existing parts, never designed from scratch.
 
-> *In practice:* one `Button`, one `Field`, one `Panel`, one `Table`. New UI
+> _In practice:_ one `Button`, one `Field`, one `Panel`, one `Table`. New UI
 > is composition.
 
 ---
@@ -170,15 +170,15 @@ Every screen is checked against all three.
 
 ---
 
-## 5. What we are deliberately *not* doing
+## 5. What we are deliberately _not_ doing
 
-| Not doing | Why |
-|---|---|
-| Chrome support | The brief scopes the revamp to Firefox. MV3 in Chrome differs enough (no blocking `webRequest`, different service-worker lifecycle) that supporting it would compromise the Firefox-first design. The manifest still declares `minimum_chrome_version` so the code does not silently break if someone loads it. |
-| A design system in the React sense | The extension needs to stay small and dependency-light. A hand-rolled component layer over native Web Components gives us the same consistency with a fraction of the bundle. |
-| Telemetry, accounts, or sync | P7. Non-negotiable. |
-| A redesign of the parser contract | 437 parsers depend on it. Changing it would burn the entire effort budget on migration for no user-visible gain. |
-| Animated illustrations / decorative motion | P4. |
+| Not doing                                  | Why                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chrome support                             | The brief scopes the revamp to Firefox. MV3 in Chrome differs enough (no blocking `webRequest`, different service-worker lifecycle) that supporting it would compromise the Firefox-first design. The manifest still declares `minimum_chrome_version` so the code does not silently break if someone loads it. |
+| A design system in the React sense         | The extension needs to stay small and dependency-light. A hand-rolled component layer over native Web Components gives us the same consistency with a fraction of the bundle.                                                                                                                                   |
+| Telemetry, accounts, or sync               | P7. Non-negotiable.                                                                                                                                                                                                                                                                                             |
+| A redesign of the parser contract          | 434 parsers depend on it. Changing it would burn the entire effort budget on migration for no user-visible gain.                                                                                                                                                                                                |
+| Animated illustrations / decorative motion | P4.                                                                                                                                                                                                                                                                                                             |
 
 ---
 
