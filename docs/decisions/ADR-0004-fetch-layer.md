@@ -145,7 +145,7 @@ the extension's own `initiatorDomains`.
 | Use a library (`got`, `axios`)                                               | ~15–40 KB for functionality we need in ~250 lines, and it would hide the `signal`/`finally` discipline we are trying to make explicit.                               |
 | Keep the `cookies` permission but skip the unpartitioned workaround entirely | The workaround is required for a meaningful subset of Cloudflare-protected sites; dropping it is a product regression. We keep it but make it correct and leak-free. |
 | Implement cancellation only via `util.sleep`                                 | That is the baseline's approach and it does not work. Rejected.                                                                                                      |
-| Retry only at the parser level                                               | Duplicates the policy in 437 places. Rejected.                                                                                                                       |
+| Retry only at the parser level                                               | Duplicates the policy in 434 places. Rejected.                                                                                                                       |
 
 ## Consequences
 

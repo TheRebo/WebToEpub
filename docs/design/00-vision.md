@@ -32,7 +32,7 @@ A Firefox extension that turns episodic web fiction into well-formed EPUB
 files, and does it in an interface that feels like a product rather than a
 utility.
 
-The functional engine already exists and is genuinely good: 437 site parsers, a
+The functional engine already exists and is genuinely good: 434 site parsers, a
 paginated-TOC walker, a library that tracks new chapters, and a heuristic
 fallback that handles sites nobody wrote a parser for. **That engine is the
 asset.** The revamp is about everything _around_ it:
@@ -177,7 +177,7 @@ Every screen is checked against all three.
 | Chrome support                             | The brief scopes the revamp to Firefox. MV3 in Chrome differs enough (no blocking `webRequest`, different service-worker lifecycle) that supporting it would compromise the Firefox-first design. The manifest still declares `minimum_chrome_version` so the code does not silently break if someone loads it. |
 | A design system in the React sense         | The extension needs to stay small and dependency-light. A hand-rolled component layer over native Web Components gives us the same consistency with a fraction of the bundle.                                                                                                                                   |
 | Telemetry, accounts, or sync               | P7. Non-negotiable.                                                                                                                                                                                                                                                                                             |
-| A redesign of the parser contract          | 437 parsers depend on it. Changing it would burn the entire effort budget on migration for no user-visible gain.                                                                                                                                                                                                |
+| A redesign of the parser contract          | 434 parsers depend on it. Changing it would burn the entire effort budget on migration for no user-visible gain.                                                                                                                                                                                                |
 | Animated illustrations / decorative motion | P4.                                                                                                                                                                                                                                                                                                             |
 
 ---

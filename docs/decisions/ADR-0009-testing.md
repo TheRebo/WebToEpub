@@ -79,7 +79,7 @@ registered parser against its fixture where one exists and asserts:
 - the chapters produced match the legacy implementation's output for the same
   fixture.
 
-This is the mechanism that lets the 437-parser migration proceed safely
+This is the mechanism that lets the 434-parser migration proceed safely
 ([ADR-0002](ADR-0002-parser-contract.md)).
 
 ### 5. Quality tooling
@@ -115,7 +115,7 @@ CI calls.
 
 - `npm test` is headless and CI-ready.
 - Accessibility regressions **fail the build**.
-- The 437-parser migration has a safety net.
+- The 434-parser migration has a safety net.
 - The core engine, previously untested, gains a test suite.
 
 **Negative**

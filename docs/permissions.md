@@ -60,7 +60,7 @@ the DOM and sends it back. It does not modify the page, does not inject UI
 into the page, does not read other tabs, and does not observe navigation.
 
 **Without it.** The extension would only work on server-rendered sites — a
-small fraction of the 437 supported sites.
+small fraction of the 434 supported sites.
 
 ---
 

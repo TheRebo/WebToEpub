@@ -4,9 +4,9 @@
 
 Kintsugi is a Firefox extension that scrapes episodic web fiction and packs it
 into clean, well-formed EPUB files. It is a from-scratch rewrite of
-[WebToEpub](readme.md): the same 434 site parsers, the same parser contract,
-a completely new interface, a smaller permission set, and a build you can
-actually read.
+[WebToEpub](docs/discovery/01-product-inventory.md): the same 434 site parsers,
+the same parser contract, a completely new interface, a smaller permission set,
+and a build you can actually read.
 
 It is built for people with a thousand-chapter serial open in eleven tabs, and
 for people who want to keep the story after the site changes shape.
@@ -39,29 +39,47 @@ for people who want to keep the story after the site changes shape.
 **The popup** — a launcher, nothing more. It answers one question: can
 Kintsugi do anything with this page?
 
-![Kintsugi popup, light theme](docs/screenshots/popup.png)
+![Kintsugi popup, light theme](docs/screenshots/popup-light.png)
 
 ![Kintsugi popup, dark theme](docs/screenshots/popup-dark.png)
 
 **The workbench** — a full tab that owns the metadata, the chapter list, the
 filters, the selection, and the download.
 
-![Kintsugi workbench, light theme](docs/screenshots/workbench.png)
+![Kintsugi workbench, light theme](docs/screenshots/workbench-light.png)
 
 ![Kintsugi workbench, dark theme](docs/screenshots/workbench-dark.png)
 
 **Options** — themes, accent colour, language, library, and the per-site host
 permissions you have granted.
 
-![Kintsugi options page](docs/screenshots/options.png)
+![Kintsugi options, light theme](docs/screenshots/options-light.png)
+
+![Kintsugi options, dark theme](docs/screenshots/options-dark.png)
 
 **Onboarding** — three steps, once.
 
-![Kintsugi onboarding](docs/screenshots/onboarding.png)
+![Kintsugi onboarding, light theme](docs/screenshots/onboarding-light.png)
+
+![Kintsugi onboarding, dark theme](docs/screenshots/onboarding-dark.png)
 
 _These screenshots are generated from the running extension by
 `tools/e2e-harness.mjs`, which drives a real Firefox over Marionette and
 installs the built `dist/` as a temporary add-on. Nothing is mocked._
+
+### Before and after
+
+The original's popup was one cramped surface with everything on it: default
+browser widgets, no hierarchy, no dark theme, and a primary action thirteen
+rows below the fold.
+
+| The original                                                       | Kintsugi                                                |
+| ------------------------------------------------------------------ | ------------------------------------------------------- |
+| ![The original WebToEpub popup](docs/screenshots/legacy-popup.png) | ![The Kintsugi popup](docs/screenshots/popup-light.png) |
+
+The original's screenshot is of the real extension, loaded from the `legacy`
+branch into the same Firefox, by the same harness
+(`tools/legacy-shot.mjs`).
 
 ---
 
@@ -238,22 +256,22 @@ performance budget — is in
 
 Everything the project knows about itself lives in `docs/`.
 
-| Document                                                             | What it covers                                                                                                  |
-| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| [`docs/discovery/`](docs/discovery/01-product-inventory.md)          | What the original was, feature by feature, and the technical and UX audits it was rewritten from                |
-| [`docs/design/`](docs/design/00-vision.md)                           | Vision and design principles, the design system, UX guidelines, and screen-by-screen specifications             |
-| [`docs/architecture/`](docs/architecture/README.md)                  | The authoritative map of the system: layering, module map, pipeline, message protocol, storage, errors, budgets |
-| [`docs/decisions/`](docs/decisions/ADR-0001-rewrite-from-scratch.md) | Twelve accepted architecture decision records, from the rewrite decision to lazy zipping                        |
-| [`docs/permissions.md`](docs/permissions.md)                         | Every permission, why it exists, where it is used, and what it is not used for                                  |
-| [`docs/WORKLOG.md`](docs/WORKLOG.md)                                 | The running record of decisions, progress, and open questions                                                   |
-| [`PRIVACY.md`](PRIVACY.md)                                           | What is collected: nothing                                                                                      |
-| [`SECURITY.md`](SECURITY.md)                                         | Security model and how to report a vulnerability privately                                                      |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md)                                 | Pull request checklist and contribution rules                                                                   |
-| [`LICENSE.md`](LICENSE.md)                                           | GPL-3.0, in full                                                                                                |
-| [`ROADMAP.md`](ROADMAP.md)                                           | Phases, milestones, and what is explicitly out of scope                                                         |
-
-Three documents are still to be written and are therefore not linked here yet:
-`docs/development.md`, `CHANGELOG.md`, and `CODE_OF_CONDUCT.md`.
+| Document                                                    | What it covers                                                                                                  |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| [`docs/discovery/`](docs/discovery/01-product-inventory.md) | What the original was, feature by feature, and the technical and UX audits it was rewritten from                |
+| [`docs/design/`](docs/design/00-vision.md)                  | Vision and design principles, the design system, UX guidelines, and screen-by-screen specifications             |
+| [`docs/architecture/`](docs/architecture/README.md)         | The authoritative map of the system: layering, module map, pipeline, message protocol, storage, errors, budgets |
+| [`docs/decisions/`](docs/decisions/README.md)               | Fourteen accepted architecture decision records, from the rewrite decision to the dark theme's token ramp       |
+| [`docs/permissions.md`](docs/permissions.md)                | Every permission, why it exists, where it is used, and what it is not used for                                  |
+| [`docs/development.md`](docs/development.md)                | Setup, build, run in Firefox, debug, test, and release                                                          |
+| [`docs/WORKLOG.md`](docs/WORKLOG.md)                        | The running record of decisions, progress, and open questions                                                   |
+| [`CHANGELOG.md`](CHANGELOG.md)                              | Every change, since the beginning, following Keep a Changelog and SemVer                                        |
+| [`PRIVACY.md`](PRIVACY.md)                                  | What is collected: nothing                                                                                      |
+| [`SECURITY.md`](SECURITY.md)                                | Security model and how to report a vulnerability privately                                                      |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md)                        | Commit format, translation workflow, and the rules a change has to follow                                       |
+| [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)                  | The standards everyone is expected to hold to                                                                   |
+| [`LICENSE.md`](LICENSE.md)                                  | GPL-3.0, in full                                                                                                |
+| [`ROADMAP.md`](ROADMAP.md)                                  | Phases, milestones, and what is explicitly out of scope                                                         |
 
 ---
 
@@ -261,38 +279,36 @@ Three documents are still to be written and are therefore not linked here yet:
 
 ```bash
 npm install        # install dependencies
-npm run verify     # lint + typecheck + tests + build + extension lint
+npm run verify     # lint + typecheck + tests + build + extension lint + e2e
 npm run build      # build dist/
 npm run web-ext:run  # launch Firefox with the extension loaded
 npm test           # 155 unit and integration tests (vitest)
-npm run test:e2e   # Playwright end-to-end checks against dist/
-node tools/e2e-harness.mjs run   # Marionette checks against a real Firefox
+npm run test:e2e   # 14 end-to-end checks against a real Firefox (Marionette)
 ```
 
 The build is `esbuild`. The output goes to `dist/`, which is what
 `web-ext` loads, what the E2E harness installs as a temporary add-on, and
 what `npm run package` zips into the `.xpi`.
 
-Testing has three layers: **vitest** for the domain logic, **Playwright** for
-the end-to-end flows, and a **Marionette** harness (`tools/e2e-harness.mjs`)
-that drives a real Firefox with the built extension installed as a temporary
-add-on. The last layer is not a browser emulator — it is the artefact a user
-installs.
+Testing has two layers: **vitest** for the domain logic, and a **Marionette**
+harness (`tools/e2e-harness.mjs`) that drives a real Firefox with the built
+extension installed as a temporary add-on. The second layer is not a browser
+emulator — it is the artefact a user installs.
 
-A fuller development guide is planned as `docs/development.md`; until then,
-[`CONTRIBUTING.md`](CONTRIBUTING.md) and [`docs/WORKLOG.md`](docs/WORKLOG.md)
-are the reference.
+The full walkthrough is in [`docs/development.md`](docs/development.md).
 
 ---
 
 ## Contributing
 
-Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for the pull request checklist.
-Two rules matter most: new behaviour must be **switchable and off by default**,
-and adding a permission requires a written justification in
+Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for the commit format, the translation
+workflow, and the rules a change has to follow. Two rules matter most: new
+behaviour must be **switchable and off by default**, and adding a permission
+requires a written justification in
 [`docs/permissions.md`](docs/permissions.md).
 
-A `CODE_OF_CONDUCT.md` is planned and will be linked here when it lands.
+Participation is governed by the
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 ## License
 

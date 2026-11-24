@@ -30,7 +30,7 @@ graph TB
     subgraph src["src/"]
         core["core/<br/>fetch · epub · storage · parser"]
         ui["ui/<br/>components · styles"]
-        parsers["parsers/<br/>437 site parsers"]
+        parsers["parsers/<br/>434 site parsers"]
     end
 
     worker --> core
@@ -67,7 +67,7 @@ graph TD
     subgraph L3["Layer 3 — Site"]
         p1["RoyalRoadParser"]
         p2["NovelFullParser"]
-        pN["…435 more"]
+        pN["…432 more"]
     end
     subgraph L4["Layer 4 — Presentation"]
         comps["Web Components"]
@@ -97,53 +97,70 @@ anything.
 
 ### 3.1 `src/core/` — the domain
 
-| Module                 | Responsibility                                                                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `fetch/client.ts`      | `FetchClient`: `fetch`, `fetchJson`, `fetchText`, `fetchHtml`. Owns the `AbortController`, the retry policy, and the cookie scoping. |
-| `fetch/retry.ts`       | The single retry policy and its backoff schedule.                                                                                    |
-| `fetch/cookies.ts`     | Partitioned → unpartitioned cookie bridging, with `finally` cleanup.                                                                 |
-| `fetch/errors.ts`      | `FetchError`, `UserFacingError`, and the mapping from a technical failure to a message a user can act on.                            |
-| `net/headers.ts`       | The declarativeNetRequest rule manager (static rules, additive, scoped).                                                             |
-| `parser/base.ts`       | The abstract `Parser` class, the chapter-fetch orchestration, and the DOM → content pipeline.                                        |
-| `parser/factory.ts`    | The parser registry and the selection strategy (host → URL rule → confidence rule → default).                                        |
-| `parser/default.ts`    | The heuristic fallback parser.                                                                                                       |
-| `parser/context.ts`    | `ParserContext`: the adapter surface a parser is given.                                                                              |
-| `epub/document.ts`     | The typed EPUB document model.                                                                                                       |
-| `epub/reader.ts`       | `EpubDocumentReader`: parse a container into the model.                                                                              |
-| `epub/writer.ts`       | `EpubDocumentWriter`: serialise the model, canonically.                                                                              |
-| `epub/packer.ts`       | Assemble the model into a container.                                                                                                 |
-| `epub/merge.ts`        | Structural merge of two EPUBs.                                                                                                       |
-| `epub/items.ts`        | `ChapterEpubItem`, `ImageInfo`, `FontInfo`.                                                                                          |
-| `story/chapter.ts`     | The `Chapter` type and its validation.                                                                                               |
-| `story/story.ts`       | `StoryDescriptor`: the metadata + chapter list for one book.                                                                         |
-| `pipeline/download.ts` | `DownloadPipeline`: the orchestrator that runs in the worker.                                                                        |
-| `pipeline/progress.ts` | Progress events and the phase model.                                                                                                 |
-| `storage/settings.ts`  | `SettingsStore`: schema-validated settings in `browser.storage.local`.                                                               |
-| `storage/library.ts`   | `LibraryStore`: IndexedDB, transactional.                                                                                            |
-| `storage/migrate.ts`   | One-time import from the legacy storage layout.                                                                                      |
-| `metadata/lookup.ts`   | Optional NovelUpdates metadata lookup — opt-in, documented.                                                                          |
-| `util/*`               | Focused utilities: `dom.ts`, `url.ts`, `text.ts`, `file.ts`.                                                                         |
+| Module                            | Responsibility                                                                                                                          |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `background.ts`                   | The service worker entry point: message routing, download orchestration, and the parser registry's lifetime.                            |
+| `browser-api.ts`                  | The single place that touches `browser.*`. Every other module goes through it, so the extension's API surface is auditable in one file. |
+| `content-script.ts`               | The injected script: extracts the page's DOM and hands it to the worker.                                                                |
+| `download-manager.ts`             | Owns the running downloads, their progress, and their cancellation.                                                                     |
+| `epub/document.ts`                | The typed EPUB document model.                                                                                                          |
+| `epub/reader.ts`                  | Parse a container into the model.                                                                                                       |
+| `epub/writer.ts`                  | Serialise the model, canonically.                                                                                                       |
+| `epub/packer.ts`                  | Assemble the model into a container.                                                                                                    |
+| `message/bus.ts`                  | The typed request/response and event channels between the pages and the worker.                                                         |
+| `net/fetch-client.ts`             | `fetch`, `fetchJson`, `fetchText`, `fetchHtml`. Owns the `AbortController`, the retry policy, and the cookie scoping.                   |
+| `net/cookie-bridge.ts`            | Partitioned → unpartitioned cookie bridging, with `finally` cleanup.                                                                    |
+| `net/dnr-rules.ts`                | The declarativeNetRequest rule manager (static rules, additive, scoped).                                                                |
+| `parser/parser.ts`                | The abstract `Parser` class, the chapter-fetch orchestration, and the DOM → content pipeline.                                           |
+| `parser/registry.ts`              | The parser registry and the selection strategy (host → URL rule → confidence rule → default).                                           |
+| `parser/default-parser.ts`        | The heuristic fallback parser.                                                                                                          |
+| `parser/heuristic-scanner.ts`     | The heuristic that finds a chapter list and the content of a chapter page.                                                              |
+| `parser/constructed-content.ts`   | Builds a synthetic document for parsers that produce content from JSON rather than from HTML.                                           |
+| `parser/register-all.ts`          | Registers every site parser. Generated from the filesystem at build time.                                                               |
+| `parser/legacy-parsers.ts`        | The bridge to the preserved legacy parsers.                                                                                             |
+| `parser/compat/*`                 | The compatibility shims that give the legacy parsers the globals they expect (see ADR-0002).                                            |
+| `storage/settings-store.ts`       | `SettingsStore`: schema-validated settings in `browser.storage.local`.                                                                  |
+| `storage/library-store.ts`        | `LibraryStore`: IndexedDB, transactional.                                                                                               |
+| `storage/site-selectors-store.ts` | The user's saved selectors, per site.                                                                                                   |
+| `storage/site-selectors.ts`       | The selector model and its validation.                                                                                                  |
+| `util/*`                          | Focused utilities: `dom.ts`, `css.ts`, `text.ts` (`primitives.ts`), `errors.ts`, `sanitize.ts`, `parser-utilities.ts`.                  |
+| `vendor/dompurify.ts`             | The vendored DOMPurify build (see §3.4).                                                                                                |
 
 ### 3.2 `src/ui/` — the presentation
 
-| Module                | Responsibility                                                       |
-| --------------------- | -------------------------------------------------------------------- |
-| `styles/tokens.css`   | Layer 1 primitives + Layer 2 semantics for both themes.              |
-| `styles/base.css`     | Resets, typography defaults, the app shell, focus policy.            |
-| `components/*.ts`     | The 15 Web Components (`k-button`, `k-field`, `k-dialog`, …).        |
-| `components/icons.ts` | The icon set — 24×24, 2 px stroke, `currentColor`.                   |
-| `shell/workbench.ts`  | The workbench page: mounts the components, owns the view state.      |
-| `shell/options.ts`    | The options page: settings, library, reading list, site permissions. |
-| `shell/popup.ts`      | The popup: the launcher and the live progress indicator.             |
-| `shell/onboarding.ts` | The first-run experience.                                            |
-| `state/store.ts`      | A tiny observable store — no framework.                              |
-| `i18n/index.ts`       | `t(key, subs)` — memoised, substitution-based.                       |
+| Module                       | Responsibility                                                           |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| `styles/tokens.css`          | Layer 1 primitives + Layer 2 semantics for both themes.                  |
+| `styles/base.css`            | Resets, typography defaults, the app shell, the focus policy.            |
+| `styles/theme-controller.ts` | Resolves "system" to a theme and applies the attributes on `<html>`.     |
+| `components/base.ts`         | `KComponent`: the shadow root, the adopted stylesheet, the a11y helpers. |
+| `components/k-*.ts`          | The 13 Web Components (`k-button`, `k-field`, `k-dialog`, `k-list`, …).  |
+| `components/icons.ts`        | The icon set — 24×24, 2 px stroke, `currentColor`.                       |
+| `pages/popup/`               | The popup: the launcher and the live progress indicator.                 |
+| `pages/workbench/`           | The workbench page: mounts the components, owns the view state.          |
+| `pages/options/`             | The options page: settings, library, reading list, site permissions.     |
+| `pages/onboarding/`          | The first-run experience.                                                |
+| `i18n.ts`                    | `t(key, subs)` — memoised, substitution-based.                           |
+| `i18n-bootstrap.ts`          | Installs the `browser.i18n` catalogue before the first render.           |
 
-### 3.3 `src/parsers/` — the sites
+### 3.3 `src/core/parsers/legacy/` — the sites
 
-437 parser modules, one per site family. Each is a small class that
-implements the `Parser` interface. The build generates the registry from the
-filesystem, so there is no hand-maintained list.
+434 site parser modules, one per site family, preserved from the original and
+wrapped by the compatibility shims. The build generates the registry from the
+filesystem, so there is no hand-maintained list. See
+[ADR-0002](../decisions/ADR-0002-parser-contract.md).
+
+### 3.4 Vendored dependencies
+
+Two third-party libraries are vendored into `src/core/vendor/`, rather than
+being bundled from `node_modules` at build time:
+
+| Library          | Where it is used                        | Why it is vendored                                                                                            |
+| ---------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| DOMPurify        | `src/core/vendor/dompurify.ts`          | The build must produce a browser bundle with no bundler in the hot path.                                      |
+| `@zip.js/zip.js` | `src/core/parsers/compat/legacy-zip.ts` | Loaded lazily, behind a facade, so 155 KB of ZIP code is fetched only by the parser that needs it (ADR-0012). |
+
+Both are MIT-licensed. Their licences are reproduced in `LICENSE.md`.
 
 ---
 

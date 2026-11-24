@@ -180,6 +180,24 @@ The full rationale is in [`docs/permissions.md`](./docs/permissions.md) and
 - `npm audit` runs in CI. A high-severity advisory fails the build.
 - There is no automated dependency-update bot that merges without review.
 
+### The one accepted lint warning
+
+`npm run web-ext:lint` runs `web-ext lint` unmodified over `dist/` and
+**fails the build on every error and on every warning** except the ones listed
+with a written reason in `tools/lint-extension.mjs`.
+
+There is exactly one accepted warning:
+
+| Warning                 | File                      | Why it is acceptable                                                                                                                                                                                                                                                                                                       |
+| ----------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `UNSAFE_VAR_ASSIGNMENT` | `assets/vendor/purify.js` | DOMPurify assigns to `documentElement.innerHTML` in the fallback path it takes when `DOMParser` is unavailable. Firefox always provides `DOMParser`, so the path is unreachable. The assignment is inside the sanitiser itself, not in code we wrote, and the value assigned is the input the sanitiser is about to scrub. |
+
+The warning is accepted **by path**. The same rule stays fully in force for
+every other file in the build, and a warning that appears tomorrow stops the
+build. Emitting DOMPurify as its own file is what makes a path-scoped
+acceptance possible, without muting the rule for our own code or editing a
+third-party library.
+
 ---
 
 ## 5. Reporting a false positive
@@ -195,6 +213,7 @@ explain why, and we will not take any action against the reporter.
 - [ADR-0006 — storage](./docs/decisions/ADR-0006-storage.md)
 - [ADR-0007 — permissions](./docs/decisions/ADR-0007-permissions.md)
 - [ADR-0008 — EPUB pipeline](./docs/decisions/ADR-0008-epub-pipeline.md)
+- [ADR-0012 — lazy ZIP](./docs/decisions/ADR-0012-lazy-zip.md)
 
 ---
 

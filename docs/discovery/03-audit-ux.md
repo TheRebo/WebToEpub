@@ -10,7 +10,7 @@
 
 ## 0. Executive summary
 
-The functional engine behind this UI is substantial — 437 parsers, a library,
+The functional engine behind this UI is substantial — 434 parsers, a library,
 an EPUB packer, a reading list. The **interface** is a 2010-era unstyled HTML
 form that has grown by accretion.
 

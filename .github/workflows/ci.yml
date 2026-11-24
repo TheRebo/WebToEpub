@@ -52,6 +52,9 @@ jobs:
       - name: Unit and integration tests
         run: npm run test
 
+      - name: Check the documentation's links
+        run: npm run links
+
       - name: Build
         run: npm run build
 

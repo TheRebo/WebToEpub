@@ -67,6 +67,20 @@ The first alpha of the revamp: a full rewrite of WebToEpub on a modern MV3 / Typ
 
 ### Fixed
 
+- **Component stylesheets are no longer deleted by the component itself.** Every component that rebuilds its shadow root was wiping the `<style>` element the base class had injected into it, so every form control in the application rendered as an unstyled native element. Stylesheets are now adopted into the shadow root, where they survive a rebuild (`src/ui/components/base.ts`).
+- **The dark theme is dark.** The dark theme mapped `--bg` to the lightest step of the neutral ramp and `--text` to the darkest, which is the light theme's mapping. The ramp is now reversed inside the dark theme, so `--bg` means "the background" in both themes ([ADR-0014](docs/decisions/ADR-0014-dark-theme-token-ramp.md)).
+- **`[hidden]` is honoured.** The user agent's `[hidden]` rule loses to any author `display` rule, so the workbench's empty state stayed in the layout and pushed the chapter list out of the panel. A global rule puts the attribute back in charge (`src/ui/styles/base.css`).
+- **The chapter list fills its panel.** `contain: strict` implies `contain: size`, which made the list's height independent of its contents and stopped the flex algorithm from sizing it at all. It now uses `contain: content` (`src/ui/components/k-list.ts`).
+- **The content script runs.** It was bundled as an ES module, which Firefox does not support in the page's world; the browser rejected it with a syntax error and the content script silently never ran. It is now bundled as a classic script (`tools/build.mjs`).
+- **The settings validator no longer crashes.** Reading settings with a partially-written or older shape threw, which left the settings page unusable.
+- **The popup honours the user's theme.** It ignored the theme, accent, and density settings entirely, so a user who configured a dark interface got a light popup.
+- **The theme control works.** Changing the theme in the settings page did not change anything.
+- **The reduced-motion setting was inert.** It was stored and never applied.
+- **Relative chapter URLs are resolved.** A parser that returned a site-relative chapter URL produced a broken link; relative URLs are now resolved against the page.
+- **Relative cover URLs are resolved**, for the same reason.
+- **The default parser reports a title**, instead of an empty string.
+- **The workbench shows an error banner** when a page cannot be analysed, instead of failing silently.
+
 - **Cancelled requests are actually cancelled.** In-flight fetches are aborted through `AbortSignal` instead of running to completion in the background.
 - **Cookies are always cleaned up.** Partitioned cookies are removed in a `finally` block, so an error mid-request no longer leaves stale cookies behind (`src/core/net/fetch-client.ts`, `src/core/net/cookie-bridge.ts`).
 - **Failed image downloads no longer produce empty files**; they become visible placeholders so the broken asset is obvious in the EPUB reader.

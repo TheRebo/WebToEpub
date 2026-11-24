@@ -36,7 +36,7 @@ modules. Load order determines runtime availability.
 | 640      | `ProgressBar.js`       | 47        | Progress control + tab-title percentage                               |
 | 641      | `Parser.js`            | 902       | Base parser class + orchestration engine                              |
 | 642      | `Library.js`           | 1301      | Persistent EPUB library                                               |
-| 645–1080 | `parsers/*.js`         | 437 files | 437 site parsers                                                      |
+| 645–1080 | `parsers/*.js`         | 437 files | 434 site parsers                                                      |
 | 1081     | `zip.js` (vendor)      | —         | ZIP writer                                                            |
 | 1082     | `DOMPurify` (vendor)   | —         | HTML sanitiser                                                        |
 | 1083     | `EpubItemSupplier.js`  | 58        | Adapter between Parser and EpubPacker                                 |
@@ -343,7 +343,7 @@ That is a **net reduction of 3 permissions** while adding none.
 ## 9. Architecture observations for the rewrite
 
 1. **The parser contract is the asset.** Everything else is replaceable; the
-   437 parsers are the moat. The rewrite must keep
+   434 parsers are the moat. The rewrite must keep
    `getChapterUrls`/`findContent`/metadata hooks **source-compatible**.
 2. **The UI must be split.** One 1090-line HTML file with a hand-maintained
    466-entry script manifest is unmaintainable. The rewrite needs a build step
@@ -356,7 +356,7 @@ That is a **net reduction of 3 permissions** while adding none.
    extension page. A 30-minute download cannot live in a page the browser may
    kill. The rewrite needs `background.service_worker` for orchestration and
    the download, with the page as a thin UI.
-6. **TypeScript would pay for itself** in the parser contract: 437 parsers
+6. **TypeScript would pay for itself** in the parser contract: 434 parsers
    implementing a shared interface is exactly the case a compiler catches.
 7. **DOMPurify must remain the single sanitisation boundary**, and it must be
    applied to _every_ path into the EPUB — including the library import path.

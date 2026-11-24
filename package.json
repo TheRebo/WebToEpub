@@ -27,7 +27,8 @@
     "web-ext:lint": "node tools/lint-extension.mjs",
     "web-ext:lint:raw": "web-ext lint --source-dir dist",
     "web-ext:run": "web-ext run --source-dir dist",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run build && npm run web-ext:lint && npm run test:e2e",
+    "links": "node tools/check-links.mjs",
+    "verify": "npm run lint && npm run typecheck && npm run test && npm run links && npm run build && npm run web-ext:lint && npm run test:e2e",
     "precommit": "npm run lint && npm run typecheck",
     "prepare": "husky || true"
   },

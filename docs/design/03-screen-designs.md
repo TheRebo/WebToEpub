@@ -485,7 +485,7 @@ Shown once, in a tab. Three full-screen steps. No network calls, no account.
 │  ● ● ○   Step 2 of 3                                     │
 │                                                          │
 │  Which site are you reading?                             │
-│  [ Search 437 supported sites…                    ]      │
+│  [ Search 434 supported sites…                    ]      │
 │                                                          │
 │  ┌────────────────────────────────────────────────────┐  │
 │  │ Royal Road                          novelsite.com  │  │

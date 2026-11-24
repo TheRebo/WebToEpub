@@ -9,17 +9,79 @@ Format: newest entries at the top of each section.
 
 ## Progress
 
-| Phase                  | Status | Notes                                                                                                  |
-| ---------------------- | ------ | ------------------------------------------------------------------------------------------------------ |
-| 0 — Setup              | ✅     | `legacy` branch + `legacy/v-original` tag created; `main` branched from the original                   |
-| 1 — Discovery          | ✅     | Product inventory, technical audit, UX/visual audit written                                            |
-| 2 — Vision & design    | ✅     | Vision, design system, UX guidelines, screen designs, architecture, 10 ADRs, permissions rationale     |
-| 3 — Build from scratch | ⏳     | Core, UI, all four pages, 434 migrated parsers, 146 tests. Next: release tooling, CI, E2E, screenshots |
-| 4 — Docs & release     | 🔄     | `PRIVACY.md` and `SECURITY.md` drafted ahead of schedule because Phase 2 documents link to them        |
+| Phase                  | Status | Notes                                                                                                 |
+| ---------------------- | ------ | ----------------------------------------------------------------------------------------------------- |
+| 0 — Setup              | ✅     | `legacy` branch + `legacy/v-original` tag created; `main` branched from the original                  |
+| 1 — Discovery          | ✅     | Product inventory, technical audit, UX/visual audit written                                           |
+| 2 — Vision & design    | ✅     | Vision, design system, UX guidelines, screen designs, architecture, 12 ADRs, permissions rationale    |
+| 3 — Build from scratch | ✅     | Core, UI, all four pages, 434 migrated parsers, 146 unit tests, 14 browser-tier checks, 8 screenshots |
+| 4 — Docs & release     | 🔄     | README, CHANGELOG, CONTRIBUTING, CODE_OF_CONDUCT, development guide, 2 new ADRs; release pending      |
 
 ---
 
 ## Decisions log
+
+### 2026-11-24 — Phase 4: the documentation, and the release
+
+- **The end-to-end tier moved off Playwright.** It could not install a Firefox
+  extension — the thing the tier exists to test. The tier now drives Firefox
+  over **Marionette**, its own protocol, with the extension's UUID pinned in
+  the test profile so `moz-extension://` pages are reachable at all.
+  See ADR-0013.
+- **The accessibility tier asserts this product's contract** — every control
+  has an accessible name, the focused control shows a focus ring, reduced
+  motion is honoured — rather than running a generic rule set. The checks
+  point at a specific promise being broken.
+- **The dark theme reverses the neutral ramp.** Re-declaring the semantics per
+  theme would have made `--bg` mean different things in different files.
+  Reversing the ramp keeps `--bg` meaning "the background" everywhere.
+  See ADR-0014.
+- **The documentation set is closed.** `docs/development.md`,
+  `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` are written; the original's
+  lowercase `readme.md` is deleted and the README links the new documents
+  instead. The architecture document's module map was corrected to match the
+  tree that actually exists, and a "vendored dependencies" section was added
+  for the two libraries that are built from `src/core/vendor/`.
+
+### 2026-11-24 — Phase 3, final pass: the defects visual QA found
+
+Driving the built extension in a real Firefox found a set of defects that no
+unit test could have found, because every one of them was invisible in the
+source and glaring on screen.
+
+- **The components were deleting their own stylesheets.** `KComponent` injected
+  its stylesheet as a `<style>` child of the shadow root, and every component
+  that rebuilds its markup called `root.replaceChildren()` — which deleted the
+  stylesheet with it. **Every form control in the application was rendering as
+  an unstyled native element.** The stylesheet is now adopted into the shadow
+  root, where it survives a rebuild.
+- **The dark theme was rendering as light.** The dark theme mapped `--bg` to
+  `--gray-0` (white) and `--text` to `--gray-900` (near-black) — the light
+  theme's mapping. The ramp is now reversed inside the dark theme. See
+  ADR-0014.
+- **`[hidden]` was not hiding anything.** The user agent's `[hidden]` rule
+  loses to any author `display` rule, so the workbench's empty state stayed in
+  the layout at 480 px tall and pushed the chapter list out of the panel.
+- **The chapter list collapsed to 240 px.** `contain: strict` implies
+  `contain: size`, which made the list's height independent of its contents
+  and stopped the flex algorithm from sizing it at all.
+- **The options page had empty text inputs** where the theme, accent and
+  density rows should have been. A `k-field` with no `type` defaulted to
+  `text`; there is now a label-only `group` variant, and the radio group
+  forwards `aria-labelledby` to its fieldset.
+- **The workbench sidebar's inputs had no styles at all** — the rules were
+  scoped to the filter dialog's body.
+- **The popup ignored the user's theme settings**, and the workbench grid used
+  `align-items: start`, so `height: 100%` resolved against an indefinite box.
+- **The popup's secondary actions were two bare glyphs** with no visible
+  labels. They now carry them.
+
+Five runtime defects were fixed earlier the same day, all invisible to
+`tsc` and `eslint`: the settings validator crashed on a partially-written
+shape; the content script was bundled as an ES module, which Firefox does not
+support in the page's world, so it silently never ran; relative chapter URLs
+were not resolved; the popup ignored the theme settings; and a relative cover
+URL was not resolved.
 
 ### 2026-11-23 — Phase 3, fourth pass: the locale catalogue is closed
 
@@ -134,7 +196,7 @@ Format: newest entries at the top of each section.
 - **Three permissions removed, none added.** `webRequest` → scoped DNR,
   `unlimitedStorage` → IndexedDB, static `<all_urls>` → per-origin
   optional grants.
-- The **parser contract is preserved verbatim**. 437 parsers are the
+- The **parser contract is preserved verbatim**. 434 parsers are the
   product's real asset; replacing them was not on the table. A compat shim
   plus a codemod migrates them incrementally, with a parity harness
   proving no behaviour changed.
@@ -144,7 +206,7 @@ Format: newest entries at the top of each section.
 - **No unit tests or fixtures will be created for individual parsers**,
   per the repository's `AGENTS.md` rule for AI agents. The parity harness
   tests the _migration_, not individual parsers, so the rule is respected
-  while still guaranteeing all 437 keep working.
+  while still guaranteeing all 434 keep working.
 
 ### 2026-11-23 — Git baseline
 
@@ -162,9 +224,9 @@ Format: newest entries at the top of each section.
 ### 2026-11-23 — Environment
 
 - Node v26.13.0, npm 12.2.2 available.
-- **Firefox is not installed** on this machine, so `web-ext run` cannot launch
-  a browser here. Browser verification must happen on the user's machine, or
-  Firefox must be installed. **Open.**
+- **Firefox is not installed system-wide**, so `web-ext run` cannot launch a
+  browser here. The browser tier uses the Playwright build of Firefox instead,
+  which is installed under `~/.cache/ms-playwright/`.
 - `web-ext` is not installed globally; it is a devDependency.
 
 ### 2026-11-23 — Scope of the audit
@@ -186,7 +248,7 @@ Format: newest entries at the top of each section.
 1. **Fork remote URL** — needed before the first push. Blocking for Phase 3+.
 2. **Firefox availability** — needed to satisfy the "run in Firefox and check
    as a real user" DoD item.
-3. **Parser migration strategy** — 437 parsers exist. They must keep working.
+3. **Parser migration strategy** — 434 parsers exist. They must keep working.
    The contract is small and will be preserved, but each parser file will need
    at least a mechanical import/type change. This is the single biggest
    execution risk in the project.
@@ -206,6 +268,17 @@ Format: newest entries at the top of each section.
    locale is incomplete.
 5. **Baseline `readme.md` is still the original.** It will be replaced in
    Phase 4. Its relative links are intentionally left alone until then.
+   **Resolved in Phase 4:** the original's lowercase `readme.md` is deleted. Its
+   content is superseded by the new `README.md` and by
+   `docs/discovery/01-product-inventory.md`, which is the inventory of what the
+   original was. The README's link to it now points there.
+6. **Firefox is not installed on the build machine.** The browser tier needs a
+   real Firefox.
+   **Resolved in Phase 3:** the Playwright build of Firefox is installed under
+   `~/.cache/ms-playwright/`, and the harness prefers it — because stock
+   Firefox refuses to navigate to a `moz-extension://` URL from outside the
+   chrome scope. `KINTSUGI_FIREFOX` overrides the choice for anyone with a
+   browser they would rather use.
 
 ---
 
@@ -213,7 +286,7 @@ Format: newest entries at the top of each section.
 
 | Risk                          | Likelihood | Mitigation                                                                                                                 |
 | ----------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------- |
-| 437 parsers fail to migrate   | High       | Preserve the contract exactly; add a compat shim so old-style parsers keep working; migrate in batches with a test harness |
+| 434 parsers fail to migrate   | High       | Preserve the contract exactly; add a compat shim so old-style parsers keep working; migrate in batches with a test harness |
 | Scope creep in the UI rebuild | High       | Fix the design system first, then screens; no screen gets bespoke CSS                                                      |
 | Losing the library feature    | Medium     | The library is the extension's differentiator; keep it, move it to IndexedDB                                               |
 | Screenshot capture for docs   | Medium     | Firefox needed; otherwise generate mockups from the real component code                                                    |
