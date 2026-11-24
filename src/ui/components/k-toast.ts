@@ -7,7 +7,7 @@
  * auto-dismisses after six seconds, with a visible progress bar that pauses
  * on hover.
  */
-import { KComponent, defineComponent } from "./base";
+import { KComponent, defineComponent, translate } from "./base";
 import { createIcon, type IconName } from "./icons";
 
 const STYLES = `
@@ -116,6 +116,16 @@ const STYLES = `
     .toast, .toast[data-leaving="true"] { animation: none; }
     .timer { animation: none; }
 }
+
+/*
+ * The in-app "Reduce motion" setting.
+ *
+ * The document's own rule cannot pierce the shadow boundary, so the base
+ * class mirrors the preference onto the host.
+ */
+:host([data-reduced-motion]) .toast,
+:host([data-reduced-motion]) .toast[data-leaving="true"] { animation: none; }
+:host([data-reduced-motion]) .timer { animation: none; }
 `;
 
 /** The toast's variants. */
@@ -136,9 +146,11 @@ export class KToast extends KComponent {
     /** The dismiss timer. */
     #timer: ReturnType<typeof setTimeout> | undefined;
 
+    /** The token that guards against a stale announcement. */
+    #announceToken = 0;
+
     protected override render(): void {
         const variant = (this.getAttribute("variant") ?? "info") as ToastVariant;
-        const message = this.getAttribute("message") ?? "";
         const duration = Number(this.getAttribute("duration") ?? 6000);
 
         this.root.replaceChildren();
@@ -156,7 +168,8 @@ export class KToast extends KComponent {
 
         const text = document.createElement("span");
         text.className = "text";
-        text.textContent = message;
+        // The message is filled in by #announce(), once the element is in the
+        // document, so that assistive technology announces the change.
 
         toast.appendChild(icon);
         toast.appendChild(text);
@@ -177,7 +190,7 @@ export class KToast extends KComponent {
         const close = document.createElement("button");
         close.type = "button";
         close.className = "close";
-        close.setAttribute("aria-label", "Dismiss");
+        close.setAttribute("aria-label", translate("commonDismiss", "Dismiss"));
         close.appendChild(createIcon("close", 14));
         close.addEventListener("click", () => this.dismiss());
         toast.appendChild(close);
@@ -200,7 +213,34 @@ export class KToast extends KComponent {
         }
 
         this.root.appendChild(toast);
+        this.#announce();
         this.#startTimer(duration);
+    }
+
+    /**
+     * Put the message into the live region.
+     *
+     * A live region that is populated in the same tick it is created is often
+     * missed: the assistive technology has not yet registered the region, so
+     * there is no change for it to announce. The message is therefore written
+     * in a microtask, after the element is in the document.
+     */
+    #announce(): void {
+        const message = this.getAttribute("message") ?? "";
+        const text = this.root.querySelector(".text");
+        if (!text) return;
+
+        const token = ++this.#announceToken;
+        const write = (): void => {
+            if (token !== this.#announceToken) return;
+            text.textContent = message;
+        };
+
+        if (this.isConnected) {
+            queueMicrotask(write);
+        } else {
+            write();
+        }
     }
 
     /** Start the dismiss timer. */
@@ -216,12 +256,33 @@ export class KToast extends KComponent {
         const toast = this.root.querySelector(".toast") as HTMLElement | null;
         if (toast) {
             toast.dataset.leaving = "true";
-            setTimeout(() => this.remove(), 220);
+            setTimeout(() => this.remove(), leaveDuration(this));
         } else {
             this.remove();
         }
         this.emit("k-dismiss", {});
     }
+}
+
+/**
+ * The leave animation's duration, in milliseconds.
+ *
+ * The removal has to wait for the exit animation, so it uses the same
+ * `--dur-base` token the animation uses.
+ *
+ * @param host The toast element.
+ * @returns The duration in milliseconds.
+ */
+function leaveDuration(host: Element): number {
+    try {
+        const raw = getComputedStyle(host).getPropertyValue("--dur-base").trim();
+        const parsed = Number.parseFloat(raw);
+        if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    } catch {
+        // The computed style is unavailable; fall through to the token's
+        // declared value.
+    }
+    return 200;
 }
 
 defineComponent("k-toast", KToast);

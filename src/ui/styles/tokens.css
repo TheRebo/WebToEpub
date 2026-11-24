@@ -22,7 +22,8 @@
     /* Accent: "Gold". A warm amber-gold, tuned so it passes WCAG AA as a
        button background. The raw gold of a kintsugi repair (a yellow-brown)
        reads as "warning" in a Western UI, so the ramp is pushed toward
-       amber and anchored at 600 for the light theme. */
+       amber and anchored at 700 for the light theme, where the accent is
+       used as a background for white text. */
     --accent-100: #fdf3e0;
     --accent-200: #fae5be;
     --accent-300: #f4ce84;
@@ -145,9 +146,31 @@
     --border-strong: var(--gray-300);
     --border-subtle: var(--gray-100);
 
-    --accent: var(--accent-600);
-    --accent-hover: var(--accent-700);
-    --accent-active: var(--accent-800);
+    /*
+     * The accent.
+     *
+     * The light theme anchors the accent at the -700 step rather than -600,
+     * because the accent is a button background and white text on it has to
+     * clear WCAG AA's 4.5:1.
+     *
+     * Measured contrast ratios (white text on the accent, and accent-coloured
+     * text on the page background):
+     *
+     *   family     -700 (accent)   -800 (hover)  -900 (active)   accent-text on --bg
+     *   gold       5.80:1          8.62:1       11.99:1         5.80:1
+     *   ink        9.87:1         12.40:1       15.24:1         9.87:1
+     *   verdigris  7.06:1          9.64:1       12.84:1         7.06:1
+     *   plum       9.10:1         11.69:1       14.67:1         9.10:1
+     *
+     * At -600 the gold step was only 3.80:1 with white text, which fails.
+     * Accent-coloured text on --accent-subtle (the -100 tint) measures
+     * 5.26:1 (gold), 8.42:1 (ink), 6.16:1 (verdigris) and 7.61:1 (plum).
+     * The focus ring uses the same -700 step: 5.80:1 against --bg and
+     * --surface, well above the 3:1 that WCAG 1.4.11 asks of a UI boundary.
+     */
+    --accent: var(--accent-700);
+    --accent-hover: var(--accent-800);
+    --accent-active: var(--accent-900);
     --accent-subtle: var(--accent-100);
     --accent-text: var(--accent-700);
 
@@ -161,7 +184,7 @@
     --info: var(--info-light);
     --info-subtle: #e7f0fa;
 
-    --focus-ring: var(--accent-600);
+    --focus-ring: var(--accent-700);
     --focus-ring-width: 3px;
 
     --shadow-1: 0 1px 2px rgb(16 12 4 / 6%), 0 1px 1px rgb(16 12 4 / 4%);
@@ -221,6 +244,21 @@
     --border-strong: var(--gray-300);
     --border-subtle: var(--gray-100);
 
+    /*
+     * The dark theme anchors the accent at the -400 step, with the dark ink
+     * colour as the text on it. Measured contrast ratios:
+     *
+     *   family     ink on accent   accent on --bg   accent on --surface
+     *   gold       9.55:1          10.00:1         9.36:1
+     *   ink        5.30:1           5.55:1         5.20:1
+     *   verdigris  7.44:1           7.79:1         7.29:1
+     *   plum       5.52:1           5.78:1         5.42:1
+     *
+     * Accent-coloured text (the -300 step) on --bg measures 12.47:1, 8.69:1,
+     * 10.68:1 and 8.69:1 respectively, and on --accent-subtle 9.05:1, 6.31:1,
+     * 7.75:1 and 6.30:1. The focus ring is the same -400 step: 10.00:1
+     * against --bg and 9.36:1 against --surface.
+     */
     --accent: var(--accent-400);
     --accent-hover: var(--accent-300);
     --accent-active: var(--accent-200);

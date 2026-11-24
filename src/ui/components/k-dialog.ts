@@ -5,7 +5,7 @@
  * `Escape` handling, and the top layer all come for free — with the
  * background correctly inert.
  */
-import { KComponent, defineComponent } from "./base";
+import { KComponent, defineComponent, translate } from "./base";
 import { createIcon } from "./icons";
 
 const STYLES = `
@@ -90,8 +90,18 @@ dialog::backdrop {
 
 .footer .spacer { flex: 1; }
 
+/*
+ * The in-app "Reduce motion" setting.
+ *
+ * The document's own "[data-reduce-motion="true"] *" rule cannot pierce the
+ * shadow boundary, so the component mirrors the preference onto its host.
+ */
+:host([data-reduced-motion]) dialog[open] { animation: none; }
+:host([data-reduced-motion]) .close { transition: none; }
+
 @media (prefers-reduced-motion: reduce) {
     dialog[open] { animation: none; }
+    .close { transition: none; }
 }
 `;
 
@@ -99,7 +109,19 @@ export class KDialog extends KComponent {
     static override styles = STYLES;
     static override observedAttributes = ["heading", "open"];
 
+    /** The dialog's own ID, used to wire the heading to it. */
+    readonly headingId = `k-dialog-${crypto.randomUUID().slice(0, 8)}-heading`;
+
     private dialog: HTMLDialogElement | undefined;
+    private heading: HTMLHeadingElement | undefined;
+
+    /**
+     * The element that had the focus before the dialog opened.
+     *
+     * It is restored when the dialog closes, so that closing a dialog puts
+     * the reader back where they were rather than at the top of the page.
+     */
+    #previouslyFocused: HTMLElement | null = null;
 
     protected override render(): void {
         if (!this.dialog) {
@@ -108,12 +130,16 @@ export class KDialog extends KComponent {
             this.#build();
         }
 
-        const heading = this.root.querySelector(".heading");
-        if (heading) heading.textContent = this.getAttribute("heading") ?? "";
+        const heading = this.heading;
+        if (heading) this.setText(heading, this.getAttribute("heading") ?? "");
+
+        // The dialog is named by its heading, so that a screen reader
+        // announces "Filter, dialog" rather than "dialog".
+        this.dialog?.setAttribute("aria-labelledby", this.headingId);
 
         if (this.hasAttribute("open")) {
-            if (!this.dialog.open) this.dialog.showModal();
-        } else if (this.dialog.open) {
+            this.#show();
+        } else if (this.dialog?.open) {
             this.dialog.close();
         }
     }
@@ -130,11 +156,13 @@ export class KDialog extends KComponent {
 
         const heading = document.createElement("h2");
         heading.className = "heading";
+        heading.id = this.headingId;
+        this.heading = heading;
 
         const close = document.createElement("button");
         close.type = "button";
         close.className = "close";
-        close.setAttribute("aria-label", "Close");
+        close.setAttribute("aria-label", translate("commonClose", "Close"));
         close.appendChild(createIcon("close", 18));
         close.addEventListener("click", () => this.close());
 
@@ -159,6 +187,7 @@ export class KDialog extends KComponent {
 
         dialog.addEventListener("close", () => {
             this.removeAttribute("open");
+            this.#restoreFocus();
             this.emit("k-close", {});
         });
 
@@ -173,13 +202,30 @@ export class KDialog extends KComponent {
     /** Open the dialog. */
     open(): void {
         this.setAttribute("open", "");
-        if (this.dialog && !this.dialog.open) this.dialog.showModal();
+        this.#show();
     }
 
     /** Close the dialog. */
     close(): void {
         this.removeAttribute("open");
         if (this.dialog?.open) this.dialog.close();
+    }
+
+    /** Show the dialog, remembering what had the focus. */
+    #show(): void {
+        const dialog = this.dialog;
+        if (!dialog || dialog.open) return;
+        const active = document.activeElement;
+        this.#previouslyFocused = active instanceof HTMLElement ? active : null;
+        dialog.showModal();
+    }
+
+    /** Put the focus back where it was before the dialog opened. */
+    #restoreFocus(): void {
+        const previous = this.#previouslyFocused;
+        this.#previouslyFocused = null;
+        if (!previous || !previous.isConnected) return;
+        previous.focus();
     }
 }
 

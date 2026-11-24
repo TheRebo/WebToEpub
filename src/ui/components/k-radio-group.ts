@@ -26,6 +26,26 @@ fieldset {
     gap: var(--space-2);
 }
 
+/*
+ * The legend is visually hidden, but not with "display: none".
+ *
+ * A hidden legend is removed from the accessibility tree, and the legend is
+ * the fieldset's accessible name — a group with no name is announced as
+ * "radio group" and nothing else. Clipping it keeps it in the tree.
+ */
+.legend {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
 label {
     position: relative;
     display: inline-flex;
@@ -94,6 +114,18 @@ label:has(input:checked) .swatch {
     color: var(--text-muted);
     background: var(--surface-sunken);
 }
+
+/*
+ * The in-app "Reduce motion" setting.
+ *
+ * The document's own rule cannot pierce the shadow boundary, so the base
+ * class mirrors the preference onto the host.
+ */
+:host([data-reduced-motion]) label { transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    label { transition: none; }
+}
 `;
 
 export class KRadioGroup extends KComponent {
@@ -101,26 +133,36 @@ export class KRadioGroup extends KComponent {
     static override observedAttributes = ["value", "disabled", "legend"];
 
     private fieldset: HTMLFieldSetElement | undefined;
+    private legend: HTMLLegendElement | undefined;
+
+    /**
+     * The group's radio name.
+     *
+     * Every radio in the group shares one name: that is what makes them
+     * mutually exclusive, and what makes the arrow keys move between the
+     * options rather than between separate groups. The name is generated
+     * once, for the group, and not once per option.
+     */
+    private readonly groupName = `k-radio-group-${crypto.randomUUID().slice(0, 8)}`;
 
     protected override render(): void {
-        if (!this.fieldset) {
-            this.root.replaceChildren();
-            this.fieldset = document.createElement("fieldset");
-            const legend = document.createElement("legend");
-            legend.className = "legend";
-            legend.textContent = this.getAttribute("legend") ?? "";
-            legend.style.display = "none";
-            this.fieldset.appendChild(legend);
-            this.root.appendChild(this.fieldset);
-        }
+        this.#ensureStructure();
+
+        const fieldset = this.fieldset;
+        const legend = this.legend;
+        if (!fieldset || !legend) return;
+
+        // The legend is rebuilt from the attribute on every render, so that
+        // changing the attribute changes what the group is called.
+        this.setText(legend, this.getAttribute("legend") ?? "");
 
         // The group's accessible name comes from the label beside it when
-        // there is one, and from the hidden legend otherwise. A hidden legend
-        // is still announced by a screen reader, so the group is never
-        // nameless.
+        // there is one, and from the legend otherwise. A legend that is
+        // visually hidden is still announced by a screen reader, so the group
+        // is never nameless.
         const labelledBy = this.getAttribute("aria-labelledby");
-        if (labelledBy) this.fieldset.setAttribute("aria-labelledby", labelledBy);
-        else this.fieldset.removeAttribute("aria-labelledby");
+        if (labelledBy) fieldset.setAttribute("aria-labelledby", labelledBy);
+        else fieldset.removeAttribute("aria-labelledby");
 
         const disabled = this.hasAttribute("disabled");
         const value = this.getAttribute("value") ?? "";
@@ -129,6 +171,23 @@ export class KRadioGroup extends KComponent {
             input.disabled = disabled;
             input.checked = input.value === value;
         }
+    }
+
+    /**
+     * Build the fieldset, if it is not built yet.
+     *
+     * The structure is built on demand rather than only when the element is
+     * connected, because a page may add its options before the element ever
+     * reaches the document.
+     */
+    #ensureStructure(): void {
+        if (this.fieldset) return;
+        this.root.replaceChildren();
+        this.fieldset = document.createElement("fieldset");
+        this.legend = document.createElement("legend");
+        this.legend.className = "legend";
+        this.fieldset.appendChild(this.legend);
+        this.root.appendChild(this.fieldset);
     }
 
     /** The group's inputs. */
@@ -149,13 +208,14 @@ export class KRadioGroup extends KComponent {
 
     /** Add an option. */
     addOption(optionValue: string, label: string, swatch?: string): void {
+        this.#ensureStructure();
         const fieldset = this.fieldset;
         if (!fieldset) return;
 
         const id = `k-radio-${crypto.randomUUID().slice(0, 8)}`;
         const input = document.createElement("input");
         input.type = "radio";
-        input.name = `k-radio-group-${crypto.randomUUID().slice(0, 8)}`;
+        input.name = this.groupName;
         input.id = id;
         input.value = optionValue;
 

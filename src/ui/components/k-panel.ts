@@ -70,6 +70,14 @@ details[open] .chevron { transform: rotate(180deg); }
     gap: var(--space-4);
 }
 
+/*
+ * The in-app "Reduce motion" setting.
+ *
+ * The document's own rule cannot pierce the shadow boundary, so the base
+ * class mirrors the preference onto the host.
+ */
+:host([data-reduced-motion]) .chevron { transition: none; }
+
 @media (prefers-reduced-motion: reduce) {
     .chevron { transition: none; }
 }

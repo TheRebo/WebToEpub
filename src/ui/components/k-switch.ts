@@ -61,6 +61,15 @@ input:focus-visible + .track { box-shadow: var(--ring); }
 :host([disabled]) .track { background: var(--surface-sunken); }
 :host([disabled]) .thumb { background: var(--border-strong); }
 
+/*
+ * The in-app "Reduce motion" setting.
+ *
+ * The document's own rule cannot pierce the shadow boundary, so the base
+ * class mirrors the preference onto the host.
+ */
+:host([data-reduced-motion]) .track,
+:host([data-reduced-motion]) .thumb { transition: none; }
+
 @media (prefers-reduced-motion: reduce) {
     .track, .thumb { transition: none; }
 }

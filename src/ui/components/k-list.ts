@@ -1,15 +1,18 @@
 /**
- * `<k-list>` and `<k-list-item>`.
+ * `<k-list>`.
  *
  * The chapter list.
  *
  * The list is **virtualised**: only the visible rows are in the DOM, so five
- * thousand chapters cost about thirty nodes rather than five thousand. It
- * also uses a **roving tabindex**: exactly one item is tabbable at a time,
- * and the arrow keys move within the list. This turns five thousand chapters
- * from ten thousand tab stops into one.
+ * thousand chapters cost about thirty nodes rather than five thousand.
+ *
+ * The list is a **single tab stop**: the viewport is the only element in the
+ * tab order, and the rows are focused programmatically as the user arrows
+ * through them. A roving tabindex over the rows would lose the tab stop
+ * entirely whenever the focused row fell outside the rendered window, which
+ * is exactly what a virtualised list does all the time.
  */
-import { KComponent, defineComponent } from "./base";
+import { KComponent, defineComponent, translate } from "./base";
 import { createIcon, type IconName } from "./icons";
 
 /** A chapter row's data. */
@@ -22,6 +25,8 @@ export interface ListItemData {
     selected?: boolean;
     /** The row's state icon. */
     icon?: IconName;
+    /** The row's state, which drives the row's colour. */
+    state?: ListItemState;
     /** The row's secondary text, right-aligned. */
     meta?: string;
     /** Whether the row's checkbox is in the indeterminate state. */
@@ -43,15 +48,49 @@ const STATE_ICONS: Record<ListItemState, IconName> = {
     failed: "alert-triangle",
 };
 
-/** The state labels, for the accessible name. */
-const STATE_LABELS: Record<ListItemState, string> = {
-    idle: "not started",
-    queued: "queued",
-    fetching: "fetching",
-    loaded: "loaded",
-    downloaded: "already downloaded",
-    failed: "failed",
-};
+/**
+ * The state a state icon stands for.
+ *
+ * A page that sets only the icon still gets the right row colour, so the
+ * state does not have to be threaded through twice.
+ */
+const ICON_STATES = new Map<IconName, ListItemState>(
+    (Object.entries(STATE_ICONS) as [ListItemState, IconName][]).map(([state, icon]) => [
+        icon,
+        state,
+    ]),
+);
+
+/**
+ * The state labels, for the accessible name.
+ *
+ * The labels come from the locale files, which already have a key for every
+ * state. The English text is only a fallback for the case where the message
+ * is missing.
+ *
+ * The labels are looked up when they are needed rather than when the module is
+ * loaded, because the i18n API is installed after the modules are imported.
+ *
+ * @param state The state to label.
+ * @returns The label.
+ */
+function stateLabel(state: ListItemState): string {
+    switch (state) {
+        case "queued":
+            return translate("chapterStateQueued", "Queued");
+        case "fetching":
+            return translate("chapterStateFetching", "Fetching");
+        case "loaded":
+            return translate("chapterStateLoaded", "Loaded");
+        case "downloaded":
+            return translate("chapterStateDownloaded", "Downloaded");
+        case "failed":
+            return translate("chapterStateFailed", "Failed");
+        case "idle":
+        default:
+            return translate("chapterStateNotStarted", "Not started");
+    }
+}
 
 const LIST_STYLES = `
 :host {
@@ -99,23 +138,6 @@ const LIST_STYLES = `
     left: 0;
     right: 0;
 }
-
-.empty-slot {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-8);
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-}
-`;
-
-const ITEM_STYLES = `
-:host {
-    display: block;
-}
-
-:host([hidden]) { display: none; }
 
 .row {
     display: grid;
@@ -219,8 +241,19 @@ const ITEM_STYLES = `
     border-radius: var(--radius-xs);
 }
 
+/*
+ * The in-app "Reduce motion" setting.
+ *
+ * The document's own "[data-reduce-motion="true"] *" rule cannot pierce the
+ * shadow boundary, so the component mirrors the preference onto its host
+ * and stops the spinner itself.
+ */
+:host([data-reduced-motion]) .state svg[data-spin="true"] { animation: none; }
+:host([data-reduced-motion]) .row { transition: none; }
+
 @media (prefers-reduced-motion: reduce) {
     .state svg[data-spin="true"] { animation: none; }
+    .row { transition: none; }
 }
 `;
 
@@ -250,6 +283,11 @@ export class KList extends KComponent {
             this.viewport = document.createElement("div");
             this.viewport.className = "viewport";
             this.viewport.setAttribute("role", "list");
+            // The viewport is the list's one and only tab stop. The rows are
+            // focused programmatically as the user arrows through them, so
+            // they are never in the tab order themselves — a roving
+            // tabindex over a virtualised window would lose the tab stop
+            // whenever the focused row was scrolled out of the window.
             this.viewport.tabIndex = 0;
 
             this.spacer = document.createElement("div");
@@ -287,7 +325,8 @@ export class KList extends KComponent {
         const item = this.#items.find((entry) => entry.id === id);
         if (!item) return;
         item.icon = STATE_ICONS[state];
-        item.accessibleName = `${item.title}, ${STATE_LABELS[state]}`;
+        item.state = state;
+        item.accessibleName = `${item.title}, ${stateLabel(state)}`;
         this.#renderRows();
     }
 
@@ -337,14 +376,16 @@ export class KList extends KComponent {
         row.className = "row";
         row.setAttribute("role", "listitem");
         row.dataset.selected = String(item.selected ?? false);
-        row.dataset.state = "idle";
+        row.dataset.state =
+            item.state ?? (item.icon ? ICON_STATES.get(item.icon) : undefined) ?? "idle";
         row.dataset.index = String(index);
         row.style.position = "absolute";
         row.style.top = `${index * this.#rowHeight}px`;
         row.style.left = "0";
         row.style.right = "0";
-        // The roving tabindex: exactly one row is tabbable.
-        row.tabIndex = index === this.#focusIndex ? 0 : -1;
+        // The rows are not tab stops: the viewport is. They are still
+        // focusable, so that the arrow keys can move the focus onto them.
+        row.tabIndex = -1;
 
         const checkbox = document.createElement("span");
         checkbox.className = "check";
@@ -378,11 +419,11 @@ export class KList extends KComponent {
         row.addEventListener("click", () => {
             this.#focusIndex = index;
             this.toggleSelection(item.id);
-            this.#updateTabIndex();
+            this.#clampFocusIndex();
         });
         row.addEventListener("focus", () => {
             this.#focusIndex = index;
-            this.#updateTabIndex();
+            this.#clampFocusIndex();
         });
         row.addEventListener("dblclick", () => {
             this.emit("k-edit", { id: item.id, index });
@@ -391,13 +432,15 @@ export class KList extends KComponent {
         return row;
     }
 
-    /** Update the roving tabindex. */
-    #updateTabIndex(): void {
-        if (!this.rows) return;
-        for (const row of Array.from(this.rows.children)) {
-            const index = Number((row as HTMLElement).dataset.index);
-            (row as HTMLElement).tabIndex = index === this.#focusIndex ? 0 : -1;
-        }
+    /**
+     * Keep the tracked focus index within the list.
+     *
+     * The rows are not in the tab order, so there is no roving tabindex to
+     * update; the viewport is the list's one and only tab stop. The method
+     * only keeps the tracked index in step with the list.
+     */
+    #clampFocusIndex(): void {
+        this.#focusIndex = Math.min(this.#focusIndex, Math.max(0, this.#items.length - 1));
     }
 
     /** Handle the keyboard. */
@@ -450,11 +493,35 @@ export class KList extends KComponent {
         else if (bottom > viewBottom) this.viewport.scrollTop = bottom - this.viewport.clientHeight;
     }
 
-    /** Move DOM focus to a row. */
+    /**
+     * Move DOM focus to a row.
+     *
+     * The rows are a virtualised window, so the row for an index is not
+     * necessarily in the DOM: the window is found by the index the row
+     * carries, not by the row's position among its siblings. If the row is
+     * outside the window, the window is moved to it first — otherwise the
+     * focus would land on whatever row happened to be at that position, or on
+     * nothing at all.
+     */
     #focusRow(index: number): void {
-        if (!this.rows) return;
-        const row = this.rows.children[index] as HTMLElement | undefined;
+        if (!this.rows || !this.viewport) return;
+
+        let row = this.#rowAt(index);
+        if (!row) {
+            // The row is outside the rendered window. Scroll to it and
+            // render the window around it.
+            this.#scrollToIndex(index);
+            this.#startIndex = index;
+            this.#renderRows();
+            row = this.#rowAt(index);
+        }
         row?.focus();
+    }
+
+    /** The rendered row for an index, if it is in the DOM. */
+    #rowAt(index: number): HTMLElement | undefined {
+        if (!this.rows) return undefined;
+        return this.rows.querySelector<HTMLElement>(`[data-index="${index}"]`) ?? undefined;
     }
 
     /** Handle scrolling. */
@@ -470,19 +537,8 @@ export class KList extends KComponent {
 
 defineComponent("k-list", KList);
 
-export class KListItem extends KComponent {
-    static override styles = ITEM_STYLES;
-
-    protected override render(): void {
-        // The item is rendered by the list, which owns the virtualisation.
-    }
-}
-
-defineComponent("k-list-item", KListItem);
-
 declare global {
     interface HTMLElementTagNameMap {
         "k-list": KList;
-        "k-list-item": KListItem;
     }
 }
