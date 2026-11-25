@@ -61,13 +61,66 @@ export interface DnrCondition {
 }
 
 /**
+ * The domain a declarative network request rule must name to be scoped to
+ * this extension's own requests.
+ *
+ * Firefox validates every `initiatorDomains` entry as a *canonical domain*:
+ * the value has to be exactly what `new URL("http://" + value).hostname`
+ * produces. The extension's add-on ID is **not** such a value — this project's
+ * ID is `kintsugi@localhost`, and `new URL("http://kintsugi@localhost")` is
+ * `localhost`, not `kintsugi@localhost`. Firefox rejects the rule outright:
+ *
+ *     Invalid domain kintsugi@localhost
+ *
+ * The value that *is* a canonical domain, and the one Firefox actually
+ * derives the initiator from, is the host of the extension's own origin: the
+ * per-profile UUID in `moz-extension://<uuid>/`. On Chromium the same
+ * expression yields the extension ID, which is the initiator there too — so
+ * one expression is correct on both.
+ *
+ * @returns The host, or an empty string when it cannot be determined.
+ */
+export function initiatorDomain(): string {
+    try {
+        const api = globalThis as unknown as {
+            browser?: { runtime?: { getURL?(path: string): string } };
+            chrome?: { runtime?: { getURL?(path: string): string } };
+        };
+        const getURL = api.browser?.runtime?.getURL ?? api.chrome?.runtime?.getURL;
+        if (!getURL) return "";
+        const host = new URL(getURL("")).hostname;
+        return host;
+    } catch {
+        return "";
+    }
+}
+
+/**
+ * A rule condition scoped to this extension's own requests.
+ *
+ * The `initiatorDomains` key is **omitted** rather than set to an empty array
+ * when the domain cannot be determined: Firefox's schema requires at least
+ * one entry, so an empty array is rejected just as firmly as a bad one. A rule
+ * with no initiator condition would match every request in the browser, so it
+ * is not installed at all in that case — an unscoped rule would be worse than
+ * no rule.
+ *
+ * @param resourceTypes The resource types the rule applies to.
+ * @returns The condition.
+ */
+function scopedCondition(resourceTypes: string[]): DnrCondition {
+    const domain = initiatorDomain();
+    return domain ? { initiatorDomains: [domain], resourceTypes } : { resourceTypes };
+}
+
+/**
  * The static rule that strips the extension's own `Origin` header.
  *
- * The condition `initiatorDomains: [EXTENSION_ID]` means the rule applies
- * only to requests the extension itself originates — exactly the baseline's
- * intent, with a fraction of the permission.
+ * The condition names this extension's own origin as the initiator, so the
+ * rule applies only to requests the extension itself originates — exactly the
+ * baseline's intent, with a fraction of the permission.
  */
-export function createOriginStripRule(extensionId: string): DnrRule {
+export function createOriginStripRule(): DnrRule {
     return {
         id: ORIGIN_STRIP_RULE_ID,
         priority: 1,
@@ -75,10 +128,7 @@ export function createOriginStripRule(extensionId: string): DnrRule {
             type: "modifyHeaders",
             requestHeaders: [{ header: "Origin", operation: "remove" }],
         },
-        condition: {
-            initiatorDomains: [extensionId],
-            resourceTypes: ["xmlhttprequest"],
-        },
+        condition: scopedCondition(["xmlhttprequest"]),
     };
 }
 
@@ -113,8 +163,7 @@ export function createSpoofRule(
             ],
         },
         condition: {
-            initiatorDomains: [],
-            resourceTypes: ["xmlhttprequest"],
+            ...scopedCondition(["xmlhttprequest"]),
             ...(options.requestDomains ? { requestDomains: options.requestDomains } : {}),
         },
     };
@@ -131,19 +180,21 @@ export function createSpoofRule(
  * so it can only ever affect requests this extension originates.
  *
  * The rule is installed as a *dynamic* rule rather than a static one because
- * its condition depends on the extension's own ID, which is only known at
+ * its condition depends on the extension's own origin, which is only known at
  * runtime. It is reinstalled on every worker start, because a dynamic rule
  * does not survive the worker being torn down.
  *
  * @param api The browser's DNR API.
- * @param extensionId The extension's own ID.
  * @returns Whether the rule was installed.
  */
-export async function installOriginStripRule(
-    api: DnrApi | undefined,
-    extensionId: string,
-): Promise<boolean> {
-    if (!api || !extensionId) return false;
+export async function installOriginStripRule(api: DnrApi | undefined): Promise<boolean> {
+    if (!api) return false;
+
+    // A rule with no initiator condition would match every request in the
+    // browser, which is exactly the broad grant the baseline's `webRequest`
+    // permission gave. Without a known origin there is no safe way to scope
+    // it, so no rule is installed.
+    if (!initiatorDomain()) return false;
 
     try {
         // The rule may already be installed from a previous worker start, so
@@ -153,7 +204,7 @@ export async function installOriginStripRule(
         const existing = await api.getDynamicRules();
         await api.updateDynamicRules({
             removeRuleIds: existing.map((rule) => rule.id),
-            addRules: [createOriginStripRule(extensionId)],
+            addRules: [createOriginStripRule()],
         });
         return true;
     } catch {

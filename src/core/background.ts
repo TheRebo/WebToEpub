@@ -152,10 +152,7 @@ class BackgroundWorker {
         // The origin-stripping rule replaces the baseline's `webRequest`
         // listener. It is reinstalled on every worker start, because a
         // dynamic rule does not survive the worker being torn down.
-        await installOriginStripRule(
-            getNamespace()?.declarativeNetRequest,
-            getNamespace()?.runtime.id ?? "",
-        );
+        await installOriginStripRule(getNamespace()?.declarativeNetRequest);
 
         handleRequests(
             { onMessage },

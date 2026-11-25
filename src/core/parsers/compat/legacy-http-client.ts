@@ -946,26 +946,33 @@ function dnrApi(): DnrSessionApi | undefined {
 }
 
 /**
- * The extension's own ID.
+ * The extension's own origin host, for scoping a declarative network request
+ * rule.
  *
- * The legacy client derived it from the extension's URL. The DNR rules are
- * scoped to it, so that the extension can only ever modify the headers of
- * the requests it makes itself.
+ * Firefox validates `initiatorDomains` entries as canonical domains, and the
+ * extension's add-on ID is not one: this project's ID is `kintsugi@localhost`,
+ * and `new URL("http://kintsugi@localhost").hostname` is `localhost`, so
+ * Firefox rejects the rule with `Invalid domain kintsugi@localhost`.
+ *
+ * The host of the extension's own origin — the per-profile UUID in
+ * `moz-extension://<uuid>/` — is a canonical domain, and is the value Firefox
+ * actually derives the initiator from. On Chromium the same expression yields
+ * the extension ID, which is the initiator there too.
+ *
+ * @returns The host, or an empty string when it cannot be determined.
  */
-function extensionId(): string {
-    if (typeof browser !== "undefined") {
-        if (browser.runtime.id) return browser.runtime.id;
-
-        const parts = browser.runtime
-            .getURL("")
-            .split("/")
-            .filter((part) => part !== "");
-        const last = parts[parts.length - 1];
-        if (last) return last;
+function initiatorHost(): string {
+    try {
+        const api = globalThis as unknown as {
+            browser?: { runtime?: { getURL?(path: string): string } };
+            chrome?: { runtime?: { getURL?(path: string): string } };
+        };
+        const getURL = api.browser?.runtime?.getURL ?? api.chrome?.runtime?.getURL;
+        if (!getURL) return "";
+        return new URL(getURL("")).hostname;
+    } catch {
+        return "";
     }
-
-    const global = globalThis as unknown as { chrome?: { runtime?: { id?: string } } };
-    return global.chrome?.runtime?.id ?? "";
 }
 
 /**
@@ -982,17 +989,27 @@ async function setDeclarativeNetRequestRules(rules: LegacyDnrRule[]): Promise<vo
         return;
     }
 
-    const id = extensionId();
+    const host = initiatorHost();
     const prepared = rules.map((rule) => ({
         ...rule,
         priority: rule.priority ?? 1,
         condition: {
             ...rule.condition,
             // Scope the rule to this extension, so it can only ever affect
-            // the extension's own requests.
-            initiatorDomains: id ? [id] : [],
+            // the extension's own requests. The key is omitted rather than
+            // set to an empty array when the origin is unknown: Firefox's
+            // schema requires at least one entry, and a rule with no
+            // initiator condition would match every request in the browser.
+            ...(host ? { initiatorDomains: [host] } : {}),
         },
     }));
+
+    if (!host) {
+        console.warn(
+            "HttpClient: the extension's origin is unknown, so the request rules cannot be scoped to it. They will not be installed.",
+        );
+        return;
+    }
 
     let oldRules: Array<{ id: number }> = [];
     try {
