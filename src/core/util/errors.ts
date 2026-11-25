@@ -73,6 +73,32 @@ function hostOf(url: string | undefined): string | null {
     }
 }
 
+/**
+ * A URL with its query string and fragment removed.
+ *
+ * A URL that reaches the UI travels over the message bus, and a site's query
+ * string can carry a session token, a signature, or an identifier for the
+ * account that is signed in. None of that helps the user read the error, and
+ * all of it is a secret that has no business being written into a log or
+ * copied out of the error panel.
+ *
+ * The path is kept: it is what tells the user which page failed.
+ */
+export function redactUrl(url: string | undefined): string | undefined {
+    if (!url) return undefined;
+    try {
+        const parsed = new URL(url);
+        parsed.search = "";
+        parsed.hash = "";
+        return parsed.toString();
+    } catch {
+        // A URL that will not parse is not worth showing, and passing it
+        // through unchanged risks leaking a query string that a parser would
+        // have stripped.
+        return undefined;
+    }
+}
+
 /** A sentence describing the failure, with the site named where possible. */
 function describe(context: ErrorContext): {
     message: string;
@@ -169,7 +195,10 @@ export function toUserFacingError(error: unknown, context: ErrorContext = {}): U
         message: described.message,
         code: described.code,
     };
-    if (context.url) result.url = context.url;
+    // The URL is redacted: its query string can carry a session token, and the
+    // error travels over the message bus to the extension's own pages.
+    const safeUrl = redactUrl(context.url);
+    if (safeUrl) result.url = safeUrl;
     if (described.actions) result.actions = described.actions;
     if (error instanceof Error && error.message) {
         result.detail = `${error.name}: ${error.message}`;
@@ -214,7 +243,8 @@ export class UserFacingErrorError extends Error {
     toUserFacingError(): UserFacingError {
         const result: UserFacingError = { message: this.message, code: this.code };
         if (this.actions) result.actions = this.actions;
-        if (this.url) result.url = this.url;
+        const safeUrl = redactUrl(this.url);
+        if (safeUrl) result.url = safeUrl;
         return result;
     }
 }
