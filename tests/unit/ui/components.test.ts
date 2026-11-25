@@ -238,6 +238,105 @@ describe("k-list", () => {
         });
     });
 
+    describe("the list's accessibility", () => {
+        it("gives the list the host's own label", () => {
+            const list = document.createElement("k-list");
+            list.setAttribute("aria-label", "Chapters");
+            document.body.appendChild(list);
+
+            const viewport = shadow(list).querySelector(".viewport");
+            expect(viewport?.getAttribute("aria-label")).toBe("Chapters");
+        });
+
+        it("does not leave the scaffolding between the list and its items", () => {
+            const list = buildList(10);
+            const viewport = shadow(list).querySelector(".viewport");
+            const spacer = shadow(list).querySelector(".spacer");
+            const rows = shadow(list).querySelector(".rows");
+
+            // A `listitem` that is not a child of the `list` is owned by
+            // nothing, and a screen reader announces the list as empty.
+            expect(viewport?.getAttribute("role")).toBe("list");
+            expect(spacer?.getAttribute("role")).toBe("presentation");
+            expect(rows?.getAttribute("role")).toBe("presentation");
+        });
+
+        it("tells the screen reader how big the whole list is", () => {
+            const list = buildList(5000);
+            const row = shadow(list).querySelector(".row");
+
+            // The list is virtualised, so the rows in the DOM are only a
+            // window of the whole.
+            expect(row?.getAttribute("aria-setsize")).toBe("5000");
+            expect(row?.getAttribute("aria-posinset")).toBe("1");
+        });
+    });
+
+    describe("the list's scroll window", () => {
+        it("renders rows again after the list is filtered down", () => {
+            const list = buildList(5000);
+
+            const viewport = shadow(list).querySelector(".viewport") as HTMLElement;
+            // Scroll a long way down, as the user would after reading.
+            viewport.scrollTop = 4000 * 32;
+            viewport.dispatchEvent(new Event("scroll"));
+
+            // Now the list is filtered down to three chapters.
+            (list as unknown as { setItems(items: unknown[]): void }).setItems([
+                { id: "a", title: "A" },
+                { id: "b", title: "B" },
+                { id: "c", title: "C" },
+            ]);
+
+            // The list must not be blank: it was scrolled past the end of
+            // the new list, and the virtualiser would have rendered nothing.
+            const rows = shadow(list).querySelectorAll(".row");
+            expect(rows.length).toBeGreaterThan(0);
+            expect(rows.length).toBeLessThanOrEqual(3);
+        });
+
+        it("moves the scroll position back to the top when the list changes", () => {
+            const list = buildList(5000);
+
+            const viewport = shadow(list).querySelector(".viewport") as HTMLElement;
+            viewport.scrollTop = 4000 * 32;
+            viewport.dispatchEvent(new Event("scroll"));
+
+            (list as unknown as { setItems(items: unknown[]): void }).setItems([
+                { id: "a", title: "A" },
+            ]);
+
+            expect(viewport.scrollTop).toBe(0);
+        });
+    });
+
+    describe("the list's focus", () => {
+        it("keeps the focus on the row when the list re-renders", () => {
+            const list = buildList(500);
+
+            const viewport = shadow(list).querySelector(".viewport") as HTMLElement;
+            viewport.focus();
+            viewport.dispatchEvent(
+                new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+            );
+
+            const before = shadow(list).activeElement as HTMLElement | null;
+            expect(before?.dataset["index"]).toBe("1");
+
+            // The list re-renders — a state change, say. The focused row is
+            // rebuilt, so the focus has to be put back on it, or it falls to
+            // the document and the list loses its tab stop.
+            (list as unknown as { setState(id: string, state: string): void }).setState(
+                "chapter-1",
+                "loaded",
+            );
+
+            const after = shadow(list).activeElement as HTMLElement | null;
+            expect(after).not.toBeNull();
+            expect(after?.dataset["index"]).toBe("1");
+        });
+    });
+
     describe("M4 — the row state", () => {
         it("threads the item's state through to the row", () => {
             const list = document.createElement("k-list");

@@ -92,6 +92,18 @@ export function stateLabel(state: ListItemState): string {
     }
 }
 
+/**
+ * The spacer's vertical margin, in pixels.
+ *
+ * The stylesheet gives the spacer a margin so the first and last row have
+ * some breathing room. The virtualiser has to know how much, because the
+ * margin is not part of the spacer's height — the scroll range is the rows'
+ * height *plus* the margin on each side.
+ *
+ * The value must match `--space-2` in the design tokens.
+ */
+const SPACER_MARGIN = 8;
+
 const LIST_STYLES = `
 :host {
     display: block;
@@ -263,6 +275,15 @@ export class KList extends KComponent {
 
     /** The items. */
     #items: ListItemData[] = [];
+    /**
+     * The items, indexed by their identifier.
+     *
+     * A book's chapter list can hold five thousand entries. Looking one up
+     * with `Array.find` on every state change and every click is a linear
+     * scan, and the download updates the state of every chapter as it goes
+     * — five thousand scans of five thousand entries.
+     */
+    #byId = new Map<string, ListItemData>();
     /** The index of the focused row. */
     #focusIndex = 0;
     /** The index of the first visible row. */
@@ -292,9 +313,15 @@ export class KList extends KComponent {
 
             this.spacer = document.createElement("div");
             this.spacer.className = "spacer";
+            // The spacer and the rows container are layout scaffolding, not
+            // part of the list. Without this, a screen reader would find
+            // `listitem` elements that are not children of the `list`, and
+            // the list would own nothing.
+            this.spacer.setAttribute("role", "presentation");
 
             this.rows = document.createElement("div");
             this.rows.className = "rows";
+            this.rows.setAttribute("role", "presentation");
 
             this.spacer.appendChild(this.rows);
             this.viewport.appendChild(this.spacer);
@@ -306,12 +333,34 @@ export class KList extends KComponent {
 
         this.#rowHeight = Number(this.getAttribute("row-height") ?? 32);
         this.#overscan = Number(this.getAttribute("overscan") ?? 6);
+
+        // The label has to reach the element that carries `role="list"`, or
+        // the list is unnamed and a screen reader announces a bare list with
+        // no context.
+        const label = this.getAttribute("aria-label");
+        if (label) this.viewport.setAttribute("aria-label", label);
+        else this.viewport.removeAttribute("aria-label");
+
+        // The row height may have changed, which moves every row and changes
+        // the scroll range. The rows are laid out again.
+        if (this.rows) this.#renderRows();
     }
 
     /** Set the items and re-render. */
     setItems(items: ListItemData[]): void {
         this.#items = items;
+        this.#byId = new Map(items.map((item) => [item.id, item]));
         this.#focusIndex = Math.min(this.#focusIndex, Math.max(0, items.length - 1));
+
+        // The scroll window is reset. The list may have been scrolled a long
+        // way down — the user had read to chapter four thousand — and the
+        // new list may be three chapters long. Without the reset the
+        // virtualiser would look for rows from index three thousand nine
+        // hundred and render nothing at all: an empty list, with no error
+        // and no way for the user to tell what had happened.
+        this.#startIndex = 0;
+        if (this.viewport) this.viewport.scrollTop = 0;
+
         this.#renderRows();
     }
 
@@ -322,7 +371,7 @@ export class KList extends KComponent {
 
     /** The state of a row, for the accessible name. */
     setState(id: string, state: ListItemState): void {
-        const item = this.#items.find((entry) => entry.id === id);
+        const item = this.#byId.get(id);
         if (!item) return;
         item.icon = STATE_ICONS[state];
         item.state = state;
@@ -332,7 +381,7 @@ export class KList extends KComponent {
 
     /** Toggle an item's selection. */
     toggleSelection(id: string): void {
-        const item = this.#items.find((entry) => entry.id === id);
+        const item = this.#byId.get(id);
         if (!item) return;
         item.selected = !item.selected;
         this.#renderRows();
@@ -356,18 +405,46 @@ export class KList extends KComponent {
         if (!this.rows || !this.spacer || !this.viewport) return;
 
         const total = this.#items.length;
-        this.spacer.style.height = `${total * this.#rowHeight}px`;
+        // The spacer carries a margin, so the scroll range is the rows'
+        // height *plus* the margin. The comment in the stylesheet says the
+        // virtualiser adds the same offset; this is where it does it.
+        this.spacer.style.height = `${total * this.#rowHeight + SPACER_MARGIN * 2}px`;
 
         const viewportHeight = this.viewport.clientHeight || 400;
         const visible = Math.ceil(viewportHeight / this.#rowHeight);
         const start = Math.max(0, this.#startIndex - this.#overscan);
         const end = Math.min(total, this.#startIndex + visible + this.#overscan);
 
+        // The rows are rebuilt from scratch, which destroys the focused row.
+        // The focus is put back afterwards, or it would fall to the document
+        // and the list would lose its single tab stop.
+        const focused = this.#focusedIndex();
+
         const fragment = document.createDocumentFragment();
         for (let index = start; index < end; index += 1) {
             fragment.appendChild(this.#createRow(this.#items[index] as ListItemData, index));
         }
         this.rows.replaceChildren(fragment);
+
+        if (focused !== undefined) this.#focusRow(focused);
+    }
+
+    /**
+     * The index of the row that holds the focus.
+     *
+     * The rows live in the shadow root, so the focused row is the shadow
+     * root's `activeElement` — the document's `activeElement` is the host
+     * element itself.
+     *
+     * @returns The index, or `undefined` when the focus is not on a row.
+     */
+    #focusedIndex(): number | undefined {
+        if (!this.rows) return undefined;
+        const active = this.root.activeElement;
+        if (!(active instanceof HTMLElement)) return undefined;
+        if (!this.rows.contains(active)) return undefined;
+        const index = Number(active.dataset["index"]);
+        return Number.isInteger(index) ? index : undefined;
     }
 
     /** Create one row. */
@@ -375,6 +452,12 @@ export class KList extends KComponent {
         const row = document.createElement("div");
         row.className = "row";
         row.setAttribute("role", "listitem");
+        // The list is virtualised, so the rows in the DOM are only a window
+        // of the whole. `aria-setsize` and `aria-posinset` tell the screen
+        // reader how big the list really is and where this row sits in it,
+        // so "item 4 of 5,000" does not read as "item 4 of 20".
+        row.setAttribute("aria-setsize", String(this.#items.length));
+        row.setAttribute("aria-posinset", String(index + 1));
         row.dataset.selected = String(item.selected ?? false);
         row.dataset.state =
             item.state ?? (item.icon ? ICON_STATES.get(item.icon) : undefined) ?? "idle";
@@ -530,6 +613,10 @@ export class KList extends KComponent {
         const start = Math.floor(this.viewport.scrollTop / this.#rowHeight);
         if (start !== this.#startIndex) {
             this.#startIndex = start;
+            // The focused index follows the scroll. Without this, arrowing
+            // down after scrolling with the mouse jumped back to wherever
+            // the focus had last been — which could be far off screen.
+            this.#focusIndex = start;
             this.#renderRows();
         }
     };
