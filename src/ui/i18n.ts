@@ -86,6 +86,8 @@ export const MESSAGES = {
     popupWorkbenchShort: "popupWorkbenchShort",
     popupSettings: "popupSettings",
     popupNoStory: "popupNoStory",
+    popupWelcome: "popupWelcome",
+    popupGetStarted: "popupGetStarted",
     popupUnsupported: "popupUnsupported",
     popupSaved: "popupSaved",
     popupTryAgain: "popupTryAgain",

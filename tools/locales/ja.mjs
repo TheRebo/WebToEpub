@@ -83,6 +83,11 @@ export default {
     popupWorkbenchShort: ["ワークベンチ", "ポップアップのワークベンチボタンのラベル。"],
     popupSettings: ["設定", "ポップアップの設定ボタン。"],
     popupNoStory: ["このページに物語は検出されませんでした。", "ページが物語ではないときに表示。"],
+    popupWelcome: [
+        "Kintsugi へようこそ。最初の書籍を作る前に設定を整えましょう。",
+        "初回起動時、ガイドの前に表示。",
+    ],
+    popupGetStarted: ["はじめる", "ガイドを開くポップアップのボタン。"],
     popupUnsupported: [
         "このサイトはまだ対応していません。",
         "パーサーが一致しなかったときに表示。",

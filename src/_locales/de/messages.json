@@ -283,6 +283,14 @@
     "message": "Auf dieser Seite wurde keine Story erkannt.",
     "description": "Wenn die Seite keine Story ist."
   },
+  "popupWelcome": {
+    "message": "Willkommen bei Kintsugi. Richten wir alles ein, bevor Sie Ihr erstes Buch machen.",
+    "description": "Beim ersten Start, vor der Einführung."
+  },
+  "popupGetStarted": {
+    "message": "Los geht’s",
+    "description": "Die Schaltfläche des Popups, die die Einführung öffnet."
+  },
   "popupUnsupported": {
     "message": "Diese Seite wird noch nicht unterstützt.",
     "description": "Wenn kein Parser passt."

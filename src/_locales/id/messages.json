@@ -283,6 +283,14 @@
     "message": "Tidak ada cerita terdeteksi di halaman ini.",
     "description": "Ditampilkan saat halaman ini bukan cerita."
   },
+  "popupWelcome": {
+    "message": "Selamat datang di Kintsugi. Mari siapkan semuanya sebelum buku pertama Anda.",
+    "description": "Ditampilkan pada penggunaan pertama, sebelum panduan."
+  },
+  "popupGetStarted": {
+    "message": "Mulai",
+    "description": "Tombol popup yang membuka panduan."
+  },
   "popupUnsupported": {
     "message": "Situs ini belum didukung.",
     "description": "Ditampilkan saat tidak ada parser yang cocok."

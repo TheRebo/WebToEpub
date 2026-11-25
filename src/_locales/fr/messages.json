@@ -283,6 +283,14 @@
     "message": "Aucune histoire détectée sur cette page.",
     "description": "Quand la page n'est pas une histoire."
   },
+  "popupWelcome": {
+    "message": "Bienvenue dans Kintsugi. Configurons tout avant votre premier livre.",
+    "description": "À la première ouverture, avant la présentation."
+  },
+  "popupGetStarted": {
+    "message": "Commencer",
+    "description": "Le bouton du popup qui ouvre la présentation."
+  },
   "popupUnsupported": {
     "message": "Ce site n'est pas encore pris en charge.",
     "description": "Quand aucun analyseur ne correspond."

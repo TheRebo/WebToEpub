@@ -11,7 +11,14 @@ import { createIcon } from "../../components/icons";
 import { t } from "../../i18n";
 
 /** The states the popup can be in. */
-export type PopupState = "loading" | "story" | "no-story" | "unsupported" | "running" | "error";
+export type PopupState =
+    | "loading"
+    | "welcome"
+    | "story"
+    | "no-story"
+    | "unsupported"
+    | "running"
+    | "error";
 
 /** What the popup shows. */
 export interface PopupViewState {
@@ -267,14 +274,17 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
             : "";
 
     // --- The empty state ---
-    const showEmpty = state.state === "no-story" || state.state === "unsupported";
+    const showEmpty =
+        state.state === "no-story" || state.state === "unsupported" || state.state === "welcome";
     elements.empty.hidden = !showEmpty;
     const emptyText = elements.empty.querySelector(".popup-empty-text");
     if (emptyText) {
         emptyText.textContent =
             state.state === "unsupported"
                 ? t("popupUnsupportedHost", state.hostName)
-                : t("popupNoStory");
+                : state.state === "welcome"
+                  ? t("popupWelcome")
+                  : t("popupNoStory");
     }
 
     // --- The progress strip ---
@@ -294,6 +304,12 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
         elements.primary.setAttribute("variant", "primary");
         elements.primary.textContent = t("popupTryAgain");
         elements.primary.dataset["action"] = "retry";
+    } else if (state.state === "welcome") {
+        // The first run gets its own button: the point of the welcome state
+        // is to show the user the way in, not to make them guess.
+        elements.primary.setAttribute("variant", "primary");
+        elements.primary.textContent = t("popupGetStarted");
+        elements.primary.dataset["action"] = "onboarding";
     } else if (state.state === "unsupported" || state.state === "no-story") {
         elements.primary.setAttribute("variant", "secondary");
         elements.primary.textContent = t("workbenchTryAnyway");
@@ -308,6 +324,11 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
     elements.actions.hidden = state.state === "loading";
     const library = elements.actions.querySelector<HTMLElement>('[data-action="library"]');
     const workbench = elements.actions.querySelector<HTMLElement>('[data-action="workbench"]');
-    if (library) library.hidden = state.state === "no-story" || state.state === "unsupported";
+    if (library) {
+        library.hidden =
+            state.state === "no-story" ||
+            state.state === "unsupported" ||
+            state.state === "welcome";
+    }
     if (workbench) workbench.hidden = false;
 }

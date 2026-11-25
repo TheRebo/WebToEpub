@@ -93,6 +93,11 @@ export default {
         "Aucune histoire détectée sur cette page.",
         "Quand la page n'est pas une histoire.",
     ],
+    popupWelcome: [
+        "Bienvenue dans Kintsugi. Configurons tout avant votre premier livre.",
+        "À la première ouverture, avant la présentation.",
+    ],
+    popupGetStarted: ["Commencer", "Le bouton du popup qui ouvre la présentation."],
     popupUnsupported: [
         "Ce site n'est pas encore pris en charge.",
         "Quand aucun analyseur ne correspond.",

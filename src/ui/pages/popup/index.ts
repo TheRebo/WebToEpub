@@ -75,6 +75,15 @@ class PopupController {
         // event loop alive after the window is gone.
         window.addEventListener("unload", () => this.#stopPolling());
 
+        // A user who has not been through the onboarding yet gets the welcome
+        // state, whatever page they are on. Introducing the extension before
+        // asking it to do anything is the difference between a tool and a
+        // puzzle.
+        if (!settings.onboardingComplete) {
+            this.#set({ state: "welcome" });
+            return;
+        }
+
         // A running download is the most valuable thing the popup can show,
         // so it is checked first: it needs no network at all.
         await this.#checkRunningJob();
@@ -252,6 +261,11 @@ class PopupController {
             }
             case "settings": {
                 await openTab(getURL("options.html"));
+                window.close();
+                return;
+            }
+            case "onboarding": {
+                await openTab(getURL("onboarding.html"));
                 window.close();
                 return;
             }

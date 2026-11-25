@@ -283,6 +283,14 @@
     "message": "No story detected on this page.",
     "description": "Shown when the page is not a story."
   },
+  "popupWelcome": {
+    "message": "Welcome to Kintsugi. Let’s set things up before your first book.",
+    "description": "Shown on the first run, before the onboarding."
+  },
+  "popupGetStarted": {
+    "message": "Get started",
+    "description": "The popup's button that opens the onboarding."
+  },
   "popupUnsupported": {
     "message": "This site is not supported yet.",
     "description": "Shown when no parser matched."

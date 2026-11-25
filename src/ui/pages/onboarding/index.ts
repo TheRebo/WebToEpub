@@ -16,7 +16,7 @@ import "../../components/k-skeleton";
 import "../../components/k-switch";
 import "../../components/k-toast";
 
-import { localStorageAdapter } from "../../../core/browser-api";
+import { localStorageAdapter, getURL } from "../../../core/browser-api";
 import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
 import { installI18n } from "../../i18n-bootstrap";
@@ -34,6 +34,13 @@ async function main(): Promise<void> {
             update: (partial: Partial<Settings>) => store.update(partial),
         },
         theme: themeController,
+        // The onboarding is opened in a tab, so it cannot close itself the way
+        // a popup can. It hands over to the workbench instead: the user has
+        // just finished setting things up, and the next thing they want is
+        // the tool itself.
+        close: () => {
+            window.location.href = getURL("workbench.html");
+        },
     });
 
     await controller.start();

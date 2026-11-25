@@ -283,6 +283,14 @@
     "message": "このページに物語は検出されませんでした。",
     "description": "ページが物語ではないときに表示。"
   },
+  "popupWelcome": {
+    "message": "Kintsugi へようこそ。最初の書籍を作る前に設定を整えましょう。",
+    "description": "初回起動時、ガイドの前に表示。"
+  },
+  "popupGetStarted": {
+    "message": "はじめる",
+    "description": "ガイドを開くポップアップのボタン。"
+  },
   "popupUnsupported": {
     "message": "このサイトはまだ対応していません。",
     "description": "パーサーが一致しなかったときに表示。"
