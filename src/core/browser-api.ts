@@ -232,6 +232,10 @@ export async function openTab(url: string, active = true): Promise<void> {
  *
  * `browser.storage.local` is the only place settings live; the library's EPUB
  * bytes go to IndexedDB instead.
+ *
+ * A write throws when the storage API is unavailable. Silently resolving
+ * would tell the caller the setting was saved when it was not, and the user
+ * would find their choice reverted the next time the extension started.
  */
 export const localStorageAdapter = {
     async get(keys: string | string[] | null): Promise<Record<string, unknown>> {
@@ -241,12 +245,16 @@ export const localStorageAdapter = {
     },
     async set(items: Record<string, unknown>): Promise<void> {
         const api = getNamespace();
-        if (!api) return;
+        if (!api) {
+            throw new Error("The extension storage is not available.");
+        }
         await api.storage.local.set(items);
     },
     async remove(keys: string | string[]): Promise<void> {
         const api = getNamespace();
-        if (!api) return;
+        if (!api) {
+            throw new Error("The extension storage is not available.");
+        }
         await api.storage.local.remove(keys);
     },
 };
@@ -263,12 +271,16 @@ export const sessionStorageAdapter = {
     },
     async set(items: Record<string, unknown>): Promise<void> {
         const api = getNamespace();
-        if (!api?.storage.session) return;
+        if (!api?.storage.session) {
+            throw new Error("The extension session storage is not available.");
+        }
         await api.storage.session.set(items);
     },
     async remove(keys: string | string[]): Promise<void> {
         const api = getNamespace();
-        if (!api?.storage.session) return;
+        if (!api?.storage.session) {
+            throw new Error("The extension session storage is not available.");
+        }
         await api.storage.session.remove(keys);
     },
 };
