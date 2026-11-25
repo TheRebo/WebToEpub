@@ -85,11 +85,69 @@ const ALLOWED_ATTRIBUTES = [
 ];
 
 /**
- * Hook that strips `javascript:` and `data:` URLs from `href` and `src`.
+ * The `data:` media types that are safe to keep in an image's `src`.
+ *
+ * A `data:` URL carries its payload inline, so there is no network fetch and
+ * no origin to check. The payload still has to be inert, though: an SVG is a
+ * document, and an SVG document can carry a script. Everything else —
+ * `text/html`, `application/xhtml+xml`, `image/svg+xml`, and any type that is
+ * not on this list — is refused.
+ *
+ * The raster types are here because a chapter sometimes embeds a small
+ * placeholder or an inline icon this way, and dropping the reference outright
+ * would leave a broken image behind.
+ */
+const ALLOWED_DATA_MEDIA_TYPES = new Set([
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/gif",
+    "image/webp",
+    "image/avif",
+    "image/bmp",
+]);
+
+/**
+ * The media type of a `data:` URL.
+ *
+ * A `data:` URL is `data:<media type>[;base64],<payload>`. The media type is
+ * optional and defaults to `text/plain`, and the parameters — `charset`, and
+ * the `base64` flag — come before the comma.
+ *
+ * @param url The `data:` URL.
+ * @returns The lower-cased media type, or an empty string when it cannot be
+ *   read.
+ */
+function dataUrlMediaType(url: string): string {
+    const comma = url.indexOf(",");
+    const header = comma === -1 ? url.slice("data:".length) : url.slice("data:".length, comma);
+    const mediaType = header.split(";")[0]?.trim().toLowerCase() ?? "";
+    return mediaType;
+}
+
+/**
+ * Whether a URL is a `data:` URL that may be kept.
+ *
+ * @param value The URL.
+ * @returns Whether the URL is a `data:` URL with an allowed media type.
+ */
+function isAllowedDataUrl(value: string): boolean {
+    if (!value.startsWith("data:")) return false;
+    return ALLOWED_DATA_MEDIA_TYPES.has(dataUrlMediaType(value));
+}
+
+/**
+ * Hook that strips dangerous URLs from `href` and `src`.
  *
  * DOMPurify removes most dangerous URLs on its own, but the allow-list
  * approach here means a URL that somehow survives the tag filter is still
  * checked.
+ *
+ * The `data:` case needs care. DOMPurify already refuses a `data:` URL in an
+ * `href`, but it lets one through in an `src` — and `data:image/svg+xml` is
+ * an SVG document, which can carry a script. The extension's own placeholder
+ * images are SVG, so SVG cannot simply be banned: instead only the inert
+ * raster types are allowed, and everything else is removed.
  */
 function sanitiseHook(_domPurify: typeof DOMPurify): void {
     DOMPurify.addHook("afterSanitizeAttributes", (node) => {
@@ -102,7 +160,7 @@ function sanitiseHook(_domPurify: typeof DOMPurify): void {
             if (
                 trimmed.startsWith("javascript:") ||
                 trimmed.startsWith("vbscript:") ||
-                trimmed.startsWith("data:text/html")
+                (trimmed.startsWith("data:") && !isAllowedDataUrl(trimmed))
             ) {
                 element.removeAttribute(attribute);
             }

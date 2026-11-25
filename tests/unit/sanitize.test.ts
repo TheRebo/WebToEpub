@@ -70,6 +70,48 @@ describe("sanitizeHtml", () => {
         const once = sanitizeHtml('<p class="x">Hello <em>world</em></p>');
         expect(sanitizeHtml(once)).toBe(once);
     });
+
+    it("removes a data: URL that can carry a document", () => {
+        // An SVG is a document, and an SVG document can carry a script. It is
+        // the one image type the extension builds itself, so it cannot simply
+        // be banned — but it must not survive in a chapter either.
+        const svg = sanitizeHtml(
+            "<img src=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' onload='alert(1)'/>\">",
+        );
+        expect(svg).not.toContain("data:image/svg+xml");
+        expect(svg).not.toContain("onload");
+    });
+
+    it("removes a base64 data: URL that can carry a document", () => {
+        const svg = sanitizeHtml(
+            '<img src="data:image/svg+xml;base64,PHN2ZyBvbmxvYWQ9YWxlcnQoMSk+">',
+        );
+        expect(svg).not.toContain("data:image/svg+xml");
+    });
+
+    it("removes a data: URL with a document media type", () => {
+        expect(sanitizeHtml('<img src="data:text/html,<script>x</script>">')).not.toContain(
+            "data:",
+        );
+        expect(sanitizeHtml('<img src="data:application/xhtml+xml,<html/>">')).not.toContain(
+            "data:",
+        );
+    });
+
+    it("removes a data: URL with no media type at all", () => {
+        // The default media type is `text/plain`, which is not an image, so
+        // the reference is dropped rather than left pointing at nothing.
+        expect(sanitizeHtml('<img src="data:,hello">')).not.toContain("data:");
+    });
+
+    it("keeps a data: URL for an inert raster image", () => {
+        const png = sanitizeHtml('<img src="data:image/png;base64,iVBORw0KGgo=">');
+        expect(png).toContain("data:image/png;base64,iVBORw0KGgo=");
+    });
+
+    it("removes a data: URL in an href", () => {
+        expect(sanitizeHtml('<a href="data:text/html,x">y</a>')).not.toContain("data:");
+    });
 });
 
 describe("sanitizeToFragment", () => {
