@@ -227,12 +227,21 @@ export class FetchClient {
 
                     const custom = this.#evaluateCustomError(url, response, text);
                     if (custom?.status === 999) {
-                        // The parser asked for an automatic retry.
+                        // The parser asked for an automatic retry. On the last
+                        // attempt there is nothing left to retry *into*, so
+                        // the request fails rather than returning a page the
+                        // parser has already said is broken.
                         if (attempt < policy.maxAttempts) {
                             await this.#environment.sleep(custom.retryDelay ?? policy.baseDelayMs);
                             continue;
                         }
-                    } else if (custom) {
+                        throw new FetchError(`Custom error for ${url}`, {
+                            status: 999,
+                            url,
+                            attempts: attempt,
+                        });
+                    }
+                    if (custom) {
                         throw new FetchError(`Custom error for ${url}`, {
                             status: custom.status,
                             url,
@@ -318,7 +327,21 @@ export class FetchClient {
                     const text = await response.text();
 
                     const custom = this.#evaluateCustomError(url, response, text);
-                    if (custom && custom.status !== 999) {
+                    if (custom?.status === 999) {
+                        // The parser asked for an automatic retry. The last
+                        // attempt has to fail, or the broken body would be
+                        // handed back as a successful response.
+                        if (attempt < policy.maxAttempts) {
+                            await this.#environment.sleep(custom.retryDelay ?? policy.baseDelayMs);
+                            continue;
+                        }
+                        throw new FetchError(`Custom error for ${url}`, {
+                            status: 999,
+                            url,
+                            attempts: attempt,
+                        });
+                    }
+                    if (custom) {
                         throw new FetchError(`Custom error for ${url}`, {
                             status: custom.status,
                             url,

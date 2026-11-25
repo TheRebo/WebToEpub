@@ -785,6 +785,16 @@ async function runLegacyFetch(
             if (error instanceof FetchError) {
                 const custom = bridge.customError;
                 const status = custom?.status ?? error.status;
+
+                // The fetch client's own retry budget ran out while the legacy
+                // delay list still has delays left. The legacy sequence
+                // continues here, so a parser that asked for thirty retries
+                // with an eighty-second wait still gets them.
+                if (status === 999 && bridge.hasPendingDelay()) {
+                    await util.sleep(bridge.takeDelay() ?? 0);
+                    continue;
+                }
+
                 if (status === 403 && !retried403) {
                     retried403 = true;
                     await util.sleep(1000);
