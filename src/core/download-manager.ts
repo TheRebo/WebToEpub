@@ -457,9 +457,20 @@ export class DownloadManager {
 
     /** Zip the EPUB's files. */
     async #zip(files: EpubFile[]): Promise<Uint8Array> {
-        const { ZipWriter, BlobWriter, TextReader, Uint8ArrayReader } = await import(
+        const { ZipWriter, BlobWriter, TextReader, Uint8ArrayReader, configure } = await import(
             "@zip.js/zip.js"
         );
+
+        // zip.js offloads compression to a web worker by default. Inside a
+        // bundled extension the worker is resolved relative to the bundle's
+        // own URL, which does not exist in the packaged add-on, so the worker
+        // fails to start and the write never completes — the job then hangs
+        // in its "saving" phase for ever, with no error and no file.
+        //
+        // The worker buys nothing here: a book is a few megabytes, and
+        // compressing it on the worker's own thread takes milliseconds.
+        configure({ useWebWorkers: false });
+
         const writer = new ZipWriter(new BlobWriter("application/epub+zip"));
         for (const file of files) {
             // The two content kinds need different readers: XML is text, and
