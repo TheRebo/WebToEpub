@@ -88,9 +88,12 @@ machine.
 1. **Origin stripping.** The baseline used the far broader `webRequest`
    permission to strip the `Origin: moz-extension://…` header from
    extension-originated requests, because some protected sites reject requests
-   carrying an extension origin. A static DNR rule expresses the same thing
-   inside the network stack, matched by **initiator domain** — it applies only
-   to requests this extension originates, and to nothing else in the browser.
+   carrying an extension origin. A DNR rule expresses the same thing inside
+   the network stack, matched by **initiator domain** — it applies only to
+   requests this extension originates, and to nothing else in the browser.
+   The rule is _dynamic_ rather than static, because its condition depends on
+   the extension's own runtime ID, which is only known at runtime; it is
+   reinstalled on every worker start.
 2. **Header spoofing.** Some Cloudflare-protected sites require a plausible
    `Referer` and `Sec-Fetch-*` set. Kintsugi installs a **session-scoped** DNR
    rule for the duration of a download and removes it afterwards.

@@ -16,13 +16,10 @@
 /** The ID of the static origin-stripping rule. */
 export const ORIGIN_STRIP_RULE_ID = 1;
 
-/** The ID range reserved for session-scoped spoofing rules. */
-const SESSION_RULE_ID_BASE = 1000;
-
 /** The subset of the DNR API this module uses. */
 export interface DnrApi {
-    updateDynamicRules(options: { removeRuleIds: number[]; addRules: DnrRule[] }): Promise<void>;
-    getSessionRules(): Promise<{ id: number; condition: DnrCondition }[]>;
+    updateDynamicRules(options: { removeRuleIds?: number[]; addRules?: DnrRule[] }): Promise<void>;
+    getDynamicRules(): Promise<{ id: number }[]>;
 }
 
 /** A DNR rule, as the API accepts it. */
@@ -33,10 +30,20 @@ export interface DnrRule {
     condition: DnrCondition;
 }
 
-/** A rule action. */
+/**
+ * A rule action.
+ *
+ * The `value` field is what makes a header *set* different from a header
+ * *remove*, so it is part of the type rather than an escape hatch.
+ */
 export interface DnrAction {
     type: "modifyHeaders" | "block" | "allow" | "redirect";
-    requestHeaders?: Array<{ header: string; operation: "set" | "remove" | "append" }>;
+    requestHeaders?: Array<{
+        header: string;
+        operation: "set" | "remove" | "append";
+        /** The header's new value. Required for `set` and `append`. */
+        value?: string;
+    }>;
 }
 
 /** A rule condition. */
@@ -82,6 +89,12 @@ export function createOriginStripRule(extensionId: string): DnrRule {
  * Some Cloudflare-protected sites reject a request that lacks a plausible
  * `Referer` and `Sec-Fetch-*` set. This rule is installed for the duration
  * of a download and removed afterwards.
+ *
+ * The migrated parsers install their own spoofing rules through the legacy
+ * client's `setDeclarativeNetRequestRules`, which uses the browser's
+ * *session* rules. This helper builds the same rule for the *dynamic* rule
+ * set, which is where the origin-stripping rule lives, so that both kinds
+ * of rule can be installed side by side.
  */
 export function createSpoofRule(
     id: number,
@@ -93,10 +106,10 @@ export function createSpoofRule(
         action: {
             type: "modifyHeaders",
             requestHeaders: [
-                { header: "Referer", operation: "set", value: options.referer } as never,
-                { header: "Sec-Fetch-Dest", operation: "set", value: "document" } as never,
-                { header: "Sec-Fetch-Mode", operation: "set", value: "navigate" } as never,
-                { header: "Sec-Fetch-Site", operation: "set", value: "same-origin" } as never,
+                { header: "Referer", operation: "set", value: options.referer },
+                { header: "Sec-Fetch-Dest", operation: "set", value: "document" },
+                { header: "Sec-Fetch-Mode", operation: "set", value: "navigate" },
+                { header: "Sec-Fetch-Site", operation: "set", value: "same-origin" },
             ],
         },
         condition: {
@@ -107,71 +120,45 @@ export function createSpoofRule(
     };
 }
 
-/** The manager for session-scoped rules. */
-export class DnrRuleManager {
-    #api: DnrApi | undefined;
-    #extensionId: string;
-    #active = new Map<string, number>();
-    #nextId = SESSION_RULE_ID_BASE;
+/**
+ * Install the origin-stripping rule.
+ *
+ * This is the rule that replaces the baseline's `webRequest` listener. The
+ * baseline asked for the `webRequest` permission — a permanent grant to read
+ * and modify the headers of *every* HTTP request in the browser — in order to
+ * strip the extension's own `Origin` header from the requests it made. DNR
+ * does the same thing inside the network stack, matched by initiator domain,
+ * so it can only ever affect requests this extension originates.
+ *
+ * The rule is installed as a *dynamic* rule rather than a static one because
+ * its condition depends on the extension's own ID, which is only known at
+ * runtime. It is reinstalled on every worker start, because a dynamic rule
+ * does not survive the worker being torn down.
+ *
+ * @param api The browser's DNR API.
+ * @param extensionId The extension's own ID.
+ * @returns Whether the rule was installed.
+ */
+export async function installOriginStripRule(
+    api: DnrApi | undefined,
+    extensionId: string,
+): Promise<boolean> {
+    if (!api || !extensionId) return false;
 
-    constructor(extensionId: string, api?: DnrApi) {
-        this.#extensionId = extensionId;
-        this.#api = api;
-    }
-
-    /** The rule that replaces the baseline's `webRequest` listener. */
-    get originStripRule(): DnrRule {
-        return createOriginStripRule(this.#extensionId);
-    }
-
-    /**
-     * Install a session-scoped spoofing rule for a domain.
-     *
-     * @returns The rule ID, so the rule can be removed later.
-     */
-    async installSpoofRule(domain: string, referer: string): Promise<number | null> {
-        if (!this.#api) return null;
-        const existing = this.#active.get(domain);
-        if (existing !== undefined) return existing;
-
-        const id = this.#nextId++;
-        const rule = createSpoofRule(id, { referer, requestDomains: [domain] });
-        rule.condition.initiatorDomains = [this.#extensionId];
-
-        try {
-            await this.#api.updateDynamicRules({ removeRuleIds: [], addRules: [rule] });
-            this.#active.set(domain, id);
-            return id;
-        } catch {
-            // If the rule cannot be installed, the download proceeds without
-            // spoofing. Some sites do not need it.
-            return null;
-        }
-    }
-
-    /** Remove the spoofing rule for a domain. */
-    async removeSpoofRule(domain: string): Promise<void> {
-        if (!this.#api) return;
-        const id = this.#active.get(domain);
-        if (id === undefined) return;
-        try {
-            await this.#api.updateDynamicRules({ removeRuleIds: [id], addRules: [] });
-        } catch {
-            // Best effort.
-        }
-        this.#active.delete(domain);
-    }
-
-    /** Remove every session rule this manager installed. */
-    async removeAll(): Promise<void> {
-        if (!this.#api) return;
-        const ids = [...this.#active.values()];
-        if (ids.length === 0) return;
-        try {
-            await this.#api.updateDynamicRules({ removeRuleIds: ids, addRules: [] });
-        } catch {
-            // Best effort.
-        }
-        this.#active.clear();
+    try {
+        // The rule may already be installed from a previous worker start, so
+        // the existing rules are cleared first. Only this extension's own
+        // rules are in scope: the rule IDs are the extension's, and the
+        // extension cannot see another extension's rules.
+        const existing = await api.getDynamicRules();
+        await api.updateDynamicRules({
+            removeRuleIds: existing.map((rule) => rule.id),
+            addRules: [createOriginStripRule(extensionId)],
+        });
+        return true;
+    } catch {
+        // A browser without a working DNR API is not an error: the
+        // extension still works, it just sends an `Origin` header.
+        return false;
     }
 }

@@ -13,6 +13,7 @@ import { DownloadManager } from "./download-manager";
 import { FetchClient } from "./net/fetch-client";
 import { CookieBridge } from "./net/cookie-bridge";
 import { createCookieApi } from "./net/browser-cookie-api";
+import { installOriginStripRule } from "./net/dnr-rules";
 import { legacyRegistry } from "./parsers/compat/legacy-factory";
 import { installFetchClient } from "./parsers/compat/legacy-http-client";
 import { setParserServices } from "./parsers/services-context";
@@ -147,6 +148,14 @@ class BackgroundWorker {
         // chapter is fetched, or a site the user has already taught would be
         // parsed by the fallback parser one more time.
         await siteSelectors.hydrate();
+
+        // The origin-stripping rule replaces the baseline's `webRequest`
+        // listener. It is reinstalled on every worker start, because a
+        // dynamic rule does not survive the worker being torn down.
+        await installOriginStripRule(
+            getNamespace()?.declarativeNetRequest,
+            getNamespace()?.runtime.id ?? "",
+        );
 
         handleRequests(
             { onMessage },
