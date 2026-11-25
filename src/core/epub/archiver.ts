@@ -103,6 +103,13 @@ async function addFile(
     // sit in its local header, where the specification wants them: a reader
     // identifies the container from the first bytes, without reading the
     // data first.
-    const options = stored ? { compressionMethod: 0, dataDescriptor: false } : undefined;
+    //
+    // The extended timestamp is switched off as well. It makes `zip.js` write
+    // an extra field into the entry's header, and the OCF specification
+    // forbids an extra field on the `mimetype` entry: a validator rejects the
+    // whole book for it.
+    const options = stored
+        ? { compressionMethod: 0, dataDescriptor: false, extendedTimestamp: false }
+        : undefined;
     await writer.add(file.path, new readerClass(bytes), options);
 }

@@ -96,6 +96,13 @@ export interface PackMetadata {
     subjects?: string[];
     /** The publication date. */
     date?: string;
+    /**
+     * The date the book was last modified.
+     *
+     * Defaults to the moment the book is packed. EPUB 3 requires a
+     * `dcterms:modified` element, so a book always has one.
+     */
+    modified?: string;
     /** The cover image. */
     cover?: ImageData;
     /** The EPUB version. */
@@ -281,7 +288,7 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
 
         files.set(path, {
             path,
-            content: buildXhtml(chapter.title, body, language, stylesheetHref(path)),
+            content: buildXhtml(chapter.title, body, language, stylesheetHref(path), version),
             mediaType: "application/xhtml+xml",
         });
 
@@ -301,6 +308,11 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
     }
 
     // The information page.
+    //
+    // It goes at the *front* of the book, in the spine as well as in the
+    // table of contents. The navigation document has to list its links in
+    // reading order, so a page that is first in the table of contents but
+    // last in the spine is a book a validator rejects.
     if (metadata.includeInfoPage) {
         const path = INFO_PATH;
         files.set(path, {
@@ -310,12 +322,13 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
                 buildInfoPage(metadata),
                 language,
                 stylesheetHref(path),
+                version,
             ),
             mediaType: "application/xhtml+xml",
         });
         const id = nextId(path);
         manifest.push({ id, href: "text/info.xhtml", mediaType: "application/xhtml+xml" });
-        spine.push({ idRef: id });
+        spine.unshift({ idRef: id });
         toc.unshift({ label: "About this book", src: "text/info.xhtml", children: [] });
     }
 
@@ -330,8 +343,9 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
     }
 
     // The NCX, for EPUB 2 readers.
+    const ncxId = nextId("toc.ncx");
     manifest.push({
-        id: nextId("toc.ncx"),
+        id: ncxId,
         href: "toc.ncx",
         mediaType: "application/x-dtbncx+xml",
     });
@@ -345,6 +359,9 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
         subjects: metadata.subjects ?? [],
         date: metadata.date,
         identifier: `urn:uuid:${crypto.randomUUID()}`,
+        // The date the book was generated. EPUB 3 requires it, and a reader's
+        // library uses it to tell an update from a re-download.
+        modified: metadata.modified ?? new Date().toISOString().replace(/\.\d+Z$/, "Z"),
         coverId: coverPath
             ? manifest.find((item) => item.properties?.includes("cover-image"))?.id
             : undefined,
@@ -357,6 +374,7 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
             metadata: packageMetadata,
             manifest,
             spine,
+            tocId: ncxId,
         },
         files,
         toc,

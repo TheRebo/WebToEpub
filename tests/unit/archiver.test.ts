@@ -157,6 +157,21 @@ describe("buildEpubArchive", () => {
         expect(entries[0]?.hasDataDescriptor).toBe(false);
     });
 
+    it("writes the mimetype entry without an extra field", async () => {
+        const files = packEpub([chapter("One")], { title: "A Story" }).files;
+        const bytes = await buildEpubArchive(files);
+        const entries = readCentralDirectory(bytes);
+        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+        // The OCF specification forbids an extra field on the `mimetype`
+        // entry: a validator rejects the whole book for one.
+        const localOffset = entries[0]!.offset;
+        const nameLength = view.getUint16(localOffset + 26, true);
+        const extraLength = view.getUint16(localOffset + 28, true);
+        expect(extraLength).toBe(0);
+        expect(nameLength).toBe(MIMETYPE_PATH.length);
+    });
+
     it("compresses the rest of the book", async () => {
         const files = packEpub([chapter("One")], { title: "A Story" }).files;
         const bytes = await buildEpubArchive(files);

@@ -19,6 +19,7 @@ import {
     type Metadata,
     type NavigationPoint,
     type PackageDocument,
+    parseOpfVersion,
     type SpineItem,
 } from "./document";
 
@@ -129,7 +130,7 @@ function parsePackage(xml: string): PackageDocument {
     const packageElement = dom.documentElement;
 
     const versionValue = packageElement.getAttribute("version");
-    const version: 2 | 3 = versionValue === "2" ? 2 : 3;
+    const version = parseOpfVersion(versionValue);
 
     const metadataElement = findByLocalName(packageElement, "metadata");
     const manifestElement = findByLocalName(packageElement, "manifest");

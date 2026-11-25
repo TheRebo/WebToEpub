@@ -51,6 +51,15 @@ export interface PackageDocument {
     manifest: ManifestItem[];
     /** The spine. */
     spine: SpineItem[];
+    /**
+     * The manifest item's ID for the NCX.
+     *
+     * The spine's `toc` attribute has to name it. The attribute was deprecated
+     * in EPUB 3, in favour of the navigation document, but the specification
+     * still requires it whenever a book carries an NCX, and a validator
+     * rejects the book without it.
+     */
+    tocId?: string;
 }
 
 /** The package metadata. */
@@ -69,6 +78,13 @@ export interface Metadata {
     subjects: string[];
     /** The publication date, as an ISO 8601 string. */
     date?: string;
+    /**
+     * The date the book was last modified, as an ISO 8601 string.
+     *
+     * EPUB 3 requires a `dcterms:modified` element, and it must appear
+     * exactly once.
+     */
+    modified?: string;
     /** The identifier. */
     identifier: string;
     /** The cover image's manifest item ID. */
@@ -183,6 +199,26 @@ export function mediaTypeForPath(path: string): string {
         default:
             return "application/octet-stream";
     }
+}
+
+/** The version attribute of the package element, as the specification writes it. */
+export function opfVersionAttribute(version: 2 | 3): "2.0" | "3.0" {
+    return version === 2 ? "2.0" : "3.0";
+}
+
+/**
+ * Read the version attribute of a package element.
+ *
+ * The specification writes the version as `2.0` or `3.0`, but a bare `2` or
+ * `3` is seen in the wild, and the baseline wrote the bare form. Both are
+ * accepted here so that a book produced by an older version of the extension,
+ * or by another tool, is read the way its author meant it.
+ *
+ * @param value The attribute's value.
+ * @returns The version.
+ */
+export function parseOpfVersion(value: string | null): 2 | 3 {
+    return value?.trim().startsWith("2") ? 2 : 3;
 }
 
 /** Escape a string for inclusion in XML text content. */

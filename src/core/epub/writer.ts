@@ -23,6 +23,7 @@ import {
     escapeXml,
     escapeXmlAttribute,
     mediaTypeForPath,
+    opfVersionAttribute,
     XHTML_MEDIA_TYPE,
 } from "./document";
 
@@ -100,9 +101,29 @@ export function buildPackageXml(document: EpubDocument): string {
     const { metadata, manifest, spine } = document.package;
     const uniqueIdentifier = document.package.uniqueIdentifier;
 
+    // The creator's role is expressed differently in the two versions. EPUB 2
+    // uses an `opf:role` attribute, which EPUB 3's schema does not allow at
+    // all; EPUB 3 refines the creator with a `meta` element instead.
+    const isEpub3 = document.version === 3;
     const creators = metadata.creators
-        .map((creator) => `    <dc:creator opf:role="aut">${escapeXml(creator)}</dc:creator>`)
+        .map((creator, index) => {
+            const id = `creator-${index + 1}`;
+            const role = isEpub3
+                ? `<dc:creator id="${escapeXmlAttribute(id)}">${escapeXml(creator)}</dc:creator>`
+                : `<dc:creator opf:role="aut">${escapeXml(creator)}</dc:creator>`;
+            return role;
+        })
         .join("\n");
+
+    // The refinement that gives the creator its role in an EPUB 3 book.
+    const creatorRoles = isEpub3
+        ? metadata.creators
+              .map(
+                  (_, index) =>
+                      `    <meta refines="#creator-${index + 1}" property="role" scheme="marc:relators">aut</meta>`,
+              )
+              .join("\n")
+        : "";
 
     const subjects = metadata.subjects
         .map((subject) => `    <dc:subject>${escapeXml(subject)}</dc:subject>`)
@@ -110,9 +131,13 @@ export function buildPackageXml(document: EpubDocument): string {
 
     const manifestXml = manifest
         .map((item) => {
-            const properties = item.properties
-                ? ` properties="${escapeXmlAttribute(item.properties)}"`
-                : "";
+            // The `properties` attribute is an EPUB 3 addition. EPUB 2's
+            // schema has no such attribute, and a validator rejects the
+            // package document outright when it finds one.
+            const properties =
+                isEpub3 && item.properties
+                    ? ` properties="${escapeXmlAttribute(item.properties)}"`
+                    : "";
             return `    <item id="${escapeXmlAttribute(item.id)}" href="${escapeXmlAttribute(item.href)}" media-type="${escapeXmlAttribute(item.mediaType)}"${properties}/>`;
         })
         .join("\n");
@@ -123,6 +148,13 @@ export function buildPackageXml(document: EpubDocument): string {
             return `    <itemref idref="${escapeXmlAttribute(item.idRef)}"${linear}/>`;
         })
         .join("\n");
+
+    // The spine names the NCX. EPUB 3 deprecated the attribute in favour of
+    // the navigation document, but the specification still requires it for a
+    // book that carries an NCX, and a validator rejects the book without it.
+    const tocAttribute = document.package.tocId
+        ? ` toc="${escapeXmlAttribute(document.package.tocId)}"`
+        : "";
 
     const coverMeta = metadata.coverId
         ? `    <meta name="cover" content="${escapeXmlAttribute(metadata.coverId)}"/>\n`
@@ -136,17 +168,28 @@ export function buildPackageXml(document: EpubDocument): string {
         : "";
     const date = metadata.date ? `    <dc:date>${escapeXml(metadata.date)}</dc:date>\n` : "";
 
+    // The modification date is required in an EPUB 3 book, exactly once. It
+    // records when the book was generated, which is what a reader's library
+    // uses to decide whether an update has happened.
+    const modified = isEpub3
+        ? `    <meta property="dcterms:modified">${escapeXml(metadata.modified ?? "")}</meta>\n`
+        : "";
+
+    // EPUB 2's package element has no `xml:lang` attribute: the language is
+    // carried by the `dc:language` element alone.
+    const languageAttribute = isEpub3 ? ` xml:lang="${escapeXmlAttribute(metadata.language)}"` : "";
+
     return `<?xml version="1.0" encoding="UTF-8"?>
-<package xmlns="http://www.idpf.org/2007/opf" version="${document.version}" unique-identifier="${escapeXmlAttribute(uniqueIdentifier)}" xml:lang="${escapeXmlAttribute(metadata.language)}">
+<package xmlns="http://www.idpf.org/2007/opf" version="${opfVersionAttribute(document.version)}" unique-identifier="${escapeXmlAttribute(uniqueIdentifier)}"${languageAttribute}>
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
     <dc:identifier id="${escapeXmlAttribute(uniqueIdentifier)}">${escapeXml(metadata.identifier)}</dc:identifier>
     <dc:title>${escapeXml(metadata.title)}</dc:title>
     <dc:language>${escapeXml(metadata.language)}</dc:language>
-${creators}${publisher}${description}${subjects}${date}${coverMeta}  </metadata>
+${creators}${creatorRoles ? `${creatorRoles}\n` : ""}${publisher}${description}${subjects}${date}${modified}${coverMeta}  </metadata>
   <manifest>
 ${manifestXml}
   </manifest>
-  <spine>
+  <spine${tocAttribute}>
 ${spineXml}
   </spine>
 </package>
@@ -227,19 +270,44 @@ ${listItems}
 /**
  * Wrap a body fragment in a complete XHTML document.
  *
+ * The two EPUB versions want different dialects of XHTML, and a reader that
+ * validates its input refuses a book that mixes them. EPUB 3 uses XHTML 5,
+ * with the `<!DOCTYPE html>` declaration and a `<meta charset>` element.
+ * EPUB 2 uses XHTML 1.1, which has neither: it wants the XHTML 1.1 public
+ * doctype, and it wants the character set declared with an `http-equiv`
+ * `<meta>` element instead.
+ *
  * @param title The document's title.
  * @param bodyHtml The body's markup.
  * @param language The document's language.
  * @param stylesheet The relative reference to the stylesheet. It has to be
  *   relative to the file being written, so a chapter in `OEBPS/text` links
  *   `../styles.css` while the navigation document links `styles.css`.
+ * @param version The EPUB version the document is written for.
  */
 export function buildXhtml(
     title: string,
     bodyHtml: string,
     language = "en",
     stylesheet = "styles.css",
+    version: 2 | 3 = 3,
 ): string {
+    if (version === 2) {
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${escapeXmlAttribute(language)}">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>${escapeXml(title)}</title>
+    <link rel="stylesheet" type="text/css" href="${escapeXmlAttribute(stylesheet)}"/>
+  </head>
+  <body>
+${bodyHtml}
+  </body>
+</html>
+`;
+    }
+
     return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="${escapeXmlAttribute(language)}" lang="${escapeXmlAttribute(language)}">
