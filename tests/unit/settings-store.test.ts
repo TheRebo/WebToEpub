@@ -257,4 +257,24 @@ describe("SettingsStore", () => {
         expect((await store.get()).appearance.theme).toBe("system");
         expect(storage.data[SETTINGS_KEY]).toBeUndefined();
     });
+
+    it("reads the settings again after the cache is cleared", async () => {
+        // The store caches the settings, and the options page writes to
+        // storage directly rather than through the bus. The background worker
+        // therefore has to be told when the settings have changed, or it would
+        // keep using the snapshot it read when it started.
+        const storage = memoryStorage();
+        const store = new SettingsStore(storage);
+        expect((await store.get()).appearance.theme).toBe("system");
+
+        // Another page changes the settings.
+        storage.data[SETTINGS_KEY] = { appearance: { theme: "dark" } };
+
+        // The cached copy is still the old one...
+        expect((await store.get()).appearance.theme).toBe("system");
+
+        // ...until the cache is cleared.
+        store.invalidate();
+        expect((await store.get()).appearance.theme).toBe("dark");
+    });
 });

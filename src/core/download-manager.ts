@@ -482,6 +482,16 @@ const PHASE_MESSAGE_KEYS: Record<JobPhase, string> = {
 };
 
 /**
+ * The number of finished jobs the manager keeps.
+ *
+ * A finished job is kept for a while so that a page which is still showing its
+ * progress can read the last state of the job it started. Without a limit the
+ * manager would keep every job it ever ran, along with a row per chapter, for
+ * the life of the browser session.
+ */
+const FINISHED_JOB_HISTORY = 20;
+
+/**
  * The download manager.
  */
 export class DownloadManager {
@@ -505,6 +515,23 @@ export class DownloadManager {
     /** Every job. */
     list(): JobProgress[] {
         return [...this.#jobs.values()].map((job) => this.#toProgress(job));
+    }
+
+    /**
+     * Forget the jobs that finished long ago.
+     *
+     * Only finished jobs are dropped, and the most recent ones are kept, so a
+     * page that is still polling a job that has just finished can still read
+     * its final state.
+     */
+    #pruneFinishedJobs(): void {
+        const finished = [...this.#jobs.values()].filter((job) => TERMINAL_PHASES.has(job.phase));
+        const excess = finished.length - FINISHED_JOB_HISTORY;
+        if (excess <= 0) return;
+        // The map preserves insertion order, so the oldest jobs come first.
+        for (const job of finished.slice(0, excess)) {
+            this.#jobs.delete(job.id);
+        }
     }
 
     /** A job's progress. */
@@ -556,6 +583,7 @@ export class DownloadManager {
             job.phase = "failed";
             job.error = toUserFacingError(error);
             this.#report(job);
+            this.#pruneFinishedJobs();
         });
 
         return id;
@@ -881,6 +909,19 @@ export class DownloadManager {
         }
 
         // --- Build ---
+        //
+        // A job that was cancelled while the images were downloading must not
+        // go on to write a book. The abort is checked here because the image
+        // loop is the last place the signal is looked at: without this check a
+        // cancelled download would still build the EPUB, still save it, and
+        // still report itself as complete — while the user was told it had been
+        // cancelled.
+        if (signal.aborted) {
+            job.phase = "cancelled";
+            this.#report(job);
+            return;
+        }
+
         job.phase = "building-epub";
         this.#report(job);
         diagnostic("Building the EPUB", job.id, packed.length, "chapters");
@@ -894,6 +935,15 @@ export class DownloadManager {
 
         const bytes = await this.#zip(result.files);
         const fileName = await this.#fileNameFor(job, metadata);
+
+        // The check is repeated here, because zipping a large book takes a
+        // moment and the user may have pressed cancel in the meantime.
+        if (signal.aborted) {
+            job.phase = "cancelled";
+            this.#report(job);
+            return;
+        }
+
         const saved = await saveFile(fileName, bytes);
 
         job.fileName = saved.fileName;
@@ -909,6 +959,7 @@ export class DownloadManager {
 
         job.phase = "complete";
         this.#report(job);
+        this.#pruneFinishedJobs();
     }
 
     /**

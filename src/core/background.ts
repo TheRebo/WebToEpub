@@ -22,9 +22,9 @@ import {
     toLegacyUserPreferences,
 } from "./parsers/compat/legacy-preferences";
 import { buildParserUtilities } from "./util/parser-utilities";
-import { handleRequests, type RequestMap } from "./message/bus";
-import { localStorageAdapter, onMessage, getNamespace } from "./browser-api";
-import { SettingsStore } from "./storage/settings-store";
+import { handleRequests, type RequestHandlers, type RequestMap } from "./message/bus";
+import { localStorageAdapter, onMessage, onStorageChanged, getNamespace } from "./browser-api";
+import { SettingsStore, SETTINGS_KEY } from "./storage/settings-store";
 import { LibraryStore } from "./storage/library-store";
 import { siteSelectors } from "./storage/site-selectors";
 import { scanDocument } from "./parsers/heuristic-scanner";
@@ -58,6 +58,15 @@ class BackgroundWorker {
      * that run uses the settings the user had when they started it.
      */
     #preferences = defaultLegacyUserPreferences();
+
+    /**
+     * The startup promise.
+     *
+     * The message listener is registered before the worker has finished
+     * starting, so a message that arrives during the startup is answered rather
+     * than lost. The handlers that need the parser registry wait for this.
+     */
+    #ready: Promise<void> = Promise.resolve();
 
     constructor() {
         // The cookie bridge copies the site's partitioned cookies into
@@ -235,10 +244,25 @@ class BackgroundWorker {
 
     /** Start the worker. */
     async start(): Promise<void> {
-        // The parsers are registered before any request is handled. If this
-        // were not awaited, a request that arrived during the registration
-        // would find an empty registry and fall back to the default parser for
-        // a site that does have a dedicated one.
+        // The listener is registered before the worker has finished starting.
+        // A message that arrives during the startup — the popup is opened by
+        // the user, and the worker may still be registering its parsers — is
+        // then answered rather than lost, which would show the user an error
+        // that had nothing to do with what they did.
+        this.#ready = this.#prepare();
+        handleRequests({ onMessage }, this.#handlers());
+        await this.#ready;
+    }
+
+    /**
+     * Prepare the worker.
+     *
+     * The parsers are registered before any request is handled. If this were
+     * not awaited, a request that arrived during the registration would find
+     * an empty registry and fall back to the default parser for a site that
+     * does have a dedicated one.
+     */
+    async #prepare(): Promise<void> {
         await registerAllParsers(this.#registry);
 
         // The saved site selectors have to be in the cache before the first
@@ -255,114 +279,147 @@ class BackgroundWorker {
         // dynamic rule does not survive the worker being torn down.
         await installOriginStripRule(getNamespace()?.declarativeNetRequest);
 
-        handleRequests(
-            { onMessage },
-            {
-                "page:analyze": (payload) => this.#analyse(payload.url),
-                "chapters:list": (payload) => this.#listChapters(payload.url),
-                "download:start": (payload) => this.#startDownload(payload),
-                "download:cancel": (payload) => ({
-                    cancelled: this.#downloads.cancel(payload.jobId),
-                }),
-                "download:progress": (payload) => {
-                    const progress = this.#downloads.progress(payload.jobId);
-                    if (!progress) throw new Error("No such job.");
-                    return progress;
-                },
-                "download:list": () => ({ jobs: this.#downloads.list() }),
-                "settings:get": async () => ({ settings: await this.#settings.get() }),
-                "settings:set": async (payload) => {
-                    await this.#settings.set(payload.settings as never);
-                    // The diagnostics switch is read here as well as in the
-                    // store, so that turning it on takes effect without
-                    // restarting the worker.
-                    this.#applyDiagnostics();
-                    return { settings: await this.#settings.get() };
-                },
-                "library:list": async () => {
-                    // The cover's bytes are not sent. The library's grid draws
-                    // a placeholder cover, and a cover can be a hundred
-                    // kilobytes: sending one per book, on every visit to the
-                    // options page, would be a lot of copying for nothing.
-                    const all = await this.#library.list();
-                    return {
-                        entries: all.map((entry) => ({
-                            id: entry.id,
-                            title: entry.title,
-                            author: entry.author,
-                            sourceUrl: entry.sourceUrl,
-                            chapterCount: entry.chapterCount,
-                            size: entry.size,
-                            addedAt: entry.addedAt,
-                            updatedAt: entry.updatedAt,
-                            hasCover: entry.cover !== undefined && entry.cover.length > 0,
-                        })),
-                    };
-                },
-                "library:delete": async (payload) => {
-                    const entry = await this.#library.get(payload.id);
-                    if (!entry) return { deleted: false };
-                    await this.#library.delete(payload.id);
-                    return { deleted: true };
-                },
-                "permissions:check": async (payload) => ({
-                    hasAccess: await this.#hasAccess(payload.origin),
-                }),
-                "permissions:request": async (payload) => {
-                    const api = getNamespace();
-                    if (!api) return { granted: false };
-                    // The origin is turned into a permission pattern, so it has
-                    // to be a plain host: an origin carrying a path or a
-                    // wildcard would grant more than the user was shown.
-                    const origin = validateOrigin(payload.origin);
-                    if (!origin) return { granted: false };
-                    const granted = await api.permissions.request({
-                        origins: [`${origin}/*`],
-                    });
-                    return { granted };
-                },
-                "permissions:list": async () => {
-                    const api = getNamespace();
-                    if (!api) return { origins: [] };
-                    const all = await api.permissions.getAll();
-                    return { origins: all.origins ?? [] };
-                },
-                "permissions:revoke": async (payload) => {
-                    const api = getNamespace();
-                    if (!api) return { revoked: false };
-                    const origin = validateOrigin(payload.origin);
-                    if (!origin) return { revoked: false };
-                    const revoked = await api.permissions.remove({
-                        origins: [`${origin}/*`],
-                    });
-                    return { revoked };
-                },
-                "site-selectors:suggest": async (payload) => this.#suggestSelectors(payload.url),
-                "site-selectors:test": async (payload) =>
-                    this.#testSelectors(payload.url, payload.contentCss, payload.titleCss),
-                "site-selectors:save": async (payload) => {
-                    await siteSelectors.setForHost(payload.hostname, {
-                        contentCss: payload.contentCss,
-                        titleCss: payload.titleCss,
-                        removeCss: payload.removeCss,
-                        testUrl: payload.testUrl ?? "",
-                    });
-                    return { saved: true };
-                },
-                "site-selectors:list": async () => {
-                    const all = await siteSelectors.list();
-                    const entries = [...all.entries()].map(([hostname, config]) => ({
-                        hostname,
-                        ...config,
-                    }));
-                    return { entries };
-                },
-                "site-selectors:remove": async (payload) => {
-                    await siteSelectors.removeForHost(payload.hostname);
-                    return { removed: true };
-                },
+        this.#watchSettings();
+    }
+
+    /**
+     * Watch the settings for changes.
+     *
+     * The settings are cached in the store, and the options page writes to
+     * storage directly rather than through the bus. Without this listener the
+     * worker would keep using the settings it read when it started, and a
+     * change made in the options page would only take effect the next time the
+     * worker was restarted — which, for an event page, can be days.
+     */
+    #watchSettings(): void {
+        onStorageChanged((changes, areaName) => {
+            if (areaName !== "local") return;
+            if (!(SETTINGS_KEY in changes)) return;
+            this.#settings.invalidate();
+            void this.#refreshPreferences();
+        });
+    }
+
+    /** The message handlers the worker registers. */
+    #handlers(): RequestHandlers {
+        return {
+            "page:analyze": async (payload) => {
+                await this.#ready;
+                return this.#analyse(payload.url);
             },
-        );
+            "chapters:list": async (payload) => {
+                await this.#ready;
+                return this.#listChapters(payload.url);
+            },
+            "download:start": async (payload) => {
+                await this.#ready;
+                return this.#startDownload(payload);
+            },
+            "download:cancel": (payload) => ({
+                cancelled: this.#downloads.cancel(payload.jobId),
+            }),
+            "download:progress": (payload) => {
+                const progress = this.#downloads.progress(payload.jobId);
+                if (!progress) throw new Error("No such job.");
+                return progress;
+            },
+            "download:list": () => ({ jobs: this.#downloads.list() }),
+            "settings:get": async () => ({ settings: await this.#settings.get() }),
+            "settings:set": async (payload) => {
+                await this.#settings.set(payload.settings as never);
+                // The diagnostics switch is read here as well as in the
+                // store, so that turning it on takes effect without
+                // restarting the worker.
+                this.#applyDiagnostics();
+                return { settings: await this.#settings.get() };
+            },
+            "library:list": async () => {
+                // The cover's bytes are not sent. The library's grid draws
+                // a placeholder cover, and a cover can be a hundred
+                // kilobytes: sending one per book, on every visit to the
+                // options page, would be a lot of copying for nothing.
+                const all = await this.#library.list();
+                return {
+                    entries: all.map((entry) => ({
+                        id: entry.id,
+                        title: entry.title,
+                        author: entry.author,
+                        sourceUrl: entry.sourceUrl,
+                        chapterCount: entry.chapterCount,
+                        size: entry.size,
+                        addedAt: entry.addedAt,
+                        updatedAt: entry.updatedAt,
+                        hasCover: entry.cover !== undefined && entry.cover.length > 0,
+                    })),
+                };
+            },
+            "library:delete": async (payload) => {
+                const entry = await this.#library.get(payload.id);
+                if (!entry) return { deleted: false };
+                await this.#library.delete(payload.id);
+                return { deleted: true };
+            },
+            "permissions:check": async (payload) => ({
+                hasAccess: await this.#hasAccess(payload.origin),
+            }),
+            "permissions:request": async (payload) => {
+                const api = getNamespace();
+                if (!api) return { granted: false };
+                // The origin is turned into a permission pattern, so it has
+                // to be a plain host: an origin carrying a path or a
+                // wildcard would grant more than the user was shown.
+                const origin = validateOrigin(payload.origin);
+                if (!origin) return { granted: false };
+                const granted = await api.permissions.request({
+                    origins: [`${origin}/*`],
+                });
+                return { granted };
+            },
+            "permissions:list": async () => {
+                const api = getNamespace();
+                if (!api) return { origins: [] };
+                const all = await api.permissions.getAll();
+                return { origins: all.origins ?? [] };
+            },
+            "permissions:revoke": async (payload) => {
+                const api = getNamespace();
+                if (!api) return { revoked: false };
+                const origin = validateOrigin(payload.origin);
+                if (!origin) return { revoked: false };
+                const revoked = await api.permissions.remove({
+                    origins: [`${origin}/*`],
+                });
+                return { revoked };
+            },
+            "site-selectors:suggest": async (payload) => this.#suggestSelectors(payload.url),
+            "site-selectors:test": async (payload) =>
+                this.#testSelectors(payload.url, payload.contentCss, payload.titleCss),
+            "site-selectors:save": async (payload) => {
+                await siteSelectors.setForHost(payload.hostname, {
+                    contentCss: payload.contentCss,
+                    titleCss: payload.titleCss,
+                    removeCss: payload.removeCss,
+                    // The test URL is fetched later, when the selectors are
+                    // tried out. It is validated here, so that a URL that
+                    // was never a web address cannot be stored and then
+                    // fetched.
+                    testUrl: validatedTestUrl(payload.testUrl),
+                });
+                return { saved: true };
+            },
+            "site-selectors:list": async () => {
+                const all = await siteSelectors.list();
+                const entries = [...all.entries()].map(([hostname, config]) => ({
+                    hostname,
+                    ...config,
+                }));
+                return { entries };
+            },
+            "site-selectors:remove": async (payload) => {
+                await siteSelectors.removeForHost(payload.hostname);
+                return { removed: true };
+            },
+        };
     }
 
     /** Analyse a page. */
@@ -559,6 +616,21 @@ class BackgroundWorker {
             };
         }
     }
+}
+
+/**
+ * The test URL to store with a set of selectors.
+ *
+ * The URL is fetched when the selectors are tried out, so a URL that is not a
+ * web address — a `file:` URL, or one on the local network — is refused here
+ * rather than stored and fetched later.
+ *
+ * @param url The URL the user typed, if any.
+ * @returns The URL, or an empty string when it cannot be used.
+ */
+function validatedTestUrl(url: string | undefined): string {
+    if (!url) return "";
+    return validateFetchableUrl(url) ? url : "";
 }
 
 /** Query for the first element that matches, ignoring a bad selector. */

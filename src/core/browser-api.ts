@@ -37,6 +37,23 @@ interface BrowserNamespace {
             remove(keys: string | string[]): Promise<void>;
             clear?(): Promise<void>;
         };
+        /**
+         * The storage change event.
+         *
+         * It is how the background worker learns that the options page has
+         * changed something: the options page writes to storage directly, so
+         * without this the worker would keep using the settings it read when
+         * it started.
+         */
+        onChanged?: {
+            addListener(
+                listener: (
+                    changes: Record<string, { oldValue?: unknown; newValue?: unknown }>,
+                    areaName: string,
+                ) => void,
+            ): void;
+            removeListener(listener: (...args: never[]) => unknown): void;
+        };
         session?: {
             get(keys: string | string[] | null): Promise<Record<string, unknown>>;
             set(items: Record<string, unknown>): Promise<void>;
@@ -225,6 +242,22 @@ export async function openTab(url: string, active = true): Promise<void> {
     const api = getNamespace();
     if (!api) return;
     await api.tabs.create({ url, active });
+}
+
+/**
+ * Listen for changes to the extension's storage.
+ *
+ * @param listener The listener. It receives the changed keys and the area they
+ *   changed in.
+ */
+export function onStorageChanged(
+    listener: (
+        changes: Record<string, { oldValue?: unknown; newValue?: unknown }>,
+        areaName: string,
+    ) => void,
+): void {
+    const api = getNamespace();
+    api?.storage.onChanged?.addListener(listener);
 }
 
 /**

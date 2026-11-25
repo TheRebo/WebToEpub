@@ -139,6 +139,19 @@ export interface RequestMap {
 /** The name of a request. */
 export type RequestName = keyof RequestMap;
 
+/**
+ * The handlers a worker registers.
+ *
+ * The map is partial on purpose: a worker does not have to answer every kind
+ * of message, and an unanswered message is reported to the caller as an error
+ * rather than hanging.
+ */
+export type RequestHandlers = Partial<{
+    [K in RequestName]: (
+        payload: RequestMap[K]["request"],
+    ) => Promise<RequestMap[K]["response"]> | RequestMap[K]["response"];
+}>;
+
 /** The result of analysing a page. */
 export interface PageAnalysis {
     /** Whether a parser was found. */
@@ -351,11 +364,7 @@ export async function sendRequest<N extends RequestName>(
  */
 export async function handleRequests(
     api: MessagingListenerApi,
-    handlers: Partial<{
-        [K in RequestName]: (
-            payload: RequestMap[K]["request"],
-        ) => Promise<RequestMap[K]["response"]> | RequestMap[K]["response"];
-    }>,
+    handlers: RequestHandlers,
 ): Promise<void> {
     api.onMessage(async (message) => {
         const envelope = message as Envelope<unknown> | undefined;
