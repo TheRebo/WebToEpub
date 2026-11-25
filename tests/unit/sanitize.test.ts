@@ -5,6 +5,7 @@ import {
     sanitizeHtml,
     sanitizeToFragment,
     validateFetchableUrl,
+    validateOrigin,
 } from "../../src/core/util/sanitize";
 
 describe("sanitizeHtml", () => {
@@ -97,6 +98,53 @@ describe("validateFetchableUrl", () => {
 
     it("rejects a URL that cannot be parsed", () => {
         expect(validateFetchableUrl("not a url")).toBeNull();
+    });
+});
+
+describe("validateOrigin", () => {
+    it("accepts a plain web host", () => {
+        expect(validateOrigin("https://example.com")).toBe("https://example.com");
+        expect(validateOrigin("http://example.com")).toBe("http://example.com");
+    });
+
+    it("accepts a host with a trailing slash", () => {
+        expect(validateOrigin("https://example.com/")).toBe("https://example.com");
+    });
+
+    it("keeps the port, because it is part of the host", () => {
+        expect(validateOrigin("http://localhost:8080")).toBe("http://localhost:8080");
+    });
+
+    it("rejects any other scheme", () => {
+        expect(validateOrigin("file:///etc/passwd")).toBeNull();
+        expect(validateOrigin("javascript:alert(1)")).toBeNull();
+        expect(validateOrigin("data:text/html,<script>")).toBeNull();
+    });
+
+    it("rejects an origin that carries a path", () => {
+        // A path would be pasted into the permission pattern as
+        // `https://example.com/some/path/*`, which is not a pattern the
+        // browser understands.
+        expect(validateOrigin("https://example.com/some/path")).toBeNull();
+    });
+
+    it("rejects an origin that carries a query or a fragment", () => {
+        expect(validateOrigin("https://example.com/?a=b")).toBeNull();
+        expect(validateOrigin("https://example.com/#section")).toBeNull();
+    });
+
+    it("rejects an origin that carries credentials", () => {
+        expect(validateOrigin("https://user:pass@example.com")).toBeNull();
+    });
+
+    it("rejects a wildcard, which would grant more than one host", () => {
+        expect(validateOrigin("https://*")).toBeNull();
+        expect(validateOrigin("*://*/*")).toBeNull();
+    });
+
+    it("rejects an origin that cannot be parsed", () => {
+        expect(validateOrigin("not a url")).toBeNull();
+        expect(validateOrigin("")).toBeNull();
     });
 });
 

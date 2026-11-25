@@ -205,6 +205,41 @@ export function validateFetchableUrl(url: string): URL | null {
 }
 
 /**
+ * Validate an origin before it is used in a host permission.
+ *
+ * A host permission is written as an origin pattern, and the pattern is built
+ * by pasting the origin into `https://example.com/*`. An origin that is not
+ * a plain `http:` or `https:` host — one that carries a path, a query, a
+ * fragment, credentials, or a wildcard of its own — would produce a pattern
+ * that grants more than the user was shown.
+ *
+ * @param origin The origin to validate.
+ * @returns The origin, normalised, or `null` when it is not a plain host.
+ */
+export function validateOrigin(origin: string): string | null {
+    let parsed: URL;
+    try {
+        parsed = new URL(origin);
+    } catch {
+        return null;
+    }
+    if (!ALLOWED_SCHEMES.has(parsed.protocol)) return null;
+
+    // An origin is a scheme, a host and a port. Anything more is a URL that
+    // happens to parse, and pasting it into a permission pattern would be
+    // meaningless at best.
+    if (parsed.pathname !== "/" && parsed.pathname !== "") return null;
+    if (parsed.search !== "" || parsed.hash !== "") return null;
+    if (parsed.username !== "" || parsed.password !== "") return null;
+
+    // A wildcard host parses, and would turn into a pattern that grants
+    // access to every host on the scheme. Only a real host name is allowed.
+    if (parsed.hostname === "" || parsed.hostname.includes("*")) return null;
+
+    return parsed.origin;
+}
+
+/**
  * Check whether a URL points at the same registrable domain as a base URL.
  *
  * This is not a public-suffix implementation — it compares the last two

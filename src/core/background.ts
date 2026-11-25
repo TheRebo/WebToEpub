@@ -25,7 +25,7 @@ import { LibraryStore } from "./storage/library-store";
 import { siteSelectors } from "./storage/site-selectors";
 import { scanDocument } from "./parsers/heuristic-scanner";
 import { toUserFacingError } from "./util/errors";
-import { validateFetchableUrl } from "./util/sanitize";
+import { validateFetchableUrl, validateOrigin } from "./util/sanitize";
 import { DefaultParser } from "./parsers/default-parser";
 import { registerAllParsers } from "./parsers/register-all";
 import type { ParserServices } from "./parsers/parser";
@@ -190,8 +190,13 @@ class BackgroundWorker {
                 "permissions:request": async (payload) => {
                     const api = getNamespace();
                     if (!api) return { granted: false };
+                    // The origin is turned into a permission pattern, so it has
+                    // to be a plain host: an origin carrying a path or a
+                    // wildcard would grant more than the user was shown.
+                    const origin = validateOrigin(payload.origin);
+                    if (!origin) return { granted: false };
                     const granted = await api.permissions.request({
-                        origins: [`${payload.origin}/*`],
+                        origins: [`${origin}/*`],
                     });
                     return { granted };
                 },
@@ -204,8 +209,10 @@ class BackgroundWorker {
                 "permissions:revoke": async (payload) => {
                     const api = getNamespace();
                     if (!api) return { revoked: false };
+                    const origin = validateOrigin(payload.origin);
+                    if (!origin) return { revoked: false };
                     const revoked = await api.permissions.remove({
-                        origins: [`${payload.origin}/*`],
+                        origins: [`${origin}/*`],
                     });
                     return { revoked };
                 },
@@ -309,10 +316,28 @@ class BackgroundWorker {
     ): Promise<RequestMap["download:start"]["response"]> {
         // The titles come from the chapter list the user picked from. Without
         // them the book's table of contents would be a list of URLs.
-        const chapters = payload.chapters.map((chapter) => ({
-            sourceUrl: chapter.sourceUrl,
-            title: chapter.title || chapter.sourceUrl,
-        }));
+        //
+        // Every URL is validated before the job starts. The extension fetches
+        // these URLs from its own context, where it can reach further than
+        // the page that asked; a page that asked the extension to fetch a
+        // `file:` URL, or a URL on the local network, would be using the
+        // extension as a proxy. The same check guards `page:analyze` and
+        // `chapters:list`.
+        if (!validateFetchableUrl(payload.url)) {
+            throw new Error("The story's URL is not a web address.");
+        }
+
+        const chapters: Array<{ sourceUrl: string; title: string }> = [];
+        for (const chapter of payload.chapters) {
+            if (!validateFetchableUrl(chapter.sourceUrl)) {
+                throw new Error("A chapter's URL is not a web address.");
+            }
+            chapters.push({
+                sourceUrl: chapter.sourceUrl,
+                title: chapter.title || chapter.sourceUrl,
+            });
+        }
+
         const jobId = this.#downloads.start(payload.url, payload.title, chapters);
         return { jobId };
     }
@@ -321,7 +346,9 @@ class BackgroundWorker {
     async #hasAccess(origin: string): Promise<boolean> {
         const api = getNamespace();
         if (!api) return false;
-        return api.permissions.contains({ origins: [`${origin}/*`] });
+        const validated = validateOrigin(origin);
+        if (!validated) return false;
+        return api.permissions.contains({ origins: [`${validated}/*`] });
     }
 
     /**
