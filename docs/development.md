@@ -122,6 +122,13 @@ In a packaged build the worker logs nothing by default. Turn on the
 diagnostics setting in **Settings → Advanced → Developer diagnostics** to get
 verbose logging.
 
+The diagnostics logger writes to the console with a `[kintsugi]` prefix. It is
+opt-in, it never leaves the machine, and it records _shapes_ — the parser that
+matched, how many chapters were found, how long a response was — rather than
+the text of a chapter. URLs are redacted before they are logged: the query
+string and the fragment are dropped, because that is where a session token
+lives. See `src/core/util/diagnostics.ts`.
+
 ### The pages
 
 Each page is a normal document. Open it in a tab and use the **developer
@@ -140,9 +147,11 @@ script's `console.log` output appears there, prefixed with `[kintsugi]`.
 
 ### Logging
 
-`console.log` is used for diagnostics only. Nothing in the shipped extension
-writes to the console during normal operation, and there is no telemetry of
-any kind.
+`console.log` is not used. The only console output in the shipped extension is
+the diagnostics logger described above (off by default), plus `console.error`
+and `console.warn` for genuine failures — a page that would not start, a
+parser hook that threw, a missing translation. Nothing writes to the console
+during normal operation, and there is no telemetry of any kind.
 
 ---
 

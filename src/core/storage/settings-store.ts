@@ -399,4 +399,14 @@ export class SettingsStore {
     invalidate(): void {
         this.#cache = undefined;
     }
+
+    /**
+     * The settings the store already holds, without reading storage.
+     *
+     * @returns The cached settings, or `undefined` when nothing has been read
+     *   yet.
+     */
+    cached(): Settings | undefined {
+        return this.#cache;
+    }
 }

@@ -29,6 +29,7 @@ import { buildEpubArchive } from "./epub/archiver";
 import { sanitizeHtml } from "./util/sanitize";
 import { parseSrcset, resolveUrl } from "./util/image-references";
 import { buildFileName, DEFAULT_FILENAME_TEMPLATE } from "./util/file-name";
+import { diagnostic } from "./util/diagnostics";
 import type { Parser } from "./parsers/parser";
 import { toUserFacingError, type UserFacingError } from "./util/errors";
 import type { LibraryEntry } from "./storage/library-store";
@@ -430,6 +431,7 @@ export class DownloadManager {
 
         job.phase = "fetching-chapters";
         this.#report(job);
+        diagnostic("Fetching chapters", job.id, job.chapters.length, "chapters");
 
         // The parser is chosen from the story's page, so the same rules the
         // workbench used to build the chapter list apply to the content.
@@ -623,6 +625,7 @@ export class DownloadManager {
         // No single chapter is in flight any more.
         job.current = undefined;
         this.#report(job);
+        diagnostic("Downloading images", job.id, images.size, "images");
 
         // The cover is usually *not* in any chapter, so it is added to the
         // set of images to fetch here. Without this, a book whose cover
@@ -712,6 +715,7 @@ export class DownloadManager {
         // --- Build ---
         job.phase = "building-epub";
         this.#report(job);
+        diagnostic("Building the EPUB", job.id, packed.length, "chapters");
 
         const metadata = this.#buildMetadata(job, storyDom, parser, downloaded);
         const result = packEpub(packed, metadata);
@@ -726,6 +730,7 @@ export class DownloadManager {
 
         job.fileName = saved.fileName;
         job.fileSize = saved.fileSize;
+        diagnostic("Saved the book", job.id, fileName, saved.fileSize, "bytes");
 
         // The book is recorded in the library once it has been saved, so the
         // library shows what the user has actually made. A failure here does

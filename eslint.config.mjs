@@ -125,5 +125,18 @@ export default defineConfig([
             ],
         },
     },
+    {
+        // The diagnostics logger is the one place in the extension that is
+        // allowed to write to the console.
+        //
+        // Everywhere else, `no-console` keeps the extension quiet: a normal
+        // installation writes nothing to the console, which is what
+        // `docs/development.md` and `PRIVACY.md` promise. The logger is
+        // opt-in, and it is off by default, so the promise still holds.
+        files: ["src/core/util/diagnostics.ts"],
+        rules: {
+            "no-console": ["warn", { allow: ["warn", "error", "info"] }],
+        },
+    },
     prettier,
 ]);

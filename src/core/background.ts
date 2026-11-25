@@ -29,6 +29,7 @@ import { LibraryStore } from "./storage/library-store";
 import { siteSelectors } from "./storage/site-selectors";
 import { scanDocument } from "./parsers/heuristic-scanner";
 import { toUserFacingError } from "./util/errors";
+import { diagnostic, diagnosticUrl, setDiagnosticsEnabled } from "./util/diagnostics";
 import { validateFetchableUrl, validateOrigin } from "./util/sanitize";
 import { DefaultParser } from "./parsers/default-parser";
 import { registerAllParsers } from "./parsers/register-all";
@@ -202,11 +203,23 @@ class BackgroundWorker {
         try {
             const settings = await this.#settings.get();
             this.#preferences = toLegacyUserPreferences(settings);
+            setDiagnosticsEnabled(settings.advanced.diagnostics);
         } catch {
             // A failure to read the settings must not stop the worker: the
             // defaults are safe, and the download can still run.
             this.#preferences = defaultLegacyUserPreferences();
         }
+    }
+
+    /**
+     * Turn the diagnostics on or off, as the settings have them.
+     *
+     * The switch is read from the settings the worker already holds, so this
+     * is a cheap call.
+     */
+    #applyDiagnostics(): void {
+        const settings = this.#settings.cached();
+        if (settings) setDiagnosticsEnabled(settings.advanced.diagnostics);
     }
 
     /** Start the worker. */
@@ -249,6 +262,10 @@ class BackgroundWorker {
                 "settings:get": async () => ({ settings: await this.#settings.get() }),
                 "settings:set": async (payload) => {
                     await this.#settings.set(payload.settings as never);
+                    // The diagnostics switch is read here as well as in the
+                    // store, so that turning it on takes effect without
+                    // restarting the worker.
+                    this.#applyDiagnostics();
                     return { settings: await this.#settings.get() };
                 },
                 "library:list": async () => {
@@ -350,6 +367,7 @@ class BackgroundWorker {
             if (!parser) {
                 return { supported: false, error: toUserFacingError(new Error("No parser.")) };
             }
+            diagnosticUrl("Analysed the page with", url, parser.constructor.name);
 
             const title = parser.extractTitleImpl(result.dom);
             const titleText =
@@ -392,6 +410,7 @@ class BackgroundWorker {
             }
 
             const chapters = await listChapterUrls(parser, result.dom);
+            diagnosticUrl("Found chapters with", url, parser.constructor.name, chapters.length);
             return {
                 chapters: chapters.map((chapter) => ({
                     sourceUrl: chapter.sourceUrl,
@@ -439,6 +458,7 @@ class BackgroundWorker {
         const jobId = this.#downloads.start(payload.url, payload.title, chapters, {
             fileName: payload.fileName,
         });
+        diagnostic("Started a download job", jobId, chapters.length, "chapters");
         return { jobId };
     }
 

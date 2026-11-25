@@ -16,6 +16,7 @@
  */
 
 import { validateFetchableUrl } from "../util/sanitize";
+import { diagnosticUrl } from "../util/diagnostics";
 import { isAcceptableImageType, isAcceptablePageType, mediaTypeOf } from "./media-types";
 
 /** How a request should be retried. */
@@ -250,6 +251,12 @@ export class FetchClient {
                 try {
                     const response = await this.#performRequest(url, options);
                     const text = await this.#readText(response);
+                    diagnosticUrl(
+                        `Fetched (attempt ${attempt})`,
+                        url,
+                        response.status,
+                        `${text.length} characters`,
+                    );
 
                     const custom = this.#evaluateCustomError(url, response, text);
                     if (custom?.status === 999) {
