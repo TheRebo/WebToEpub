@@ -10,7 +10,92 @@ The extension itself is published to Firefox with a simplified `major.minor.patc
 
 ## [Unreleased]
 
-Nothing yet.
+The first internal audit of the alpha. Every fix below was found by reading
+the code against its own contracts and by running the extension, not by a
+user report — which is why several of them are severe.
+
+### Fixed
+
+- **Every migrated parser crashed on the first table of contents.** The
+  434 migrated parsers call `chapterUrlsUI.showTocProgress(...)`, but the
+  rewrite's progress reporter was never passed to them, so the call threw a
+  `TypeError` and the chapter list came back empty for every site. A
+  null-safe progress reporter is now installed before the parsers run, and
+  the contract test exercises all 434 parsers three ways.
+- **A parser called a method that did not exist.** `Po18csParser` called
+  `monoShowTocProgress`; the call was rewritten to the method that does exist.
+- **Images were downloaded and then thrown away.** The bytes were fetched but
+  never packaged, and the chapter's markup still pointed at the site's own
+  servers, so a saved book showed its pictures only while the reader was
+  online. Every referenced image is now packaged into `OEBPS/images`, written
+  once however many chapters use it, and the chapter's references are
+  rewritten to match. See [ADR-0016](docs/decisions/ADR-0016-package-images.md).
+- **The EPUB container had no `mimetype` entry.** The OCF specification
+  requires one, as the first archive entry, stored uncompressed. Without it a
+  reader that validates the container refuses the book. See
+  [ADR-0015](docs/decisions/ADR-0015-epub-container.md).
+- **The save hung for ever.** `zip.js` was trying to compress in a web
+  worker, which the extension's content security policy blocks; the promise
+  never settled and the download sat in the "saving" phase. See
+  [ADR-0017](docs/decisions/ADR-0017-zip-without-a-worker.md).
+- **Every chapter of every book rendered unstyled.** The chapters live in
+  `OEBPS/text` and the stylesheet lives in `OEBPS`, but the chapter linked it
+  as `styles.css`, which resolves to `OEBPS/text/styles.css` — a file that
+  is not in the book. The reference is now computed from the path of the file
+  that holds it, and the tests resolve each reference the way a reader would.
+- **A failed chapter fetch produced a silent, empty book.** The compat layer
+  returned `null` for a page it could not read, and the caller packed a
+  placeholder for every chapter without saying so. It now throws, and the
+  error is reported.
+- **The compat layer lost errors and mis-assigned parsers.** It used the
+  wrong parser when a page carried one, dropped the error message, and
+  swallowed failures instead of re-throwing them.
+- **The partitioned-cookie bridge never ran.** The code that copies a site's
+  partitioned cookies into an unpartitioned cookie for the duration of a
+  request was never constructed, so a site behind a login answered with a
+  login page. It is now installed, and the copy is removed in a `finally`.
+- **The rule that replaced the baseline's `webRequest` grant was never
+  installed.** The dynamic rule is now installed every time the worker
+  starts, because a dynamic rule does not survive the worker being torn down.
+- **The custom-error retry did not retry.** The `999` pseudo-status is how a
+  parser says "this failed, but it is worth trying again". `fetchHtml`
+  returned the rejected page as if it had succeeded on the last attempt, and
+  `fetchJson` never retried at all. Both now retry while the attempt budget
+  allows and fail when it is exhausted.
+- **`download:start` did not validate the URLs it was given.** A page could
+  ask the extension to fetch a `file:` URL or a URL on the local network and
+  have the extension act as its proxy. Every URL is now checked before the
+  job starts.
+- **The permission handlers did not validate the origin.** The requested
+  origin was pasted straight into a host permission pattern, so an origin
+  carrying a path, a query, a fragment or a wildcard of its own would grant
+  more than the user was shown. See
+  [ADR-0018](docs/decisions/ADR-0018-message-boundary.md).
+- **A malformed message reached a handler that assumed its shape.** The
+  failure surfaced as "Could not reach the site", sending the user looking in
+  the wrong place. Payloads are now validated at the bus.
+- **The chapter states were not translated.** The workbench showed the raw
+  state keys; they now come from the message catalogue like everything else,
+  and every locale is complete.
+
+### Changed
+
+- The end-to-end checks now assert what the pages _do_ rather than what they
+  are made of, so a refactor does not fail the build. Two of the checks were
+  themselves wrong — the settings search counted hidden groups, and the
+  onboarding looked for a custom element where the design uses native radio
+  inputs — and were corrected.
+- The test suite has grown from 169 to 369 tests across 21 files, with new
+  coverage for the archiver, the fetch client's error handling, the cookie
+  bridge, the network rules, the image packaging, the message bus, the URL
+  and origin validators, and the stylesheet references.
+
+### Fixed (false positives)
+
+None. The audit also checked a number of things that looked wrong and were
+not: the workbench's filtered-chapter toggle, the settings store's handling
+of partial storage, the message bus's correlation IDs, and the chapter
+selectors in four parsers that call `super.getChapterUrls` deliberately.
 
 ## [2.0.0-alpha.1] - 2026-11-23
 
