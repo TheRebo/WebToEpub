@@ -71,6 +71,46 @@ describe("validateSettings", () => {
         expect(settings.epub).toEqual(DEFAULT_SETTINGS.epub);
     });
 
+    it("keeps the defaults for the other settings in a partly-stored group", () => {
+        // A setting added in a later version is missing from the settings an
+        // existing user already has. The rest of its group must keep their
+        // defaults: a stored `images` group without `useSvg` must not turn
+        // SVG support off, and a stored `story` group without
+        // `defaultLanguage` must not leave the language empty.
+        const settings = validateSettings({ images: { skipImages: true } });
+        expect(settings.images.skipImages).toBe(true);
+        expect(settings.images.useSvg).toBe(DEFAULT_SETTINGS.images.useSvg);
+        expect(settings.images.removeDuplicates).toBe(DEFAULT_SETTINGS.images.removeDuplicates);
+
+        const story = validateSettings({ story: { removeAuthorNotes: true } });
+        expect(story.story.removeAuthorNotes).toBe(true);
+        expect(story.story.defaultLanguage).toBe(DEFAULT_SETTINGS.story.defaultLanguage);
+        expect(story.story.filenameTemplate).toBe(DEFAULT_SETTINGS.story.filenameTemplate);
+
+        const behaviour = validateSettings({ behaviour: { minimumDelay: 1000 } });
+        expect(behaviour.behaviour.minimumDelay).toBe(1000);
+        expect(behaviour.behaviour.skipFailedChapters).toBe(
+            DEFAULT_SETTINGS.behaviour.skipFailedChapters,
+        );
+        expect(behaviour.behaviour.retryOnEmptyPage).toBe(
+            DEFAULT_SETTINGS.behaviour.retryOnEmptyPage,
+        );
+
+        const epub = validateSettings({ epub: { version: 2 } });
+        expect(epub.epub.version).toBe(2);
+        expect(epub.epub.removeNextPrevLinks).toBe(DEFAULT_SETTINGS.epub.removeNextPrevLinks);
+    });
+
+    it("uses the default for a value that is not valid", () => {
+        // An unusable value falls back to the documented default, not to a
+        // zero: a corrupt `useSvg` must not quietly turn SVG support off.
+        const settings = validateSettings({
+            images: { useSvg: "yes", maxResolution: "big" },
+        });
+        expect(settings.images.useSvg).toBe(DEFAULT_SETTINGS.images.useSvg);
+        expect(settings.images.maxResolution).toBe(DEFAULT_SETTINGS.images.maxResolution);
+    });
+
     it("refuses a value that is not an object", () => {
         expect(validateSettings("nonsense")).toEqual(DEFAULT_SETTINGS);
         expect(validateSettings(null)).toEqual(DEFAULT_SETTINGS);

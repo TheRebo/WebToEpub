@@ -158,14 +158,29 @@ export const DEFAULT_SETTINGS: Settings = {
 /** The storage key. */
 export const SETTINGS_KEY = "kintsugi.settings";
 
-/** A validator for a value. */
+/**
+ * A validator for a value.
+ *
+ * Every validator takes the value it falls back to, and every fallback is
+ * taken from `DEFAULT_SETTINGS`. A value that is missing or invalid is
+ * therefore replaced by the *documented* default rather than by an arbitrary
+ * zero, which matters whenever a setting is added in a later version: the
+ * stored settings of an existing user do not have the new key, and the other
+ * keys in its group must keep their defaults.
+ */
 type Validator<T> = (value: unknown) => T;
 
 /** A validator for a boolean. */
-const boolean: Validator<boolean> = (value) => (typeof value === "boolean" ? value : false);
+const boolean =
+    (fallback: boolean): Validator<boolean> =>
+    (value) =>
+        typeof value === "boolean" ? value : fallback;
 
 /** A validator for a string. */
-const string: Validator<string> = (value) => (typeof value === "string" ? value : "");
+const string =
+    (fallback: string): Validator<string> =>
+    (value) =>
+        typeof value === "string" ? value : fallback;
 
 /** A validator for a number within a range. */
 const integerIn =
@@ -183,7 +198,6 @@ const oneOf =
             ? (value as T)
             : fallback;
 
-/** A validator for one of a set of numeric literals. */
 const oneOfNumber =
     <T extends number>(allowed: readonly T[], fallback: T): Validator<T> =>
     (value) =>
@@ -209,47 +223,50 @@ function shape<T extends Record<string, Validator<unknown>>>(
 /** The schema for the settings. */
 const SETTINGS_SCHEMA = {
     appearance: shape({
-        theme: oneOf(["system", "light", "dark"] as const, "system"),
-        accent: oneOf(["gold", "ink", "verdigris", "plum"] as const, "gold"),
-        density: oneOf(["comfortable", "compact"] as const, "comfortable"),
-        reduceMotion: boolean,
+        theme: oneOf(["system", "light", "dark"] as const, DEFAULT_SETTINGS.appearance.theme),
+        accent: oneOf(
+            ["gold", "ink", "verdigris", "plum"] as const,
+            DEFAULT_SETTINGS.appearance.accent,
+        ),
+        density: oneOf(["comfortable", "compact"] as const, DEFAULT_SETTINGS.appearance.density),
+        reduceMotion: boolean(DEFAULT_SETTINGS.appearance.reduceMotion),
     }),
     story: shape({
-        filenameTemplate: string,
-        defaultLanguage: string,
-        removeAuthorNotes: boolean,
-        removeChapterNumbers: boolean,
-        includeTocPage: boolean,
+        filenameTemplate: string(DEFAULT_SETTINGS.story.filenameTemplate),
+        defaultLanguage: string(DEFAULT_SETTINGS.story.defaultLanguage),
+        removeAuthorNotes: boolean(DEFAULT_SETTINGS.story.removeAuthorNotes),
+        removeChapterNumbers: boolean(DEFAULT_SETTINGS.story.removeChapterNumbers),
+        includeTocPage: boolean(DEFAULT_SETTINGS.story.includeTocPage),
     }),
     epub: shape({
-        version: oneOfNumber([2, 3] as const, 3),
-        addInfoPage: boolean,
-        removeNextPrevLinks: boolean,
-        includeSourceUrl: boolean,
+        version: oneOfNumber([2, 3] as const, DEFAULT_SETTINGS.epub.version),
+        addInfoPage: boolean(DEFAULT_SETTINGS.epub.addInfoPage),
+        removeNextPrevLinks: boolean(DEFAULT_SETTINGS.epub.removeNextPrevLinks),
+        includeSourceUrl: boolean(DEFAULT_SETTINGS.epub.includeSourceUrl),
     }),
     images: shape({
-        skipImages: boolean,
-        removeDuplicates: boolean,
-        preferHighestResolution: boolean,
-        useSvg: boolean,
-        compress: boolean,
-        maxResolution: integerIn(100, 10000, 2000),
+        skipImages: boolean(DEFAULT_SETTINGS.images.skipImages),
+        removeDuplicates: boolean(DEFAULT_SETTINGS.images.removeDuplicates),
+        preferHighestResolution: boolean(DEFAULT_SETTINGS.images.preferHighestResolution),
+        useSvg: boolean(DEFAULT_SETTINGS.images.useSvg),
+        compress: boolean(DEFAULT_SETTINGS.images.compress),
+        maxResolution: integerIn(100, 10000, DEFAULT_SETTINGS.images.maxResolution),
     }),
     behaviour: shape({
-        skipFailedChapters: boolean,
-        retryOnEmptyPage: boolean,
-        minimumDelay: integerIn(0, 60000, 500),
-        maxChapters: integerIn(1, 100000, 5000),
-        delayPerChapter: integerIn(0, 60000, 0),
+        skipFailedChapters: boolean(DEFAULT_SETTINGS.behaviour.skipFailedChapters),
+        retryOnEmptyPage: boolean(DEFAULT_SETTINGS.behaviour.retryOnEmptyPage),
+        minimumDelay: integerIn(0, 60000, DEFAULT_SETTINGS.behaviour.minimumDelay),
+        maxChapters: integerIn(1, 100000, DEFAULT_SETTINGS.behaviour.maxChapters),
+        delayPerChapter: integerIn(0, 60000, DEFAULT_SETTINGS.behaviour.delayPerChapter),
     }),
     privacy: shape({
-        metadataLookup: boolean,
-        sendStoryUrl: boolean,
+        metadataLookup: boolean(DEFAULT_SETTINGS.privacy.metadataLookup),
+        sendStoryUrl: boolean(DEFAULT_SETTINGS.privacy.sendStoryUrl),
     }),
     advanced: shape({
-        diagnostics: boolean,
+        diagnostics: boolean(DEFAULT_SETTINGS.advanced.diagnostics),
     }),
-    onboardingComplete: boolean,
+    onboardingComplete: boolean(DEFAULT_SETTINGS.onboardingComplete),
 };
 
 /**
