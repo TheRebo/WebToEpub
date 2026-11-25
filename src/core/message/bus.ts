@@ -297,9 +297,10 @@ export async function sendRequest<N extends RequestName>(
 /**
  * Handle incoming requests.
  *
- * The handler is given the payload and must return a result; any error is
- * converted to a `UserFacingError` and sent back, so the caller never sees a
- * raw exception.
+ * The payload is validated before the handler sees it, so a message carrying
+ * the wrong shape is answered with a clear error instead of reaching a
+ * handler that assumes the shape. The error is converted to a
+ * `UserFacingError` and sent back, so the caller never sees a raw exception.
  */
 export async function handleRequests(
     api: MessagingListenerApi,
@@ -319,6 +320,14 @@ export async function handleRequests(
         if (!handler) return undefined;
 
         try {
+            if (!isValidPayload(type, envelope.payload)) {
+                // The message is raised as a user-facing error so that it
+                // survives the translation into a `UserFacingError`; a plain
+                // exception would be shown as "Could not reach the site.",
+                // which would send the user looking in the wrong place.
+                const { UserFacingErrorError } = await import("../util/errors");
+                throw new UserFacingErrorError(`The ${type} request was malformed.`, "UNKNOWN");
+            }
             const result = await (handler as (payload: unknown) => Promise<unknown>)(
                 envelope.payload,
             );
@@ -333,4 +342,97 @@ export async function handleRequests(
             return response;
         }
     });
+}
+
+/* ------------------------------------------------------------------ */
+/* Payload validation                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The shape a payload must have, for each request.
+ *
+ * The message bus is the boundary between the extension's own pages and the
+ * worker. The types describe what the pages *send*; this describes what a
+ * message has to look like to be *accepted*. Without it, a message carrying
+ * the wrong shape reaches a handler that assumes the shape, and the failure
+ * is a `TypeError` from deep inside the worker rather than a clear message
+ * to the page that sent it.
+ */
+const PAYLOAD_RULES: {
+    [K in RequestName]: (payload: unknown) => boolean;
+} = {
+    "page:analyze": (payload) => hasString(payload, "url"),
+    "chapters:list": (payload) => hasString(payload, "url"),
+    "download:start": (payload) =>
+        hasString(payload, "url") &&
+        hasString(payload, "title") &&
+        hasArray(payload, "chapters") &&
+        (payload as { chapters: unknown[] }).chapters.every(
+            (chapter) =>
+                typeof chapter === "object" &&
+                chapter !== null &&
+                hasString(chapter as object, "sourceUrl") &&
+                hasString(chapter as object, "title"),
+        ),
+    "download:cancel": (payload) => hasString(payload, "jobId"),
+    "download:progress": (payload) => hasString(payload, "jobId"),
+    "download:list": () => true,
+    "settings:get": () => true,
+    "settings:set": (payload) => hasProperty(payload, "settings"),
+    "library:list": () => true,
+    "library:delete": (payload) => hasString(payload, "id"),
+    "permissions:check": (payload) => hasString(payload, "origin"),
+    "permissions:request": (payload) => hasString(payload, "origin"),
+    "permissions:list": () => true,
+    "permissions:revoke": (payload) => hasString(payload, "origin"),
+    "site-selectors:suggest": (payload) => hasString(payload, "url"),
+    "site-selectors:test": (payload) =>
+        hasString(payload, "url") &&
+        hasString(payload, "contentCss") &&
+        hasString(payload, "titleCss") &&
+        hasString(payload, "removeCss"),
+    "site-selectors:save": (payload) =>
+        hasString(payload, "hostname") &&
+        hasString(payload, "contentCss") &&
+        hasString(payload, "titleCss") &&
+        hasString(payload, "removeCss"),
+    "site-selectors:list": () => true,
+    "site-selectors:remove": (payload) => hasString(payload, "hostname"),
+};
+
+/**
+ * Whether a payload has a string property.
+ */
+function hasString(value: unknown, key: string): boolean {
+    if (typeof value !== "object" || value === null) return false;
+    return typeof (value as Record<string, unknown>)[key] === "string";
+}
+
+/**
+ * Whether a payload has an array property.
+ */
+function hasArray(value: unknown, key: string): boolean {
+    if (typeof value !== "object" || value === null) return false;
+    return Array.isArray((value as Record<string, unknown>)[key]);
+}
+
+/**
+ * Whether a payload has a property at all.
+ */
+function hasProperty(value: unknown, key: string): boolean {
+    if (typeof value !== "object" || value === null) return false;
+    return key in (value as Record<string, unknown>);
+}
+
+/**
+ * Validate a message's payload for a request.
+ *
+ * @param type The request's name.
+ * @param payload The payload.
+ * @returns Whether the payload is acceptable.
+ */
+export function isValidPayload(type: RequestName, payload: unknown): boolean {
+    const rule = PAYLOAD_RULES[type];
+    if (!rule) return false;
+    return rule(payload);
 }
