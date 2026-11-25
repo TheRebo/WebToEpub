@@ -411,7 +411,15 @@ function packageChapterImages(
         // EPUB.
         if (image.data.length === 0) continue;
 
-        const path = imagePath(url, image.mediaType);
+        // The image's own URL, rather than the key it happens to be filed under.
+        // When the same picture is served from two URLs, the second one is
+        // pointed at the first, and the key is then the *second* URL while the
+        // image still knows the first. Naming the file after the key would
+        // write the picture into the book a second time, which is exactly what
+        // the setting that asked for it is meant to prevent.
+        const canonical = image.url || url;
+
+        const path = imagePath(canonical, image.mediaType);
         if (!files.has(path)) {
             files.set(path, {
                 path,
