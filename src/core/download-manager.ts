@@ -376,13 +376,13 @@ export class DownloadManager {
         const packed: ChapterToPack[] = [];
         const images = new Map<string, ImageData>();
         /**
-         * The images each chapter references, keyed by the chapter's index.
+         * The images each chapter references, keyed by the chapter's URL.
          *
          * The rewrite of the chapter's markup happens after the images have
          * been downloaded, because the packaged file name depends on the
          * media type, which is only known then.
          */
-        const chapterImages = new Map<number, Map<string, ImageData>>();
+        const chapterImages = new Map<string, Map<string, ImageData>>();
 
         for (const [chapterIndex, chapter] of job.chapters.entries()) {
             if (signal.aborted) {
@@ -459,7 +459,12 @@ export class DownloadManager {
                             }
                             chapterImageMap.set(url, images.get(url)!);
                         }
-                        chapterImages.set(chapterIndex, chapterImageMap);
+                        // The images are keyed by the chapter's URL, not by its
+                        // position in a list. A chapter that failed is skipped,
+                        // so the packed list and the requested list do not
+                        // share their positions, and a positional key would
+                        // hand a chapter the wrong images.
+                        chapterImages.set(chapter.sourceUrl, chapterImageMap);
 
                         const html = sanitizeContent(content);
                         chapter.state = "loaded";
@@ -548,8 +553,8 @@ export class DownloadManager {
         // are not in the EPUB. Now that the images have been downloaded, each
         // reference is rewritten to the packaged file's path, and each
         // chapter is given the images it owns.
-        for (const [index, chapter] of packed.entries()) {
-            const owned = chapterImages.get(index);
+        for (const chapter of packed) {
+            const owned = chapterImages.get(chapter.sourceUrl);
             if (!owned || owned.size === 0) continue;
 
             const resolved = new Map<string, ImageData>();
