@@ -81,6 +81,34 @@ export type JobPhase =
     | "failed"
     | "cancelled";
 
+/** The behaviour settings the download pipeline honours. */
+export interface DownloadBehaviour {
+    /** Whether a chapter that fails to fetch is skipped rather than kept. */
+    skipFailedChapters: boolean;
+    /** Whether an empty page is fetched again before giving up. */
+    retryOnEmptyPage: boolean;
+    /** The minimum delay between requests, in milliseconds. */
+    minimumDelay: number;
+    /** The maximum number of chapters in one EPUB. */
+    maxChapters: number;
+    /** The extra delay between chapters, in milliseconds. */
+    delayPerChapter: number;
+}
+
+/**
+ * The behaviour settings, when nothing else is known.
+ *
+ * These match the defaults in the settings store, so a download behaves the
+ * same way whether or not the settings have been read yet.
+ */
+export const DEFAULT_BEHAVIOUR: DownloadBehaviour = {
+    skipFailedChapters: false,
+    retryOnEmptyPage: true,
+    minimumDelay: 500,
+    maxChapters: 5000,
+    delayPerChapter: 0,
+};
+
 /** The dependencies the manager needs. */
 export interface DownloadManagerDependencies {
     /** Fetch a page and parse it as HTML. */
@@ -103,6 +131,13 @@ export interface DownloadManagerDependencies {
     };
     /** Wait between requests, honouring the abort signal. */
     throttle(ms: number, signal: AbortSignal): Promise<void>;
+    /**
+     * The behaviour settings to apply to a job.
+     *
+     * Read at the moment the job starts, so a change in the options applies
+     * to the next download and not to one already running.
+     */
+    behaviour?(): DownloadBehaviour | Promise<DownloadBehaviour>;
     /** Report progress. */
     onProgress?(job: JobProgress): void;
     /**
@@ -128,7 +163,7 @@ export interface JobProgress {
     chaptersTotal: number;
     /** The percentage, from 0 to 100. */
     percent: number;
-    /** The message. */
+    /** The message, as the key the UI translates. */
     message: string;
     /** The file name, once the job is complete. */
     fileName?: string;
@@ -141,16 +176,24 @@ export interface JobProgress {
 /** The phases a job can end in. */
 const TERMINAL_PHASES = new Set<JobPhase>(["complete", "failed", "cancelled"]);
 
-/** The messages for each phase. */
-const PHASE_MESSAGES: Record<JobPhase, string> = {
-    preparing: "Preparing",
-    "fetching-chapters": "Fetching chapters",
-    "downloading-images": "Downloading images",
-    "building-epub": "Building EPUB",
-    saving: "Saving",
-    complete: "Saved",
-    failed: "Failed",
-    cancelled: "Cancelled",
+/**
+ * The message key for each phase.
+ *
+ * The keys are translated in the UI, not here: the background worker has no
+ * locale, and a message that crossed the bus in English could not be
+ * translated by the page that received it.
+ *
+ * See ADR-0010.
+ */
+const PHASE_MESSAGE_KEYS: Record<JobPhase, string> = {
+    preparing: "phasePreparing",
+    "fetching-chapters": "phaseFetchingChapters",
+    "downloading-images": "phaseDownloadingImages",
+    "building-epub": "phaseBuildingEpub",
+    saving: "phaseSaving",
+    complete: "phaseComplete",
+    failed: "phaseFailed",
+    cancelled: "phaseCancelled",
 };
 
 /**
@@ -234,6 +277,11 @@ export class DownloadManager {
         const { fetchBytes, saveFile, parserFor, util, throttle } = this.#dependencies;
         const signal = job.controller.signal;
 
+        // The behaviour settings are read once, when the job starts, so a
+        // change in the options applies to the next download rather than to
+        // one that is already running.
+        const behaviour = await this.#readBehaviour();
+
         job.phase = "fetching-chapters";
         this.#report(job);
 
@@ -260,8 +308,22 @@ export class DownloadManager {
         const parser = parserFor(job.sourceUrl, storyDom);
 
         // The parser owns the politeness budget. Some sites need seconds
-        // between requests, and the baseline's parsers said so.
-        const delay = parser ? Math.max(parser.getRateLimit(), 0) : 500;
+        // between requests, and the baseline's parsers said so. The user's
+        // own minimum is a floor, not a ceiling: a site that asks for a
+        // longer pause always gets it.
+        const parserDelay = parser ? Math.max(parser.getRateLimit(), 0) : 0;
+        const delay = Math.max(parserDelay, behaviour.minimumDelay) + behaviour.delayPerChapter;
+
+        // The chapter limit is the user's safety net. A book with tens of
+        // thousands of chapters would take days and fill the disk, so the
+        // job is refused with an error the user can act on rather than
+        // starting and grinding to a halt.
+        if (job.chapters.length > behaviour.maxChapters) {
+            job.phase = "failed";
+            job.error = tooManyChaptersError(job.chapters.length, behaviour.maxChapters);
+            this.#report(job);
+            return;
+        }
 
         const packed: ChapterToPack[] = [];
         const images = new Map<string, ImageData>();
@@ -282,14 +344,26 @@ export class DownloadManager {
             }
 
             try {
-                const dom = await this.#fetchChapter(parser, chapter.sourceUrl, signal);
+                const dom = await this.#fetchChapterWithRetry(
+                    parser,
+                    chapter.sourceUrl,
+                    signal,
+                    behaviour,
+                );
                 if (dom === null) {
-                    packed.push(
-                        buildPlaceholderChapter(
-                            chapter.sourceUrl,
-                            "The chapter could not be read.",
-                        ),
-                    );
+                    // A chapter that could not be read is either skipped or
+                    // kept as a placeholder, depending on the user's
+                    // preference. Skipping keeps the book's contents honest:
+                    // a placeholder chapter reads as if the prose were
+                    // missing, rather than saying what went wrong.
+                    if (!behaviour.skipFailedChapters) {
+                        packed.push(
+                            buildPlaceholderChapter(
+                                chapter.sourceUrl,
+                                "The chapter could not be read.",
+                            ),
+                        );
+                    }
                     job.failed += 1;
                 } else {
                     // The parser decides what the content is and how it is
@@ -302,12 +376,14 @@ export class DownloadManager {
                         : null;
 
                     if (content === null) {
-                        packed.push(
-                            buildPlaceholderChapter(
-                                chapter.sourceUrl,
-                                "The chapter could not be read.",
-                            ),
-                        );
+                        if (!behaviour.skipFailedChapters) {
+                            packed.push(
+                                buildPlaceholderChapter(
+                                    chapter.sourceUrl,
+                                    "The chapter could not be read.",
+                                ),
+                            );
+                        }
                         job.failed += 1;
                     } else {
                         // Collect the images the chapter references. The
@@ -342,14 +418,16 @@ export class DownloadManager {
                     this.#report(job);
                     return;
                 }
-                packed.push(
-                    buildPlaceholderChapter(
-                        chapter.sourceUrl,
-                        error instanceof Error
-                            ? error.message
-                            : "The chapter could not be fetched.",
-                    ),
-                );
+                if (!behaviour.skipFailedChapters) {
+                    packed.push(
+                        buildPlaceholderChapter(
+                            chapter.sourceUrl,
+                            error instanceof Error
+                                ? error.message
+                                : "The chapter could not be fetched.",
+                        ),
+                    );
+                }
                 job.failed += 1;
             }
 
@@ -549,6 +627,60 @@ export class DownloadManager {
     }
 
     /**
+     * Fetch a chapter, fetching it again when it comes back empty.
+     *
+     * An empty page is usually a temporary fault: a session that had not
+     * settled, a cache that had not warmed up, a site that answers the
+     * first request with a shell. Fetching it a second time often works.
+     *
+     * The retry is only made when the user has asked for it. A chapter that
+     * genuinely has no content is not going to grow a second paragraph.
+     */
+    async #fetchChapterWithRetry(
+        parser: Parser | null,
+        url: string,
+        signal: AbortSignal,
+        behaviour: DownloadBehaviour,
+    ): Promise<Document | null> {
+        const first = await this.#fetchChapter(parser, url, signal);
+        if (first === null) return null;
+        if (!behaviour.retryOnEmptyPage) return first;
+        if (!isEmptyDocument(first)) return first;
+
+        // The same pause the chapters get is honoured before the retry, so
+        // the site is not asked twice in the same instant.
+        await this.#dependencies.throttle(
+            Math.max(behaviour.minimumDelay, 0) + behaviour.delayPerChapter,
+            signal,
+        );
+        const second = await this.#fetchChapter(parser, url, signal);
+        return second ?? first;
+    }
+
+    /**
+     * The behaviour settings for a job.
+     *
+     * A store that cannot be read is not a reason to fail the download: the
+     * defaults are used instead.
+     */
+    async #readBehaviour(): Promise<DownloadBehaviour> {
+        const read = this.#dependencies.behaviour;
+        if (!read) return { ...DEFAULT_BEHAVIOUR };
+        try {
+            const value = await read();
+            return {
+                skipFailedChapters: value.skipFailedChapters,
+                retryOnEmptyPage: value.retryOnEmptyPage,
+                minimumDelay: Math.max(value.minimumDelay, 0),
+                maxChapters: Math.max(value.maxChapters, 1),
+                delayPerChapter: Math.max(value.delayPerChapter, 0),
+            };
+        } catch {
+            return { ...DEFAULT_BEHAVIOUR };
+        }
+    }
+
+    /**
      * Fetch the story's page.
      *
      * A failure here is fatal and the error is re-thrown, so the job can
@@ -574,7 +706,7 @@ export class DownloadManager {
             chaptersDone: job.done,
             chaptersTotal: total,
             percent,
-            message: PHASE_MESSAGES[job.phase],
+            message: PHASE_MESSAGE_KEYS[job.phase],
         };
         if (job.fileName) progress.fileName = job.fileName;
         if (job.fileSize !== undefined) progress.fileSize = job.fileSize;
@@ -775,4 +907,33 @@ export function rewriteImageReferences(
  */
 function sanitizeContent(content: Element): string {
     return sanitizeHtml(content.innerHTML);
+}
+
+/**
+ * Whether a document has no prose in it.
+ *
+ * A page that came back with no text at all is usually a shell: the site
+ * served a page whose content is filled in by a script the extension did not
+ * run, or a session that had not settled yet.
+ */
+function isEmptyDocument(dom: Document): boolean {
+    const body = dom.body;
+    if (!body) return true;
+    const text = body.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    return text.length === 0;
+}
+
+/**
+ * The error raised when a book has more chapters than the user allows.
+ *
+ * The user is told how many chapters there are and how many they allowed, so
+ * the fix is obvious: raise the limit in the options, or select fewer
+ * chapters.
+ */
+function tooManyChaptersError(count: number, limit: number): UserFacingError {
+    return {
+        message: `This book has ${count} chapters, which is more than the ${limit} you allowed. Raise the limit in the options, or select fewer chapters.`,
+        code: "TOO_MANY_CHAPTERS",
+        actions: [{ id: "raise-limit", label: "Raise the limit" }],
+    };
 }

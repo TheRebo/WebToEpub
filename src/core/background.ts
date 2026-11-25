@@ -103,6 +103,13 @@ class BackgroundWorker {
             throttle: async (ms, signal) => {
                 await sleep(ms, signal);
             },
+            // The behaviour settings are read when a job starts, so a change
+            // in the options applies to the next download and not to one that
+            // is already running.
+            behaviour: async () => {
+                const settings = await this.#settings.get();
+                return settings.behaviour;
+            },
             // When a job ends — whether it completed, failed or was cancelled
             // — the copied partitioned cookies are removed. Without this a
             // long session would leave copies of the user's session cookies
