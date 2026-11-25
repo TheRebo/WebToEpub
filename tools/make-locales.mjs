@@ -132,7 +132,6 @@ const SOURCE = {
     optionsEpub: ["EPUB", "The EPUB settings group."],
     optionsImages: ["Images", "The image settings group."],
     optionsBehaviour: ["Behaviour", "The behaviour settings group."],
-    optionsPrivacy: ["Privacy", "The privacy settings group."],
     optionsAdvanced: ["Advanced", "The advanced settings group."],
     optionsTheme: ["Theme", "The theme setting."],
     optionsAccent: ["Accent", "The accent colour setting."],
@@ -153,9 +152,30 @@ const SOURCE = {
     optionsExportSettings: ["Export settings", "Saves the settings to a file."],
     optionsImportSettings: ["Import settings", "Loads the settings from a file."],
     optionsResetAll: ["Reset all settings", "Restores every setting to its default."],
+    optionsExported: [
+        "The settings were saved to a file.",
+        "Said after the settings are exported.",
+    ],
+    optionsImported: [
+        "The settings were loaded from the file.",
+        "Said after the settings are imported.",
+    ],
+    optionsImportInvalid: [
+        "That file is not a Kintsugi settings file.",
+        "Said when the imported file cannot be read.",
+    ],
+    optionsResetDone: [
+        "Every setting is back to its default.",
+        "Said after the settings are reset.",
+    ],
+    optionsResetConfirm: [
+        "Every setting goes back to its default. Your library and your saved sites are not touched.",
+        "The reset dialog's explanation.",
+    ],
+    optionsResetConfirmAction: ["Reset everything", "The reset dialog's confirm button."],
     optionsPrivacyNote: [
         "Kintsugi sends nothing to anyone. Every network request goes to the site you are reading.",
-        "The note under the privacy settings.",
+        "The note at the foot of the settings.",
     ],
 
     // --- Options: library ---
@@ -229,18 +249,17 @@ const SOURCE = {
         "The prefer-highest-resolution setting.",
     ],
     settingUseSvg: ["Allow SVG images", "The allow-SVG setting."],
-    settingCompressImages: ["Compress images", "The compress-images setting."],
-    settingMaxResolution: ["Maximum resolution", "The maximum-resolution setting."],
-    settingMaxResolutionHint: [
-        "In pixels on the longest edge.",
-        "Explains the maximum-resolution setting.",
-    ],
     settingSkipFailedChapters: ["Skip chapters that fail", "The skip-failed-chapters setting."],
     settingSkipFailedChaptersHint: [
         "A failed chapter becomes a note in the book instead of stopping the run.",
         "Explains the skip-failed-chapters setting.",
     ],
     settingRetryOnEmptyPage: ["Retry on an empty page", "The retry-on-empty-page setting."],
+    settingEmptyPageIsError: ["An empty page is an error", "The empty-page-is-error setting."],
+    settingEmptyPageIsErrorHint: [
+        "Some sites answer a blocked request with a blank page. When this is on, that page is reported as a failure instead of becoming an empty chapter.",
+        "Explains the empty-page-is-error setting.",
+    ],
     settingMinimumDelay: ["Minimum delay between requests", "The minimum-delay setting."],
     settingMinimumDelayHint: [
         "In milliseconds. Raise it for sites that rate-limit aggressively.",
@@ -251,16 +270,6 @@ const SOURCE = {
     settingDelayPerChapterHint: [
         "In milliseconds, on top of the minimum delay.",
         "Explains the delay-per-chapter setting.",
-    ],
-    settingMetadataLookup: ["Look up book metadata", "The metadata-lookup setting."],
-    settingMetadataLookupHint: [
-        "Off by default. When on, the title is checked against a public database.",
-        "Explains the metadata-lookup setting.",
-    ],
-    settingSendStoryUrl: ["Send the story URL with the lookup", "The send-story-url setting."],
-    settingSendStoryUrlHint: [
-        "Off by default. Without it, the lookup can only use the title.",
-        "Explains the send-story-url setting.",
     ],
     settingDiagnostics: ["Developer diagnostics", "The diagnostics setting."],
     settingDiagnosticsHint: [
@@ -395,6 +404,7 @@ const SOURCE = {
     // --- Shared across the components ---
     commonClose: ["Close", "The label of a button that closes a dialog."],
     commonDismiss: ["Dismiss", "The label of a button that dismisses a notification."],
+    commonCancel: ["Cancel", "The label of a button that cancels an action."],
 };
 
 /**

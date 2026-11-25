@@ -118,7 +118,6 @@ export default {
     optionsEpub: ["EPUB", "Kelompok pengaturan EPUB."],
     optionsImages: ["Gambar", "Kelompok pengaturan gambar."],
     optionsBehaviour: ["Perilaku", "Kelompok pengaturan perilaku."],
-    optionsPrivacy: ["Privasi", "Kelompok pengaturan privasi."],
     optionsAdvanced: ["Lanjutan", "Kelompok pengaturan lanjutan."],
     optionsTheme: ["Tema", "Pengaturan tema."],
     optionsAccent: ["Warna aksen", "Pengaturan warna aksen."],
@@ -142,9 +141,30 @@ export default {
         "Atur ulang semua pengaturan",
         "Mengembalikan setiap pengaturan ke nilai bawaan.",
     ],
+    optionsExported: [
+        "Pengaturan telah disimpan ke berkas.",
+        "Ditampilkan setelah pengaturan diekspor.",
+    ],
+    optionsImported: [
+        "Pengaturan telah dimuat dari berkas.",
+        "Ditampilkan setelah pengaturan diimpor.",
+    ],
+    optionsImportInvalid: [
+        "Berkas itu bukan berkas pengaturan Kintsugi.",
+        "Ditampilkan ketika berkas yang diimpor tidak dapat dibaca.",
+    ],
+    optionsResetDone: [
+        "Setiap pengaturan kembali ke nilai bawaannya.",
+        "Ditampilkan setelah pengaturan diatur ulang.",
+    ],
+    optionsResetConfirm: [
+        "Setiap pengaturan kembali ke nilai bawaannya. Pustaka dan situs tersimpan Anda tidak tersentuh.",
+        "Penjelasan pada dialog atur ulang.",
+    ],
+    optionsResetConfirmAction: ["Atur ulang semua", "Tombol konfirmasi pada dialog atur ulang."],
     optionsPrivacyNote: [
         "Kintsugi tidak mengirim apa pun ke siapa pun. Setiap permintaan jaringan hanya menuju situs yang sedang Anda baca.",
-        "Catatan di bawah pengaturan privasi.",
+        "Catatan di kaki pengaturan.",
     ],
 
     // --- Options: library ---
@@ -215,12 +235,6 @@ export default {
         "Pengaturan pemilihan resolusi tertinggi.",
     ],
     settingUseSvg: ["Izinkan gambar SVG", "Pengaturan izin gambar SVG."],
-    settingCompressImages: ["Kompres gambar", "Pengaturan kompresi gambar."],
-    settingMaxResolution: ["Resolusi maksimum", "Pengaturan resolusi maksimum."],
-    settingMaxResolutionHint: [
-        "Dalam piksel pada sisi terpanjang.",
-        "Penjelasan pengaturan resolusi maksimum.",
-    ],
     settingSkipFailedChapters: ["Lewati bab yang gagal", "Pengaturan melewati bab yang gagal."],
     settingSkipFailedChaptersHint: [
         "Bab yang gagal menjadi catatan di dalam buku, bukan menghentikan proses.",
@@ -229,6 +243,14 @@ export default {
     settingRetryOnEmptyPage: [
         "Coba lagi pada halaman kosong",
         "Pengaturan percobaan ulang pada halaman kosong.",
+    ],
+    settingEmptyPageIsError: [
+        "Halaman kosong dianggap galat",
+        "Pengaturan yang menjadikan halaman kosong sebagai galat.",
+    ],
+    settingEmptyPageIsErrorHint: [
+        "Sebagian situs menjawab permintaan yang diblokir dengan halaman kosong. Jika opsi ini aktif, halaman tersebut dilaporkan sebagai kegagalan, bukan menjadi bab kosong.",
+        "Penjelasan pengaturan yang menjadikan halaman kosong sebagai galat.",
     ],
     settingMinimumDelay: ["Jeda minimum antarpermintaan", "Pengaturan jeda minimum."],
     settingMinimumDelayHint: [
@@ -240,19 +262,6 @@ export default {
     settingDelayPerChapterHint: [
         "Dalam milidetik, di atas jeda minimum.",
         "Penjelasan pengaturan jeda per bab.",
-    ],
-    settingMetadataLookup: ["Cari metadata buku", "Pengaturan pencarian metadata."],
-    settingMetadataLookupHint: [
-        "Mati secara bawaan. Jika diaktifkan, judul diperiksa terhadap basis data publik.",
-        "Penjelasan pengaturan pencarian metadata.",
-    ],
-    settingSendStoryUrl: [
-        "Kirim URL cerita bersama pencarian",
-        "Pengaturan pengiriman URL cerita.",
-    ],
-    settingSendStoryUrlHint: [
-        "Mati secara bawaan. Tanpanya, pencarian hanya dapat memakai judul.",
-        "Penjelasan pengaturan pengiriman URL cerita.",
     ],
     settingDiagnostics: ["Diagnostik pengembang", "Pengaturan diagnostik."],
     settingDiagnosticsHint: [
@@ -382,4 +391,5 @@ export default {
     ],
     commonClose: ["Tutup", "Label tombol yang menutup dialog."],
     commonDismiss: ["Tutup", "Label tombol yang menutup notifikasi."],
+    commonCancel: ["Batal", "Label tombol yang membatalkan sebuah tindakan."],
 };

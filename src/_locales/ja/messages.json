@@ -325,10 +325,6 @@
     "message": "動作",
     "description": "動作設定のグループ。"
   },
-  "optionsPrivacy": {
-    "message": "プライバシー",
-    "description": "プライバシー設定のグループ。"
-  },
   "optionsAdvanced": {
     "message": "詳細",
     "description": "詳細設定のグループ。"
@@ -409,9 +405,33 @@
     "message": "すべての設定をリセット",
     "description": "すべての設定を既定値に戻します。"
   },
+  "optionsExported": {
+    "message": "設定をファイルに保存しました。",
+    "description": "設定を書き出した後に表示されます。"
+  },
+  "optionsImported": {
+    "message": "ファイルから設定を読み込みました。",
+    "description": "設定を読み込んだ後に表示されます。"
+  },
+  "optionsImportInvalid": {
+    "message": "このファイルは Kintsugi の設定ファイルではありません。",
+    "description": "読み込むファイルが解釈できないときに表示されます。"
+  },
+  "optionsResetDone": {
+    "message": "すべての設定が既定値に戻りました。",
+    "description": "設定をリセットした後に表示されます。"
+  },
+  "optionsResetConfirm": {
+    "message": "すべての設定が既定値に戻ります。ライブラリと保存したサイトには手を加えません。",
+    "description": "リセットの確認ダイアログの説明。"
+  },
+  "optionsResetConfirmAction": {
+    "message": "すべてリセット",
+    "description": "リセットの確認ダイアログの決定ボタン。"
+  },
   "optionsPrivacyNote": {
     "message": "Kintsugi はどこにもデータを送信しません。すべての通信は、読んでいるサイトに対してのみ行われます。",
-    "description": "プライバシー設定の項目の下に置く注記。"
+    "description": "設定の下に置く注記。"
   },
   "optionsLibrary": {
     "message": "ライブラリ",
@@ -545,18 +565,6 @@
     "message": "SVG 画像を許可",
     "description": "SVG 画像を許可する設定。"
   },
-  "settingCompressImages": {
-    "message": "画像を圧縮",
-    "description": "画像を圧縮する設定。"
-  },
-  "settingMaxResolution": {
-    "message": "最大解像度",
-    "description": "最大解像度の設定。"
-  },
-  "settingMaxResolutionHint": {
-    "message": "長辺のピクセル数で指定します。",
-    "description": "最大解像度の設定の説明。"
-  },
   "settingSkipFailedChapters": {
     "message": "失敗した章をスキップ",
     "description": "失敗した章をスキップする設定。"
@@ -568,6 +576,14 @@
   "settingRetryOnEmptyPage": {
     "message": "空のページでは再試行",
     "description": "空のページで再試行する設定。"
+  },
+  "settingEmptyPageIsError": {
+    "message": "空のページはエラーとして扱う",
+    "description": "空のページをエラーとして扱う設定。"
+  },
+  "settingEmptyPageIsErrorHint": {
+    "message": "一部のサイトは、ブロックされた要求に対して空のページを返します。この設定を有効にすると、そのページは空の章ではなく失敗として報告されます。",
+    "description": "空のページをエラーとして扱う設定の説明。"
   },
   "settingMinimumDelay": {
     "message": "リクエスト間の最小待機時間",
@@ -588,22 +604,6 @@
   "settingDelayPerChapterHint": {
     "message": "ミリ秒単位です。最小待機時間に加算されます。",
     "description": "章ごとの追加待機時間の設定の説明。"
-  },
-  "settingMetadataLookup": {
-    "message": "書籍情報を検索",
-    "description": "メタデータ検索の設定。"
-  },
-  "settingMetadataLookupHint": {
-    "message": "既定ではオフです。有効にすると、タイトルを公開データベースと照合します。",
-    "description": "メタデータ検索の設定の説明。"
-  },
-  "settingSendStoryUrl": {
-    "message": "検索時に物語の URL を送信",
-    "description": "物語の URL を送信する設定。"
-  },
-  "settingSendStoryUrlHint": {
-    "message": "既定ではオフです。オフの場合、検索にはタイトルしか使われません。",
-    "description": "物語の URL を送信する設定の説明。"
   },
   "settingDiagnostics": {
     "message": "開発者向け診断",
@@ -856,5 +856,9 @@
   "commonDismiss": {
     "message": "閉じる",
     "description": "通知を閉じるボタンのラベル。"
+  },
+  "commonCancel": {
+    "message": "キャンセル",
+    "description": "操作を取り消すボタンのラベル。"
   }
 }

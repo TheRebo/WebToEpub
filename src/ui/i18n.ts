@@ -94,6 +94,7 @@ export const MESSAGES = {
     // Common
     commonClose: "commonClose",
     commonDismiss: "commonDismiss",
+    commonCancel: "commonCancel",
 
     // Options
     optionsAppearance: "optionsAppearance",
@@ -101,7 +102,6 @@ export const MESSAGES = {
     optionsEpub: "optionsEpub",
     optionsImages: "optionsImages",
     optionsBehaviour: "optionsBehaviour",
-    optionsPrivacy: "optionsPrivacy",
     optionsAdvanced: "optionsAdvanced",
     optionsTheme: "optionsTheme",
     optionsAccent: "optionsAccent",
@@ -122,6 +122,12 @@ export const MESSAGES = {
     optionsExportSettings: "optionsExportSettings",
     optionsImportSettings: "optionsImportSettings",
     optionsResetAll: "optionsResetAll",
+    optionsExported: "optionsExported",
+    optionsImported: "optionsImported",
+    optionsImportInvalid: "optionsImportInvalid",
+    optionsResetDone: "optionsResetDone",
+    optionsResetConfirm: "optionsResetConfirm",
+    optionsResetConfirmAction: "optionsResetConfirmAction",
     optionsPrivacyNote: "optionsPrivacyNote",
 
     // Options: library
@@ -156,21 +162,16 @@ export const MESSAGES = {
     settingRemoveDuplicates: "settingRemoveDuplicates",
     settingPreferHighestResolution: "settingPreferHighestResolution",
     settingUseSvg: "settingUseSvg",
-    settingCompressImages: "settingCompressImages",
-    settingMaxResolution: "settingMaxResolution",
-    settingMaxResolutionHint: "settingMaxResolutionHint",
     settingSkipFailedChapters: "settingSkipFailedChapters",
     settingSkipFailedChaptersHint: "settingSkipFailedChaptersHint",
     settingRetryOnEmptyPage: "settingRetryOnEmptyPage",
+    settingEmptyPageIsError: "settingEmptyPageIsError",
+    settingEmptyPageIsErrorHint: "settingEmptyPageIsErrorHint",
     settingMinimumDelay: "settingMinimumDelay",
     settingMinimumDelayHint: "settingMinimumDelayHint",
     settingMaxChapters: "settingMaxChapters",
     settingDelayPerChapter: "settingDelayPerChapter",
     settingDelayPerChapterHint: "settingDelayPerChapterHint",
-    settingMetadataLookup: "settingMetadataLookup",
-    settingMetadataLookupHint: "settingMetadataLookupHint",
-    settingSendStoryUrl: "settingSendStoryUrl",
-    settingSendStoryUrlHint: "settingSendStoryUrlHint",
     settingDiagnostics: "settingDiagnostics",
     settingDiagnosticsHint: "settingDiagnosticsHint",
 

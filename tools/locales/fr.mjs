@@ -108,7 +108,6 @@ export default {
     optionsEpub: ["EPUB", "Le groupe des réglages EPUB."],
     optionsImages: ["Images", "Le groupe des réglages d'images."],
     optionsBehaviour: ["Comportement", "Le groupe des réglages de comportement."],
-    optionsPrivacy: ["Confidentialité", "Le groupe des réglages de confidentialité."],
     optionsAdvanced: ["Avancé", "Le groupe des réglages avancés."],
     optionsTheme: ["Thème", "Le réglage du thème."],
     optionsAccent: ["Accent", "Le réglage de la couleur d'accent."],
@@ -138,9 +137,33 @@ export default {
         "Réinitialiser tous les paramètres",
         "Restaure tous les paramètres à leur valeur par défaut.",
     ],
+    optionsExported: [
+        "Les paramètres ont été enregistrés dans un fichier.",
+        "Affiché après l'export des paramètres.",
+    ],
+    optionsImported: [
+        "Les paramètres ont été chargés depuis le fichier.",
+        "Affiché après l'import des paramètres.",
+    ],
+    optionsImportInvalid: [
+        "Ce fichier n'est pas un fichier de paramètres Kintsugi.",
+        "Affiché quand le fichier importé ne peut pas être lu.",
+    ],
+    optionsResetDone: [
+        "Tous les paramètres sont revenus à leur valeur par défaut.",
+        "Affiché après la réinitialisation.",
+    ],
+    optionsResetConfirm: [
+        "Tous les paramètres reviennent à leur valeur par défaut. Votre bibliothèque et vos sites enregistrés ne sont pas touchés.",
+        "L'explication de la boîte de dialogue de réinitialisation.",
+    ],
+    optionsResetConfirmAction: [
+        "Tout réinitialiser",
+        "Le bouton de confirmation de la boîte de dialogue.",
+    ],
     optionsPrivacyNote: [
         "Kintsugi n'envoie rien à personne. Chaque requête réseau va vers le site que vous lisez.",
-        "La note sous les paramètres de confidentialité.",
+        "La note au bas des paramètres.",
     ],
     optionsLibrary: ["Bibliothèque", "L'onglet bibliothèque, et les livres que vous avez créés."],
     optionsLibraryEmptyTitle: ["Votre bibliothèque est vide.", "Le titre de la bibliothèque vide."],
@@ -228,12 +251,6 @@ export default {
         "Le réglage de préférence pour la résolution la plus élevée.",
     ],
     settingUseSvg: ["Autoriser les images SVG", "Le réglage d'autorisation des images SVG."],
-    settingCompressImages: ["Compresser les images", "Le réglage de compression des images."],
-    settingMaxResolution: ["Résolution maximale", "Le réglage de résolution maximale."],
-    settingMaxResolutionHint: [
-        "En pixels sur le côté le plus long.",
-        "Explique le réglage de résolution maximale.",
-    ],
     settingSkipFailedChapters: [
         "Ignorer les chapitres en échec",
         "Le réglage d'ignorance des chapitres en échec.",
@@ -245,6 +262,14 @@ export default {
     settingRetryOnEmptyPage: [
         "Réessayer sur une page vide",
         "Le réglage de réessai sur une page vide.",
+    ],
+    settingEmptyPageIsError: [
+        "Une page vide est une erreur",
+        "Le réglage qui fait d'une page vide une erreur.",
+    ],
+    settingEmptyPageIsErrorHint: [
+        "Certains sites répondent à une requête bloquée par une page vide. Lorsque cette option est active, cette page est signalée comme un échec au lieu de devenir un chapitre vide.",
+        "Explique le réglage qui fait d'une page vide une erreur.",
     ],
     settingMinimumDelay: ["Délai minimum entre les requêtes", "Le réglage de délai minimum."],
     settingMinimumDelayHint: [
@@ -262,22 +287,6 @@ export default {
     settingDelayPerChapterHint: [
         "En millisecondes, en plus du délai minimum.",
         "Explique le réglage de délai supplémentaire par chapitre.",
-    ],
-    settingMetadataLookup: [
-        "Rechercher les métadonnées du livre",
-        "Le réglage de recherche des métadonnées.",
-    ],
-    settingMetadataLookupHint: [
-        "Désactivé par défaut. Activé, le titre est vérifié dans une base de données publique.",
-        "Explique le réglage de recherche des métadonnées.",
-    ],
-    settingSendStoryUrl: [
-        "Envoyer l'URL de l'histoire avec la recherche",
-        "Le réglage d'envoi de l'URL de l'histoire.",
-    ],
-    settingSendStoryUrlHint: [
-        "Désactivé par défaut. Sans cela, la recherche ne peut utiliser que le titre.",
-        "Explique le réglage d'envoi de l'URL de l'histoire.",
     ],
     settingDiagnostics: ["Diagnostics de développement", "Le réglage des diagnostics."],
     settingDiagnosticsHint: [
@@ -411,4 +420,5 @@ export default {
     ],
     commonClose: ["Fermer", "Le libellé d'un bouton qui ferme une boîte de dialogue."],
     commonDismiss: ["Ignorer", "Le libellé d'un bouton qui ferme une notification."],
+    commonCancel: ["Annuler", "Le libellé d'un bouton qui annule une action."],
 };

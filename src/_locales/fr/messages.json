@@ -325,10 +325,6 @@
     "message": "Comportement",
     "description": "Le groupe des réglages de comportement."
   },
-  "optionsPrivacy": {
-    "message": "Confidentialité",
-    "description": "Le groupe des réglages de confidentialité."
-  },
   "optionsAdvanced": {
     "message": "Avancé",
     "description": "Le groupe des réglages avancés."
@@ -409,9 +405,33 @@
     "message": "Réinitialiser tous les paramètres",
     "description": "Restaure tous les paramètres à leur valeur par défaut."
   },
+  "optionsExported": {
+    "message": "Les paramètres ont été enregistrés dans un fichier.",
+    "description": "Affiché après l'export des paramètres."
+  },
+  "optionsImported": {
+    "message": "Les paramètres ont été chargés depuis le fichier.",
+    "description": "Affiché après l'import des paramètres."
+  },
+  "optionsImportInvalid": {
+    "message": "Ce fichier n'est pas un fichier de paramètres Kintsugi.",
+    "description": "Affiché quand le fichier importé ne peut pas être lu."
+  },
+  "optionsResetDone": {
+    "message": "Tous les paramètres sont revenus à leur valeur par défaut.",
+    "description": "Affiché après la réinitialisation."
+  },
+  "optionsResetConfirm": {
+    "message": "Tous les paramètres reviennent à leur valeur par défaut. Votre bibliothèque et vos sites enregistrés ne sont pas touchés.",
+    "description": "L'explication de la boîte de dialogue de réinitialisation."
+  },
+  "optionsResetConfirmAction": {
+    "message": "Tout réinitialiser",
+    "description": "Le bouton de confirmation de la boîte de dialogue."
+  },
   "optionsPrivacyNote": {
     "message": "Kintsugi n'envoie rien à personne. Chaque requête réseau va vers le site que vous lisez.",
-    "description": "La note sous les paramètres de confidentialité."
+    "description": "La note au bas des paramètres."
   },
   "optionsLibrary": {
     "message": "Bibliothèque",
@@ -545,18 +565,6 @@
     "message": "Autoriser les images SVG",
     "description": "Le réglage d'autorisation des images SVG."
   },
-  "settingCompressImages": {
-    "message": "Compresser les images",
-    "description": "Le réglage de compression des images."
-  },
-  "settingMaxResolution": {
-    "message": "Résolution maximale",
-    "description": "Le réglage de résolution maximale."
-  },
-  "settingMaxResolutionHint": {
-    "message": "En pixels sur le côté le plus long.",
-    "description": "Explique le réglage de résolution maximale."
-  },
   "settingSkipFailedChapters": {
     "message": "Ignorer les chapitres en échec",
     "description": "Le réglage d'ignorance des chapitres en échec."
@@ -568,6 +576,14 @@
   "settingRetryOnEmptyPage": {
     "message": "Réessayer sur une page vide",
     "description": "Le réglage de réessai sur une page vide."
+  },
+  "settingEmptyPageIsError": {
+    "message": "Une page vide est une erreur",
+    "description": "Le réglage qui fait d'une page vide une erreur."
+  },
+  "settingEmptyPageIsErrorHint": {
+    "message": "Certains sites répondent à une requête bloquée par une page vide. Lorsque cette option est active, cette page est signalée comme un échec au lieu de devenir un chapitre vide.",
+    "description": "Explique le réglage qui fait d'une page vide une erreur."
   },
   "settingMinimumDelay": {
     "message": "Délai minimum entre les requêtes",
@@ -588,22 +604,6 @@
   "settingDelayPerChapterHint": {
     "message": "En millisecondes, en plus du délai minimum.",
     "description": "Explique le réglage de délai supplémentaire par chapitre."
-  },
-  "settingMetadataLookup": {
-    "message": "Rechercher les métadonnées du livre",
-    "description": "Le réglage de recherche des métadonnées."
-  },
-  "settingMetadataLookupHint": {
-    "message": "Désactivé par défaut. Activé, le titre est vérifié dans une base de données publique.",
-    "description": "Explique le réglage de recherche des métadonnées."
-  },
-  "settingSendStoryUrl": {
-    "message": "Envoyer l'URL de l'histoire avec la recherche",
-    "description": "Le réglage d'envoi de l'URL de l'histoire."
-  },
-  "settingSendStoryUrlHint": {
-    "message": "Désactivé par défaut. Sans cela, la recherche ne peut utiliser que le titre.",
-    "description": "Explique le réglage d'envoi de l'URL de l'histoire."
   },
   "settingDiagnostics": {
     "message": "Diagnostics de développement",
@@ -856,5 +856,9 @@
   "commonDismiss": {
     "message": "Ignorer",
     "description": "Le libellé d'un bouton qui ferme une notification."
+  },
+  "commonCancel": {
+    "message": "Annuler",
+    "description": "Le libellé d'un bouton qui annule une action."
   }
 }

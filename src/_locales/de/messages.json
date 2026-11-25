@@ -325,10 +325,6 @@
     "message": "Verhalten",
     "description": "Die Gruppe der Verhaltensoptionen."
   },
-  "optionsPrivacy": {
-    "message": "Datenschutz",
-    "description": "Die Gruppe der Datenschutzoptionen."
-  },
   "optionsAdvanced": {
     "message": "Erweitert",
     "description": "Die Gruppe der erweiterten Optionen."
@@ -409,9 +405,33 @@
     "message": "Alle Einstellungen zurücksetzen",
     "description": "Setzt jede Einstellung auf den Standardwert."
   },
+  "optionsExported": {
+    "message": "Die Einstellungen wurden in einer Datei gespeichert.",
+    "description": "Wird nach dem Export der Einstellungen angezeigt."
+  },
+  "optionsImported": {
+    "message": "Die Einstellungen wurden aus der Datei geladen.",
+    "description": "Wird nach dem Import der Einstellungen angezeigt."
+  },
+  "optionsImportInvalid": {
+    "message": "Diese Datei ist keine Kintsugi-Einstellungsdatei.",
+    "description": "Wird angezeigt, wenn die importierte Datei nicht gelesen werden kann."
+  },
+  "optionsResetDone": {
+    "message": "Jede Einstellung steht wieder auf ihrem Standardwert.",
+    "description": "Wird nach dem Zurücksetzen der Einstellungen angezeigt."
+  },
+  "optionsResetConfirm": {
+    "message": "Jede Einstellung geht auf ihren Standardwert zurück. Ihre Bibliothek und Ihre gespeicherten Seiten bleiben unberührt.",
+    "description": "Die Erklärung im Dialog zum Zurücksetzen."
+  },
+  "optionsResetConfirmAction": {
+    "message": "Alles zurücksetzen",
+    "description": "Die Bestätigungsschaltfläche im Dialog."
+  },
   "optionsPrivacyNote": {
     "message": "Kintsugi sendet nichts an irgendwen. Jede Netzwerkanfrage geht an die Seite, die Sie lesen.",
-    "description": "Der Hinweis unter den Datenschutz-Einstellungen."
+    "description": "Der Hinweis am Fuß der Einstellungen."
   },
   "optionsLibrary": {
     "message": "Bibliothek",
@@ -545,18 +565,6 @@
     "message": "SVG-Bilder zulassen",
     "description": "Die Einstellung für SVG-Bilder."
   },
-  "settingCompressImages": {
-    "message": "Bilder komprimieren",
-    "description": "Die Einstellung zum Komprimieren von Bildern."
-  },
-  "settingMaxResolution": {
-    "message": "Maximale Auflösung",
-    "description": "Die Einstellung der maximalen Auflösung."
-  },
-  "settingMaxResolutionHint": {
-    "message": "In Pixeln an der längsten Kante.",
-    "description": "Erklärt die Einstellung der maximalen Auflösung."
-  },
   "settingSkipFailedChapters": {
     "message": "Fehlgeschlagene Kapitel überspringen",
     "description": "Die Einstellung zum Überspringen fehlgeschlagener Kapitel."
@@ -568,6 +576,14 @@
   "settingRetryOnEmptyPage": {
     "message": "Bei leerer Seite erneut versuchen",
     "description": "Die Einstellung zum erneuten Versuch bei leeren Seiten."
+  },
+  "settingEmptyPageIsError": {
+    "message": "Eine leere Seite ist ein Fehler",
+    "description": "Die Einstellung, nach der eine leere Seite ein Fehler ist."
+  },
+  "settingEmptyPageIsErrorHint": {
+    "message": "Manche Seiten antworten auf eine blockierte Anfrage mit einer leeren Seite. Ist diese Option an, wird eine leere Seite als Fehler gemeldet, statt zu einem leeren Kapitel zu werden.",
+    "description": "Erklärt die Einstellung, nach der eine leere Seite ein Fehler ist."
   },
   "settingMinimumDelay": {
     "message": "Mindestverzögerung zwischen Anfragen",
@@ -588,22 +604,6 @@
   "settingDelayPerChapterHint": {
     "message": "In Millisekunden, zusätzlich zur Mindestverzögerung.",
     "description": "Erklärt die Einstellung der Verzögerung pro Kapitel."
-  },
-  "settingMetadataLookup": {
-    "message": "Buch-Metadaten nachschlagen",
-    "description": "Die Einstellung für die Metadatensuche."
-  },
-  "settingMetadataLookupHint": {
-    "message": "Standardmäßig aus. Ist die Option an, wird der Titel mit einer öffentlichen Datenbank abgeglichen.",
-    "description": "Erklärt die Einstellung für die Metadatensuche."
-  },
-  "settingSendStoryUrl": {
-    "message": "Story-URL bei der Suche mitsenden",
-    "description": "Die Einstellung zum Mitsenden der Story-URL."
-  },
-  "settingSendStoryUrlHint": {
-    "message": "Standardmäßig aus. Ohne sie kann die Suche nur den Titel verwenden.",
-    "description": "Erklärt die Einstellung zum Mitsenden der Story-URL."
   },
   "settingDiagnostics": {
     "message": "Entwickler-Diagnose",
@@ -856,5 +856,9 @@
   "commonDismiss": {
     "message": "Ausblenden",
     "description": "Die Beschriftung einer Schaltfläche, die eine Meldung ausblendet."
+  },
+  "commonCancel": {
+    "message": "Abbrechen",
+    "description": "Die Beschriftung einer Schaltfläche, die eine Aktion abbricht."
   }
 }

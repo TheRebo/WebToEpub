@@ -62,10 +62,6 @@ export interface ImageSettings {
     preferHighestResolution: boolean;
     /** Whether to allow SVG images. */
     useSvg: boolean;
-    /** Whether to compress images. */
-    compress: boolean;
-    /** The maximum resolution, in pixels. */
-    maxResolution: number;
 }
 
 /** The behaviour settings. */
@@ -80,14 +76,15 @@ export interface BehaviourSettings {
     maxChapters: number;
     /** The delay between chapters, in milliseconds. */
     delayPerChapter: number;
-}
-
-/** The privacy settings. */
-export interface PrivacySettings {
-    /** Whether to look up book metadata. */
-    metadataLookup: boolean;
-    /** Whether to send the story URL to the metadata service. */
-    sendStoryUrl: boolean;
+    /**
+     * Whether a page with no content is treated as an error.
+     *
+     * Some sites answer a blocked request with an empty page rather than a
+     * status code. When this is on, such a page is reported as a failure, so
+     * the user is told the site refused the request instead of being given a
+     * blank chapter.
+     */
+    emptyPageIsError: boolean;
 }
 
 /** The advanced settings. */
@@ -103,7 +100,6 @@ export interface Settings {
     epub: EpubSettings;
     images: ImageSettings;
     behaviour: BehaviourSettings;
-    privacy: PrivacySettings;
     advanced: AdvancedSettings;
     /** Whether the onboarding has been completed. */
     onboardingComplete: boolean;
@@ -135,8 +131,6 @@ export const DEFAULT_SETTINGS: Settings = {
         removeDuplicates: true,
         preferHighestResolution: true,
         useSvg: true,
-        compress: false,
-        maxResolution: 2000,
     },
     behaviour: {
         skipFailedChapters: true,
@@ -144,10 +138,7 @@ export const DEFAULT_SETTINGS: Settings = {
         minimumDelay: 500,
         maxChapters: 5000,
         delayPerChapter: 0,
-    },
-    privacy: {
-        metadataLookup: false,
-        sendStoryUrl: false,
+        emptyPageIsError: false,
     },
     advanced: {
         diagnostics: false,
@@ -249,8 +240,6 @@ const SETTINGS_SCHEMA = {
         removeDuplicates: boolean(DEFAULT_SETTINGS.images.removeDuplicates),
         preferHighestResolution: boolean(DEFAULT_SETTINGS.images.preferHighestResolution),
         useSvg: boolean(DEFAULT_SETTINGS.images.useSvg),
-        compress: boolean(DEFAULT_SETTINGS.images.compress),
-        maxResolution: integerIn(100, 10000, DEFAULT_SETTINGS.images.maxResolution),
     }),
     behaviour: shape({
         skipFailedChapters: boolean(DEFAULT_SETTINGS.behaviour.skipFailedChapters),
@@ -258,10 +247,7 @@ const SETTINGS_SCHEMA = {
         minimumDelay: integerIn(0, 60000, DEFAULT_SETTINGS.behaviour.minimumDelay),
         maxChapters: integerIn(1, 100000, DEFAULT_SETTINGS.behaviour.maxChapters),
         delayPerChapter: integerIn(0, 60000, DEFAULT_SETTINGS.behaviour.delayPerChapter),
-    }),
-    privacy: shape({
-        metadataLookup: boolean(DEFAULT_SETTINGS.privacy.metadataLookup),
-        sendStoryUrl: boolean(DEFAULT_SETTINGS.privacy.sendStoryUrl),
+        emptyPageIsError: boolean(DEFAULT_SETTINGS.behaviour.emptyPageIsError),
     }),
     advanced: shape({
         diagnostics: boolean(DEFAULT_SETTINGS.advanced.diagnostics),

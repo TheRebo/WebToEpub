@@ -11,6 +11,7 @@
 import "../../components/base";
 import "../../components/icons";
 import "../../components/k-button";
+import "../../components/k-dialog";
 import "../../components/k-field";
 import "../../components/k-radio-group";
 import "../../components/k-skeleton";
@@ -64,6 +65,11 @@ async function main(): Promise<void> {
         store: {
             get: () => store.get(),
             update: (partial: Partial<Settings>) => store.update(partial),
+            set: async (settings: Settings) => {
+                await store.set(settings);
+                return store.get();
+            },
+            reset: () => store.reset(),
         },
         theme: themeController,
         background,

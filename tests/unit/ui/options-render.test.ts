@@ -332,9 +332,9 @@ describe("the options page's re-render", () => {
 
     it("writes a number through to the store", async () => {
         const { controller, updates } = await startPage();
-        controller.elements.navButtons.get("images")?.click();
+        controller.elements.navButtons.get("behaviour")?.click();
 
-        const field = controller.elements.controls.get("images.maxResolution") as Element;
+        const field = controller.elements.controls.get("behaviour.maxChapters") as Element;
         const input = inputOf(field);
         input.value = "2400";
         input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -342,7 +342,7 @@ describe("the options page's re-render", () => {
         await Promise.resolve();
         await Promise.resolve();
 
-        const update = updates.find((partial) => partial.images !== undefined);
-        expect(update?.images?.maxResolution).toBe(2400);
+        const update = updates.find((partial) => partial.behaviour !== undefined);
+        expect(update?.behaviour?.maxChapters).toBe(2400);
     });
 });

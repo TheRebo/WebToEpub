@@ -325,10 +325,6 @@
     "message": "Behaviour",
     "description": "The behaviour settings group."
   },
-  "optionsPrivacy": {
-    "message": "Privacy",
-    "description": "The privacy settings group."
-  },
   "optionsAdvanced": {
     "message": "Advanced",
     "description": "The advanced settings group."
@@ -409,9 +405,33 @@
     "message": "Reset all settings",
     "description": "Restores every setting to its default."
   },
+  "optionsExported": {
+    "message": "The settings were saved to a file.",
+    "description": "Said after the settings are exported."
+  },
+  "optionsImported": {
+    "message": "The settings were loaded from the file.",
+    "description": "Said after the settings are imported."
+  },
+  "optionsImportInvalid": {
+    "message": "That file is not a Kintsugi settings file.",
+    "description": "Said when the imported file cannot be read."
+  },
+  "optionsResetDone": {
+    "message": "Every setting is back to its default.",
+    "description": "Said after the settings are reset."
+  },
+  "optionsResetConfirm": {
+    "message": "Every setting goes back to its default. Your library and your saved sites are not touched.",
+    "description": "The reset dialog's explanation."
+  },
+  "optionsResetConfirmAction": {
+    "message": "Reset everything",
+    "description": "The reset dialog's confirm button."
+  },
   "optionsPrivacyNote": {
     "message": "Kintsugi sends nothing to anyone. Every network request goes to the site you are reading.",
-    "description": "The note under the privacy settings."
+    "description": "The note at the foot of the settings."
   },
   "optionsLibrary": {
     "message": "Library",
@@ -545,18 +565,6 @@
     "message": "Allow SVG images",
     "description": "The allow-SVG setting."
   },
-  "settingCompressImages": {
-    "message": "Compress images",
-    "description": "The compress-images setting."
-  },
-  "settingMaxResolution": {
-    "message": "Maximum resolution",
-    "description": "The maximum-resolution setting."
-  },
-  "settingMaxResolutionHint": {
-    "message": "In pixels on the longest edge.",
-    "description": "Explains the maximum-resolution setting."
-  },
   "settingSkipFailedChapters": {
     "message": "Skip chapters that fail",
     "description": "The skip-failed-chapters setting."
@@ -568,6 +576,14 @@
   "settingRetryOnEmptyPage": {
     "message": "Retry on an empty page",
     "description": "The retry-on-empty-page setting."
+  },
+  "settingEmptyPageIsError": {
+    "message": "An empty page is an error",
+    "description": "The empty-page-is-error setting."
+  },
+  "settingEmptyPageIsErrorHint": {
+    "message": "Some sites answer a blocked request with a blank page. When this is on, that page is reported as a failure instead of becoming an empty chapter.",
+    "description": "Explains the empty-page-is-error setting."
   },
   "settingMinimumDelay": {
     "message": "Minimum delay between requests",
@@ -588,22 +604,6 @@
   "settingDelayPerChapterHint": {
     "message": "In milliseconds, on top of the minimum delay.",
     "description": "Explains the delay-per-chapter setting."
-  },
-  "settingMetadataLookup": {
-    "message": "Look up book metadata",
-    "description": "The metadata-lookup setting."
-  },
-  "settingMetadataLookupHint": {
-    "message": "Off by default. When on, the title is checked against a public database.",
-    "description": "Explains the metadata-lookup setting."
-  },
-  "settingSendStoryUrl": {
-    "message": "Send the story URL with the lookup",
-    "description": "The send-story-url setting."
-  },
-  "settingSendStoryUrlHint": {
-    "message": "Off by default. Without it, the lookup can only use the title.",
-    "description": "Explains the send-story-url setting."
   },
   "settingDiagnostics": {
     "message": "Developer diagnostics",
@@ -856,5 +856,9 @@
   "commonDismiss": {
     "message": "Dismiss",
     "description": "The label of a button that dismisses a notification."
+  },
+  "commonCancel": {
+    "message": "Cancel",
+    "description": "The label of a button that cancels an action."
   }
 }

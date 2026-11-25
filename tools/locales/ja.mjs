@@ -98,7 +98,6 @@ export default {
     optionsEpub: ["EPUB", "EPUB 設定のグループ。"],
     optionsImages: ["画像", "画像設定のグループ。"],
     optionsBehaviour: ["動作", "動作設定のグループ。"],
-    optionsPrivacy: ["プライバシー", "プライバシー設定のグループ。"],
     optionsAdvanced: ["詳細", "詳細設定のグループ。"],
     optionsTheme: ["テーマ", "テーマの設定。"],
     optionsAccent: ["アクセント", "アクセントカラーの設定。"],
@@ -119,9 +118,24 @@ export default {
     optionsExportSettings: ["設定を書き出す", "設定をファイルに保存します。"],
     optionsImportSettings: ["設定を読み込む", "設定ファイルを読み込みます。"],
     optionsResetAll: ["すべての設定をリセット", "すべての設定を既定値に戻します。"],
+    optionsExported: ["設定をファイルに保存しました。", "設定を書き出した後に表示されます。"],
+    optionsImported: ["ファイルから設定を読み込みました。", "設定を読み込んだ後に表示されます。"],
+    optionsImportInvalid: [
+        "このファイルは Kintsugi の設定ファイルではありません。",
+        "読み込むファイルが解釈できないときに表示されます。",
+    ],
+    optionsResetDone: [
+        "すべての設定が既定値に戻りました。",
+        "設定をリセットした後に表示されます。",
+    ],
+    optionsResetConfirm: [
+        "すべての設定が既定値に戻ります。ライブラリと保存したサイトには手を加えません。",
+        "リセットの確認ダイアログの説明。",
+    ],
+    optionsResetConfirmAction: ["すべてリセット", "リセットの確認ダイアログの決定ボタン。"],
     optionsPrivacyNote: [
         "Kintsugi はどこにもデータを送信しません。すべての通信は、読んでいるサイトに対してのみ行われます。",
-        "プライバシー設定の項目の下に置く注記。",
+        "設定の下に置く注記。",
     ],
 
     // --- Options: library ---
@@ -183,15 +197,17 @@ export default {
     settingRemoveDuplicates: ["重複する画像を削除", "重複画像を削除する設定。"],
     settingPreferHighestResolution: ["最高解像度を優先", "最高解像度を優先する設定。"],
     settingUseSvg: ["SVG 画像を許可", "SVG 画像を許可する設定。"],
-    settingCompressImages: ["画像を圧縮", "画像を圧縮する設定。"],
-    settingMaxResolution: ["最大解像度", "最大解像度の設定。"],
-    settingMaxResolutionHint: ["長辺のピクセル数で指定します。", "最大解像度の設定の説明。"],
     settingSkipFailedChapters: ["失敗した章をスキップ", "失敗した章をスキップする設定。"],
     settingSkipFailedChaptersHint: [
         "失敗した章は処理を止めずに、本の中に注記として残ります。",
         "失敗した章をスキップする設定の説明。",
     ],
     settingRetryOnEmptyPage: ["空のページでは再試行", "空のページで再試行する設定。"],
+    settingEmptyPageIsError: ["空のページはエラーとして扱う", "空のページをエラーとして扱う設定。"],
+    settingEmptyPageIsErrorHint: [
+        "一部のサイトは、ブロックされた要求に対して空のページを返します。この設定を有効にすると、そのページは空の章ではなく失敗として報告されます。",
+        "空のページをエラーとして扱う設定の説明。",
+    ],
     settingMinimumDelay: ["リクエスト間の最小待機時間", "最小待機時間の設定。"],
     settingMinimumDelayHint: [
         "ミリ秒単位です。アクセス制限が厳しいサイトでは値を上げてください。",
@@ -202,16 +218,6 @@ export default {
     settingDelayPerChapterHint: [
         "ミリ秒単位です。最小待機時間に加算されます。",
         "章ごとの追加待機時間の設定の説明。",
-    ],
-    settingMetadataLookup: ["書籍情報を検索", "メタデータ検索の設定。"],
-    settingMetadataLookupHint: [
-        "既定ではオフです。有効にすると、タイトルを公開データベースと照合します。",
-        "メタデータ検索の設定の説明。",
-    ],
-    settingSendStoryUrl: ["検索時に物語の URL を送信", "物語の URL を送信する設定。"],
-    settingSendStoryUrlHint: [
-        "既定ではオフです。オフの場合、検索にはタイトルしか使われません。",
-        "物語の URL を送信する設定の説明。",
     ],
     settingDiagnostics: ["開発者向け診断", "診断ログの設定。"],
     settingDiagnosticsHint: [
@@ -330,4 +336,5 @@ export default {
     ],
     commonClose: ["閉じる", "ダイアログを閉じるボタンのラベル。"],
     commonDismiss: ["閉じる", "通知を閉じるボタンのラベル。"],
+    commonCancel: ["キャンセル", "操作を取り消すボタンのラベル。"],
 };

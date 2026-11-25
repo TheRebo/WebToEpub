@@ -240,6 +240,65 @@
     font-size: var(--text-sm);
 }
 
+/*
+ * The privacy note. It is the last thing on the page, so it is quiet: small,
+ * muted, and separated from the settings above it.
+ */
+.options-privacy-note {
+    margin: 0;
+    padding: var(--space-4) var(--space-5) var(--space-8);
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
+}
+
+/* --- The group actions ------------------------------------------------ */
+
+/*
+ * The actions sit below the settings, separated by a rule, because they are
+ * the things the user *does* to the settings rather than settings.
+ */
+.options-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-5) var(--space-5);
+    border-top: 1px solid var(--border-subtle);
+}
+
+/*
+ * The file input is behind its button. It is still in the layout -- hidden
+ * rather than removed -- so that the browser's own file picker works with
+ * the keyboard and with assistive technology.
+ */
+.options-file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* --- The dialogs ------------------------------------------------------ */
+
+.options-dialog-body {
+    margin: 0;
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    line-height: var(--leading-normal);
+}
+
+.options-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+}
+
 /* --- The grouped choices ---------------------------------------------- */
 
 /*

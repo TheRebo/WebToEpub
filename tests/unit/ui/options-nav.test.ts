@@ -81,7 +81,7 @@ describe("the options navigation", () => {
         expect(sections.get("appearance")?.hidden).toBe(false);
         expect(sections.get("story")?.hidden).toBe(true);
         expect(sections.get("epub")?.hidden).toBe(true);
-        expect(sections.get("privacy")?.hidden).toBe(true);
+        expect(sections.get("advanced")?.hidden).toBe(true);
     });
 
     it("shows only the selected group's rows", async () => {
@@ -90,7 +90,7 @@ describe("the options navigation", () => {
 
         expect(rows.get("appearance.theme")?.hidden).toBe(false);
         expect(rows.get("story.filenameTemplate")?.hidden).toBe(true);
-        expect(rows.get("privacy.sendStoryUrl")?.hidden).toBe(true);
+        expect(rows.get("behaviour.emptyPageIsError")?.hidden).toBe(true);
     });
 
     it("shows the chosen group's panel when the nav is used", async () => {
@@ -116,10 +116,10 @@ describe("the options navigation", () => {
         expect(buttons.get("story")?.getAttribute("aria-selected")).toBe("false");
         expect(buttons.get("story")?.hasAttribute("aria-current")).toBe(false);
 
-        buttons.get("privacy")?.click();
+        buttons.get("advanced")?.click();
 
-        expect(buttons.get("privacy")?.getAttribute("aria-selected")).toBe("true");
-        expect(buttons.get("privacy")?.getAttribute("aria-current")).toBe("true");
+        expect(buttons.get("advanced")?.getAttribute("aria-selected")).toBe("true");
+        expect(buttons.get("advanced")?.getAttribute("aria-current")).toBe("true");
         expect(buttons.get("appearance")?.getAttribute("aria-selected")).toBe("false");
         expect(buttons.get("appearance")?.hasAttribute("aria-current")).toBe(false);
     });
@@ -183,9 +183,9 @@ describe("the options navigation", () => {
     it("clears the search when the user picks a group", async () => {
         const controller = await startPage();
 
-        controller.elements.search.value = "privacy";
+        controller.elements.search.value = "images";
         controller.elements.search.dispatchEvent(new Event("input", { bubbles: true }));
-        expect(controller.active).toBe("privacy");
+        expect(controller.active).toBe("images");
 
         controller.elements.navButtons.get("appearance")?.click();
 

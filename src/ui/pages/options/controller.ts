@@ -13,6 +13,13 @@
 import { t } from "../../i18n";
 import type { Settings } from "../../../core/storage/settings-store";
 import {
+    buildSettingsFile,
+    parseSettingsFile,
+    SETTINGS_FILE_NAME,
+} from "../../../core/storage/settings-file";
+import { getNamespace } from "../../../core/browser-api";
+import {
+    applyValues,
     buildOptions,
     firstMatchingGroup,
     renderGroups,
@@ -134,15 +141,6 @@ export const GROUPS: GroupSpec[] = [
                 label: "settingPreferHighestResolution",
             },
             { kind: "switch", path: "images.useSvg", label: "settingUseSvg" },
-            { kind: "switch", path: "images.compress", label: "settingCompressImages" },
-            {
-                kind: "number",
-                path: "images.maxResolution",
-                label: "settingMaxResolution",
-                hint: "settingMaxResolutionHint",
-                min: 100,
-                max: 10000,
-            },
         ],
     },
     {
@@ -183,23 +181,11 @@ export const GROUPS: GroupSpec[] = [
                 min: 0,
                 max: 60000,
             },
-        ],
-    },
-    {
-        id: "privacy",
-        title: "optionsPrivacy",
-        controls: [
             {
                 kind: "switch",
-                path: "privacy.metadataLookup",
-                label: "settingMetadataLookup",
-                hint: "settingMetadataLookupHint",
-            },
-            {
-                kind: "switch",
-                path: "privacy.sendStoryUrl",
-                label: "settingSendStoryUrl",
-                hint: "settingSendStoryUrlHint",
+                path: "behaviour.emptyPageIsError",
+                label: "settingEmptyPageIsError",
+                hint: "settingEmptyPageIsErrorHint",
             },
         ],
     },
@@ -214,6 +200,11 @@ export const GROUPS: GroupSpec[] = [
                 hint: "settingDiagnosticsHint",
             },
         ],
+        actions: [
+            { id: "export", kind: "button", label: "optionsExportSettings" },
+            { id: "import", kind: "file", label: "optionsImportSettings" },
+            { id: "reset", kind: "button", label: "optionsResetAll" },
+        ],
     },
 ];
 
@@ -223,6 +214,10 @@ export interface SettingsStorePort {
     get(): Promise<Settings>;
     /** Write part of the settings, and return the whole result. */
     update(partial: Partial<Settings>): Promise<Settings>;
+    /** Write the whole settings, and return the result. */
+    set?(settings: Settings): Promise<Settings>;
+    /** Put the settings back to their defaults, and return the result. */
+    reset?(): Promise<Settings>;
 }
 
 /** The theme controller, as the controller uses it. */
@@ -410,6 +405,21 @@ export class OptionsController {
                 void this.#loadSettings();
                 return;
             }
+            if (action === "export") {
+                void this.#exportSettings();
+                return;
+            }
+            if (action === "import") {
+                // The button stands in front of a real file input: the input
+                // is what opens the picker, and the browser only opens it from
+                // a user gesture.
+                this.#elements.files.get("import")?.click();
+                return;
+            }
+            if (action === "reset") {
+                this.#elements.resetDialog.setAttribute("open", "");
+                return;
+            }
             if (action === "retry-library") {
                 this.#libraryLoaded = false;
                 void this.#loadLibrary();
@@ -428,6 +438,32 @@ export class OptionsController {
 
             const libraryId = target?.dataset["libraryId"];
             if (libraryId) void this.#removeFromLibrary(libraryId);
+        });
+
+        // The file input behind the import button.
+        this.#elements.root.addEventListener("change", (event) => {
+            const target = event.target as HTMLInputElement | null;
+            if (!(target instanceof HTMLInputElement)) return;
+            if (target.dataset["action"] !== "import") return;
+
+            const file = target.files?.[0];
+            // The input is emptied, so that choosing the same file twice in a
+            // row fires the change event again.
+            target.value = "";
+            if (!file) return;
+            void this.#importSettings(file);
+        });
+
+        // The reset dialog's buttons.
+        this.#elements.resetConfirm.addEventListener("k-click", () => {
+            this.#elements.resetDialog.removeAttribute("open");
+            void this.#resetSettings();
+        });
+        this.#elements.resetCancel.addEventListener("k-click", () => {
+            this.#elements.resetDialog.removeAttribute("open");
+        });
+        this.#elements.resetDialog.addEventListener("k-close", () => {
+            this.#elements.resetDialog.removeAttribute("open");
         });
     }
 
@@ -564,6 +600,111 @@ export class OptionsController {
         this.#libraryLoaded = false;
         await this.#loadLibrary();
         this.#toast(t("libraryRemoved"), "info");
+    }
+
+    /**
+     * Write the settings out to a file.
+     *
+     * The file is a small JSON document with a marker in it, so that a file
+     * that is not a settings file is refused on the way back in rather than
+     * half-applied.
+     */
+    async #exportSettings(): Promise<void> {
+        const settings = this.#settings ?? (await this.#store.get());
+        const file = buildSettingsFile(settings);
+        const text = JSON.stringify(file, null, 2);
+
+        const api = getNamespace();
+        if (!api) {
+            this.#toast(t("errorGeneric"), "error");
+            return;
+        }
+
+        try {
+            const blob = new Blob([text], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            try {
+                await api.downloads.download({
+                    url,
+                    filename: SETTINGS_FILE_NAME,
+                    conflictAction: "uniquify",
+                });
+            } finally {
+                // The blob URL has to be revoked, or it leaks for the life of
+                // the page.
+                setTimeout(() => URL.revokeObjectURL(url), 60_000);
+            }
+        } catch (error) {
+            this.#toast(messageOf(error) || t("errorGeneric"), "error");
+            return;
+        }
+
+        this.#toast(t("optionsExported"), "success");
+    }
+
+    /**
+     * Read settings from a file.
+     *
+     * The file is validated before anything is written, so a file that is not
+     * a settings file leaves the user's settings exactly as they were.
+     */
+    async #importSettings(file: File): Promise<void> {
+        let text: string;
+        try {
+            text = await file.text();
+        } catch (error) {
+            this.#toast(messageOf(error) || t("errorGeneric"), "error");
+            return;
+        }
+
+        const result = parseSettingsFile(text);
+        if (!result.ok) {
+            this.#toast(t("optionsImportInvalid"), "error");
+            return;
+        }
+
+        if (!this.#store.set) {
+            this.#toast(t("errorGeneric"), "error");
+            return;
+        }
+
+        try {
+            this.#settings = await this.#store.set(result.settings);
+        } catch (error) {
+            this.#toast(messageOf(error) || t("errorGeneric"), "error");
+            return;
+        }
+
+        // The controls were built with the old values, so they are told what
+        // the new ones are.
+        applyValues(this.#elements, flatten(this.#settings));
+        this.#theme.applySettings(this.#settings.appearance);
+        this.#toast(t("optionsImported"), "success");
+    }
+
+    /**
+     * Put the settings back to their defaults.
+     *
+     * Only the settings are reset. The library, the saved site selectors and
+     * everything else the user has made are left alone: "reset the
+     * preferences" should not mean "throw away my work".
+     */
+    async #resetSettings(): Promise<void> {
+        if (!this.#store.reset) {
+            this.#toast(t("errorGeneric"), "error");
+            return;
+        }
+
+        try {
+            this.#settings = await this.#store.reset();
+        } catch (error) {
+            this.#toast(messageOf(error) || t("errorGeneric"), "error");
+            return;
+        }
+
+        applyValues(this.#elements, flatten(this.#settings));
+        this.#theme.applySettings(this.#settings.appearance);
+        this.#toast(t("optionsResetDone"), "success");
     }
 
     /** Show a toast. */

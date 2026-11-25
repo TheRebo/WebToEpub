@@ -168,8 +168,6 @@ export interface DownloadImages {
     preferHighestResolution: boolean;
     /** Whether an SVG image may be included. */
     useSvg: boolean;
-    /** The maximum width and height of an image, in pixels. */
-    maxResolution: number;
 }
 
 /**
@@ -183,7 +181,6 @@ export const DEFAULT_IMAGES: DownloadImages = {
     removeDuplicates: true,
     preferHighestResolution: true,
     useSvg: true,
-    maxResolution: 2000,
 };
 
 /** The dependencies the manager needs. */
@@ -983,7 +980,6 @@ export class DownloadManager {
                 removeDuplicates: value.removeDuplicates,
                 preferHighestResolution: value.preferHighestResolution,
                 useSvg: value.useSvg,
-                maxResolution: Math.max(value.maxResolution, 1),
             };
         } catch {
             return { ...DEFAULT_IMAGES };

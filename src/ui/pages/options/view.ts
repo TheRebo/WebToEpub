@@ -19,14 +19,7 @@ import { createIcon } from "../../components/icons";
 import { t, tDynamic } from "../../i18n";
 
 /** The settings groups. */
-export type GroupId =
-    | "appearance"
-    | "story"
-    | "epub"
-    | "images"
-    | "behaviour"
-    | "privacy"
-    | "advanced";
+export type GroupId = "appearance" | "story" | "epub" | "images" | "behaviour" | "advanced";
 
 /** A control within a group. */
 export type ControlSpec =
@@ -44,6 +37,21 @@ export type ControlSpec =
     | { kind: "accent"; path: string; label: string; hint?: string }
     | { kind: "density"; path: string; label: string; hint?: string };
 
+/**
+ * An action a group can offer, alongside its settings.
+ *
+ * The actions are the ones that are not a setting: they do something to the
+ * settings rather than change one.
+ */
+export interface ActionSpec {
+    /** The action's ID, used to recognise it when it is triggered. */
+    id: string;
+    /** Whether the action opens a file picker. */
+    kind: "button" | "file";
+    /** The action's label, as a message key. */
+    label: string;
+}
+
 /** A group of controls. */
 export interface GroupSpec {
     /** The group's ID. */
@@ -52,6 +60,8 @@ export interface GroupSpec {
     title: string;
     /** The group's controls. */
     controls: ControlSpec[];
+    /** The group's actions, if it has any. */
+    actions?: ActionSpec[];
 }
 
 /**
@@ -90,8 +100,26 @@ export interface OptionsElements {
     rows: Map<string, HTMLElement>;
     /** The control of each row, by settings path. */
     controls: Map<string, HTMLElement>;
+    /**
+     * The element that holds each control's value, by settings path.
+     *
+     * This is the control itself for a switch or a field, and the segmented
+     * choice for a theme, an accent or a density — the row shows a label and a
+     * choice, and only the choice carries the value.
+     */
+    valueHosts: Map<string, HTMLElement>;
     /** The specification of each row, by settings path. */
     specs: Map<string, ControlSpec>;
+    /** The action buttons, by action ID. */
+    actions: Map<string, HTMLElement>;
+    /** The file inputs, by action ID. */
+    files: Map<string, HTMLInputElement>;
+    /** The dialog that asks before the settings are reset. */
+    resetDialog: HTMLElement;
+    /** The dialog's "yes" button. */
+    resetConfirm: HTMLElement;
+    /** The dialog's "no" button. */
+    resetCancel: HTMLElement;
 }
 
 /** Build the options page's structure. */
@@ -157,8 +185,16 @@ export function buildOptions(root: HTMLElement): OptionsElements {
     noResults.textContent = t("optionsNoResults");
     noResults.hidden = true;
 
+    // The privacy note lives at the foot of the settings column, below every
+    // group. It is a standing statement rather than a setting, and it is the
+    // last thing the user reads.
+    const privacyNote = document.createElement("p");
+    privacyNote.className = "options-privacy-note";
+    privacyNote.textContent = t("optionsPrivacyNote");
+
     content.appendChild(status);
     content.appendChild(noResults);
+    content.appendChild(privacyNote);
 
     layout.appendChild(nav);
     layout.appendChild(content);
@@ -208,10 +244,39 @@ export function buildOptions(root: HTMLElement): OptionsElements {
     const toastHost = document.createElement("div");
     toastHost.className = "options-toasts";
 
+    // --- The reset dialog ---
+    //
+    // Resetting throws away every preference the user has set, so it asks
+    // first. The dialog is built once and opened by the controller.
+    const resetDialog = document.createElement("k-dialog");
+    resetDialog.setAttribute("heading", t("optionsResetAll"));
+    resetDialog.setAttribute("size", "sm");
+
+    const resetBody = document.createElement("p");
+    resetBody.className = "options-dialog-body";
+    resetBody.textContent = t("optionsResetConfirm");
+    resetDialog.appendChild(resetBody);
+
+    const resetFooter = document.createElement("div");
+    resetFooter.setAttribute("slot", "footer");
+    resetFooter.className = "options-dialog-footer";
+
+    const resetCancel = document.createElement("k-button");
+    resetCancel.setAttribute("variant", "ghost");
+    resetCancel.setAttribute("label", t("commonCancel"));
+
+    const resetConfirm = document.createElement("k-button");
+    resetConfirm.setAttribute("variant", "danger");
+    resetConfirm.setAttribute("label", t("optionsResetConfirmAction"));
+
+    resetFooter.append(resetCancel, resetConfirm);
+    resetDialog.appendChild(resetFooter);
+
     root.appendChild(bar);
     root.appendChild(layout);
     root.appendChild(library);
     root.appendChild(siteSelectors);
+    root.appendChild(resetDialog);
     root.appendChild(toastHost);
 
     return {
@@ -228,7 +293,13 @@ export function buildOptions(root: HTMLElement): OptionsElements {
         sections: new Map(),
         rows: new Map(),
         controls: new Map(),
+        valueHosts: new Map(),
         specs: new Map(),
+        actions: new Map(),
+        files: new Map(),
+        resetDialog,
+        resetConfirm,
+        resetCancel,
     };
 }
 
@@ -391,16 +462,25 @@ export function renderGroups(
             row.className = "options-row";
             row.dataset["path"] = control.path;
 
-            const element = buildControl(control, values[control.path]);
-            row.appendChild(element);
+            const built = buildControl(control, values[control.path]);
+            row.appendChild(built.element);
 
             body.appendChild(row);
             elements.rows.set(control.path, row);
-            elements.controls.set(control.path, element);
+            elements.controls.set(control.path, built.element);
+            elements.valueHosts.set(control.path, built.valueHost ?? built.element);
             elements.specs.set(control.path, control);
         }
 
         section.appendChild(body);
+
+        // The actions live at the bottom of the group, separated from the
+        // settings by a rule: they are the things the user *does* to the
+        // settings, not the settings themselves.
+        if (group.actions && group.actions.length > 0) {
+            section.appendChild(buildActions(group, elements));
+        }
+
         // The groups go before the "nothing matches" message, so that the
         // message sits at the bottom of the column.
         elements.content.insertBefore(section, elements.noResults);
@@ -409,20 +489,60 @@ export function renderGroups(
 }
 
 /**
+ * Build a group's actions.
+ *
+ * @param group The group.
+ * @param elements The page's elements, so the actions can be found later.
+ * @returns The actions' element.
+ */
+function buildActions(group: GroupSpec, elements: OptionsElements): HTMLElement {
+    const row = document.createElement("div");
+    row.className = "options-actions";
+
+    for (const action of group.actions ?? []) {
+        const button = document.createElement("k-button");
+        button.setAttribute("variant", "secondary");
+        button.setAttribute("label", tDynamic(action.label));
+        button.dataset["action"] = action.id;
+        elements.actions.set(action.id, button);
+        row.appendChild(button);
+
+        if (action.kind !== "file") continue;
+
+        // The file picker is a real `<input type="file">`, kept out of the
+        // layout. It is the only way to open a file picker that works with
+        // the keyboard and with the assistive technology the browser gives
+        // it, and the button in front of it is what the user presses.
+        const input = document.createElement("input");
+        input.type = "file";
+        input.className = "options-file-input";
+        input.accept = "application/json,.json";
+        input.dataset["action"] = action.id;
+        elements.files.set(action.id, input);
+        row.appendChild(input);
+    }
+
+    return row;
+}
+
+/**
  * Build one control.
  *
  * @param control The control's specification.
  * @param value The control's current value.
- * @returns The control's element.
+ * @returns The control's element, and the element that holds its value.
  */
-function buildControl(control: ControlSpec, value: unknown): HTMLElement {
+function buildControl(
+    control: ControlSpec,
+    value: unknown,
+): { element: HTMLElement; valueHost?: HTMLElement } {
     switch (control.kind) {
         case "switch": {
             const toggle = document.createElement("k-switch");
             toggle.setAttribute("label", tDynamic(control.label));
             toggle.dataset["path"] = control.path;
             if (value === true) toggle.setAttribute("checked", "");
-            return toggle;
+            return { element: toggle };
         }
         case "text": {
             const field = document.createElement("k-field");
@@ -433,7 +553,7 @@ function buildControl(control: ControlSpec, value: unknown): HTMLElement {
             field.dataset["path"] = control.path;
             if (control.placeholder) field.setAttribute("placeholder", control.placeholder);
             if (control.hint) field.setAttribute("hint", tDynamic(control.hint));
-            return field;
+            return { element: field };
         }
         case "number": {
             const field = document.createElement("k-field");
@@ -445,7 +565,7 @@ function buildControl(control: ControlSpec, value: unknown): HTMLElement {
             field.setAttribute("min", String(control.min));
             field.setAttribute("max", String(control.max));
             if (control.hint) field.setAttribute("hint", tDynamic(control.hint));
-            return field;
+            return { element: field };
         }
         case "select": {
             const field = document.createElement("k-field");
@@ -461,7 +581,7 @@ function buildControl(control: ControlSpec, value: unknown): HTMLElement {
                 element.textContent = option.label;
                 field.appendChild(element);
             }
-            return field;
+            return { element: field };
         }
         case "theme":
         case "accent":
@@ -485,7 +605,7 @@ function buildControl(control: ControlSpec, value: unknown): HTMLElement {
             wrapper.className = "options-choice";
             wrapper.appendChild(field);
             wrapper.appendChild(choice);
-            return wrapper;
+            return { element: wrapper, valueHost: choice };
         }
     }
 }
@@ -562,6 +682,20 @@ export function updateGroups(
             if (visible) groupMatched += 1;
         }
 
+        // The actions are searchable too, so that "export" finds the group
+        // that holds the export button rather than nothing at all.
+        for (const action of group.actions ?? []) {
+            const button = elements.actions.get(action.id);
+            if (!button) continue;
+
+            const actionMatches = needle
+                ? groupMatches || tDynamic(action.label).toLowerCase().includes(needle)
+                : false;
+            const visible = selected && (needle ? actionMatches : true);
+            button.hidden = !visible;
+            if (visible) groupMatched += 1;
+        }
+
         section.hidden = groupMatched === 0;
         matched += groupMatched;
     }
@@ -569,6 +703,32 @@ export function updateGroups(
     const empty = elements.noResults;
     if (empty) {
         empty.hidden = matched > 0 || needle === "";
+    }
+}
+
+/**
+ * Push new values into the controls.
+ *
+ * The page is built once, so a control owns its own value. When the settings
+ * change *underneath* the page — because the user imported a file, or reset
+ * everything — the controls have to be told, or the page would keep showing
+ * the values it was built with.
+ *
+ * @param elements The page's elements.
+ * @param values The values, by settings path.
+ */
+export function applyValues(elements: OptionsElements, values: Record<string, unknown>): void {
+    for (const [path, control] of elements.valueHosts) {
+        const value = values[path];
+        if (value === undefined) continue;
+
+        const target = control as unknown as { value?: unknown };
+        if (!("value" in target)) continue;
+
+        // Every control's value is a string except a switch, which is a
+        // boolean.
+        if (typeof value === "boolean") target.value = value;
+        else target.value = String(value);
     }
 }
 

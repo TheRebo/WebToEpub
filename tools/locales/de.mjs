@@ -111,7 +111,6 @@ export default {
     optionsEpub: ["EPUB", "Die Gruppe der EPUB-Optionen."],
     optionsImages: ["Bilder", "Die Gruppe der Bildoptionen."],
     optionsBehaviour: ["Verhalten", "Die Gruppe der Verhaltensoptionen."],
-    optionsPrivacy: ["Datenschutz", "Die Gruppe der Datenschutzoptionen."],
     optionsAdvanced: ["Erweitert", "Die Gruppe der erweiterten Optionen."],
     optionsTheme: ["Design", "Die Design-Einstellung."],
     optionsAccent: ["Akzentfarbe", "Die Einstellung der Akzentfarbe."],
@@ -138,9 +137,30 @@ export default {
         "Alle Einstellungen zurücksetzen",
         "Setzt jede Einstellung auf den Standardwert.",
     ],
+    optionsExported: [
+        "Die Einstellungen wurden in einer Datei gespeichert.",
+        "Wird nach dem Export der Einstellungen angezeigt.",
+    ],
+    optionsImported: [
+        "Die Einstellungen wurden aus der Datei geladen.",
+        "Wird nach dem Import der Einstellungen angezeigt.",
+    ],
+    optionsImportInvalid: [
+        "Diese Datei ist keine Kintsugi-Einstellungsdatei.",
+        "Wird angezeigt, wenn die importierte Datei nicht gelesen werden kann.",
+    ],
+    optionsResetDone: [
+        "Jede Einstellung steht wieder auf ihrem Standardwert.",
+        "Wird nach dem Zurücksetzen der Einstellungen angezeigt.",
+    ],
+    optionsResetConfirm: [
+        "Jede Einstellung geht auf ihren Standardwert zurück. Ihre Bibliothek und Ihre gespeicherten Seiten bleiben unberührt.",
+        "Die Erklärung im Dialog zum Zurücksetzen.",
+    ],
+    optionsResetConfirmAction: ["Alles zurücksetzen", "Die Bestätigungsschaltfläche im Dialog."],
     optionsPrivacyNote: [
         "Kintsugi sendet nichts an irgendwen. Jede Netzwerkanfrage geht an die Seite, die Sie lesen.",
-        "Der Hinweis unter den Datenschutz-Einstellungen.",
+        "Der Hinweis am Fuß der Einstellungen.",
     ],
     optionsLibrary: ["Bibliothek", "Der Bibliotheks-Tab und die von Ihnen erstellten Bücher."],
     optionsLibraryEmptyTitle: [
@@ -228,12 +248,6 @@ export default {
         "Die Einstellung zur bevorzugten Auflösung.",
     ],
     settingUseSvg: ["SVG-Bilder zulassen", "Die Einstellung für SVG-Bilder."],
-    settingCompressImages: ["Bilder komprimieren", "Die Einstellung zum Komprimieren von Bildern."],
-    settingMaxResolution: ["Maximale Auflösung", "Die Einstellung der maximalen Auflösung."],
-    settingMaxResolutionHint: [
-        "In Pixeln an der längsten Kante.",
-        "Erklärt die Einstellung der maximalen Auflösung.",
-    ],
     settingSkipFailedChapters: [
         "Fehlgeschlagene Kapitel überspringen",
         "Die Einstellung zum Überspringen fehlgeschlagener Kapitel.",
@@ -245,6 +259,14 @@ export default {
     settingRetryOnEmptyPage: [
         "Bei leerer Seite erneut versuchen",
         "Die Einstellung zum erneuten Versuch bei leeren Seiten.",
+    ],
+    settingEmptyPageIsError: [
+        "Eine leere Seite ist ein Fehler",
+        "Die Einstellung, nach der eine leere Seite ein Fehler ist.",
+    ],
+    settingEmptyPageIsErrorHint: [
+        "Manche Seiten antworten auf eine blockierte Anfrage mit einer leeren Seite. Ist diese Option an, wird eine leere Seite als Fehler gemeldet, statt zu einem leeren Kapitel zu werden.",
+        "Erklärt die Einstellung, nach der eine leere Seite ein Fehler ist.",
     ],
     settingMinimumDelay: [
         "Mindestverzögerung zwischen Anfragen",
@@ -265,22 +287,6 @@ export default {
     settingDelayPerChapterHint: [
         "In Millisekunden, zusätzlich zur Mindestverzögerung.",
         "Erklärt die Einstellung der Verzögerung pro Kapitel.",
-    ],
-    settingMetadataLookup: [
-        "Buch-Metadaten nachschlagen",
-        "Die Einstellung für die Metadatensuche.",
-    ],
-    settingMetadataLookupHint: [
-        "Standardmäßig aus. Ist die Option an, wird der Titel mit einer öffentlichen Datenbank abgeglichen.",
-        "Erklärt die Einstellung für die Metadatensuche.",
-    ],
-    settingSendStoryUrl: [
-        "Story-URL bei der Suche mitsenden",
-        "Die Einstellung zum Mitsenden der Story-URL.",
-    ],
-    settingSendStoryUrlHint: [
-        "Standardmäßig aus. Ohne sie kann die Suche nur den Titel verwenden.",
-        "Erklärt die Einstellung zum Mitsenden der Story-URL.",
     ],
     settingDiagnostics: ["Entwickler-Diagnose", "Die Einstellung für die Diagnose."],
     settingDiagnosticsHint: [
@@ -429,4 +435,5 @@ export default {
         "Ausblenden",
         "Die Beschriftung einer Schaltfläche, die eine Meldung ausblendet.",
     ],
+    commonCancel: ["Abbrechen", "Die Beschriftung einer Schaltfläche, die eine Aktion abbricht."],
 };

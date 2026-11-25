@@ -31,7 +31,14 @@ import { makeLegacyUserPreferences, type LegacyUserPreferences } from "./legacy-
  * - `highestResolutionImages` is the image group's `preferHighestResolution`;
  * - `removeDuplicateImages` is the image group's `removeDuplicates`;
  * - `useSvgForImages` is the image group's `useSvg`;
- * - `skipChaptersThatFailFetch` is the behaviour group's `skipFailedChapters`.
+ * - `skipChaptersThatFailFetch` is the behaviour group's `skipFailedChapters`;
+ * - `noContentToError403` is the behaviour group's `emptyPageIsError`, which
+ *   says whether a page with no content counts as a failure.
+ *
+ * The setting that used to be called `privacy.metadataLookup` was mapped here
+ * for a while, which was simply wrong: the label promised a lookup of book
+ * metadata in a public database, and nothing of the kind has ever existed.
+ * The behaviour it actually controlled is the one the name now says.
  *
  * @param settings The user's settings.
  * @returns The preferences, in the shape the legacy parsers read.
@@ -50,6 +57,7 @@ export function toLegacyUserPreferences(settings: Settings): LegacyUserPreferenc
 
     // --- Behaviour ---
     flag(preferences.skipChaptersThatFailFetch, settings.behaviour.skipFailedChapters);
+    flag(preferences.noContentToError403, settings.behaviour.emptyPageIsError);
     preferences.manualDelayPerChapter.value = String(settings.behaviour.delayPerChapter);
     // The rewrite's `minimumDelay` is a floor, not an override: the parser's
     // own politeness budget always wins. The legacy flag meant "replace the
@@ -67,9 +75,6 @@ export function toLegacyUserPreferences(settings: Settings): LegacyUserPreferenc
     flag(preferences.addInformationPage, settings.epub.addInfoPage);
     flag(preferences.removeNextAndPreviousChapterHyperlinks, settings.epub.removeNextPrevLinks);
     flag(preferences.includeImageSourceUrl, settings.epub.includeSourceUrl);
-
-    // --- Privacy ---
-    flag(preferences.noContentToError403, settings.privacy.metadataLookup);
 
     return preferences;
 }

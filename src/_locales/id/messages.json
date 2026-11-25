@@ -325,10 +325,6 @@
     "message": "Perilaku",
     "description": "Kelompok pengaturan perilaku."
   },
-  "optionsPrivacy": {
-    "message": "Privasi",
-    "description": "Kelompok pengaturan privasi."
-  },
   "optionsAdvanced": {
     "message": "Lanjutan",
     "description": "Kelompok pengaturan lanjutan."
@@ -409,9 +405,33 @@
     "message": "Atur ulang semua pengaturan",
     "description": "Mengembalikan setiap pengaturan ke nilai bawaan."
   },
+  "optionsExported": {
+    "message": "Pengaturan telah disimpan ke berkas.",
+    "description": "Ditampilkan setelah pengaturan diekspor."
+  },
+  "optionsImported": {
+    "message": "Pengaturan telah dimuat dari berkas.",
+    "description": "Ditampilkan setelah pengaturan diimpor."
+  },
+  "optionsImportInvalid": {
+    "message": "Berkas itu bukan berkas pengaturan Kintsugi.",
+    "description": "Ditampilkan ketika berkas yang diimpor tidak dapat dibaca."
+  },
+  "optionsResetDone": {
+    "message": "Setiap pengaturan kembali ke nilai bawaannya.",
+    "description": "Ditampilkan setelah pengaturan diatur ulang."
+  },
+  "optionsResetConfirm": {
+    "message": "Setiap pengaturan kembali ke nilai bawaannya. Pustaka dan situs tersimpan Anda tidak tersentuh.",
+    "description": "Penjelasan pada dialog atur ulang."
+  },
+  "optionsResetConfirmAction": {
+    "message": "Atur ulang semua",
+    "description": "Tombol konfirmasi pada dialog atur ulang."
+  },
   "optionsPrivacyNote": {
     "message": "Kintsugi tidak mengirim apa pun ke siapa pun. Setiap permintaan jaringan hanya menuju situs yang sedang Anda baca.",
-    "description": "Catatan di bawah pengaturan privasi."
+    "description": "Catatan di kaki pengaturan."
   },
   "optionsLibrary": {
     "message": "Pustaka",
@@ -545,18 +565,6 @@
     "message": "Izinkan gambar SVG",
     "description": "Pengaturan izin gambar SVG."
   },
-  "settingCompressImages": {
-    "message": "Kompres gambar",
-    "description": "Pengaturan kompresi gambar."
-  },
-  "settingMaxResolution": {
-    "message": "Resolusi maksimum",
-    "description": "Pengaturan resolusi maksimum."
-  },
-  "settingMaxResolutionHint": {
-    "message": "Dalam piksel pada sisi terpanjang.",
-    "description": "Penjelasan pengaturan resolusi maksimum."
-  },
   "settingSkipFailedChapters": {
     "message": "Lewati bab yang gagal",
     "description": "Pengaturan melewati bab yang gagal."
@@ -568,6 +576,14 @@
   "settingRetryOnEmptyPage": {
     "message": "Coba lagi pada halaman kosong",
     "description": "Pengaturan percobaan ulang pada halaman kosong."
+  },
+  "settingEmptyPageIsError": {
+    "message": "Halaman kosong dianggap galat",
+    "description": "Pengaturan yang menjadikan halaman kosong sebagai galat."
+  },
+  "settingEmptyPageIsErrorHint": {
+    "message": "Sebagian situs menjawab permintaan yang diblokir dengan halaman kosong. Jika opsi ini aktif, halaman tersebut dilaporkan sebagai kegagalan, bukan menjadi bab kosong.",
+    "description": "Penjelasan pengaturan yang menjadikan halaman kosong sebagai galat."
   },
   "settingMinimumDelay": {
     "message": "Jeda minimum antarpermintaan",
@@ -588,22 +604,6 @@
   "settingDelayPerChapterHint": {
     "message": "Dalam milidetik, di atas jeda minimum.",
     "description": "Penjelasan pengaturan jeda per bab."
-  },
-  "settingMetadataLookup": {
-    "message": "Cari metadata buku",
-    "description": "Pengaturan pencarian metadata."
-  },
-  "settingMetadataLookupHint": {
-    "message": "Mati secara bawaan. Jika diaktifkan, judul diperiksa terhadap basis data publik.",
-    "description": "Penjelasan pengaturan pencarian metadata."
-  },
-  "settingSendStoryUrl": {
-    "message": "Kirim URL cerita bersama pencarian",
-    "description": "Pengaturan pengiriman URL cerita."
-  },
-  "settingSendStoryUrlHint": {
-    "message": "Mati secara bawaan. Tanpanya, pencarian hanya dapat memakai judul.",
-    "description": "Penjelasan pengaturan pengiriman URL cerita."
   },
   "settingDiagnostics": {
     "message": "Diagnostik pengembang",
@@ -856,5 +856,9 @@
   "commonDismiss": {
     "message": "Tutup",
     "description": "Label tombol yang menutup notifikasi."
+  },
+  "commonCancel": {
+    "message": "Batal",
+    "description": "Label tombol yang membatalkan sebuah tindakan."
   }
 }

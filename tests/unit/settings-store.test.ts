@@ -105,10 +105,10 @@ describe("validateSettings", () => {
         // An unusable value falls back to the documented default, not to a
         // zero: a corrupt `useSvg` must not quietly turn SVG support off.
         const settings = validateSettings({
-            images: { useSvg: "yes", maxResolution: "big" },
+            images: { useSvg: "yes", removeDuplicates: "no" },
         });
         expect(settings.images.useSvg).toBe(DEFAULT_SETTINGS.images.useSvg);
-        expect(settings.images.maxResolution).toBe(DEFAULT_SETTINGS.images.maxResolution);
+        expect(settings.images.removeDuplicates).toBe(DEFAULT_SETTINGS.images.removeDuplicates);
     });
 
     it("refuses a value that is not an object", () => {
@@ -118,8 +118,22 @@ describe("validateSettings", () => {
     });
 
     it("clamps a number that is out of range", () => {
-        const settings = validateSettings({ images: { maxResolution: 999999 } });
-        expect(settings.images.maxResolution).toBe(10000);
+        const settings = validateSettings({ behaviour: { maxChapters: 999999 } });
+        expect(settings.behaviour.maxChapters).toBe(100000);
+    });
+
+    it("does not keep a setting that has been taken away", () => {
+        // The settings that were removed in this release are not in the
+        // schema, so they are dropped rather than carried forward into a
+        // settings file that would then export them again.
+        const settings = validateSettings({
+            images: { compress: true, maxResolution: 4000 },
+            privacy: { metadataLookup: true, sendStoryUrl: true },
+        }) as unknown as Record<string, Record<string, unknown>>;
+
+        expect(settings["images"]).not.toHaveProperty("compress");
+        expect(settings["images"]).not.toHaveProperty("maxResolution");
+        expect(settings["privacy"]).toBeUndefined();
     });
 
     it("cannot be used to inject a prototype", () => {
