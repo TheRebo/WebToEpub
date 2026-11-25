@@ -77,8 +77,23 @@ export class KProgress extends KComponent {
 
         const bar = this.root.querySelector(".bar");
         bar?.setAttribute("aria-valuemin", "0");
-        bar?.setAttribute("aria-valuemax", String(max));
-        bar?.setAttribute("aria-valuenow", String(Math.round(value)));
+        /*
+         * A range whose maximum is zero is not a range.
+         *
+         * ARIA requires a progress bar's value to be between its minimum and
+         * its maximum, and "aria-valuemax=0" with "aria-valuemin=0" describes
+         * an empty range, which assistive technology reports as a broken
+         * widget. An indeterminate progress bar is the correct thing to show
+         * when there is no total to count towards, and that is what dropping
+         * the value attributes asks for.
+         */
+        if (max > 0) {
+            bar?.setAttribute("aria-valuemax", String(max));
+            bar?.setAttribute("aria-valuenow", String(Math.round(value)));
+        } else {
+            bar?.removeAttribute("aria-valuemax");
+            bar?.removeAttribute("aria-valuenow");
+        }
 
         // The accessible name comes from the `label` attribute. Without it the
         // progressbar is an unnamed widget, and a screen reader announces a

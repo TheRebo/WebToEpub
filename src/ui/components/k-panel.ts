@@ -88,6 +88,8 @@ export class KPanel extends KComponent {
     static override observedAttributes = ["heading", "summary", "open"];
 
     private details: HTMLDetailsElement | undefined;
+    private titleNode: HTMLElement | undefined;
+    private summaryNode: HTMLElement | undefined;
 
     protected override render(): void {
         if (!this.details) {
@@ -97,6 +99,19 @@ export class KPanel extends KComponent {
         }
         this.details.open = this.hasAttribute("open");
         this.details.ontoggle = this.#onToggle;
+        this.#updateLabels();
+    }
+
+    /**
+     * Write the heading and summary into the header.
+     *
+     * The attributes are observed, so changing them after construction has to
+     * update the header; writing them once in #build() would leave a panel
+     * showing the title it was born with.
+     */
+    #updateLabels(): void {
+        if (this.titleNode) this.titleNode.textContent = this.getAttribute("heading") ?? "";
+        if (this.summaryNode) this.summaryNode.textContent = this.getAttribute("summary") ?? "";
     }
 
     /** Build the component's structure. */
@@ -106,11 +121,11 @@ export class KPanel extends KComponent {
         const summary = document.createElement("summary");
         const title = document.createElement("span");
         title.className = "title";
-        title.textContent = this.getAttribute("heading") ?? "";
+        this.titleNode = title;
 
         const summaryText = document.createElement("span");
         summaryText.className = "summary-text";
-        summaryText.textContent = this.getAttribute("summary") ?? "";
+        this.summaryNode = summaryText;
 
         const chevron = document.createElement("span");
         chevron.className = "chevron";
