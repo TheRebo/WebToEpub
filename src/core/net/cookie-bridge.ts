@@ -47,14 +47,28 @@ export interface CookieApi {
         /** `null` removes a partitioned cookie. */
         partitionKey?: { topLevelSite: string } | null;
     }): Promise<void>;
-    remove(details: { url: string; name: string; storeId?: string }): Promise<void>;
+    remove(details: { url: string; name: string; storeId?: string; path?: string }): Promise<void>;
+}
+
+/**
+ * A cookie this bridge copied.
+ *
+ * The path is remembered because the browser identifies a cookie by its
+ * domain, its path *and* its name. A cookie copied at `/app` is not the same
+ * cookie as one at `/`, so removing it has to name the same path.
+ */
+interface CopiedCookie {
+    /** The cookie's name. */
+    name: string;
+    /** The path the copy was set at. */
+    path: string;
 }
 
 /** The bridge. */
 export class CookieBridge {
     #api: CookieApi;
     /** The cookies copied for each domain, so they can be removed later. */
-    #copied = new Map<string, string[]>();
+    #copied = new Map<string, CopiedCookie[]>();
 
     constructor(api: CookieApi) {
         this.#api = api;
@@ -63,7 +77,7 @@ export class CookieBridge {
     /**
      * Copy the partitioned cookies for a domain into unpartitioned ones.
      *
-     * @returns The names of the cookies that were copied.
+     * @returns The cookies that were copied.
      */
     async copyForDomain(domain: string): Promise<string[]> {
         if (!this.#api) return [];
@@ -77,19 +91,20 @@ export class CookieBridge {
             return [];
         }
 
-        const copied: string[] = [];
+        const copied: CopiedCookie[] = [];
         for (const cookie of partitioned) {
             // Only partitioned cookies need copying; an unpartitioned cookie
             // is already sent to the extension's context.
             if (!cookie.partitionKey) continue;
             if (!isCookieForDomain(cookie.domain, domain)) continue;
 
+            const path = cookie.path || "/";
             try {
                 await this.#api.set({
-                    url: `https://${cookie.domain.replace(/^\./, "")}/`,
+                    url: `https://${cookie.domain.replace(/^\./, "")}${path}`,
                     name: cookie.name,
                     value: cookie.value,
-                    path: cookie.path || "/",
+                    path,
                     secure: cookie.secure,
                     httpOnly: cookie.httpOnly,
                     sameSite: cookie.sameSite,
@@ -97,7 +112,7 @@ export class CookieBridge {
                     // counterpart of a partitioned cookie.
                     partitionKey: null,
                 });
-                copied.push(cookie.name);
+                copied.push({ name: cookie.name, path });
             } catch {
                 // Some cookies cannot be set from an extension context. Skip
                 // them; the request may still succeed.
@@ -106,22 +121,49 @@ export class CookieBridge {
 
         if (copied.length > 0) {
             const existing = this.#copied.get(domain) ?? [];
-            this.#copied.set(domain, [...new Set([...existing, ...copied])]);
+            const merged = [...existing, ...copied];
+            // The same cookie can be copied twice, and the second copy
+            // replaces the first, so only one entry is kept for each
+            // name-and-path pair.
+            const unique = new Map(merged.map((entry) => [`${entry.path}::${entry.name}`, entry]));
+            this.#copied.set(domain, [...unique.values()]);
         }
-        return copied;
+        return copied.map((entry) => entry.name);
     }
 
-    /** Remove the cookies copied for a domain. */
+    /**
+     * Remove the cookies copied for a domain.
+     *
+     * The removal names the same path the copy was set at. The browser
+     * identifies a cookie by its domain, its path and its name, so a copy
+     * made at `/app` is not removed by a request for `https://domain/` — the
+     * path does not match — and the copy would stay in the jar, being sent
+     * with every later request to that host.
+     */
     async removeForDomain(domain: string, names: string[]): Promise<void> {
         for (const name of names) {
-            try {
-                await this.#api.remove({ url: `https://${domain}/`, name });
-            } catch {
-                // Best effort. A cookie that cannot be removed will expire
-                // on its own.
+            const entries = (this.#copied.get(domain) ?? []).filter((entry) => entry.name === name);
+            // A cookie that was never recorded — because the bridge was
+            // rebuilt, say — is removed at the root path, which is where a
+            // cookie with no path of its own would be.
+            const paths = entries.length > 0 ? entries.map((entry) => entry.path) : ["/"];
+
+            for (const path of paths) {
+                try {
+                    await this.#api.remove({
+                        url: `https://${domain}${path}`,
+                        name,
+                        path,
+                    });
+                } catch {
+                    // Best effort. A cookie that cannot be removed will expire
+                    // on its own.
+                }
             }
         }
-        const remaining = (this.#copied.get(domain) ?? []).filter((name) => !names.includes(name));
+        const remaining = (this.#copied.get(domain) ?? []).filter(
+            (entry) => !names.includes(entry.name),
+        );
         if (remaining.length === 0) this.#copied.delete(domain);
         else this.#copied.set(domain, remaining);
     }
@@ -135,7 +177,7 @@ export class CookieBridge {
     async removeAll(): Promise<void> {
         const domains = [...this.#copied.keys()];
         for (const domain of domains) {
-            const names = this.#copied.get(domain) ?? [];
+            const names = (this.#copied.get(domain) ?? []).map((entry) => entry.name);
             await this.removeForDomain(domain, names);
         }
         this.#copied.clear();
@@ -143,7 +185,14 @@ export class CookieBridge {
 
     /** The cookies currently copied, for diagnostics. */
     get copiedCookies(): ReadonlyMap<string, string[]> {
-        return this.#copied;
+        const summary = new Map<string, string[]>();
+        for (const [domain, entries] of this.#copied) {
+            summary.set(
+                domain,
+                entries.map((entry) => entry.name),
+            );
+        }
+        return summary;
     }
 }
 

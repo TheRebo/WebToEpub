@@ -131,10 +131,19 @@ export function createCookieApi(api: BrowserCookieApi | undefined): CookieApi | 
         },
 
         async remove(details): Promise<void> {
-            const target: { url: string; name: string; partitionKey?: unknown } = {
+            const target: {
+                url: string;
+                name: string;
+                partitionKey?: unknown;
+                path?: string;
+            } = {
                 url: details.url,
                 name: details.name,
             };
+            // The browser identifies a cookie by its domain, its path and its
+            // name. A removal that names a different path does not match the
+            // cookie, and the copy stays in the jar.
+            if (details.path) target.path = details.path;
             if ("partitionKey" in details) target.partitionKey = details.partitionKey;
             await api.remove(target);
         },

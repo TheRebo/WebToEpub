@@ -95,8 +95,43 @@ describe("CookieBridge", () => {
         await bridge.copyForDomain("example.com");
         await bridge.removeForDomain("example.com", ["session"]);
 
-        expect(remove).toHaveBeenCalledWith({ url: "https://example.com/", name: "session" });
+        expect(remove).toHaveBeenCalledWith({
+            url: "https://example.com/",
+            name: "session",
+            path: "/",
+        });
         expect(bridge.copiedCookies.size).toBe(0);
+    });
+
+    it("removes a cookie copied at a path below the root", async () => {
+        // The browser identifies a cookie by its domain, its path and its
+        // name. A removal that names the root path does not match a cookie
+        // that was set at `/app`, so the copy would stay in the jar and be
+        // sent with every later request to that host.
+        const { api, remove, set } = recordingApi([
+            {
+                name: "session",
+                value: "abc",
+                domain: ".example.com",
+                path: "/app",
+                secure: true,
+                httpOnly: true,
+                partitionKey: "https://example.com",
+            },
+        ]);
+
+        const bridge = new CookieBridge(api);
+        await bridge.copyForDomain("example.com");
+        await bridge.removeForDomain("example.com", ["session"]);
+
+        expect(set).toHaveBeenCalledWith(
+            expect.objectContaining({ path: "/app", url: "https://example.com/app" }),
+        );
+        expect(remove).toHaveBeenCalledWith({
+            url: "https://example.com/app",
+            name: "session",
+            path: "/app",
+        });
     });
 
     it("survives a browser that will not disclose the cookies", async () => {
