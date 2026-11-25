@@ -417,6 +417,14 @@
       }
     }
   },
+  "libraryRemove": {
+    "message": "Remove",
+    "description": "Removes a book from the library."
+  },
+  "libraryRemoved": {
+    "message": "Removed from the library.",
+    "description": "Confirmation after removing a book."
+  },
   "settingReduceMotion": {
     "message": "Always reduce motion",
     "description": "The reduce-motion setting."

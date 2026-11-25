@@ -128,6 +128,8 @@ export default {
     ],
     optionsNavLabel: ["設定グループ", "設定ナビゲーションのアクセシブルな名前。"],
     optionsLibraryMeta: ["$CHAPTERS$ 章 · $SIZE$", "ライブラリカードのメタ情報行。"],
+    libraryRemove: ["削除", "ライブラリから本を削除します。"],
+    libraryRemoved: ["ライブラリから削除しました。", "本を削除した後の確認。"],
 
     // --- Options: individual settings ---
     settingReduceMotion: ["常に動きを減らす", "動きを減らす設定。"],

@@ -417,6 +417,14 @@
       }
     }
   },
+  "libraryRemove": {
+    "message": "削除",
+    "description": "ライブラリから本を削除します。"
+  },
+  "libraryRemoved": {
+    "message": "ライブラリから削除しました。",
+    "description": "本を削除した後の確認。"
+  },
   "settingReduceMotion": {
     "message": "常に動きを減らす",
     "description": "動きを減らす設定。"

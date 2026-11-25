@@ -752,10 +752,15 @@ export function renderLibrary(
                 formatBytes(entry.size),
             ]);
 
-            card.appendChild(cover);
-            card.appendChild(title);
-            card.appendChild(author);
-            card.appendChild(meta);
+            // The book itself is on the user's disk; this removes the
+            // library's *record* of it, which is what the library holds.
+            const remove = document.createElement("k-button");
+            remove.setAttribute("variant", "ghost");
+            remove.setAttribute("size", "sm");
+            remove.textContent = t("libraryRemove");
+            remove.dataset["libraryId"] = entry.id;
+
+            card.append(cover, title, author, meta, remove);
             grid.appendChild(card);
         }
 

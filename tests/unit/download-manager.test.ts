@@ -17,6 +17,7 @@ import {
     type JobProgress,
 } from "../../src/core/download-manager";
 import type { Parser } from "../../src/core/parsers/parser";
+import type { LibraryEntry } from "../../src/core/storage/library-store";
 
 /** A chapter of the fake book. */
 const CHAPTERS = [
@@ -225,6 +226,68 @@ describe("the download manager's behaviour settings", () => {
         const progress = await settle(manager, jobId);
         expect(progress.phase).toBe("complete");
         expect(delays[0]).toBe(DEFAULT_BEHAVIOUR.minimumDelay);
+    });
+});
+
+describe("the download manager's library record", () => {
+    it("records the finished book in the library", async () => {
+        const saved: LibraryEntry[] = [];
+        const manager = new DownloadManager({
+            fetchHtml: async (url) => ({
+                dom: new DOMParser().parseFromString(
+                    "<html><body><p>Prose.</p></body></html>",
+                    "text/html",
+                ),
+                url,
+            }),
+            fetchBytes: async () => ({ data: new Uint8Array(), mediaType: "image/png" }),
+            saveFile: async (fileName) => ({ fileName, fileSize: 4096 }),
+            parserFor: () => null,
+            util: { safeForFileName: (title: string) => title },
+            throttle: async () => undefined,
+            saveToLibrary: async (entry) => {
+                saved.push(entry);
+            },
+        });
+
+        const jobId = manager.start("https://example.com/story", "The Story", CHAPTERS);
+        await settle(manager, jobId);
+
+        // Without this the library is always empty, because the download
+        // manager is the only thing that ever produces a book.
+        expect(saved).toHaveLength(1);
+        expect(saved[0]?.title).toBe("The Story");
+        expect(saved[0]?.sourceUrl).toBe("https://example.com/story");
+        expect(saved[0]?.chapterCount).toBe(2);
+        expect(saved[0]?.size).toBe(4096);
+        expect(saved[0]?.chapterUrls).toEqual(["https://example.com/1", "https://example.com/2"]);
+    });
+
+    it("does not fail the download when the library write fails", async () => {
+        const manager = new DownloadManager({
+            fetchHtml: async (url) => ({
+                dom: new DOMParser().parseFromString(
+                    "<html><body><p>Prose.</p></body></html>",
+                    "text/html",
+                ),
+                url,
+            }),
+            fetchBytes: async () => ({ data: new Uint8Array(), mediaType: "image/png" }),
+            saveFile: async (fileName) => ({ fileName, fileSize: 1 }),
+            parserFor: () => null,
+            util: { safeForFileName: (title: string) => title },
+            throttle: async () => undefined,
+            saveToLibrary: async () => {
+                throw new Error("the disk is full");
+            },
+        });
+
+        const jobId = manager.start("https://example.com/story", "The Story", CHAPTERS);
+        const progress = await settle(manager, jobId);
+
+        // The file is already saved; losing the download over a bookkeeping
+        // error would be worse than a missing library entry.
+        expect(progress.phase).toBe("complete");
     });
 });
 

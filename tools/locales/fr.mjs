@@ -151,6 +151,8 @@ export default {
         "$CHAPTERS$ chapitres · $SIZE$",
         "La ligne de métadonnées de la carte de bibliothèque.",
     ],
+    libraryRemove: ["Retirer", "Retire un livre de la bibliothèque."],
+    libraryRemoved: ["Retiré de la bibliothèque.", "Confirmation après le retrait d'un livre."],
     settingReduceMotion: [
         "Toujours réduire les animations",
         "Le réglage de réduction des animations.",

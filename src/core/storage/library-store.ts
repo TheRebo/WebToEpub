@@ -85,7 +85,18 @@ export class LibraryStore {
         return this.#db;
     }
 
-    /** Run a transaction against the store. */
+    /**
+     * Run a transaction against the store.
+     *
+     * A **read-write** transaction is only durable once it has *committed*.
+     * Resolving on the request's success event would report a write as done
+     * while the transaction was still open, and a transaction that then
+     * aborted — a quota error, a browser eviction — would leave the caller
+     * believing the write had happened when it had not.
+     *
+     * So a write waits for the transaction's `complete` event, and a read
+     * resolves on the request's success, which is all a read needs.
+     */
     async #withStore<T>(
         mode: IDBTransactionMode,
         action: (store: IDBObjectStore) => IDBRequest<T>,
@@ -96,11 +107,30 @@ export class LibraryStore {
             const store = transaction.objectStore(LIBRARY_STORE);
             const request = action(store);
 
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error ?? new Error("Library request failed."));
+            let result: T | undefined;
+            let failed = false;
 
-            transaction.onabort = () =>
+            request.onsuccess = () => {
+                result = request.result;
+                if (mode === "readonly") resolve(result as T);
+            };
+            request.onerror = () => {
+                failed = true;
+                reject(request.error ?? new Error("Library request failed."));
+            };
+
+            transaction.oncomplete = () => {
+                if (failed) return;
+                resolve(result as T);
+            };
+            transaction.onabort = () => {
+                failed = true;
                 reject(transaction.error ?? new Error("Library transaction aborted."));
+            };
+            transaction.onerror = () => {
+                failed = true;
+                reject(transaction.error ?? new Error("Library transaction failed."));
+            };
         });
     }
 

@@ -151,6 +151,8 @@ export default {
     ],
     optionsNavLabel: ["Kelompok pengaturan", "Nama yang dapat diakses untuk navigasi pengaturan."],
     optionsLibraryMeta: ["$CHAPTERS$ bab · $SIZE$", "Baris metadata pada kartu pustaka."],
+    libraryRemove: ["Hapus", "Menghapus buku dari pustaka."],
+    libraryRemoved: ["Dihapus dari pustaka.", "Konfirmasi setelah menghapus buku."],
 
     // --- Options: individual settings ---
     settingReduceMotion: ["Selalu kurangi gerakan", "Pengaturan pengurangan gerakan."],

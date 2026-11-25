@@ -442,6 +442,15 @@
     color: var(--text-muted);
 }
 
+/*
+ * The remove button sits at the bottom of the card, so the cards in a row
+ * line up with one another whatever the length of the titles.
+ */
+.options-library-card k-button {
+    align-self: flex-start;
+    margin-top: var(--space-2);
+}
+
 .options-library-empty {
     display: flex;
     flex-direction: column;

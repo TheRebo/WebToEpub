@@ -34,6 +34,9 @@ const background: BackgroundPort = {
         const { entries } = await sendRequest(api, "library:list", {});
         return entries as Array<Record<string, unknown>>;
     },
+    async removeFromLibrary(id: string) {
+        await sendRequest(api, "library:delete", { id });
+    },
     async siteSelectors() {
         const { entries } = await sendRequest(api, "site-selectors:list", {});
         return entries;

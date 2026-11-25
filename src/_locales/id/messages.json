@@ -417,6 +417,14 @@
       }
     }
   },
+  "libraryRemove": {
+    "message": "Hapus",
+    "description": "Menghapus buku dari pustaka."
+  },
+  "libraryRemoved": {
+    "message": "Dihapus dari pustaka.",
+    "description": "Konfirmasi setelah menghapus buku."
+  },
   "settingReduceMotion": {
     "message": "Selalu kurangi gerakan",
     "description": "Pengaturan pengurangan gerakan."

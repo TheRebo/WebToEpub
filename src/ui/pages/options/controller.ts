@@ -237,6 +237,8 @@ export interface ThemePort {
 export interface BackgroundPort {
     /** List the library. */
     library(): Promise<Array<Record<string, unknown>>>;
+    /** Remove one book from the library. */
+    removeFromLibrary?(id: string): Promise<void>;
     /** List the saved site selectors. */
     siteSelectors(): Promise<
         Array<{
@@ -419,7 +421,13 @@ export class OptionsController {
                 return;
             }
             const hostname = target?.dataset["hostname"];
-            if (hostname) void this.#forgetSiteSelectors(hostname);
+            if (hostname) {
+                void this.#forgetSiteSelectors(hostname);
+                return;
+            }
+
+            const libraryId = target?.dataset["libraryId"];
+            if (libraryId) void this.#removeFromLibrary(libraryId);
         });
     }
 
@@ -521,6 +529,7 @@ export class OptionsController {
     }
 
     /** Forget one site's saved selectors. */
+    /** Forget the selectors for a host name. */
     async #forgetSiteSelectors(hostname: string): Promise<void> {
         if (!this.#background) return;
         try {
@@ -531,6 +540,25 @@ export class OptionsController {
         this.#selectorsLoaded = false;
         await this.#loadSiteSelectors();
         this.#toast(t("siteSelectorForgotten"), "info");
+    }
+
+    /**
+     * Remove a book from the library.
+     *
+     * The book itself is on the user's disk; this removes the library's
+     * record of it.
+     */
+    async #removeFromLibrary(id: string): Promise<void> {
+        if (!this.#background?.removeFromLibrary) return;
+        try {
+            await this.#background.removeFromLibrary(id);
+        } catch (error) {
+            this.#toast(messageOf(error) || t("errorGeneric"), "error");
+            return;
+        }
+        this.#libraryLoaded = false;
+        await this.#loadLibrary();
+        this.#toast(t("libraryRemoved"), "info");
     }
 
     /** Show a toast. */

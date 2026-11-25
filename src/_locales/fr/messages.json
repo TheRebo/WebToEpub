@@ -417,6 +417,14 @@
       }
     }
   },
+  "libraryRemove": {
+    "message": "Retirer",
+    "description": "Retire un livre de la bibliothèque."
+  },
+  "libraryRemoved": {
+    "message": "Retiré de la bibliothèque.",
+    "description": "Confirmation après le retrait d'un livre."
+  },
   "settingReduceMotion": {
     "message": "Toujours réduire les animations",
     "description": "Le réglage de réduction des animations."

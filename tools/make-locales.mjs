@@ -162,6 +162,8 @@ const SOURCE = {
     ],
     optionsNavLabel: ["Settings groups", "The accessible name of the settings navigation."],
     optionsLibraryMeta: ["$CHAPTERS$ chapters · $SIZE$", "The library card's metadata line."],
+    libraryRemove: ["Remove", "Removes a book from the library."],
+    libraryRemoved: ["Removed from the library.", "Confirmation after removing a book."],
 
     // --- Options: individual settings ---
     settingReduceMotion: ["Always reduce motion", "The reduce-motion setting."],

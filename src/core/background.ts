@@ -119,6 +119,13 @@ class BackgroundWorker {
                     // Cleanup failure must never break the job's result.
                 });
             },
+            // A finished book is recorded in the library, so the options
+            // page's library shows what the user has actually made. Without
+            // this the library is always empty, because the download
+            // manager is the only thing that ever produces a book.
+            saveToLibrary: async (entry) => {
+                await this.#library.put(entry);
+            },
         });
 
         // The services are built once and shared: every parser gets the same
@@ -181,7 +188,26 @@ class BackgroundWorker {
                     await this.#settings.set(payload.settings as never);
                     return { settings: await this.#settings.get() };
                 },
-                "library:list": async () => ({ entries: await this.#library.list() }),
+                "library:list": async () => {
+                    // The cover's bytes are not sent. The library's grid draws
+                    // a placeholder cover, and a cover can be a hundred
+                    // kilobytes: sending one per book, on every visit to the
+                    // options page, would be a lot of copying for nothing.
+                    const all = await this.#library.list();
+                    return {
+                        entries: all.map((entry) => ({
+                            id: entry.id,
+                            title: entry.title,
+                            author: entry.author,
+                            sourceUrl: entry.sourceUrl,
+                            chapterCount: entry.chapterCount,
+                            size: entry.size,
+                            addedAt: entry.addedAt,
+                            updatedAt: entry.updatedAt,
+                            hasCover: entry.cover !== undefined && entry.cover.length > 0,
+                        })),
+                    };
+                },
                 "library:delete": async (payload) => {
                     const entry = await this.#library.get(payload.id);
                     if (!entry) return { deleted: false };

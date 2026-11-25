@@ -417,6 +417,14 @@
       }
     }
   },
+  "libraryRemove": {
+    "message": "Entfernen",
+    "description": "Entfernt ein Buch aus der Bibliothek."
+  },
+  "libraryRemoved": {
+    "message": "Aus der Bibliothek entfernt.",
+    "description": "Bestätigung nach dem Entfernen eines Buchs."
+  },
   "settingReduceMotion": {
     "message": "Bewegung immer reduzieren",
     "description": "Die Einstellung zur Reduzierung von Bewegung."

@@ -148,6 +148,8 @@ export default {
     ],
     optionsNavLabel: ["Einstellungsgruppen", "Der zugängliche Name der Einstellungs-Navigation."],
     optionsLibraryMeta: ["$CHAPTERS$ Kapitel · $SIZE$", "Die Metadatenzeile der Bibliothekskarte."],
+    libraryRemove: ["Entfernen", "Entfernt ein Buch aus der Bibliothek."],
+    libraryRemoved: ["Aus der Bibliothek entfernt.", "Bestätigung nach dem Entfernen eines Buchs."],
     settingReduceMotion: [
         "Bewegung immer reduzieren",
         "Die Einstellung zur Reduzierung von Bewegung.",

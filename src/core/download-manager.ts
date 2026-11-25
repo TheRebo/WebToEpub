@@ -29,6 +29,7 @@ import { sanitizeHtml } from "./util/sanitize";
 import { parseSrcset, resolveUrl } from "./util/image-references";
 import type { Parser } from "./parsers/parser";
 import { toUserFacingError, type UserFacingError } from "./util/errors";
+import type { LibraryEntry } from "./storage/library-store";
 
 /** A chapter being downloaded. */
 interface DownloadChapter {
@@ -176,6 +177,15 @@ export interface DownloadManagerDependencies {
      * copies of the user's session cookies.
      */
     onFinished?(job: JobProgress): void;
+    /**
+     * Record a finished book in the library.
+     *
+     * The library is the extension's archive: the books the user has already
+     * made, so they can be found again and updated when the serial continues.
+     * Without this the library is always empty, because nothing else writes
+     * to it.
+     */
+    saveToLibrary?(entry: LibraryEntry): Promise<void>;
 }
 
 /** The progress of a job, as reported to the UI. */
@@ -575,8 +585,60 @@ export class DownloadManager {
 
         job.fileName = saved.fileName;
         job.fileSize = saved.fileSize;
+
+        // The book is recorded in the library once it has been saved, so the
+        // library shows what the user has actually made. A failure here does
+        // not fail the download: the file is already on the disk, and losing
+        // the download over a bookkeeping error would be worse than a missing
+        // library entry.
+        await this.#saveToLibrary(job, metadata);
+
         job.phase = "complete";
         this.#report(job);
+    }
+
+    /**
+     * Record a finished book in the library.
+     *
+     * The library is the extension's archive. Without this step it would
+     * always be empty, because the download manager is the only thing that
+     * ever produces a book.
+     */
+    async #saveToLibrary(
+        job: Job,
+        metadata: {
+            title: string;
+            author?: string;
+            cover?: ImageData;
+        },
+    ): Promise<void> {
+        const saveToLibrary = this.#dependencies.saveToLibrary;
+        if (!saveToLibrary) return;
+
+        const now = Date.now();
+        const entry: LibraryEntry = {
+            id: job.id,
+            title: metadata.title || job.title || "Untitled",
+            author: metadata.author,
+            sourceUrl: job.sourceUrl,
+            chapterCount: job.chapters.length,
+            size: job.fileSize ?? 0,
+            addedAt: now,
+            updatedAt: now,
+            // The cover's bytes, so the library's grid can show the book
+            // without fetching it again.
+            cover: metadata.cover?.data,
+            coverMediaType: metadata.cover?.mediaType,
+            // The chapter URLs, so a later run can tell which chapters are new.
+            chapterUrls: job.chapters.map((chapter) => chapter.sourceUrl),
+        };
+
+        try {
+            await saveToLibrary(entry);
+        } catch {
+            // The book was saved; the library entry was not. The user has
+            // the file, which is what matters.
+        }
     }
 
     /**

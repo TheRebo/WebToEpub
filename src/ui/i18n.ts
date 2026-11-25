@@ -119,6 +119,8 @@ export const MESSAGES = {
     optionsNoResults: "optionsNoResults",
     optionsNavLabel: "optionsNavLabel",
     optionsLibraryMeta: "optionsLibraryMeta",
+    libraryRemove: "libraryRemove",
+    libraryRemoved: "libraryRemoved",
 
     // Options: individual settings
     settingReduceMotion: "settingReduceMotion",
