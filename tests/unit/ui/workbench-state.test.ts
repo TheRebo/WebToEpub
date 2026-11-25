@@ -27,6 +27,8 @@ function emptyState(): WorkbenchState {
             description: "",
             sourceUrl: "",
             parserName: "",
+            fileName: "untitled.epub",
+            fileNameEdited: false,
         },
         chapters: [],
         loadingChapters: false,

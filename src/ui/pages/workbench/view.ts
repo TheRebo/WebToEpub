@@ -8,6 +8,7 @@
  * virtualised by `<k-list>`.
  */
 import { t } from "../../i18n";
+import { buildFileName, DEFAULT_FILENAME_TEMPLATE } from "../../../core/util/file-name";
 import { createIcon, type IconName } from "../../components/icons";
 import { stateLabel } from "../../components/k-list";
 import type { KList } from "../../components/k-list";
@@ -466,13 +467,18 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
 
     const filterBody = el("div", "filter-body");
 
-    const filterSearch = makeTextField(t("filterSearch"), "filter-search").input;
+    // The wrapper is kept, not just the input: the wrapper holds the label,
+    // and a field without one has no name for a screen reader to read.
+    const filterSearchField = makeTextField(t("filterSearch"), "filter-search");
+    const filterSearch = filterSearchField.input;
 
     const filterRegex = document.createElement("k-switch");
     filterRegex.setAttribute("label", t("filterUseRegex"));
 
-    const filterInclude = makeTextField(t("filterInclude"), "filter-include").input;
-    const filterExclude = makeTextField(t("filterExclude"), "filter-exclude").input;
+    const filterIncludeField = makeTextField(t("filterInclude"), "filter-include");
+    const filterInclude = filterIncludeField.input;
+    const filterExcludeField = makeTextField(t("filterExclude"), "filter-exclude");
+    const filterExclude = filterExcludeField.input;
 
     const filterError = el("p", "filter-error");
     filterError.setAttribute("role", "alert");
@@ -481,10 +487,10 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const filterCount = el("p", "filter-count");
 
     filterBody.append(
-        filterSearch,
+        filterSearchField.wrapper,
         filterRegex,
-        filterInclude,
-        filterExclude,
+        filterIncludeField.wrapper,
+        filterExcludeField.wrapper,
         filterError,
         filterCount,
     );
@@ -672,7 +678,7 @@ export function renderWorkbench(
     // --- Story fields ---
     setInputValue(elements.titleField, state.story.title);
     setInputValue(elements.authorField, state.story.author);
-    setInputValue(elements.filenameField, deriveFilename(state.story.title));
+    setInputValue(elements.filenameField, state.story.fileName);
 
     const languageOptions = Array.from(elements.languageField.options);
     const hasLanguage = languageOptions.some((option) => option.value === state.story.language);
@@ -804,11 +810,20 @@ function renderStatus(elements: WorkbenchElements, state: WorkbenchState): void 
     }
 }
 
-/** Derive the filename from the title. */
-export function deriveFilename(title: string, extension = "epub"): string {
-    const trimmed = title.trim();
-    if (!trimmed) return `untitled.${extension}`;
-    return `${trimmed.replace(/[\\/:*?"<>|]/g, "-")}.${extension}`;
+/**
+ * Derive the file name from the title and the user's template.
+ *
+ * @param title The book's title.
+ * @param author The book's author.
+ * @param template The user's filename template.
+ * @returns The file name, extension included.
+ */
+export function deriveFilename(
+    title: string,
+    author = "",
+    template = DEFAULT_FILENAME_TEMPLATE,
+): string {
+    return buildFileName(template, { title, author });
 }
 
 /** Format a byte count for the size column. */

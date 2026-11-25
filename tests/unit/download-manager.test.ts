@@ -70,7 +70,6 @@ function harness(
             return { fileName, fileSize: 1 };
         },
         parserFor: () => null,
-        util: { safeForFileName: (title: string) => title },
         throttle: async (ms) => {
             delays.push(ms);
         },
@@ -213,7 +212,6 @@ describe("the download manager's behaviour settings", () => {
             fetchBytes: async () => ({ data: new Uint8Array(), mediaType: "image/png" }),
             saveFile: async (fileName) => ({ fileName, fileSize: 1 }),
             parserFor: () => null,
-            util: { safeForFileName: (title: string) => title },
             throttle: async (ms) => {
                 delays.push(ms);
             },
@@ -243,7 +241,6 @@ describe("the download manager's library record", () => {
             fetchBytes: async () => ({ data: new Uint8Array(), mediaType: "image/png" }),
             saveFile: async (fileName) => ({ fileName, fileSize: 4096 }),
             parserFor: () => null,
-            util: { safeForFileName: (title: string) => title },
             throttle: async () => undefined,
             saveToLibrary: async (entry) => {
                 saved.push(entry);
@@ -275,7 +272,6 @@ describe("the download manager's library record", () => {
             fetchBytes: async () => ({ data: new Uint8Array(), mediaType: "image/png" }),
             saveFile: async (fileName) => ({ fileName, fileSize: 1 }),
             parserFor: () => null,
-            util: { safeForFileName: (title: string) => title },
             throttle: async () => undefined,
             saveToLibrary: async () => {
                 throw new Error("the disk is full");
@@ -328,7 +324,6 @@ describe("the download manager's per-chapter progress", () => {
             fetchBytes: async () => ({ data: new Uint8Array(), mediaType: "image/png" }),
             saveFile: async (fileName) => ({ fileName, fileSize: 1 }),
             parserFor: () => parser,
-            util: { safeForFileName: (title: string) => title },
             throttle: async () => undefined,
             behaviour: async () => ({ ...DEFAULT_BEHAVIOUR, retryOnEmptyPage: false }),
             onProgress: (progress) => reports.push(progress),
@@ -388,7 +383,6 @@ describe("the download manager's per-chapter progress", () => {
             fetchBytes: async () => ({ data: new Uint8Array(), mediaType: "image/png" }),
             saveFile: async (fileName) => ({ fileName, fileSize: 1 }),
             parserFor: () => null,
-            util: { safeForFileName: (title: string) => title },
             throttle: async () => undefined,
             behaviour: async () => ({ ...DEFAULT_BEHAVIOUR, retryOnEmptyPage: false }),
             onProgress: (progress) => reports.push(progress),
@@ -448,7 +442,6 @@ describe("the download manager's per-chapter progress", () => {
             fetchBytes: async () => ({ data: new Uint8Array(), mediaType: "image/png" }),
             saveFile: async (fileName) => ({ fileName, fileSize: 1 }),
             parserFor: () => parser,
-            util: { safeForFileName: (title: string) => title },
             throttle: async () => undefined,
             behaviour: async () => ({ ...DEFAULT_BEHAVIOUR, retryOnEmptyPage: false }),
         });

@@ -28,6 +28,7 @@ import { SVG_MEDIA_TYPE } from "./epub/document";
 import { buildEpubArchive } from "./epub/archiver";
 import { sanitizeHtml } from "./util/sanitize";
 import { parseSrcset, resolveUrl } from "./util/image-references";
+import { buildFileName, DEFAULT_FILENAME_TEMPLATE } from "./util/file-name";
 import type { Parser } from "./parsers/parser";
 import { toUserFacingError, type UserFacingError } from "./util/errors";
 import type { LibraryEntry } from "./storage/library-store";
@@ -65,6 +66,13 @@ interface Job {
     sourceUrl: string;
     /** The story's title. */
     title: string;
+    /**
+     * The file name the user asked for.
+     *
+     * It is `undefined` when the user did not name the file, in which case
+     * the filename template from the options page is used instead.
+     */
+    requestedFileName: string | undefined;
     /** The chapters to fetch. */
     chapters: DownloadChapter[];
     /** The phase. */
@@ -193,10 +201,6 @@ export interface DownloadManagerDependencies {
     saveFile(fileName: string, bytes: Uint8Array): Promise<{ fileName: string; fileSize: number }>;
     /** The parser for a URL. */
     parserFor(url: string, dom: Document): Parser | null;
-    /** The utility functions. */
-    util: {
-        safeForFileName(title: string, maxLength?: number): string;
-    };
     /** Wait between requests, honouring the abort signal. */
     throttle(ms: number, signal: AbortSignal): Promise<void>;
     /**
@@ -213,6 +217,13 @@ export interface DownloadManagerDependencies {
      * to the next download and not to one already running.
      */
     images?(): DownloadImages | Promise<DownloadImages>;
+    /**
+     * The filename template to apply to a job.
+     *
+     * Read at the moment the job starts, for the same reason as the other
+     * settings.
+     */
+    filenameTemplate?(): string | Promise<string>;
     /**
      * Prepare for a job, before the parser is built.
      *
@@ -348,13 +359,25 @@ export class DownloadManager {
      *
      * The job runs in the background; the caller gets the job's ID back
      * immediately and polls for progress.
+     *
+     * @param sourceUrl The story's page.
+     * @param title The story's title.
+     * @param chapters The chapters to fetch.
+     * @param options The file name the user asked for, if any.
+     * @returns The job's ID.
      */
-    start(sourceUrl: string, title: string, chapters: DownloadChapter[]): string {
+    start(
+        sourceUrl: string,
+        title: string,
+        chapters: DownloadChapter[],
+        options: { fileName?: string } = {},
+    ): string {
         const id = crypto.randomUUID();
         const job: Job = {
             id,
             sourceUrl,
             title,
+            requestedFileName: options.fileName,
             // A chapter the caller did not give a state for is waiting.
             chapters: chapters.map((chapter) => ({ ...chapter, state: chapter.state ?? "queued" })),
             phase: "preparing",
@@ -392,7 +415,7 @@ export class DownloadManager {
 
     /** Run a job. */
     async #run(job: Job): Promise<void> {
-        const { fetchBytes, saveFile, parserFor, util, throttle } = this.#dependencies;
+        const { fetchBytes, saveFile, parserFor, throttle } = this.#dependencies;
         const signal = job.controller.signal;
 
         // The behaviour settings are read once, when the job starts, so a
@@ -698,7 +721,7 @@ export class DownloadManager {
         this.#report(job);
 
         const bytes = await this.#zip(result.files);
-        const fileName = `${util.safeForFileName(job.title || "untitled")}.epub`;
+        const fileName = await this.#fileNameFor(job, metadata);
         const saved = await saveFile(fileName, bytes);
 
         job.fileName = saved.fileName;
@@ -713,6 +736,33 @@ export class DownloadManager {
 
         job.phase = "complete";
         this.#report(job);
+    }
+
+    /**
+     * The name the book is saved as.
+     *
+     * The name the user typed in the workbench wins. When there is none, the
+     * filename template from the options page is filled in — which is why the
+     * template is applied *here* and not when the job starts: the author's
+     * name is only known once the story's page has been parsed.
+     */
+    async #fileNameFor(job: Job, metadata: { title: string; author?: string }): Promise<string> {
+        let template = DEFAULT_FILENAME_TEMPLATE;
+        try {
+            template = (await this.#dependencies.filenameTemplate?.()) || template;
+        } catch {
+            // A template that cannot be read is not a reason to fail the
+            // download: the default name is used instead.
+        }
+
+        return buildFileName(
+            template,
+            {
+                title: metadata.title || job.title,
+                author: metadata.author,
+            },
+            job.requestedFileName,
+        );
     }
 
     /**

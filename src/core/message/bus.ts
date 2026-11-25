@@ -32,6 +32,13 @@ export interface RequestMap {
             url: string;
             title: string;
             chapters: Array<{ sourceUrl: string; title: string }>;
+            /**
+             * The file name the user asked for.
+             *
+             * It is optional: without it the filename template from the
+             * options page is used.
+             */
+            fileName?: string;
         };
         response: { jobId: string };
     };
@@ -411,7 +418,10 @@ const PAYLOAD_RULES: {
                 chapter !== null &&
                 hasString(chapter as object, "sourceUrl") &&
                 hasString(chapter as object, "title"),
-        ),
+        ) &&
+        // The file name is optional, but when it is there it has to be a
+        // string: a caller that sends something else meant to send a name.
+        (!hasProperty(payload, "fileName") || hasString(payload, "fileName")),
     "download:cancel": (payload) => hasString(payload, "jobId"),
     "download:progress": (payload) => hasString(payload, "jobId"),
     "download:list": () => true,

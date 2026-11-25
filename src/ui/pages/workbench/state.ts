@@ -45,6 +45,21 @@ export interface StoryMeta {
     sourceUrl: string;
     /** The parser that found it. */
     parserName: string;
+    /**
+     * The name the book will be saved as.
+     *
+     * It is derived from the title and the user's filename template until the
+     * user edits it, at which point it is whatever they typed.
+     */
+    fileName: string;
+    /**
+     * Whether the user has edited the file name.
+     *
+     * While this is false the name follows the title, so renaming the book
+     * renames the file. Once the user has typed a name of their own it is
+     * left alone.
+     */
+    fileNameEdited: boolean;
 }
 
 /** The filter's state. */

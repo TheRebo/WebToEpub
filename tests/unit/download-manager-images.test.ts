@@ -81,7 +81,6 @@ function harness(options: { skipFailedChapters?: boolean } = {}): {
             return { fileName: "story.epub", fileSize: bytes.length };
         },
         parserFor: () => parserWithDistinctImages(fetchHtml),
-        util: { safeForFileName: (title: string) => title },
         throttle: async () => undefined,
         behaviour: async () => ({
             ...DEFAULT_BEHAVIOUR,

@@ -27,6 +27,7 @@ import "../../components/k-toast";
 import { sendRequest, type DownloadProgress } from "../../../core/message/bus";
 import { isParsableSelector } from "../../../core/util/css";
 import { validateHostName } from "../../../core/storage/site-selectors-store";
+import { DEFAULT_FILENAME_TEMPLATE } from "../../../core/util/file-name";
 import { localStorageAdapter, activeTab } from "../../../core/browser-api";
 import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
 import { caughtErrorMessage, errorMessage } from "../../error-messages";
@@ -34,7 +35,7 @@ import { pollUntilDone } from "../../poll";
 import { themeController } from "../../styles/theme-controller";
 import { t, tDynamic } from "../../i18n";
 import { installI18n } from "../../i18n-bootstrap";
-import { buildWorkbench, renderWorkbench, type WorkbenchElements } from "./view";
+import { buildWorkbench, deriveFilename, renderWorkbench, type WorkbenchElements } from "./view";
 import {
     WorkbenchStore,
     compilePattern,
@@ -42,6 +43,7 @@ import {
     matchingIndices,
     type Chapter,
     type FilterState,
+    type StoryMeta,
     type WorkbenchState,
 } from "./state";
 
@@ -56,6 +58,8 @@ function initialState(): WorkbenchState {
             description: "",
             sourceUrl: "",
             parserName: "",
+            fileName: "untitled.epub",
+            fileNameEdited: false,
         },
         chapters: [],
         loadingChapters: false,
@@ -137,11 +141,31 @@ class WorkbenchController {
                 description: analysis.description ?? "",
                 sourceUrl: url,
                 parserName: analysis.parserName ?? "",
+                fileName: deriveFilename(
+                    analysis.title ?? "",
+                    analysis.author ?? "",
+                    this.#settingsValue?.story.filenameTemplate ?? DEFAULT_FILENAME_TEMPLATE,
+                ),
+                fileNameEdited: false,
             });
             this.#store.setUsedDefaultParser(analysis.usedDefaultParser === true);
         } catch (error) {
             this.#store.setError(caughtErrorMessage(error));
         }
+    }
+
+    /**
+     * The file name the title and the author's name lead to.
+     *
+     * The user's filename template is filled in. It is only used while the
+     * user has not named the file themselves.
+     */
+    #derivedFileName(title: string): Partial<StoryMeta> {
+        if (this.#store.state.story.fileNameEdited) return {};
+        const template = this.#settingsValue?.story.filenameTemplate ?? DEFAULT_FILENAME_TEMPLATE;
+        return {
+            fileName: deriveFilename(title, this.#store.state.story.author, template),
+        };
     }
 
     /** Load the chapter list. */
@@ -181,7 +205,12 @@ class WorkbenchController {
 
         // --- Metadata fields ---
         elements.titleField.addEventListener("input", () => {
-            this.#store.setStory({ title: elements.titleField.value });
+            this.#store.setStory({
+                title: elements.titleField.value,
+                // The file name follows the title until the user gives the
+                // book a name of its own.
+                ...this.#derivedFileName(elements.titleField.value),
+            });
             this.#store.markDirty(true);
         });
         elements.authorField.addEventListener("input", () => {
@@ -193,10 +222,20 @@ class WorkbenchController {
             this.#store.markDirty(true);
         });
         elements.filenameField.addEventListener("input", () => {
+            // What the user typed is what the book is saved as. It used to be
+            // thrown away: the field was overwritten on the next render, and
+            // the name never reached the download.
+            this.#store.setStory({
+                fileName: elements.filenameField.value,
+                fileNameEdited: true,
+            });
             this.#store.markDirty(true);
         });
         elements.resetFilename.addEventListener("click", () => {
-            elements.filenameField.value = "";
+            this.#store.setStory({
+                ...this.#derivedFileName(this.#store.state.story.title),
+                fileNameEdited: false,
+            });
             this.#store.markDirty(true);
         });
 
@@ -649,6 +688,9 @@ class WorkbenchController {
                 {
                     url: state.story.sourceUrl,
                     title: state.story.title,
+                    // The name the user chose, if they chose one. Without it the
+                    // worker falls back to the filename template.
+                    fileName: state.story.fileNameEdited ? state.story.fileName : undefined,
                     chapters: selected.map((entry) => ({
                         sourceUrl: entry.chapter.sourceUrl,
                         title: entry.chapter.title,

@@ -93,7 +93,6 @@ function harness(options: {
             return { fileName: "story.epub", fileSize: bytes.length };
         },
         parserFor: () => parser,
-        util: { safeForFileName: (title: string) => title },
         throttle: async () => undefined,
         behaviour: async () => ({ ...DEFAULT_BEHAVIOUR }),
         images: async () => ({ ...DEFAULT_IMAGES, ...options.images }),

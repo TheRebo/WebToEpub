@@ -108,9 +108,6 @@ class BackgroundWorker {
                 }
             },
             parserFor: (url, dom) => this.#registry.fetch(url, dom),
-            util: {
-                safeForFileName: (title, maxLength) => safeFileName(title, maxLength),
-            },
             throttle: async (ms, signal) => {
                 await sleep(ms, signal);
             },
@@ -126,6 +123,13 @@ class BackgroundWorker {
             images: async () => {
                 const settings = await this.#settings.get();
                 return settings.images;
+            },
+            // The filename template is read at the same moment, for the same
+            // reason. It is applied when the book is saved, because that is
+            // the only point at which the author's name is known.
+            filenameTemplate: async () => {
+                const settings = await this.#settings.get();
+                return settings.story.filenameTemplate;
             },
             // The user's preferences are refreshed before the job's parser is
             // built, so the parser sees the settings the user has right now.
@@ -432,7 +436,9 @@ class BackgroundWorker {
             });
         }
 
-        const jobId = this.#downloads.start(payload.url, payload.title, chapters);
+        const jobId = this.#downloads.start(payload.url, payload.title, chapters, {
+            fileName: payload.fileName,
+        });
         return { jobId };
     }
 
@@ -550,29 +556,6 @@ async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
         };
         signal?.addEventListener("abort", onAbort, { once: true });
     });
-}
-
-/** A safe file name. */
-function safeFileName(title: string, maxLength = 120): string {
-    return sanitizeFileName(title, maxLength);
-}
-
-/** A safe file name, without pulling in the whole utilities module. */
-function sanitizeFileName(title: string, maxLength: number): string {
-    let safe = title
-        .replace(/[\\/:*?"<>|]/g, "-")
-        .replace(/^[\s.]+|[\s.]+$/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-    safe = [...safe]
-        .filter((character) => {
-            const code = character.charCodeAt(0);
-            return code > 0x1f && !(code >= 0x7f && code <= 0x9f);
-        })
-        .join("");
-    if (!safe) safe = "untitled";
-    if (safe.length > maxLength) safe = safe.slice(0, maxLength).trim();
-    return safe;
 }
 
 /** Start the worker. */
