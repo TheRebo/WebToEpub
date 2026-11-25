@@ -20,6 +20,71 @@ import {
     mediaTypeForPath,
 } from "./document";
 import { buildXhtml, collectFiles, makeItemId } from "./writer";
+import { serializeAsXml } from "./xhtml";
+
+/**
+ * Rewrite a chapter's image references to the packaged copies.
+ *
+ * The download manager rewrites the references before it hands the chapter
+ * over, but the packer cannot rely on that: a book whose chapters still point
+ * at the site's own servers looks fine in the file list and shows broken
+ * pictures in the reader. Rewriting here as well makes the packer correct on
+ * its own, and the rewrite is idempotent — a reference that already points at
+ * a packaged image does not resolve to a remote URL, so it is left alone.
+ *
+ * The result is serialised as XML on the way out, because the chapter is
+ * written as XHTML: HTML's serialiser leaves `<br>` and `<img>` unclosed,
+ * which is not well-formed XML.
+ *
+ * @param html The chapter's markup.
+ * @param images The chapter's images, keyed by their URL.
+ * @param baseUrl The chapter's URL, used to resolve relative references.
+ * @returns The markup, with its references rewritten, as XML.
+ */
+function rewriteImageHrefs(html: string, images: Map<string, ImageData>, baseUrl: string): string {
+    if (images.size === 0) return html;
+
+    const document = new DOMParser().parseFromString(html, "text/html");
+    let changed = false;
+
+    const replace = (element: Element, attribute: string): void => {
+        const value = element.getAttribute(attribute);
+        if (!value) return;
+
+        // A reference that already points at a packaged image is left alone.
+        if (value.startsWith("../images/") || value.startsWith("images/")) return;
+
+        const absolute = resolveAgainst(value, baseUrl);
+        if (!absolute) return;
+        const image = images.get(absolute);
+        if (!image) return;
+
+        element.setAttribute(attribute, chapterImageHref(image.url, image.mediaType));
+        changed = true;
+    };
+
+    for (const image of document.querySelectorAll("img")) {
+        replace(image, "src");
+    }
+
+    if (!changed) return html;
+    return serializeAsXml(document.body);
+}
+
+/**
+ * Resolve a possibly relative URL against a base.
+ *
+ * @param value The URL to resolve.
+ * @param baseUrl The URL to resolve it against.
+ * @returns The absolute URL, or `undefined` when it cannot be resolved.
+ */
+function resolveAgainst(value: string, baseUrl: string): string | undefined {
+    try {
+        return new URL(value, baseUrl).href;
+    } catch {
+        return undefined;
+    }
+}
 
 /** A chapter, ready to be packed. */
 export interface ChapterToPack {
@@ -228,7 +293,15 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
     // The chapters.
     for (const [index, chapter] of chapters.entries()) {
         const path = chapterPath(index);
-        const body = buildChapterBody(chapter, metadata.author);
+
+        // The references are rewritten here, so that the chapter points at the
+        // packaged image rather than at the site's own servers. A caller that
+        // already rewrote them is not disturbed.
+        const contentHtml = chapter.images
+            ? rewriteImageHrefs(chapter.contentHtml, chapter.images, chapter.sourceUrl)
+            : chapter.contentHtml;
+
+        const body = buildChapterBody({ ...chapter, contentHtml }, metadata.author);
 
         // The chapter's images are packaged alongside it, and the chapter's
         // markup points at them. The manifest entries are added here, before
@@ -381,9 +454,28 @@ function buildChapterBody(chapter: ChapterToPack, author?: string): string {
     if (!startsWithHeading(chapter.contentHtml)) {
         parts.push(`    <h1>${escapeText(chapter.title)}</h1>`);
     }
-    parts.push(chapter.contentHtml);
+    parts.push(toXhtml(chapter.contentHtml));
 
     return parts.join("\n");
+}
+
+/**
+ * Turn a chapter's HTML into XHTML.
+ *
+ * The chapter is written into the book as XHTML, which is XML: an element
+ * without content has to be closed, and the characters XML reserves have to
+ * be escaped. HTML's serialiser does neither, so a chapter with a line break
+ * or a horizontal rule would produce a file that is not well-formed XML, and
+ * a reader that checks would refuse the whole book.
+ *
+ * @param html The chapter's markup.
+ * @returns The markup, as XHTML.
+ */
+function toXhtml(html: string): string {
+    if (!html.trim()) return "";
+
+    const document = new DOMParser().parseFromString(html, "text/html");
+    return serializeAsXml(document.body);
 }
 
 /**
