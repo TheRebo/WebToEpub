@@ -23,6 +23,20 @@ dialog {
     overflow: hidden;
 }
 
+/*
+ * The dialog's width.
+ *
+ * The attribute is what the callers use, so it has to do something: a
+ * size that was set but ignored meant the site's selector dialog and the
+ * filter dialog were both the default width, whatever the design asked for.
+ */
+:host([size="sm"]) dialog { width: min(360px, calc(100vw - 32px)); }
+:host([size="lg"]) dialog { width: min(720px, calc(100vw - 32px)); }
+:host([size="full"]) dialog {
+    width: min(960px, calc(100vw - 32px));
+    height: min(720px, calc(100vh - 64px));
+}
+
 dialog::backdrop {
     background: rgb(0 0 0 / 55%);
     backdrop-filter: blur(2px);
@@ -107,7 +121,7 @@ dialog::backdrop {
 
 export class KDialog extends KComponent {
     static override styles = STYLES;
-    static override observedAttributes = ["heading", "open"];
+    static override observedAttributes = ["heading", "open", "size"];
 
     /** The dialog's own ID, used to wire the heading to it. */
     readonly headingId = `k-dialog-${crypto.randomUUID().slice(0, 8)}-heading`;
@@ -217,7 +231,30 @@ export class KDialog extends KComponent {
         if (!dialog || dialog.open) return;
         const active = document.activeElement;
         this.#previouslyFocused = active instanceof HTMLElement ? active : null;
-        dialog.showModal();
+        try {
+            dialog.showModal();
+        } catch {
+            // `showModal()` throws when the dialog is already open as a
+            // modal, or when the document is not fully active. Neither is
+            // worth breaking the page over: the dialog is a convenience, and
+            // the work around it still works.
+            this.removeAttribute("open");
+        }
+    }
+
+    /**
+     * Close the dialog when it is removed from the document.
+     *
+     * A dialog that is removed while it is open leaves the page's focus
+     * stranded: the browser had moved the focus into the dialog's top layer,
+     * and the dialog is gone. Closing it first restores the focus to where
+     * it was.
+     */
+    override disconnectedCallback(): void {
+        if (this.dialog?.open) {
+            this.dialog.close();
+        }
+        super.disconnectedCallback();
     }
 
     /** Put the focus back where it was before the dialog opened. */

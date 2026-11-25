@@ -201,9 +201,22 @@ button:focus-visible {
  * attribute, because the document's "[hidden] { display: none !important }"
  * rule does not pierce the shadow boundary and the user-agent rule it
  * replaces is not guaranteed to win against an author rule.
+ *
+ * The text is clipped rather than removed with "display: none", so that it
+ * stays in the accessibility tree. A button whose only name came from the
+ * label attribute would otherwise be announced as an unlabelled button
+ * whenever something was slotted into it.
  */
 .label[data-suppressed="true"] {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
 }
 
 /*
@@ -238,6 +251,7 @@ export class KButton extends KComponent {
         "disabled",
         "loading",
         "icon-only",
+        "icon",
         "label",
         "aria-label",
     ];
