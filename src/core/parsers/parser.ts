@@ -106,6 +106,14 @@ export interface ParserServices {
     imageCollector: ImageCollector;
     /** Report progress to the UI. */
     progress?: TocProgress;
+    /**
+     * The user's preferences.
+     *
+     * The legacy parsers read them directly, and a parser that was given the
+     * wrong ones would quietly do the wrong thing — so they are part of the
+     * services rather than something the caller has to remember to apply.
+     */
+    preferences?: unknown;
 }
 
 /** The utility functions a parser may call. */

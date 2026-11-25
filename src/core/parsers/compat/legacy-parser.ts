@@ -183,6 +183,15 @@ export class LegacyParser extends Parser {
             ? new ImageCollector()
             : ((servicesOrImageCollector as ImageCollector | undefined) ?? new ImageCollector());
 
+        // The user's preferences are part of the services, so a parser is
+        // never built without them. A parser that was built with the defaults
+        // would remove the author notes or not, add the information page or
+        // not, according to nothing the user had asked for.
+        const preferences = this.services.preferences;
+        if (isLegacyUserPreferences(preferences)) {
+            this.onUserPreferencesUpdate(preferences);
+        }
+
         this.#guardTocProgress();
     }
 
@@ -1231,6 +1240,32 @@ export class LegacyParser extends Parser {
             newDoc.content.appendChild(paragraph);
         }
     }
+}
+
+/**
+ * Whether a value is a set of legacy preferences.
+ *
+ * The preferences reach the parsers through the services, which are typed
+ * loosely because the rewrite's `Parser` does not know about the legacy
+ * shape. This check keeps the type honest without a cast.
+ *
+ * @param value The value to check.
+ * @returns Whether it looks like the legacy preferences.
+ */
+function isLegacyUserPreferences(value: unknown): value is LegacyUserPreferences {
+    if (typeof value !== "object" || value === null) return false;
+    const candidate = value as Partial<LegacyUserPreferences>;
+    // A handful of the flags is enough to tell the preferences apart from any
+    // other object that might have been put in the services.
+    const markers = [
+        candidate.removeAuthorNotes,
+        candidate.skipImages,
+        candidate.useSvgForImages,
+        candidate.addInformationPage,
+    ];
+    return markers.every(
+        (marker) => typeof marker === "object" && marker !== null && "value" in marker,
+    );
 }
 
 /**

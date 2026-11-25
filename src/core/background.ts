@@ -17,6 +17,10 @@ import { installOriginStripRule } from "./net/dnr-rules";
 import { legacyRegistry } from "./parsers/compat/legacy-factory";
 import { installFetchClient } from "./parsers/compat/legacy-http-client";
 import { setParserServices } from "./parsers/services-context";
+import {
+    defaultLegacyUserPreferences,
+    toLegacyUserPreferences,
+} from "./parsers/compat/legacy-preferences";
 import { buildParserUtilities } from "./util/parser-utilities";
 import { handleRequests, type RequestMap } from "./message/bus";
 import { localStorageAdapter, onMessage, getNamespace } from "./browser-api";
@@ -45,6 +49,13 @@ class BackgroundWorker {
     #downloads: DownloadManager;
     #settings = new SettingsStore(localStorageAdapter);
     #library = new LibraryStore();
+    /**
+     * The user's preferences, in the shape the legacy parsers read them.
+     *
+     * The preferences are a snapshot: a parser is built for one run, and
+     * that run uses the settings the user had when they started it.
+     */
+    #preferences = defaultLegacyUserPreferences();
 
     constructor() {
         // The cookie bridge copies the site's partitioned cookies into
@@ -110,6 +121,17 @@ class BackgroundWorker {
                 const settings = await this.#settings.get();
                 return settings.behaviour;
             },
+            // The image settings are read at the same moment, for the same
+            // reason.
+            images: async () => {
+                const settings = await this.#settings.get();
+                return settings.images;
+            },
+            // The user's preferences are refreshed before the job's parser is
+            // built, so the parser sees the settings the user has right now.
+            prepare: async () => {
+                await this.#refreshPreferences();
+            },
             // When a job ends — whether it completed, failed or was cancelled
             // — the copied partitioned cookies are removed. Without this a
             // long session would leave copies of the user's session cookies
@@ -139,15 +161,48 @@ class BackgroundWorker {
 
     /** Build the services injected into parsers. */
     #buildServices(): ParserServices {
+        // The preferences are read through a closure rather than captured, so
+        // a parser built for a run always sees the settings the user had when
+        // they pressed the button — not the ones that were current when the
+        // worker started.
+        const preferences = (): unknown => this.#preferences;
         return {
-            fetchHtml: async (url, options) => {
-                const result = await this.#fetch.fetchHtml(url, options);
-                return { dom: result.dom, url: result.url };
-            },
-            fetchJson: async (url, options) => this.#fetch.fetchJson(url, options),
+            fetchHtml: (url, options) => this.#fetchHtml(url, options),
+            fetchJson: (url, options) => this.#fetch.fetchJson(url, options),
             util: buildParserUtilities(),
             imageCollector: createImageCollector(),
+            // The user's preferences travel with the services, so a migrated
+            // parser is never built without them.
+            get preferences(): unknown {
+                return preferences();
+            },
         };
+    }
+
+    /** Fetch a page for a parser. */
+    async #fetchHtml(
+        url: string,
+        options?: { signal?: AbortSignal },
+    ): Promise<{ dom: Document; url: string }> {
+        const result = await this.#fetch.fetchHtml(url, options);
+        return { dom: result.dom, url: result.url };
+    }
+
+    /**
+     * The user's preferences, in the shape the legacy parsers read them.
+     *
+     * The settings are read once at startup and refreshed whenever a run
+     * starts, so a parser is never built with a stale snapshot.
+     */
+    async #refreshPreferences(): Promise<void> {
+        try {
+            const settings = await this.#settings.get();
+            this.#preferences = toLegacyUserPreferences(settings);
+        } catch {
+            // A failure to read the settings must not stop the worker: the
+            // defaults are safe, and the download can still run.
+            this.#preferences = defaultLegacyUserPreferences();
+        }
     }
 
     /** Start the worker. */
@@ -162,6 +217,10 @@ class BackgroundWorker {
         // chapter is fetched, or a site the user has already taught would be
         // parsed by the fallback parser one more time.
         await siteSelectors.hydrate();
+
+        // The user's preferences are read before the first parser is built, so
+        // the very first run already honours them.
+        await this.#refreshPreferences();
 
         // The origin-stripping rule replaces the baseline's `webRequest`
         // listener. It is reinstalled on every worker start, because a
@@ -320,6 +379,9 @@ class BackgroundWorker {
 
         try {
             const result = await this.#fetch.fetchHtml(url);
+            // The preferences are refreshed before the parser is built, so the
+            // parser sees the settings the user has right now.
+            await this.#refreshPreferences();
             const parser = this.#registry.fetch(url, result.dom);
             if (!parser) {
                 return { chapters: [], error: toUserFacingError(new Error("No parser.")) };
