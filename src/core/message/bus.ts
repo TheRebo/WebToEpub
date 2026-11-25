@@ -11,6 +11,7 @@
  * See ADR-0005.
  */
 import { toUserFacingError, UserFacingErrorError, type UserFacingError } from "../util/errors";
+import { validateHostName } from "../storage/site-selectors-store";
 
 /** The messages the worker can receive. */
 export interface RequestMap {
@@ -408,11 +409,14 @@ const PAYLOAD_RULES: {
         hasString(payload, "removeCss"),
     "site-selectors:save": (payload) =>
         hasString(payload, "hostname") &&
+        isValidHostName((payload as { hostname: string }).hostname) &&
         hasString(payload, "contentCss") &&
         hasString(payload, "titleCss") &&
         hasString(payload, "removeCss"),
     "site-selectors:list": () => true,
-    "site-selectors:remove": (payload) => hasString(payload, "hostname"),
+    "site-selectors:remove": (payload) =>
+        hasString(payload, "hostname") &&
+        isValidHostName((payload as { hostname: string }).hostname),
 };
 
 /**
@@ -437,6 +441,17 @@ function hasArray(value: unknown, key: string): boolean {
 function hasProperty(value: unknown, key: string): boolean {
     if (typeof value !== "object" || value === null) return false;
     return key in (value as Record<string, unknown>);
+}
+
+/**
+ * Whether a host name names a host.
+ *
+ * The host name is the key the site selectors are filed under, and it decides
+ * which site a set of selectors is applied to. A message carrying a whole URL,
+ * a path or a wildcard is not naming a host, and must not be accepted.
+ */
+function isValidHostName(hostName: string): boolean {
+    return validateHostName(hostName) !== null;
 }
 
 /**

@@ -3,6 +3,7 @@ import {
     SiteSelectorStore,
     emptySiteSelectorConfig,
     normaliseHostName,
+    validateHostName,
     validateSiteSelectorConfig,
     type SiteSelectorStorage,
 } from "../../src/core/storage/site-selectors-store";
@@ -53,6 +54,56 @@ describe("normaliseHostName", () => {
 
     it("leaves a name without a www prefix alone", () => {
         expect(normaliseHostName("example.com")).toBe("example.com");
+    });
+});
+
+describe("validateHostName", () => {
+    it("accepts a plain host name", () => {
+        expect(validateHostName("example.com")).toBe("example.com");
+        expect(validateHostName("sub.example.com")).toBe("sub.example.com");
+        expect(validateHostName("example.co.uk")).toBe("example.co.uk");
+    });
+
+    it("canonicalises the name the way the URL parser does", () => {
+        expect(validateHostName("EXAMPLE.com")).toBe("example.com");
+        expect(validateHostName("  Example.com  ")).toBe("example.com");
+        expect(validateHostName("example.com.")).toBe("example.com");
+    });
+
+    it("strips the www prefix, so www and the bare host are one site", () => {
+        expect(validateHostName("www.example.com")).toBe("example.com");
+        expect(validateHostName("WWW.Example.com")).toBe("example.com");
+    });
+
+    it("drops the port, which is not part of a host name", () => {
+        expect(validateHostName("example.com:8080")).toBe("example.com");
+    });
+
+    it("rejects a whole URL", () => {
+        expect(validateHostName("https://evil.example/")).toBeNull();
+        expect(validateHostName("http://evil.example")).toBeNull();
+        expect(validateHostName("javascript:alert(1)")).toBeNull();
+    });
+
+    it("rejects a name carrying a path, a query or a fragment", () => {
+        expect(validateHostName("evil.example/path")).toBeNull();
+        expect(validateHostName("evil.example?x=1")).toBeNull();
+        expect(validateHostName("evil.example#f")).toBeNull();
+    });
+
+    it("rejects a wildcard, which would name every host", () => {
+        expect(validateHostName("*.example.com")).toBeNull();
+        expect(validateHostName("*")).toBeNull();
+    });
+
+    it("rejects credentials", () => {
+        expect(validateHostName("user@evil.example")).toBeNull();
+    });
+
+    it("rejects an empty or malformed name", () => {
+        expect(validateHostName("")).toBeNull();
+        expect(validateHostName("   ")).toBeNull();
+        expect(validateHostName("not a host")).toBeNull();
     });
 });
 
@@ -129,10 +180,53 @@ describe("SiteSelectorStore", () => {
     });
 
     it("ignores an empty host name", async () => {
-        await store.setForHost("   ", {
+        await expect(
+            store.setForHost("   ", {
+                ...emptySiteSelectorConfig(),
+                contentCss: "div.chapter",
+            }),
+        ).rejects.toThrow();
+        expect((await store.list()).size).toBe(0);
+    });
+
+    it("refuses a host name that is not a host name", async () => {
+        // A whole URL, a path or a wildcard would file the configuration
+        // under a key that no lookup would ever produce.
+        for (const hostName of [
+            "https://evil.example/",
+            "evil.example/path",
+            "*.example.com",
+            "user@evil.example",
+        ]) {
+            await expect(
+                store.setForHost(hostName, {
+                    ...emptySiteSelectorConfig(),
+                    contentCss: "div.chapter",
+                }),
+            ).rejects.toThrow();
+        }
+        expect((await store.list()).size).toBe(0);
+    });
+
+    it("files a configuration under the same key for www and the bare host", async () => {
+        // The migrated parser looks a host name up with the raw host name,
+        // `www.` and all. Both spellings have to land on one key, or the
+        // saved selectors are silently ignored on every www site.
+        await store.setForHost("www.example.com", {
             ...emptySiteSelectorConfig(),
             contentCss: "div.chapter",
         });
+        expect(await store.getForHost("www.example.com")).not.toBeNull();
+        expect(await store.getForHost("example.com")).not.toBeNull();
+        expect((await store.list()).size).toBe(1);
+    });
+
+    it("drops a stored configuration whose key is not a host name", async () => {
+        await store.hydrate();
+        storage.data["kintsugi.siteSelectors"] = {
+            "https://evil.example/": { contentCss: "div.chapter" },
+        };
+        await store.hydrate();
         expect((await store.list()).size).toBe(0);
     });
 

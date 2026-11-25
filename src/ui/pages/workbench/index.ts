@@ -26,6 +26,7 @@ import "../../components/k-toast";
 
 import { sendRequest, type DownloadProgress } from "../../../core/message/bus";
 import { isParsableSelector } from "../../../core/util/css";
+import { validateHostName } from "../../../core/storage/site-selectors-store";
 import { localStorageAdapter, activeTab } from "../../../core/browser-api";
 import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
 import { caughtErrorMessage, errorMessage } from "../../error-messages";
@@ -396,7 +397,10 @@ class WorkbenchController {
     #selectorHost(): string {
         const source = this.#store.state.story.sourceUrl;
         try {
-            return new URL(source).hostname.replace(/^www\./, "").toLowerCase();
+            // The workbench and the worker have to agree on the key the
+            // selectors are filed under, so the name is normalised by the
+            // store's own rule rather than by a second, local one.
+            return validateHostName(new URL(source).hostname) ?? "";
         } catch {
             return "";
         }

@@ -141,6 +141,32 @@ describe("isValidPayload", () => {
     it("rejects an unknown request", () => {
         expect(isValidPayload("nope" as RequestName, {})).toBe(false);
     });
+
+    it("rejects a host name that does not name a host", () => {
+        // The host name is the key the selectors are filed under, and it
+        // decides which site they are applied to.
+        for (const hostname of [
+            "https://evil.example/",
+            "evil.example/path",
+            "*.example.com",
+            "user@evil.example",
+            "",
+        ]) {
+            expect(isValidPayload("site-selectors:remove", { hostname })).toBe(false);
+            expect(
+                isValidPayload("site-selectors:save", {
+                    hostname,
+                    contentCss: "article",
+                    titleCss: "h1",
+                    removeCss: ".ad",
+                }),
+            ).toBe(false);
+        }
+    });
+
+    it("accepts a host name that names a host", () => {
+        expect(isValidPayload("site-selectors:remove", { hostname: "www.example.com" })).toBe(true);
+    });
 });
 
 describe("handleRequests", () => {

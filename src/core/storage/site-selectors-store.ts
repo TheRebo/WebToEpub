@@ -74,10 +74,71 @@ export function validateSiteSelectorConfig(value: unknown): SiteSelectorConfig |
     };
 }
 
-/** The host name a URL belongs to, lower-cased and without a leading `www.`. */
+/**
+ * The host name a URL belongs to, lower-cased and without a leading `www.`.
+ *
+ * This is the **only** place a host name is normalised. Every writer and every
+ * reader of the store — the workbench, the background worker, the new default
+ * parser and the migrated one — goes through it, so a saved configuration is
+ * always found again.
+ */
 export function normaliseHostName(hostName: string): string {
     const trimmed = hostName.trim().toLowerCase();
     return trimmed.startsWith("www.") ? trimmed.substring(4) : trimmed;
+}
+
+/**
+ * Normalise and validate a host name that came from outside the extension.
+ *
+ * The store is keyed by host name, and the host name decides **which site** a
+ * set of CSS selectors is applied to. A name that is not a plain host name —
+ * one that carries a scheme, a path, a port, a query, a wildcard or a
+ * credential — does not name a host at all, and accepting it would let a
+ * caller file a configuration under a key that no lookup will ever produce.
+ *
+ * The canonical form comes from the URL parser rather than from a regular
+ * expression, so it agrees with the parser the rest of the extension uses:
+ *
+ * ```text
+ * validateHostName("https://Example.COM/x") === "example.com"
+ * validateHostName("www.example.com")          === "example.com"
+ * validateHostName("example.com:8080")         === "example.com"
+ * ```
+ *
+ * @param hostName The host name to validate.
+ * @returns The normalised host name, or `null` when it does not name a host.
+ */
+export function validateHostName(hostName: string): string | null {
+    const trimmed = hostName.trim();
+    if (trimmed === "") return null;
+
+    // A name that already carries a scheme, or that looks like a whole URL,
+    // is not a host name. Rejecting it here keeps the key space to hosts and
+    // nothing else.
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)) return null;
+    if (trimmed.includes("/") || trimmed.includes("?") || trimmed.includes("#")) return null;
+    if (trimmed.includes("@")) return null;
+    if (trimmed.includes("*")) return null;
+
+    let parsed: URL;
+    try {
+        parsed = new URL(`https://${trimmed}`);
+    } catch {
+        return null;
+    }
+
+    // The URL parser is the authority on what a host name looks like. It
+    // rejects a name with a space or a control character, and it strips the
+    // port, which is not part of a host name.
+    const hostname = parsed.hostname.toLowerCase();
+    if (hostname === "") return null;
+    if (hostname.includes("*")) return null;
+
+    // A trailing dot names the same host as the name without it.
+    const withoutDot = hostname.endsWith(".") ? hostname.slice(0, -1) : hostname;
+    if (withoutDot === "") return null;
+
+    return normaliseHostName(withoutDot);
 }
 
 /**
@@ -111,7 +172,13 @@ export class SiteSelectorStore {
         if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
             for (const [hostName, value] of Object.entries(raw as Record<string, unknown>)) {
                 const config = validateSiteSelectorConfig(value);
-                if (config) configs.set(normaliseHostName(hostName), config);
+                if (!config) continue;
+                // A key that is not a host name is dropped rather than
+                // normalised: a hand-edited entry must not become a live
+                // configuration under a key that was never asked for.
+                const key = validateHostName(hostName);
+                if (key === null) continue;
+                configs.set(key, config);
             }
         }
 
@@ -153,8 +220,8 @@ export class SiteSelectorStore {
     /** Save the configuration for a host name. */
     async setForHost(hostName: string, config: SiteSelectorConfig): Promise<void> {
         await this.#hydrateIfNeeded();
-        const key = normaliseHostName(hostName);
-        if (key === "") return;
+        const key = validateHostName(hostName);
+        if (key === null) throw new Error("The host name is not a host name.");
 
         const validated = validateSiteSelectorConfig(config);
         if (validated === null) throw new Error("The content selector is not usable.");
@@ -171,7 +238,10 @@ export class SiteSelectorStore {
     /** Forget the configuration for a host name. */
     async removeForHost(hostName: string): Promise<void> {
         await this.#hydrateIfNeeded();
-        const key = normaliseHostName(hostName);
+        const key = validateHostName(hostName);
+        // A name that is not a host name cannot be in the cache, so there is
+        // nothing to forget and nothing to write.
+        if (key === null) return;
         const cache = new Map(this.#cache ?? []);
         cache.delete(key);
         await this.#persist(cache);
