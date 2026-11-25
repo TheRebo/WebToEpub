@@ -413,9 +413,10 @@ export async function run(harness) {
         await sleep(400);
         const empty = await harness.script(`
             const noResults = document.querySelector(".options-no-results");
+            const groups = Array.from(document.querySelectorAll(".options-group"));
             return JSON.stringify({
                 visible: noResults ? !noResults.hidden : false,
-                groups: document.querySelectorAll(".options-group").length,
+                groups: groups.filter((group) => !group.hidden).length,
             });
         `);
         const data = JSON.parse(empty);
@@ -492,9 +493,7 @@ export async function run(harness) {
 
     await check("applies the accent the user picks", async () => {
         await harness.script(`
-            const groups = document.querySelectorAll("k-radio-group");
-            const accent = groups[1];
-            const radio = accent.shadowRoot.querySelector('input[value="plum"]');
+            const radio = document.querySelector('input[data-path="appearance.accent"][value="plum"]');
             radio.click();
             return true;
         `);

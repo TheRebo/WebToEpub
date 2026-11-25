@@ -21,7 +21,7 @@
  */
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile, mkdir, readdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -391,6 +391,7 @@ export class Harness {
         const steps = [];
         await this.#assertStoryFlow(steps);
         await this.#assertDownloadFlow(steps);
+        await this.#assertFileIsWritten(steps);
         return steps;
     }
 
@@ -492,19 +493,15 @@ export class Harness {
      * Check that the extension can build and save a book.
      *
      * The job is started through the extension's own message protocol, so the
-     * whole pipeline runs: the story is fetched, the chapters are parsed, and
-     * the EPUB is assembled.
+     * whole pipeline runs: the story is fetched, the chapters are parsed, the
+     * book is assembled, and the file is written.
      *
-     * The file itself is written from one of the extension's own pages, with
-     * the browser's download machinery. The background worker hands the
-     * finished book to `downloads.download` as a blob URL of its own, and
-     * Firefox never resolves that URL — the job stays in its "saving" phase
-     * for ever. That is a bug in the extension's save step, not in the
-     * harness, so the suite does not wait for a file that cannot arrive; it
-     * checks that the book was built and that the extension can write a file
-     * at all.
+     * The job has to reach its `complete` phase and the `.epub` has to appear
+     * in the browser's download directory. Anything less is a failure: a job
+     * that stops at `saving` is the extension hanging, and a job that
+     * completes without a file on disk is the extension lying.
      *
-     * @throws When the download job does not run, or no file is written.
+     * @throws When the download job does not run, fails, or writes no file.
      * @param {string[]} steps The list of checks made.
      */
     async #assertDownloadFlow(steps) {
@@ -527,13 +524,20 @@ export class Harness {
             throw new Error("The extension did not start a download job.");
         }
 
-        // The job has to get all the way through the chapters and build the
-        // EPUB. The phases before that are the ones that fail when a parser,
-        // the fetcher, or the packer is broken.
+        // The job has to get all the way through: fetch the chapters, build
+        // the book, write the file. Every phase before `complete` is one
+        // where a parser, the fetcher or the packer can be broken.
         const progress = await this.#waitForJob(jobId);
         if (progress.phase === "failed" || progress.phase === "cancelled") {
             throw new Error(
-                `The download job ${progress.phase}: ${progress.error?.message ?? "no reason given"}.`,
+                `The download job ${progress.phase}: ${progress.error?.message ?? "no reason given"}. ${
+                    progress.error?.detail ?? ""
+                }`,
+            );
+        }
+        if (progress.phase !== "complete") {
+            throw new Error(
+                `The download job never finished saving (its last phase was "${progress.phase}").`,
             );
         }
         if (progress.chaptersDone !== chapters.length) {
@@ -544,15 +548,100 @@ export class Harness {
         if (progress.percent !== 100) {
             throw new Error(`The download job stopped at ${progress.percent}%.`);
         }
-        if (progress.phase !== "saving" && progress.phase !== "complete") {
-            throw new Error(
-                `The download job never built the book (its last phase was "${progress.phase}").`,
-            );
-        }
 
-        await this.#assertFileIsWritten(steps);
+        await this.#assertEpubIsWritten(steps, progress.fileName);
 
         steps.push("builds a book out of the page's chapters");
+        steps.push("saves the book to the browser's download directory");
+    }
+
+    /**
+     * Check that the extension's own save step wrote an EPUB.
+     *
+     * The file is written with the extension's downloads API, from the
+     * background worker, and the bytes are read back from the browser's
+     * download directory. A manifest that lost the `downloads` permission, a
+     * save step that hung, or a packer that produced an empty archive all
+     * fail here.
+     *
+     * The file is found by its extension rather than by its name: the name
+     * comes from the book's title, sanitised, and the harness should not
+     * have to know how the extension spells it.
+     *
+     * @throws When no file is written, or it is not a readable EPUB.
+     * @param {string[]} steps The list of checks made.
+     * @param {string} [fileName] The name the job reported, if it reported one.
+     */
+    async #assertEpubIsWritten(steps, fileName) {
+        const deadline = Date.now() + 20_000;
+        let path = null;
+        for (;;) {
+            path = this.#findEpub(fileName);
+            if (path !== null) break;
+            if (Date.now() >= deadline) {
+                throw new Error(
+                    `The extension did not write an EPUB to the download directory (it reported "${fileName ?? "no file name"}").`,
+                );
+            }
+            await sleep(100);
+        }
+
+        // The file has to be a real EPUB: a ZIP archive that starts with the
+        // local file header signature and holds the book's contents.
+        const bytes = await readFile(path);
+        if (bytes.length < 22) {
+            throw new Error(`The book the extension wrote is only ${bytes.length} bytes long.`);
+        }
+        const signature = bytes.subarray(0, 4).toString("latin1");
+        if (signature !== "PK\u0003\u0004") {
+            throw new Error(
+                `The book the extension wrote does not start with a ZIP header (${JSON.stringify(signature)}).`,
+            );
+        }
+        if (!bytes.includes(Buffer.from("mimetype"))) {
+            throw new Error("The book the extension wrote has no mimetype entry.");
+        }
+        if (!bytes.includes(Buffer.from("OEBPS"))) {
+            throw new Error("The book the extension wrote has no content directory.");
+        }
+
+        steps.push("writes a readable EPUB to the browser's download directory");
+    }
+
+    /**
+     * Find the EPUB the extension wrote.
+     *
+     * The name the job reported is preferred. When the job did not report
+     * one, the newest `.epub` in the download directory is used, so a harness
+     * that runs against a browser with an old download still finds the file
+     * this run wrote.
+     *
+     * @param {string} [fileName] The name the job reported.
+     * @returns {string | null} The file's path, or `null` when there is none.
+     */
+    #findEpub(fileName) {
+        if (fileName) {
+            const preferred = join(DOWNLOAD_DIR, fileName);
+            if (existsSync(preferred)) return preferred;
+        }
+
+        let newest = null;
+        let newestTime = 0;
+        for (const entry of readdirSync(DOWNLOAD_DIR)) {
+            if (!entry.toLowerCase().endsWith(".epub")) continue;
+            const candidate = join(DOWNLOAD_DIR, entry);
+            let time = 0;
+            try {
+                time = statSync(candidate).mtimeMs;
+            } catch {
+                continue;
+            }
+            if (time > newestTime) {
+                newest = candidate;
+                newestTime = time;
+            }
+        }
+        return newest;
     }
 
     /**
@@ -603,24 +692,22 @@ export class Harness {
     }
 
     /**
-     * Wait for a download job to reach the phase where the book is built.
+     * Wait for a download job to finish.
      *
-     * The phases are ordered, so the first one that is far enough along is
-     * the one that matters: a job that never gets past fetching the chapters
-     * is a different failure from one that never finishes saving.
+     * The job has to reach `complete`. A job that stops at `saving` is the
+     * extension hanging, and the harness must not report that as a pass.
      *
      * @param {string} jobId The job's ID.
      * @param {number} timeoutMs How long to wait.
-     * @returns {Promise<{phase: string, chaptersDone: number, chaptersTotal: number, percent: number, error?: {message?: string}}>}
+     * @returns {Promise<{phase: string, chaptersDone: number, chaptersTotal: number, percent: number, fileName?: string, error?: {message?: string}}>}
      *   The job's last progress.
      */
-    async #waitForJob(jobId, timeoutMs = 30_000) {
+    async #waitForJob(jobId, timeoutMs = 45_000) {
         const deadline = Date.now() + timeoutMs;
         let progress = { phase: "preparing", chaptersDone: 0, chaptersTotal: 0, percent: 0 };
         while (Date.now() < deadline) {
             progress = await this.#ask("download:progress", { jobId });
             if (
-                progress.phase === "saving" ||
                 progress.phase === "complete" ||
                 progress.phase === "failed" ||
                 progress.phase === "cancelled"
@@ -630,7 +717,7 @@ export class Harness {
             await sleep(200);
         }
         throw new Error(
-            `The download job never got past the "${progress.phase}" phase (${progress.percent}%).`,
+            `The download job never finished (its last phase was "${progress.phase}" at ${progress.percent}%).`,
         );
     }
 
