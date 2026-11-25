@@ -4,9 +4,11 @@ import {
     buildPlaceholderImage,
     extensionFor,
     packEpub,
+    stylesheetHref,
     type ChapterToPack,
 } from "../../src/core/epub/packer";
 import { buildContainerXml, buildXhtml, makeItemId } from "../../src/core/epub/writer";
+import { rewriteImageReferences } from "../../src/core/download-manager";
 import {
     CONTAINER_PATH,
     MIMETYPE_CONTENT,
@@ -14,6 +16,7 @@ import {
     NCX_PATH,
     OPF_PATH,
     NAV_PATH,
+    CSS_PATH,
 } from "../../src/core/epub/document";
 
 /** A chapter with a little content. */
@@ -228,5 +231,95 @@ describe("collectFiles", () => {
         const result = packEpub([chapter("One")], { title: "A Story" });
         const paths = result.files.map((file) => file.path);
         expect(new Set(paths).size).toBe(paths.length);
+    });
+});
+
+describe("the stylesheet reference", () => {
+    /**
+     * Resolve a relative reference against the path of the file that holds it.
+     *
+     * This is what a reader does when it follows the link, so it is what the
+     * test uses to check that the link points at a file that is really there.
+     */
+    function resolve(fromFile: string, reference: string): string {
+        const parts = fromFile.split("/").slice(0, -1);
+        for (const part of reference.split("/")) {
+            if (part === "" || part === ".") continue;
+            if (part === "..") parts.pop();
+            else parts.push(part);
+        }
+        return parts.join("/");
+    }
+
+    it("links the stylesheet from a file in a subdirectory", () => {
+        expect(stylesheetHref("OEBPS/text/chapter-0001.xhtml")).toBe("../styles.css");
+        expect(stylesheetHref("OEBPS/text/info.xhtml")).toBe("../styles.css");
+    });
+
+    it("links the stylesheet from a file in the same directory", () => {
+        expect(stylesheetHref("OEBPS/nav.xhtml")).toBe("styles.css");
+    });
+
+    it("puts the stylesheet where the reference points", () => {
+        const result = packEpub([chapter("One")], { title: "A Story" });
+        expect(result.files.map((file) => file.path)).toContain(CSS_PATH);
+    });
+
+    it("points every chapter's stylesheet link at a file that is in the book", () => {
+        const result = packEpub([chapter("One"), chapter("Two")], {
+            title: "A Story",
+            includeInfoPage: true,
+        });
+        const paths = result.files.map((file) => file.path);
+
+        const linking = result.files.filter(
+            (file) => file.path.endsWith(".xhtml") && typeof file.content === "string",
+        );
+        expect(linking.length).toBeGreaterThan(0);
+
+        for (const file of linking) {
+            const html = file.content as string;
+            const match = /<link[^>]+href="([^"]+)"/.exec(html);
+            if (!match?.[1]) continue;
+            const target = resolve(file.path, match[1]);
+            expect(paths).toContain(target);
+        }
+    });
+
+    it("points every chapter's image link at a file that is in the book", () => {
+        const imageUrl = "https://example.com/img/a.png";
+        const image = {
+            data: new Uint8Array([1, 2, 3]),
+            mediaType: "image/png",
+            url: imageUrl,
+        };
+
+        // The download manager rewrites the references once the image has been
+        // downloaded; the packer packages what it is given.
+        const rewritten = rewriteImageReferences(
+            `<p>Hello.</p><img src="${imageUrl}">`,
+            new Map([[imageUrl, image]]),
+            "https://example.com/c/1",
+        );
+
+        const result = packEpub(
+            [
+                {
+                    sourceUrl: "https://example.com/c/1",
+                    title: "One",
+                    contentHtml: rewritten,
+                    images: new Map([[imageUrl, image]]),
+                },
+            ],
+            { title: "A Story" },
+        );
+        const paths = result.files.map((file) => file.path);
+
+        const chapter = result.files.find((file) => file.path.includes("chapter-0001"));
+        const html = chapter?.content as string;
+        const match = /<img[^>]+src="([^"]+)"/.exec(html);
+        expect(match?.[1]).toBeDefined();
+        const target = resolve("OEBPS/text/chapter-0001.xhtml", match?.[1] ?? "");
+        expect(paths).toContain(target);
     });
 });

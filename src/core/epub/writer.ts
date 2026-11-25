@@ -185,8 +185,15 @@ function buildNcxPoint(point: NavigationPoint, id: number): string {
     </navPoint>`;
 }
 
-/** The EPUB 3 navigation document. */
-export function buildNavXml(document: EpubDocument): string {
+/**
+ * The EPUB 3 navigation document.
+ *
+ * @param document The EPUB document.
+ * @param stylesheet The relative reference to the stylesheet. The navigation
+ *   document sits in the same directory as the stylesheet, so it links it by
+ *   name.
+ */
+export function buildNavXml(document: EpubDocument, stylesheet = "styles.css"): string {
     const listItems = document.toc
         .map((point) => {
             const children =
@@ -203,6 +210,7 @@ export function buildNavXml(document: EpubDocument): string {
   <head>
     <title>${escapeXml(document.package.metadata.title)}</title>
     <meta charset="utf-8"/>
+    <link rel="stylesheet" type="text/css" href="${escapeXmlAttribute(stylesheet)}"/>
   </head>
   <body>
     <nav epub:type="toc" id="toc">
@@ -216,15 +224,29 @@ ${listItems}
 `;
 }
 
-/** Wrap a body fragment in a complete XHTML document. */
-export function buildXhtml(title: string, bodyHtml: string, language = "en"): string {
+/**
+ * Wrap a body fragment in a complete XHTML document.
+ *
+ * @param title The document's title.
+ * @param bodyHtml The body's markup.
+ * @param language The document's language.
+ * @param stylesheet The relative reference to the stylesheet. It has to be
+ *   relative to the file being written, so a chapter in `OEBPS/text` links
+ *   `../styles.css` while the navigation document links `styles.css`.
+ */
+export function buildXhtml(
+    title: string,
+    bodyHtml: string,
+    language = "en",
+    stylesheet = "styles.css",
+): string {
     return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="${escapeXmlAttribute(language)}" lang="${escapeXmlAttribute(language)}">
   <head>
     <meta charset="utf-8"/>
     <title>${escapeXml(title)}</title>
-    <link rel="stylesheet" type="text/css" href="styles.css"/>
+    <link rel="stylesheet" type="text/css" href="${escapeXmlAttribute(stylesheet)}"/>
   </head>
   <body>
 ${bodyHtml}

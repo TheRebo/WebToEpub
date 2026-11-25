@@ -156,6 +156,36 @@ function chapterPath(index: number): string {
     return `OEBPS/text/chapter-${String(index + 1).padStart(4, "0")}.xhtml`;
 }
 
+/** The path of the information page within the container. */
+const INFO_PATH = "OEBPS/text/info.xhtml";
+
+/**
+ * The relative reference a file uses to link the stylesheet.
+ *
+ * The stylesheet lives at `OEBPS/styles.css`, but the files that link it live
+ * in different directories: the chapters are in `OEBPS/text`, one level down.
+ * A relative reference is resolved against the linking file, so a chapter that
+ * said `styles.css` would look for `OEBPS/text/styles.css` and find nothing —
+ * every chapter in every book would render unstyled.
+ *
+ * @param filePath The path of the file that will link the stylesheet.
+ * @returns The href to use.
+ */
+export function stylesheetHref(filePath: string): string {
+    const fileDirectory = filePath.split("/").slice(0, -1);
+    const cssDirectory = CSS_PATH.split("/").slice(0, -1);
+
+    // The number of directories the file has to climb to reach the root of
+    // the container, which is where the stylesheet's directory sits.
+    const climbs = fileDirectory.length - cssDirectory.length;
+    if (climbs <= 0) {
+        // The file is in the stylesheet's directory or above it, so the
+        // reference is a plain sibling name.
+        return CSS_PATH.split("/").pop() ?? "styles.css";
+    }
+    return `${"../".repeat(climbs)}${CSS_PATH.split("/").pop()}`;
+}
+
 /**
  * Pack chapters into an EPUB document.
  */
@@ -208,7 +238,7 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
 
         files.set(path, {
             path,
-            content: buildXhtml(chapter.title, body, language),
+            content: buildXhtml(chapter.title, body, language, stylesheetHref(path)),
             mediaType: "application/xhtml+xml",
         });
 
@@ -229,10 +259,15 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
 
     // The information page.
     if (metadata.includeInfoPage) {
-        const path = "OEBPS/text/info.xhtml";
+        const path = INFO_PATH;
         files.set(path, {
             path,
-            content: buildXhtml("About this book", buildInfoPage(metadata), language),
+            content: buildXhtml(
+                "About this book",
+                buildInfoPage(metadata),
+                language,
+                stylesheetHref(path),
+            ),
             mediaType: "application/xhtml+xml",
         });
         const id = nextId(path);
