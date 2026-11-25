@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+    isPrivateHost,
     isSameRegistrableDomain,
     registrableDomain,
     sanitizeHtml,
@@ -185,5 +186,92 @@ describe("isSameRegistrableDomain", () => {
 
     it("refuses to guess when a URL is malformed", () => {
         expect(isSameRegistrableDomain("nonsense", "https://example.com")).toBe(false);
+    });
+});
+
+describe("isPrivateHost", () => {
+    it("names the loopback address", () => {
+        expect(isPrivateHost("127.0.0.1")).toBe(true);
+        expect(isPrivateHost("127.1.2.3")).toBe(true);
+    });
+
+    it("names the local host name", () => {
+        expect(isPrivateHost("localhost")).toBe(true);
+        expect(isPrivateHost("LOCALHOST")).toBe(true);
+        expect(isPrivateHost("anything.localhost")).toBe(true);
+    });
+
+    it("names the private IPv4 ranges", () => {
+        expect(isPrivateHost("10.0.0.1")).toBe(true);
+        expect(isPrivateHost("172.16.0.1")).toBe(true);
+        expect(isPrivateHost("172.31.255.255")).toBe(true);
+        expect(isPrivateHost("192.168.1.1")).toBe(true);
+    });
+
+    it("names the link-local range, where the cloud metadata lives", () => {
+        expect(isPrivateHost("169.254.169.254")).toBe(true);
+    });
+
+    it("names the IPv6 loopback and link-local addresses", () => {
+        expect(isPrivateHost("[::1]")).toBe(true);
+        expect(isPrivateHost("[fe80::1]")).toBe(true);
+        expect(isPrivateHost("[fc00::1]")).toBe(true);
+        expect(isPrivateHost("[::ffff:127.0.0.1]")).toBe(true);
+    });
+
+    it("names the local network suffix", () => {
+        expect(isPrivateHost("printer.local")).toBe(true);
+    });
+
+    it("does not name a public address", () => {
+        expect(isPrivateHost("example.com")).toBe(false);
+        expect(isPrivateHost("8.8.8.8")).toBe(false);
+        expect(isPrivateHost("172.15.0.1")).toBe(false);
+        expect(isPrivateHost("172.32.0.1")).toBe(false);
+        expect(isPrivateHost("192.169.1.1")).toBe(false);
+        expect(isPrivateHost("[2606:4700:4700::1111]")).toBe(false);
+    });
+});
+
+describe("validateFetchableUrl", () => {
+    it("accepts a public web address", () => {
+        expect(validateFetchableUrl("https://example.com/chapter/1")).not.toBeNull();
+    });
+
+    it("refuses a URL that is not absolute", () => {
+        expect(validateFetchableUrl("/chapter/1")).toBeNull();
+        expect(validateFetchableUrl("nonsense")).toBeNull();
+    });
+
+    it("refuses a scheme that is not HTTP", () => {
+        expect(validateFetchableUrl("file:///etc/passwd")).toBeNull();
+        expect(validateFetchableUrl("data:text/html,<script>")).toBeNull();
+        expect(validateFetchableUrl("blob:https://example.com/abc")).toBeNull();
+        expect(validateFetchableUrl("javascript:alert(1)")).toBeNull();
+    });
+
+    it("refuses a URL naming the local machine", () => {
+        expect(validateFetchableUrl("http://localhost:8080/")).toBeNull();
+        expect(validateFetchableUrl("http://127.0.0.1/")).toBeNull();
+        expect(validateFetchableUrl("http://[::1]/")).toBeNull();
+    });
+
+    it("refuses a URL naming the cloud metadata service", () => {
+        expect(validateFetchableUrl("http://169.254.169.254/latest/meta-data/")).toBeNull();
+    });
+
+    it("refuses a URL naming the local network", () => {
+        expect(validateFetchableUrl("http://192.168.0.1/")).toBeNull();
+        expect(validateFetchableUrl("http://10.0.0.5/")).toBeNull();
+        expect(validateFetchableUrl("http://172.16.0.1/")).toBeNull();
+    });
+
+    it("refuses a URL whose host is an obfuscated loopback address", () => {
+        // The URL parser normalises these to `127.0.0.1` before the host is
+        // examined, so they are caught even though they do not look like an
+        // address at all.
+        expect(validateFetchableUrl("http://0x7f000001/")).toBeNull();
+        expect(validateFetchableUrl("http://2130706433/")).toBeNull();
+        expect(validateFetchableUrl("http://127.0.0.1.nip.io/")).not.toBeNull();
     });
 });

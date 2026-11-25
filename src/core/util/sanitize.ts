@@ -187,11 +187,145 @@ export function sanitizeToFragment(html: string, ownerDocument: Document): Docum
 const ALLOWED_SCHEMES = new Set(["http:", "https:"]);
 
 /**
+ * Host names that always name the local machine or the local network.
+ *
+ * A site that names one of these in its table of contents would be using the
+ * extension as a proxy into the user's own network — and, in the case of the
+ * link-local range, into the cloud metadata service that hands out
+ * credentials.
+ */
+const LOCAL_HOST_NAMES = new Set(["localhost", "ip6-localhost", "ip6-loopback"]);
+
+/**
+ * The private IPv4 ranges, as network addresses and prefix lengths.
+ *
+ * - `10/8`, `172.16/12` and `192.168/16` are the RFC 1918 private ranges.
+ * - `169.254/16` is the link-local range, which includes the cloud metadata
+ *   address `169.254.169.254`.
+ * - `0/8` is the "this network" range.
+ * - `100.64/10` is the carrier-grade NAT range.
+ * - `127/8` is the loopback range.
+ */
+const PRIVATE_IPV4_RANGES: Array<[number, number]> = [
+    [0x00000000, 8],
+    [0x0a000000, 8],
+    [0x64400000, 10],
+    [0x7f000000, 8],
+    [0xa9fe0000, 16],
+    [0xac100000, 12],
+    [0xc0a80000, 16],
+];
+
+/**
+ * Whether an IPv4 address is in one of the private ranges.
+ *
+ * The address is compared as a number, because the dotted-quad forms that
+ * name the same address — `127.0.0.1`, `0x7f000001`, `2130706433` — are all
+ * normalised to the same value by the URL parser before they reach here.
+ *
+ * @param octets The four octets.
+ * @returns Whether the address is private.
+ */
+function isPrivateIpv4(octets: number[]): boolean {
+    const value =
+        ((octets[0] as number) << 24) +
+        ((octets[1] as number) << 16) +
+        ((octets[2] as number) << 8) +
+        (octets[3] as number);
+
+    for (const [network, bits] of PRIVATE_IPV4_RANGES) {
+        // The mask keeps the network's own bits and drops the host's.
+        const mask = bits === 0 ? 0 : (0xffffffff << (32 - bits)) >>> 0;
+        if ((value & mask) >>> 0 === network) return true;
+    }
+    return false;
+}
+
+/**
+ * Whether an IPv6 address is loopback, unique-local or link-local.
+ *
+ * @param address The address, without its brackets.
+ * @returns Whether the address is private.
+ */
+function isPrivateIpv6(address: string): boolean {
+    const normalised = address.toLowerCase();
+
+    // `::1` — the loopback address.
+    if (normalised === "::1") return true;
+
+    // `::ffff:0:0/96` — IPv4-mapped addresses. The embedded IPv4 address is
+    // checked separately, so `::ffff:127.0.0.1` is caught.
+    const mapped = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(normalised);
+    if (mapped) {
+        const octets = (mapped[1] as string).split(".").map(Number);
+        return isPrivateIpv4(octets);
+    }
+
+    // `fc00::/7` — unique local addresses.
+    if (/^f[cd][0-9a-f]{2}:/.test(normalised)) return true;
+
+    // `fe80::/10` — link-local addresses.
+    if (/^fe[89ab][0-9a-f]:/.test(normalised)) return true;
+
+    // The unspecified address, `::`.
+    if (normalised === "::") return true;
+
+    return false;
+}
+
+/**
+ * Whether a host name names the local machine or the local network.
+ *
+ * The host is compared after the URL parser has normalised it, so the
+ * decimal, hexadecimal and octal spellings of an IPv4 address all arrive
+ * here in their canonical dotted-quad form.
+ *
+ * @param hostname The host name.
+ * @returns Whether the host is private.
+ */
+export function isPrivateHost(hostname: string): boolean {
+    const host = hostname.toLowerCase().replace(/\.$/, "");
+
+    if (LOCAL_HOST_NAMES.has(host)) return true;
+
+    // `.localhost` is reserved for the loopback, and `.local` is the
+    // mDNS suffix that resolves onto the local network.
+    if (host.endsWith(".localhost") || host.endsWith(".local")) return true;
+
+    // An IPv6 address arrives wrapped in brackets.
+    if (host.startsWith("[") && host.endsWith("]")) {
+        return isPrivateIpv6(host.slice(1, -1));
+    }
+
+    const ipv4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+    if (ipv4) {
+        const octets = ipv4.slice(1, 5).map(Number);
+        if (octets.some((octet) => octet > 255)) return false;
+        return isPrivateIpv4(octets);
+    }
+
+    // A bare IPv6 address without brackets.
+    if (host.includes(":")) return isPrivateIpv6(host);
+
+    return false;
+}
+
+/**
  * Validate a URL before it is fetched.
  *
- * Rejects anything that is not an absolute `http:` or `https:` URL. This is
- * the single choke point for every URL that comes from a parser or from page
- * content.
+ * Rejects anything that is not an absolute `http:` or `https:` URL, and
+ * anything that names the local machine or a private network.
+ *
+ * The host check is the second half of the defence. The scheme check stops
+ * the obvious — a `file:` URL, a `data:` URL — but a site can name a private
+ * address just as easily, and the extension fetches from its own privileged
+ * context, where it can reach further than the page that asked. Without this
+ * check, a site whose table of contents links to
+ * `http://169.254.169.254/latest/meta-data/` would have its response read
+ * into the extension and packaged into the book.
+ *
+ * @param url The URL to validate.
+ * @returns The parsed URL, or `null` when it must not be fetched.
  */
 export function validateFetchableUrl(url: string): URL | null {
     let parsed: URL;
@@ -201,6 +335,7 @@ export function validateFetchableUrl(url: string): URL | null {
         return null;
     }
     if (!ALLOWED_SCHEMES.has(parsed.protocol)) return null;
+    if (isPrivateHost(parsed.hostname)) return null;
     return parsed;
 }
 

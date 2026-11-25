@@ -15,6 +15,8 @@
  * See ADR-0004.
  */
 
+import { validateFetchableUrl } from "../util/sanitize";
+
 /** How a request should be retried. */
 export interface RetryPolicy {
     /** How many attempts in total, including the first. */
@@ -37,6 +39,29 @@ export const DEFAULT_RETRY_POLICY: RetryPolicy = {
 
 /** The HTTP statuses that are worth retrying. */
 export const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504, 520, 522, 524]);
+
+/**
+ * How long a single request may take, in milliseconds.
+ *
+ * Without a timeout, a server that accepts the connection and never answers
+ * leaves the job sitting in "fetching chapters" for ever. The user can cancel
+ * it, but they should not have to.
+ */
+export const REQUEST_TIMEOUT_MS = 30_000;
+
+/**
+ * The largest response body the extension will read, in bytes.
+ *
+ * A hostile or misconfigured server can answer with a body of any size. The
+ * extension reads the body into memory before parsing it, so an unbounded
+ * response is a way to exhaust the worker's memory.
+ */
+export const MAX_RESPONSE_BYTES = 32 * 1024 * 1024;
+
+/**
+ * How many redirects the extension will follow.
+ */
+export const MAX_REDIRECTS = 5;
 
 /** The statuses that indicate the site is asking the user to verify. */
 const CHALLENGE_STATUSES = new Set([403, 503]);
@@ -223,7 +248,7 @@ export class FetchClient {
 
                 try {
                     const response = await this.#performRequest(url, options);
-                    const text = await response.text();
+                    const text = await this.#readText(response);
 
                     const custom = this.#evaluateCustomError(url, response, text);
                     if (custom?.status === 999) {
@@ -324,7 +349,7 @@ export class FetchClient {
                         ...options,
                         headers: { Accept: "application/json", ...options.headers },
                     });
-                    const text = await response.text();
+                    const text = await this.#readText(response);
 
                     const custom = this.#evaluateCustomError(url, response, text);
                     if (custom?.status === 999) {
@@ -428,10 +453,10 @@ export class FetchClient {
                         }
                         throw error;
                     }
-                    const buffer = await response.arrayBuffer();
+                    const data = await this.#readBody(response, MAX_RESPONSE_BYTES);
                     return {
                         response,
-                        data: new Uint8Array(buffer),
+                        data,
                         mediaType: mediaTypeOf(response.headers.get("content-type")),
                         url: response.url || url,
                     };
@@ -484,19 +509,180 @@ export class FetchClient {
         }
     }
 
-    /** Perform one request, handling cookies and the `Referer`. */
+    /**
+     * Perform one request.
+     *
+     * Three things happen here that the baseline did not do at all:
+     *
+     *  - **The URL is validated.** Every request the extension makes goes
+     *    through here, so this is the one place that has to refuse a URL
+     *    naming the local machine or a private network. A site whose table of
+     *    contents links to `http://169.254.169.254/` would otherwise use the
+     *    extension as a proxy into the user's own network.
+     *  - **Redirects are followed by hand.** The browser's own redirect
+     *    handling would follow a redirect to a private address without
+     *    telling us, and by the time we saw the final URL the request had
+     *    already been made.
+     *  - **The request has a deadline.** A server that never answers cannot
+     *    hold the job open for ever.
+     */
     async #performRequest(url: string, options: FetchOptions): Promise<Response> {
         const headers: Record<string, string> = { ...options.headers };
         if (options.referer) headers.Referer = options.referer;
 
-        return this.#environment.fetch(url, {
-            method: options.method ?? "GET",
-            headers,
-            body: options.body ?? null,
-            signal: options.signal,
-            credentials: options.credentials ?? "include",
-            redirect: "follow",
+        let current = url;
+        for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
+            const validated = validateFetchableUrl(current);
+            if (!validated) {
+                throw new FetchError(`Refused to fetch ${current}`, {
+                    status: 0,
+                    url: current,
+                    attempts: 1,
+                });
+            }
+
+            const response = await this.#request(validated.href, headers, options);
+
+            // The browser's own redirect handling is not used, so a redirect is
+            // a response with a location rather than a followed request.
+            const location = response.headers.get("location");
+            if (!location || response.status < 300 || response.status >= 400) {
+                return response;
+            }
+
+            let next: string;
+            try {
+                next = new URL(location, validated.href).href;
+            } catch {
+                return response;
+            }
+
+            // The next hop is validated at the top of the loop, so a redirect
+            // to a private address is refused before the request is made.
+            if (hop === MAX_REDIRECTS) {
+                throw new FetchError(`Too many redirects for ${url}`, {
+                    status: response.status,
+                    url: current,
+                    attempts: 1,
+                });
+            }
+            current = next;
+        }
+
+        throw new FetchError(`Too many redirects for ${url}`, {
+            status: 0,
+            url,
+            attempts: 1,
         });
+    }
+
+    /**
+     * Make a single request, with a deadline.
+     */
+    async #request(
+        url: string,
+        headers: Record<string, string>,
+        options: FetchOptions,
+    ): Promise<Response> {
+        const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+        const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+
+        try {
+            return await this.#environment.fetch(url, {
+                method: options.method ?? "GET",
+                headers,
+                body: options.body ?? null,
+                signal,
+                credentials: options.credentials ?? "include",
+                // The redirects are followed by hand, so the browser must not
+                // follow them as well.
+                redirect: "manual",
+            });
+        } catch (error) {
+            // A timeout is reported as a timeout rather than as a transport
+            // failure, so the user is told what actually happened.
+            if (timeout.aborted && !options.signal?.aborted) {
+                throw new FetchError(`The request to ${url} timed out.`, {
+                    status: 0,
+                    url,
+                    attempts: 1,
+                });
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Read a response's body as text, refusing one that is too large.
+     *
+     * @param response The response.
+     * @returns The body's text.
+     */
+    async #readText(response: Response): Promise<string> {
+        const bytes = await this.#readBody(response, MAX_RESPONSE_BYTES);
+        return new TextDecoder().decode(bytes);
+    }
+
+    /**
+     * Read a response's body, refusing one that is too large.
+     *
+     * The `Content-Length` header is checked first, because it is cheap and
+     * most oversized bodies declare it. A body that does not declare its size
+     * is read through a reader that counts the bytes and stops as soon as the
+     * cap is passed.
+     *
+     * @param response The response.
+     * @param limit The largest body to accept, in bytes.
+     * @returns The body's bytes.
+     */
+    async #readBody(response: Response, limit: number): Promise<Uint8Array> {
+        const declared = Number(response.headers.get("content-length") ?? "");
+        if (Number.isFinite(declared) && declared > limit) {
+            throw new FetchError("The response was too large to read.", {
+                status: response.status,
+                url: response.url,
+                attempts: 1,
+            });
+        }
+
+        const body = response.body;
+        if (!body) {
+            return new Uint8Array(await response.arrayBuffer());
+        }
+
+        const reader = body.getReader();
+        const chunks: Uint8Array[] = [];
+        let total = 0;
+        try {
+            for (;;) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (!value) continue;
+                total += value.byteLength;
+                if (total > limit) {
+                    await reader.cancel().catch(() => {
+                        // Cancelling a stream that has already ended is not an
+                        // error worth reporting.
+                    });
+                    throw new FetchError("The response was too large to read.", {
+                        status: response.status,
+                        url: response.url,
+                        attempts: 1,
+                    });
+                }
+                chunks.push(value);
+            }
+        } finally {
+            reader.releaseLock?.();
+        }
+
+        const bytes = new Uint8Array(total);
+        let offset = 0;
+        for (const chunk of chunks) {
+            bytes.set(chunk, offset);
+            offset += chunk.byteLength;
+        }
+        return bytes;
     }
 
     /** Evaluate the parser's custom error handler, if there is one. */

@@ -9,7 +9,11 @@
  * without giving up, and giving up without ever retrying.
  */
 import { describe, expect, it, vi } from "vitest";
-import { FetchClient, type CustomErrorHandler } from "../../src/core/net/fetch-client";
+import {
+    FetchClient,
+    MAX_RESPONSE_BYTES,
+    type CustomErrorHandler,
+} from "../../src/core/net/fetch-client";
 
 /** A handler that always asks for a retry, and counts how many times it ran. */
 function alwaysRetry(delayMs = 10): CustomErrorHandler & { calls: number } {
@@ -177,5 +181,124 @@ describe("the fetch client's custom-error handling", () => {
 
         const result = await client.fetchJson("https://example.com/api");
         expect(result.json).toEqual({ ok: true });
+    });
+});
+
+describe("the fetch client's URL checks", () => {
+    it("refuses to fetch a URL naming the local machine", async () => {
+        const fetchMock = vi.fn(async () => new Response("<html></html>", { status: 200 }));
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await expect(
+            client.fetchHtml("http://169.254.169.254/latest/meta-data/", {
+                retry: { maxAttempts: 1 },
+            }),
+        ).rejects.toThrow(/Refused to fetch/);
+
+        // The request must never have been made.
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("refuses to fetch a URL naming the loopback interface", async () => {
+        const fetchMock = vi.fn(async () => new Response("<html></html>", { status: 200 }));
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await expect(
+            client.fetchHtml("http://127.0.0.1:8080/", { retry: { maxAttempts: 1 } }),
+        ).rejects.toThrow(/Refused to fetch/);
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("refuses to follow a redirect to the local network", async () => {
+        const fetchMock = vi.fn(
+            async () =>
+                new Response("", {
+                    status: 302,
+                    headers: { location: "http://192.168.0.1/admin" },
+                }),
+        );
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await expect(
+            client.fetchHtml("https://example.com/chapter", { retry: { maxAttempts: 1 } }),
+        ).rejects.toThrow(/Refused to fetch/);
+
+        // The first hop was made; the second was not.
+        expect(fetchMock.mock.calls.length).toBe(1);
+    });
+
+    it("follows a redirect to a public address", async () => {
+        const fetchMock = vi.fn(async (url: string) => {
+            if (url === "https://example.com/chapter") {
+                return new Response("", {
+                    status: 301,
+                    headers: { location: "https://example.com/chapter/2" },
+                });
+            }
+            return new Response("<html>final</html>", { status: 200 });
+        });
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        const result = await client.fetchHtml("https://example.com/chapter");
+        expect(result.text).toContain("final");
+        expect(fetchMock.mock.calls.length).toBe(2);
+    });
+
+    it("gives up on a redirect loop", async () => {
+        const fetchMock = vi.fn(
+            async () =>
+                new Response("", {
+                    status: 302,
+                    headers: { location: "https://example.com/loop" },
+                }),
+        );
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await expect(
+            client.fetchHtml("https://example.com/loop", { retry: { maxAttempts: 1 } }),
+        ).rejects.toThrow(/Too many redirects/);
+    });
+});
+
+describe("the fetch client's size limit", () => {
+    it("refuses a body whose declared length is over the limit", async () => {
+        const fetchMock = vi.fn(
+            async () =>
+                new Response("small", {
+                    status: 200,
+                    headers: { "content-length": String(MAX_RESPONSE_BYTES + 1) },
+                }),
+        );
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await expect(
+            client.fetchHtml("https://example.com/chapter", { retry: { maxAttempts: 1 } }),
+        ).rejects.toThrow(/too large/);
+    });
+
+    it("refuses a body that grows past the limit while it is read", async () => {
+        // A body that does not declare its length, so the limit has to be
+        // enforced while it streams.
+        const chunk = new Uint8Array(1024 * 1024);
+        const stream = new ReadableStream<Uint8Array>({
+            start(controller) {
+                for (let index = 0; index < 40; index += 1) controller.enqueue(chunk);
+                controller.close();
+            },
+        });
+        const fetchMock = vi.fn(async () => new Response(stream, { status: 200 }));
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await expect(
+            client.fetchHtml("https://example.com/chapter", { retry: { maxAttempts: 1 } }),
+        ).rejects.toThrow(/too large/);
+    });
+
+    it("reads a body that is within the limit", async () => {
+        const fetchMock = vi.fn(async () => new Response("<html>ok</html>", { status: 200 }));
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        const result = await client.fetchHtml("https://example.com/chapter");
+        expect(result.text).toBe("<html>ok</html>");
     });
 });
