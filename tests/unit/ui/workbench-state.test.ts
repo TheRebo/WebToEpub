@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import {
     WorkbenchStore,
     compilePattern,
+    finishedChapterStates,
     matchingIndices,
     type Chapter,
     type FilterState,
@@ -134,6 +135,48 @@ describe("the workbench store's chapter states", () => {
         });
         store.setChapterState(0, "fetching");
         expect(notified).toBe(1);
+    });
+});
+
+describe("finishedChapterStates", () => {
+    it("marks every finished chapter as loaded", () => {
+        const changes = finishedChapterStates({ upTo: 2, failed: [] }, [0, 1, 2]);
+
+        expect(changes).toEqual([
+            { index: 0, state: "loaded" },
+            { index: 1, state: "loaded" },
+            { index: 2, state: "loaded" },
+        ]);
+    });
+
+    it("marks the chapters that failed as failed", () => {
+        const changes = finishedChapterStates({ upTo: 2, failed: [1] }, [0, 1, 2]);
+
+        expect(changes.map((change) => change.state)).toEqual(["loaded", "failed", "loaded"]);
+    });
+
+    it("maps the job's indices back to the workbench's list", () => {
+        // The user selected chapters 2, 5 and 6 of the whole list, so the
+        // job's indices are 0, 1 and 2.
+        const changes = finishedChapterStates({ upTo: 1, failed: [] }, [2, 5, 6]);
+
+        expect(changes).toEqual([
+            { index: 2, state: "loaded" },
+            { index: 5, state: "loaded" },
+        ]);
+    });
+
+    it("ignores a chapter the job does not have", () => {
+        const changes = finishedChapterStates({ upTo: 5, failed: [] }, [0, 1]);
+
+        expect(changes).toEqual([
+            { index: 0, state: "loaded" },
+            { index: 1, state: "loaded" },
+        ]);
+    });
+
+    it("marks nothing when no chapter has finished", () => {
+        expect(finishedChapterStates({ upTo: -1, failed: [] }, [0, 1])).toEqual([]);
     });
 });
 

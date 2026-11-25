@@ -38,6 +38,7 @@ import { buildWorkbench, renderWorkbench, type WorkbenchElements } from "./view"
 import {
     WorkbenchStore,
     compilePattern,
+    finishedChapterStates,
     matchingIndices,
     type Chapter,
     type FilterState,
@@ -721,8 +722,20 @@ class WorkbenchController {
      *
      * Without this the chapter list sits at "idle" for the whole download,
      * which reads as a broken list rather than a busy one.
+     *
+     * The job also reports the chapters that have *finished*. A finished
+     * chapter keeps its final state for the rest of the download, so the list
+     * reads as a record of what has happened rather than a row of spinners
+     * that never stop.
      */
     #applyChapterState(progress: DownloadProgress): void {
+        const finished = progress.finished;
+        if (finished) {
+            for (const change of finishedChapterStates(finished, this.#jobChapterIndexes)) {
+                this.#store.setChapterState(change.index, change.state);
+            }
+        }
+
         const current = progress.current;
         if (!current) return;
         const index = this.#jobChapterIndexes[current.index];

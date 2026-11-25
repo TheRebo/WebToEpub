@@ -101,6 +101,64 @@ export interface DownloadProgressState {
     succeeded: boolean;
 }
 
+/**
+ * A chapter's state, as the download reports it.
+ */
+export interface ReportedChapterState {
+    /** The chapter's index **within the job**. */
+    index: number;
+    /** The state the chapter is in. */
+    state: ChapterState;
+}
+
+/**
+ * The chapters a download has finished.
+ */
+export interface ReportedFinished {
+    /**
+     * The index of the last chapter that has finished.
+     *
+     * The chapters are fetched in order, so everything below this index has
+     * finished too.
+     */
+    upTo: number;
+    /** The indices, within the job, of the chapters that failed. */
+    failed: number[];
+}
+
+/**
+ * Work out which chapters changed state.
+ *
+ * The download reports the chapters it has finished as a watermark and the
+ * failures within that range. The workbench's list is the whole list, and the
+ * job's list is only the chapters the user selected, so the job's indices are
+ * mapped back through the selection.
+ *
+ * This is a pure function so that the mapping can be tested on its own: it is
+ * the part that decides whether a row shows a spinner or a tick, and a row
+ * that never stops spinning is a list that looks broken.
+ *
+ * @param finished The chapters the job has finished.
+ * @param jobChapterIndexes The workbench's index for each of the job's
+ *   chapters.
+ * @returns The workbench's chapter indices and their new states.
+ */
+export function finishedChapterStates(
+    finished: ReportedFinished,
+    jobChapterIndexes: number[],
+): { index: number; state: ChapterState }[] {
+    const failed = new Set(finished.failed);
+    const changes: { index: number; state: ChapterState }[] = [];
+
+    for (let jobIndex = 0; jobIndex <= finished.upTo; jobIndex += 1) {
+        const index = jobChapterIndexes[jobIndex];
+        if (index === undefined) continue;
+        changes.push({ index, state: failed.has(jobIndex) ? "failed" : "loaded" });
+    }
+
+    return changes;
+}
+
 /** The store. */
 export class WorkbenchStore {
     #state: WorkbenchState;

@@ -83,6 +83,17 @@ interface Job {
      * at that point no single chapter is the one in flight.
      */
     current: { index: number; state: ChapterFetchState } | undefined;
+    /**
+     * The chapters that have finished, and the state they finished in.
+     *
+     * The workbench's chapter list shows a state per row, and a finished
+     * chapter keeps its final state for the rest of the download. The
+     * chapters are finished in order, so the report says how far the job has
+     * got and which of the chapters in that range failed. That keeps the
+     * report small: a book with thousands of chapters does not send its whole
+     * list every half second.
+     */
+    states: Map<number, ChapterFetchState>;
     /** The controller that cancels the job. */
     controller: AbortController;
     /** The finished job's file name. */
@@ -211,6 +222,20 @@ export interface JobProgress {
      * busy.
      */
     current?: { index: number; state: ChapterFetchState };
+    /**
+     * The chapters that have finished, and the state they finished in.
+     *
+     * The workbench's chapter list draws a state per row. A chapter that has
+     * finished keeps its final state — "loaded" or "failed" — for the rest of
+     * the download, so the list reads as a record of what has happened rather
+     * than a spinner that never stops.
+     *
+     * The chapters are finished in order, so the report says how far the job
+     * has got and which of the chapters in that range failed. That keeps the
+     * report small: a book with thousands of chapters does not send its whole
+     * list every half second.
+     */
+    finished?: { upTo: number; failed: number[] };
     /** The file name, once the job is complete. */
     fileName?: string;
     /** The file size, in bytes. */
@@ -293,6 +318,7 @@ export class DownloadManager {
             failed: 0,
             error: undefined,
             current: undefined,
+            states: new Map(),
             controller: new AbortController(),
             fileName: undefined,
             fileSize: undefined,
@@ -496,7 +522,12 @@ export class DownloadManager {
             }
 
             job.done += 1;
+            // Every path through the loop above leaves the chapter in a final
+            // state — "loaded" or "failed".
             job.current = { index: chapterIndex, state: chapter.state };
+            // The chapter has finished, so its row keeps this state for the
+            // rest of the download.
+            job.states.set(chapterIndex, chapter.state);
             this.#report(job);
 
             // The throttle is the site's politeness budget. It is honoured
@@ -828,6 +859,15 @@ export class DownloadManager {
             message: PHASE_MESSAGE_KEYS[job.phase],
         };
         if (job.current) progress.current = { ...job.current };
+        if (job.states.size > 0) {
+            // The chapters are finished in order, so the highest finished index
+            // is the watermark. The chapters below it that failed are named;
+            // the rest were loaded.
+            const indices = [...job.states.keys()];
+            const upTo = Math.max(...indices);
+            const failed = indices.filter((index) => job.states.get(index) === "failed");
+            progress.finished = { upTo, failed };
+        }
         if (job.fileName) progress.fileName = job.fileName;
         if (job.fileSize !== undefined) progress.fileSize = job.fileSize;
         if (job.error) progress.error = job.error;

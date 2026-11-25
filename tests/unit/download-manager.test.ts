@@ -403,4 +403,62 @@ describe("the download manager's per-chapter progress", () => {
             ),
         ).toBe(true);
     });
+
+    it("reports the chapters that have finished, so their rows keep their state", async () => {
+        const { manager } = progressHarness();
+        const jobId = manager.start("https://example.com/story", "The Story", CHAPTERS);
+        const progress = await settle(manager, jobId);
+
+        // Without this the finished rows keep spinning for the rest of the
+        // download, which reads as a list that has got stuck.
+        expect(progress.finished).toBeDefined();
+        expect(progress.finished?.upTo).toBe(1);
+        expect(progress.finished?.failed).toEqual([]);
+    });
+
+    it("names the chapters that failed among the finished ones", async () => {
+        const parser = {
+            getRateLimit: () => 0,
+            fetchChapter: async (url: string) => ({
+                dom: new DOMParser().parseFromString(
+                    "<html><body><p>Prose.</p></body></html>",
+                    "text/html",
+                ),
+                url,
+            }),
+            // The second chapter cannot be read.
+            extractChapterContent: (_dom: Document, chapter: { sourceUrl: string }) => {
+                if (chapter.sourceUrl.endsWith("/2")) return null;
+                const dom = new DOMParser().parseFromString(
+                    "<html><body><p>Prose.</p></body></html>",
+                    "text/html",
+                );
+                return dom.body;
+            },
+        } as unknown as Parser;
+
+        const manager = new DownloadManager({
+            fetchHtml: async (url) => ({
+                dom: new DOMParser().parseFromString(
+                    "<html><body><p>Prose.</p></body></html>",
+                    "text/html",
+                ),
+                url,
+            }),
+            fetchBytes: async () => ({ data: new Uint8Array(), mediaType: "image/png" }),
+            saveFile: async (fileName) => ({ fileName, fileSize: 1 }),
+            parserFor: () => parser,
+            util: { safeForFileName: (title: string) => title },
+            throttle: async () => undefined,
+            behaviour: async () => ({ ...DEFAULT_BEHAVIOUR, retryOnEmptyPage: false }),
+        });
+
+        const jobId = manager.start("https://example.com/story", "The Story", CHAPTERS);
+        const progress = await settle(manager, jobId);
+
+        // The second chapter's content could not be read, so it failed; the
+        // first one loaded. The report says which is which.
+        expect(progress.finished?.upTo).toBe(1);
+        expect(progress.finished?.failed).toEqual([1]);
+    });
 });

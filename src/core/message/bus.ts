@@ -201,6 +201,18 @@ export interface DownloadProgress {
      * list.
      */
     current?: { index: number; state: ChapterFetchState };
+    /**
+     * The chapters that have finished.
+     *
+     * The chapters are finished in order, so the report says how far the job
+     * has got and which of the chapters in that range failed. A finished
+     * chapter keeps its final state for the rest of the download, so the list
+     * reads as a record of what has happened rather than a row of spinners
+     * that never stop.
+     *
+     * The indices are the chapters' indices **within the job**.
+     */
+    finished?: { upTo: number; failed: number[] };
     /** The name of the saved file, once the download is complete. */
     fileName?: string;
     /** The size of the saved file, in bytes. */
