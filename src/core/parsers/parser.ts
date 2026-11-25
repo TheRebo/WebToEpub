@@ -44,6 +44,45 @@ export interface TocProgress {
     showTocProgress(chapters: ChapterLink[]): void;
 }
 
+/**
+ * A progress reporter that records nothing.
+ *
+ * The migrated parsers dereference the reporter they are given without a
+ * guard, because the baseline always passed one. The rewrite's runtime passes
+ * a real one; this is the fallback for the paths that do not — the legacy
+ * loader, the tests, and any future caller that has no UI to report to.
+ *
+ * It exists so that a missing reporter can never turn into a `TypeError`
+ * halfway through building a chapter list.
+ */
+export const NULL_TOC_PROGRESS: TocProgress = {
+    showTocProgress: () => undefined,
+};
+
+/**
+ * Build a parser's chapter list, with a reporter that is always present.
+ *
+ * The migrated parsers dereference the reporter they are given without a
+ * guard, because the baseline always passed one. Calling them through this
+ * function makes the reporter's presence a property of the *runtime* rather
+ * than of each individual parser, so a missing reporter can never turn into a
+ * `TypeError` halfway through building a chapter list.
+ *
+ * This is the only supported way to ask a parser for its chapter list.
+ *
+ * @param parser The parser to ask.
+ * @param dom The table-of-contents page.
+ * @param chapterUrlsUI The reporter, if the caller has one.
+ * @returns The chapters.
+ */
+export async function listChapterUrls<T extends ChapterLink>(
+    parser: Parser,
+    dom: Document,
+    chapterUrlsUI?: TocProgress,
+): Promise<T[]> {
+    return (await parser.getChapterUrls(dom, chapterUrlsUI ?? NULL_TOC_PROGRESS)) as T[];
+}
+
 /** The image collector, which parsers use to gather chapter images. */
 export interface ImageCollector {
     /** Add an image to the collection. */
@@ -150,11 +189,26 @@ export abstract class Parser {
      * Extract the chapter list from the table of contents.
      *
      * The one method every parser must implement.
+     *
+     * The reporter is optional in the *signature* because a parser that has
+     * nothing to report can ignore it, but the runtime always supplies one —
+     * see {@link NULL_TOC_PROGRESS} for why.
      */
     abstract getChapterUrls(
         dom: Document,
         chapterUrlsUI?: TocProgress,
     ): Promise<ChapterLink[]> | ChapterLink[];
+
+    /**
+     * The reporter to use when a caller has none.
+     *
+     * The migrated parsers assume the reporter is there. Rather than patch
+     * 434 generated files, the compat base class normalises the argument at
+     * the boundary, so `chapterUrlsUI` is never `undefined` inside a parser.
+     */
+    protected get tocProgress(): TocProgress {
+        return NULL_TOC_PROGRESS;
+    }
 
     /**
      * Find the element holding the chapter's content.

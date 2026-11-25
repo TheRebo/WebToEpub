@@ -1,18 +1,12 @@
 /**
- * The parser contract test.
+ * The migrated parsers, checked against the contract the runtime relies on.
  *
- * Every migrated site parser is registered by the time this suite runs, and
- * every one of them has to satisfy the same contract: a registered host
- * resolves to a parser, the parser has the methods the runtime calls, and
- * calling those methods does not fall over on the arguments the runtime
- * passes.
- *
- * The interesting part is the last one. The background worker calls
- * `getChapterUrls(dom)` *without* a table-of-contents progress reporter, and
- * the migrated parsers inherited the baseline's habit of dereferencing that
- * argument without a guard. Twenty-nine of them crashed on a real site; a
- * parser that crashes here crashes there too, so this test is the regression
- * test for it.
+ * The interesting part is the last one. The runtime asks a parser for its
+ * chapter list through `listChapterUrls`, which always supplies a progress
+ * reporter. The migrated parsers dereference that reporter without a guard,
+ * because the baseline always passed one — so a parser that crashes when the
+ * reporter is missing crashes on a real site too. This test is the regression
+ * test for that.
  *
  * It is deliberately a contract test and not a behaviour test: the parsers
  * are the baseline's code, they were written against the baseline's runtime,
@@ -29,25 +23,11 @@ import { registerAllParsers, registrationCount } from "../../../src/core/parsers
 import { legacyRegistry } from "../../../src/core/parsers/compat/legacy-factory";
 import { setParserServices } from "../../../src/core/parsers/services-context";
 import { LegacyParser } from "../../../src/core/parsers/compat/legacy-parser";
-import type { ParserServices, TocProgress } from "../../../src/core/parsers/parser";
-
-/**
- * The parsers that still dereference the table-of-contents progress reporter
- * without a guard.
- *
- * The background worker calls `getChapterUrls(dom)` without one, so these
- * four sites still fail at run time. The fix belongs to the parser files
- * under `src/core/parsers/legacy/sites/`, which this change does not touch,
- * so they are listed here explicitly rather than being swallowed: a *new*
- * parser that breaks the same way fails the suite, and this list is the
- * visible record of the ones that are still broken.
- */
-const KNOWN_UNGUARDED_TOC_PROGRESS_HOSTS = new Set([
-    "boxnovel.net",
-    "novelsect.com",
-    "novelupdates.online",
-    "ntruyen.vn",
-]);
+import {
+    listChapterUrls,
+    type ParserServices,
+    type TocProgress,
+} from "../../../src/core/parsers/parser";
 
 /** The services every parser is given. */
 const services: ParserServices = {
@@ -124,26 +104,71 @@ describe("the migrated parsers", () => {
     });
 
     it("calls every parser's getChapterUrls without breaking on the progress reporter", async () => {
-        // The runtime calls `getChapterUrls(dom)` with no progress reporter,
-        // so that is the call that has to survive. The stub reporter is tried
-        // as well, because a parser that guards the argument against `null`
-        // but not against `undefined` is broken in the same way.
+        // The runtime asks for the chapter list through `listChapterUrls`,
+        // which always supplies a reporter. That is the call that has to
+        // survive.
+        //
+        // The bare `getChapterUrls(dom)` call is tried as well, because a
+        // migrated parser that recurses into itself — `InkittParser` does —
+        // loses the reporter, and a parser that crashes on that path is
+        // broken in the same way.
         const failures: string[] = [];
         for (const host of legacyRegistry.registeredHosts) {
             const parser = legacyRegistry.fetchByUrl(`https://${host}/`);
             if (parser === null) continue;
 
-            for (const progress of [undefined, stubProgress()]) {
+            const calls: Array<[string, () => Promise<unknown> | unknown]> = [
+                ["listChapterUrls", () => listChapterUrls(parser, stubDom())],
+                ["getChapterUrls", () => parser.getChapterUrls(stubDom(), undefined)],
+                [
+                    "getChapterUrls(with reporter)",
+                    () => parser.getChapterUrls(stubDom(), stubProgress()),
+                ],
+            ];
+
+            for (const [name, call] of calls) {
                 try {
-                    await parser.getChapterUrls(stubDom(), progress);
+                    await call();
                 } catch (error) {
                     if (!isTocProgressFailure(error)) continue;
-                    if (KNOWN_UNGUARDED_TOC_PROGRESS_HOSTS.has(host)) continue;
                     failures.push(
-                        `${host}: ${error instanceof Error ? error.message : String(error)}`,
+                        `${host} (${name}): ${error instanceof Error ? error.message : String(error)}`,
                     );
                 }
             }
+        }
+        expect(failures).toEqual([]);
+    });
+
+    it("never lets a parser see a missing progress reporter", async () => {
+        // The regression test for the bug that made twenty-nine sites fail
+        // with no chapters at all: the runtime passed no reporter, and the
+        // parsers dereferenced it.
+        //
+        // `listChapterUrls` is the runtime's entry point, so a parser reached
+        // through it must never see `undefined`.
+        const failures: string[] = [];
+        for (const host of legacyRegistry.registeredHosts) {
+            const parser = legacyRegistry.fetchByUrl(`https://${host}/`);
+            if (parser === null) continue;
+
+            let sawReporter = false;
+            const reporter: TocProgress = {
+                showTocProgress: () => {
+                    sawReporter = true;
+                },
+            };
+            try {
+                await listChapterUrls(parser, stubDom(), reporter);
+            } catch (error) {
+                if (!isTocProgressFailure(error)) continue;
+                failures.push(`${host}: ${error instanceof Error ? error.message : String(error)}`);
+                continue;
+            }
+            // A parser that reports progress must have been given a reporter
+            // that works. This is checked by the call above succeeding; the
+            // flag only documents that the reporter was reachable.
+            void sawReporter;
         }
         expect(failures).toEqual([]);
     });

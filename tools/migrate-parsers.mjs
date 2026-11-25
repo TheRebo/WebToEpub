@@ -169,6 +169,21 @@ function usesIdentifier(source, name) {
  */
 const DEAD_BRANCH_REWRITES = [
     {
+        file: "Po18csParser.js",
+        note:
+            "Call the progress reporter that exists. `monoShowTocProgress` is not a " +
+            "method of the baseline's `ChapterUrlsUI` either, so the upstream parser " +
+            "throws on every chapter.",
+        find: `            chapters.push(chapter);
+            
+            chapterUrlsUI.monoShowTocProgress(chapter);
+`,
+        replace: `            chapters.push(chapter);
+
+            chapterUrlsUI.showTocProgress([chapter]);
+`,
+    },
+    {
         file: "FenrirealmParser.js",
         note: "Drop the MV2 `chrome.tabs.executeScript` arm of `readChapterTab`.",
         find: `            const usesManifestV3 =

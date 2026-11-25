@@ -39,6 +39,7 @@
 
 import { Parser } from "../parser";
 import type { ParserServices, TocProgress, WebPage } from "../parser";
+import { NULL_TOC_PROGRESS, listChapterUrls } from "../parser";
 import type { ChapterLink } from "../../util/dom";
 import { util } from "./legacy-util";
 import { HttpClient } from "./legacy-http-client";
@@ -181,6 +182,28 @@ export class LegacyParser extends Parser {
         this.imageCollector = isServices
             ? new ImageCollector()
             : ((servicesOrImageCollector as ImageCollector | undefined) ?? new ImageCollector());
+
+        this.#guardTocProgress();
+    }
+
+    /**
+     * Make sure the progress reporter is never missing inside a parser.
+     *
+     * A migrated parser overrides `getChapterUrls` and dereferences the
+     * reporter it is given, without a guard — the baseline always passed one.
+     * The runtime asks for the chapter list through `listChapterUrls`, which
+     * supplies one, but the method is public: a parser that calls itself, or
+     * any other caller, would still hand it `undefined`.
+     *
+     * Wrapping the instance's own method is what closes that hole. The
+     * wrapper is installed in the base constructor, which runs after the
+     * subclass's prototype is in place, so it wraps the subclass's override
+     * rather than the base's.
+     */
+    #guardTocProgress(): void {
+        const original = this.getChapterUrls.bind(this);
+        this.getChapterUrls = (dom, chapterUrlsUI) =>
+            original(dom, chapterUrlsUI ?? NULL_TOC_PROGRESS);
     }
 
     /* ------------------------------------------------------------------
@@ -988,7 +1011,7 @@ export class LegacyParser extends Parser {
         this.userPreferences.readingList.setReadingListCheckbox(url);
 
         try {
-            let chapters = await this.getChapterUrls(firstPageDom);
+            let chapters = await listChapterUrls<LegacyChapter>(this, firstPageDom);
             if (this.userPreferences.chaptersPageInChapterList.value) {
                 chapters = this.addFirstPageUrlToWebPages(url, firstPageDom, chapters);
             }

@@ -26,6 +26,7 @@ import { validateFetchableUrl } from "./util/sanitize";
 import { DefaultParser } from "./parsers/default-parser";
 import { registerAllParsers } from "./parsers/register-all";
 import type { ParserServices } from "./parsers/parser";
+import { listChapterUrls } from "./parsers/parser";
 
 /** The worker. */
 class BackgroundWorker {
@@ -251,7 +252,7 @@ class BackgroundWorker {
                 return { chapters: [], error: toUserFacingError(new Error("No parser.")) };
             }
 
-            const chapters = await parser.getChapterUrls(result.dom);
+            const chapters = await listChapterUrls(parser, result.dom);
             return {
                 chapters: chapters.map((chapter) => ({
                     sourceUrl: chapter.sourceUrl,
