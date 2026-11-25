@@ -146,14 +146,41 @@ export class KToast extends KComponent {
     /** The dismiss timer. */
     #timer: ReturnType<typeof setTimeout> | undefined;
 
+    /**
+     * How much of the toast's life is left, in milliseconds.
+     *
+     * The time is counted down rather than measured against a deadline, so
+     * that a pause genuinely stops the clock. A deadline would keep running
+     * while the toast was paused, and a toast whose pointer rested on it for
+     * a moment would be dismissed the instant the pointer left.
+     */
+    #remaining = 0;
+
+    /**
+     * When the current stretch of the toast's life started.
+     *
+     * A monotonic clock is used rather than the wall clock: the wall clock
+     * can jump when the machine's clock is corrected, which would make a
+     * toast vanish early or hang on for ever.
+     */
+    #startedAt = 0;
+
     /** The token that guards against a stale announcement. */
     #announceToken = 0;
+
+    /** Whether the toast has already been dismissed. */
+    #dismissed = false;
+
+    /** The timer that removes the element once its exit animation is over. */
+    #leaveTimer: ReturnType<typeof setTimeout> | undefined;
 
     protected override render(): void {
         const variant = (this.getAttribute("variant") ?? "info") as ToastVariant;
         const duration = Number(this.getAttribute("duration") ?? 6000);
 
         this.root.replaceChildren();
+        this.#dismissed = false;
+        this.#clearTimer();
 
         const toast = document.createElement("div");
         toast.className = "toast";
@@ -203,12 +230,12 @@ export class KToast extends KComponent {
             toast.appendChild(timer);
 
             toast.addEventListener("mouseenter", () => {
-                if (this.#timer) clearTimeout(this.#timer);
+                this.#pauseTimer(duration);
                 timer.style.animationPlayState = "paused";
             });
             toast.addEventListener("mouseleave", () => {
                 timer.style.animationPlayState = "running";
-                this.#startTimer(duration);
+                this.#resumeTimer(duration);
             });
         }
 
@@ -243,25 +270,106 @@ export class KToast extends KComponent {
         }
     }
 
-    /** Start the dismiss timer. */
+    /**
+     * Start the dismiss timer.
+     *
+     * @param duration How long the toast should live, in milliseconds.
+     */
     #startTimer(duration: number): void {
         if (duration <= 0) return;
-        if (this.#timer) clearTimeout(this.#timer);
+        this.#clearTimer();
+        this.#remaining = duration;
+        this.#startedAt = now();
         this.#timer = setTimeout(() => this.dismiss(), duration);
     }
 
-    /** Dismiss the toast. */
+    /**
+     * Stop the dismiss timer, keeping the time that is left.
+     *
+     * @param duration The toast's full lifetime, in milliseconds.
+     */
+    #pauseTimer(duration: number): void {
+        if (this.#timer === undefined) return;
+        const elapsed = now() - this.#startedAt;
+        clearTimeout(this.#timer);
+        this.#timer = undefined;
+        // The timer's own schedule knows how much of the toast's life it
+        // was going to use, so what is left is what it was not.
+        this.#remaining = Math.max(0, Math.min(duration, duration - elapsed));
+    }
+
+    /**
+     * Restart the dismiss timer for the time that is left.
+     *
+     * @param duration The toast's full lifetime, in milliseconds.
+     */
+    #resumeTimer(duration: number): void {
+        if (duration <= 0) return;
+        const remaining = this.#remaining;
+        this.#clearTimer();
+        // A toast whose time ran out while the pointer was over it goes now,
+        // rather than waiting out another full period.
+        if (remaining <= 0) {
+            this.dismiss();
+            return;
+        }
+        this.#timer = setTimeout(() => this.dismiss(), remaining);
+    }
+
+    /** Cancel the dismiss timer. */
+    #clearTimer(): void {
+        if (this.#timer !== undefined) {
+            clearTimeout(this.#timer);
+            this.#timer = undefined;
+        }
+    }
+
+    /**
+     * Dismiss the toast.
+     *
+     * Dismissing twice does nothing the second time: the toast emits one
+     * dismissal event and is removed once, however many callers ask for it.
+     */
     dismiss(): void {
-        if (this.#timer) clearTimeout(this.#timer);
+        if (this.#dismissed) return;
+        this.#dismissed = true;
+        this.#clearTimer();
         const toast = this.root.querySelector(".toast") as HTMLElement | null;
         if (toast) {
             toast.dataset.leaving = "true";
-            setTimeout(() => this.remove(), leaveDuration(this));
+            this.#leaveTimer = setTimeout(() => this.remove(), leaveDuration(this));
         } else {
             this.remove();
         }
         this.emit("k-dismiss", {});
     }
+
+    /** Cancel the timers when the toast leaves the document. */
+    override disconnectedCallback(): void {
+        this.#clearTimer();
+        if (this.#leaveTimer !== undefined) {
+            clearTimeout(this.#leaveTimer);
+            this.#leaveTimer = undefined;
+        }
+        super.disconnectedCallback();
+    }
+}
+
+/**
+ * A monotonic clock, in milliseconds.
+ *
+ * `performance.now()` is monotonic: it cannot jump backwards when the
+ * machine's clock is corrected, and it does not include the time the machine
+ * was asleep. That matters for a toast, whose lifetime is a stretch of
+ * attention rather than a stretch of calendar time.
+ *
+ * @returns The current value of the monotonic clock.
+ */
+function now(): number {
+    if (typeof performance !== "undefined" && typeof performance.now === "function") {
+        return performance.now();
+    }
+    return Date.now();
 }
 
 /**
