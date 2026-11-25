@@ -239,31 +239,23 @@ export class KField extends KComponent {
         let rebuilt = false;
         if (!this.input || this.input.tagName !== tagForType(type)) {
             rebuilt = true;
-            const previous = this.input;
             this.root.replaceChildren();
             this.input = createControl(type);
             this.#build();
-            // A `<select>`'s options live in the light DOM, and moving them
-            // into the control takes them out of the light DOM. They are
-            // carried over so that changing the type does not lose them.
-            if (previous instanceof HTMLSelectElement && this.input instanceof HTMLSelectElement) {
-                for (const option of Array.from(previous.options)) {
-                    this.input.appendChild(option);
-                }
-            }
         }
 
         const input = this.input;
         if (!input) return;
         input.id = this.inputId;
 
-        // A `<select>`'s options are supplied as light DOM children, so they
-        // have to be moved into the control whenever it is (re)built.
+        // A `<select>`'s options are supplied as light DOM children.
+        //
+        // They stay in the light DOM: the light DOM is the source of truth, and
+        // the control gets a copy. Moving them into the control would make
+        // the control the owner, and changing the field's type would then
+        // destroy the options along with the control that held them.
         if (input instanceof HTMLSelectElement) {
-            const options = Array.from(this.querySelectorAll("option"));
-            for (const option of options) {
-                if (option.parentElement !== input) input.appendChild(option);
-            }
+            this.#syncOptions(input);
         }
 
         input.disabled = this.hasAttribute("disabled");
@@ -309,6 +301,52 @@ export class KField extends KComponent {
         // it was built, which is not yet applied at that point — the attribute
         // is applied above.
         if (rebuilt) this.initialValue = input.value;
+    }
+
+    /**
+     * Copy the light DOM's `<option>` elements into the control.
+     *
+     * The light DOM keeps the originals, so the options survive a change of
+     * the field's type; the control holds copies, so it can be rebuilt at any
+     * time without losing them.
+     *
+     * Options that were appended straight to the control are left alone: they
+     * are not the field's to remove, and the control is the only place they
+     * exist. Only the copies this method made are taken away again.
+     *
+     * @param select The control to fill.
+     */
+    #syncOptions(select: HTMLSelectElement): void {
+        const wanted = Array.from(this.querySelectorAll("option"));
+        if (wanted.length === 0) return;
+
+        const wantedValues = wanted.map((option) => option.value);
+
+        // Take away the copies that are no longer in the light DOM, and only
+        // those: an option the page put straight into the control is left be.
+        for (const option of Array.from(select.options)) {
+            if (!option.dataset["kintsugiMirror"]) continue;
+            if (!wantedValues.includes(option.value)) option.remove();
+        }
+
+        // Add the ones that are missing, and refresh the ones that are left.
+        for (const source of wanted) {
+            const existing = Array.from(select.options).find(
+                (option) =>
+                    option.dataset["kintsugiMirror"] === "true" && option.value === source.value,
+            );
+            if (!existing) {
+                const copy = document.createElement("option");
+                copy.value = source.value;
+                copy.textContent = source.textContent;
+                copy.disabled = source.disabled;
+                copy.dataset["kintsugiMirror"] = "true";
+                select.appendChild(copy);
+            } else {
+                existing.textContent = source.textContent;
+                existing.disabled = source.disabled;
+            }
+        }
     }
 
     /**
