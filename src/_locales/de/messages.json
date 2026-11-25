@@ -79,6 +79,46 @@
     "message": "Bereiche",
     "description": "Die Schaltfläche für einen Kapitelbereich."
   },
+  "workbenchRangeTitle": {
+    "message": "Bereich auswählen",
+    "description": "Die Überschrift des Bereich-Dialogs."
+  },
+  "workbenchRangeFrom": {
+    "message": "Erstes Kapitel",
+    "description": "Das erste Kapitel des Bereichs."
+  },
+  "workbenchRangeTo": {
+    "message": "Letztes Kapitel",
+    "description": "Das letzte Kapitel des Bereichs."
+  },
+  "workbenchRangeCount": {
+    "message": "$COUNT$ Kapitel",
+    "description": "Wie viele Kapitel der Bereich umfasst.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeSelect": {
+    "message": "Bereich auswählen",
+    "description": "Wählt die Kapitel im Bereich aus."
+  },
+  "workbenchRangeDeselect": {
+    "message": "Bereich abwählen",
+    "description": "Hebt die Auswahl im Bereich auf."
+  },
+  "workbenchRangeInvalid": {
+    "message": "Geben Sie eine Kapitelnummer zwischen 1 und $COUNT$ ein.",
+    "description": "Wird angezeigt, wenn der Bereich nicht verwendet werden kann.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
   "workbenchFilter": {
     "message": "Filter",
     "description": "Die Schaltfläche, die den Filter öffnet."

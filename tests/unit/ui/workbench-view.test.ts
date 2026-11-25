@@ -137,4 +137,23 @@ describe("the workbench's controls", () => {
         const { elements } = build();
         expect(elements.selectAll.getAttribute("aria-label")).toBeTruthy();
     });
+
+    it("gives the range's fields a label", () => {
+        // The range dialog was added without labels at first: the helper's
+        // wrapper — which holds the `<label for>` — was thrown away, so the
+        // two number fields announced themselves as "edit text".
+        const { elements } = build();
+
+        for (const input of [elements.rangeFrom, elements.rangeTo]) {
+            const label = document.querySelector(`label[for="${input.id}"]`);
+            expect(label).not.toBeNull();
+            expect(label?.textContent?.trim()).not.toBe("");
+        }
+    });
+
+    it("puts the range fields in the document, so they can be found", () => {
+        const { elements, root } = build();
+        expect(root.contains(elements.rangeFrom)).toBe(true);
+        expect(root.contains(elements.rangeTo)).toBe(true);
+    });
 });

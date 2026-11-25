@@ -11,6 +11,8 @@ import {
     compilePattern,
     finishedChapterStates,
     matchingIndices,
+    parseChapterRange,
+    storyOptionSwitches,
     type Chapter,
     type FilterState,
     type WorkbenchState,
@@ -99,6 +101,59 @@ describe("the workbench store's selection", () => {
 
         store.setRange(0, 99, true);
         expect(store.selectedCount).toBe(1);
+    });
+});
+
+describe("the range the user types", () => {
+    it("reads the two numbers", () => {
+        expect(parseChapterRange("2", "5", 10)).toEqual({ from: 2, to: 5 });
+    });
+
+    it("accepts the numbers in either order", () => {
+        expect(parseChapterRange("5", "2", 10)).toEqual({ from: 2, to: 5 });
+    });
+
+    it("rejects a range that reaches past the end of the list", () => {
+        expect(parseChapterRange("1", "11", 10)).toBeNull();
+    });
+
+    it("rejects a number below one", () => {
+        expect(parseChapterRange("0", "5", 10)).toBeNull();
+    });
+
+    it("rejects something that is not a number", () => {
+        expect(parseChapterRange("", "5", 10)).toBeNull();
+        expect(parseChapterRange("a", "b", 10)).toBeNull();
+    });
+
+    it("rejects a range when there are no chapters", () => {
+        expect(parseChapterRange("1", "1", 0)).toBeNull();
+    });
+});
+
+describe("the story options the workbench shows", () => {
+    it("turns the author-notes switch on when the notes are kept", () => {
+        expect(storyOptionSwitches({ removeAuthorNotes: false, includeTocPage: false })).toEqual({
+            includeAuthorNotes: true,
+            includeTocPage: false,
+        });
+    });
+
+    it("turns the author-notes switch off when the notes are removed", () => {
+        // The switch says "include the author notes" and the setting says
+        // "remove the author notes", so the two are opposites. Getting this
+        // wrong shows the user the opposite of what will happen.
+        expect(storyOptionSwitches({ removeAuthorNotes: true, includeTocPage: false })).toEqual({
+            includeAuthorNotes: false,
+            includeTocPage: false,
+        });
+    });
+
+    it("shows the contents page as the setting has it", () => {
+        expect(storyOptionSwitches({ removeAuthorNotes: false, includeTocPage: true })).toEqual({
+            includeAuthorNotes: true,
+            includeTocPage: true,
+        });
     });
 });
 

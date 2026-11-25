@@ -29,6 +29,16 @@ export default {
     workbenchSelectNone: ["Batalkan semua", "Tombol untuk membatalkan pilihan semua bab."],
     workbenchInvert: ["Balik", "Tombol untuk membalik pilihan."],
     workbenchRanges: ["Rentang", "Tombol untuk memilih rentang bab."],
+    workbenchRangeTitle: ["Pilih rentang", "Judul dialog rentang."],
+    workbenchRangeFrom: ["Bab pertama", "Bab pertama dalam rentang."],
+    workbenchRangeTo: ["Bab terakhir", "Bab terakhir dalam rentang."],
+    workbenchRangeCount: ["$COUNT$ bab", "Berapa banyak bab yang ada dalam rentang."],
+    workbenchRangeSelect: ["Pilih rentang", "Memilih bab dalam rentang."],
+    workbenchRangeDeselect: ["Batalkan rentang", "Membatalkan pilihan bab dalam rentang."],
+    workbenchRangeInvalid: [
+        "Masukkan nomor bab antara 1 dan $COUNT$.",
+        "Ditampilkan saat rentang tidak dapat dipakai.",
+    ],
     workbenchFilter: ["Saring", "Tombol untuk membuka penyaring."],
     workbenchNoChaptersSelected: [
         "Tidak ada bab yang dipilih",

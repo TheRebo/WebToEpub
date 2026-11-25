@@ -27,6 +27,16 @@ export default {
     workbenchSelectNone: ["Auswahl aufheben", "Die Schaltfläche, die alle Kapitel abwählt."],
     workbenchInvert: ["Umkehren", "Die Schaltfläche, die die Auswahl umkehrt."],
     workbenchRanges: ["Bereiche", "Die Schaltfläche für einen Kapitelbereich."],
+    workbenchRangeTitle: ["Bereich auswählen", "Die Überschrift des Bereich-Dialogs."],
+    workbenchRangeFrom: ["Erstes Kapitel", "Das erste Kapitel des Bereichs."],
+    workbenchRangeTo: ["Letztes Kapitel", "Das letzte Kapitel des Bereichs."],
+    workbenchRangeCount: ["$COUNT$ Kapitel", "Wie viele Kapitel der Bereich umfasst."],
+    workbenchRangeSelect: ["Bereich auswählen", "Wählt die Kapitel im Bereich aus."],
+    workbenchRangeDeselect: ["Bereich abwählen", "Hebt die Auswahl im Bereich auf."],
+    workbenchRangeInvalid: [
+        "Geben Sie eine Kapitelnummer zwischen 1 und $COUNT$ ein.",
+        "Wird angezeigt, wenn der Bereich nicht verwendet werden kann.",
+    ],
     workbenchFilter: ["Filter", "Die Schaltfläche, die den Filter öffnet."],
     workbenchNoChaptersSelected: [
         "Keine Kapitel ausgewählt",

@@ -68,6 +68,20 @@ export interface WorkbenchElements {
     invertButton: KButton;
     /** The "ranges" toolbar button. */
     rangesButton: KButton;
+    /** The range dialog. */
+    rangeDialog: HTMLElement;
+    /** The range dialog's "first chapter" field. */
+    rangeFrom: HTMLInputElement;
+    /** The range dialog's "last chapter" field. */
+    rangeTo: HTMLInputElement;
+    /** The range dialog's error. */
+    rangeError: HTMLElement;
+    /** The range dialog's count of covered chapters. */
+    rangeCount: HTMLElement;
+    /** The range dialog's "select" button. */
+    rangeSelect: KButton;
+    /** The range dialog's "deselect" button. */
+    rangeDeselect: KButton;
     /** The "filter" toolbar button. */
     filterButton: KButton;
     /** The chapter count. */
@@ -589,6 +603,59 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
 
     root.appendChild(selectorDialog);
 
+    // --- The range dialog ---
+    //
+    // The baseline taught range selection with a native `alert()` after five
+    // mis-clicks, and offered the range as two dropdowns of every chapter.
+    // This is the keyboard-reachable equivalent: two numbers and two
+    // buttons, with the count of the range shown as it is typed.
+    const rangeDialog = document.createElement("k-dialog");
+    rangeDialog.setAttribute("heading", t("workbenchRangeTitle"));
+    rangeDialog.setAttribute("size", "md");
+
+    // The range body reuses the filter body's styles: both are a short form
+    // in a dialog, and a second copy of the same rules would only drift.
+    const rangeBody = el("div", "filter-body");
+
+    const rangeFromField = makeTextField(t("workbenchRangeFrom"), "range-from");
+    rangeFromField.input.type = "number";
+    rangeFromField.input.min = "1";
+    rangeFromField.input.inputMode = "numeric";
+
+    const rangeToField = makeTextField(t("workbenchRangeTo"), "range-to");
+    rangeToField.input.type = "number";
+    rangeToField.input.min = "1";
+    rangeToField.input.inputMode = "numeric";
+
+    const rangeError = el("p", "filter-error");
+    rangeError.setAttribute("role", "alert");
+    rangeError.hidden = true;
+
+    const rangeCount = el("p", "filter-count");
+    rangeCount.setAttribute("aria-live", "polite");
+
+    rangeBody.append(rangeFromField.wrapper, rangeToField.wrapper, rangeCount, rangeError);
+    rangeDialog.appendChild(rangeBody);
+
+    const rangeFooter = document.createElement("div");
+    rangeFooter.setAttribute("slot", "footer");
+    rangeFooter.className = "filter-footer";
+
+    const rangeDeselect = document.createElement("k-button") as KButton;
+    rangeDeselect.setAttribute("variant", "ghost");
+    rangeDeselect.setAttribute("size", "md");
+    rangeDeselect.textContent = t("workbenchRangeDeselect");
+
+    const rangeSelect = document.createElement("k-button") as KButton;
+    rangeSelect.setAttribute("variant", "primary");
+    rangeSelect.setAttribute("size", "md");
+    rangeSelect.textContent = t("workbenchRangeSelect");
+
+    rangeFooter.append(rangeDeselect, rangeSelect);
+    rangeDialog.appendChild(rangeFooter);
+
+    root.appendChild(rangeDialog);
+
     // --- The toast host ---
     const toastHost = el("div", "workbench-toasts");
 
@@ -615,6 +682,13 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         selectNoneButton: noneButton,
         invertButton: invertButton,
         rangesButton: rangesButton,
+        rangeDialog,
+        rangeFrom: rangeFromField.input,
+        rangeTo: rangeToField.input,
+        rangeError,
+        rangeCount,
+        rangeSelect,
+        rangeDeselect,
         filterButton,
         chapterCount,
         list,

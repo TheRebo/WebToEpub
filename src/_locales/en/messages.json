@@ -79,6 +79,46 @@
     "message": "Ranges",
     "description": "The button that picks a range of chapters."
   },
+  "workbenchRangeTitle": {
+    "message": "Select a range",
+    "description": "The heading of the range dialog."
+  },
+  "workbenchRangeFrom": {
+    "message": "First chapter",
+    "description": "The first chapter of the range."
+  },
+  "workbenchRangeTo": {
+    "message": "Last chapter",
+    "description": "The last chapter of the range."
+  },
+  "workbenchRangeCount": {
+    "message": "$COUNT$ chapters",
+    "description": "How many chapters the range covers.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeSelect": {
+    "message": "Select range",
+    "description": "Selects the chapters in the range."
+  },
+  "workbenchRangeDeselect": {
+    "message": "Deselect range",
+    "description": "Deselects the chapters in the range."
+  },
+  "workbenchRangeInvalid": {
+    "message": "Enter a chapter number between 1 and $COUNT$.",
+    "description": "Shown when the range cannot be used.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
   "workbenchFilter": {
     "message": "Filter",
     "description": "The button that opens the filter."

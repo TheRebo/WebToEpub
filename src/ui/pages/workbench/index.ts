@@ -41,7 +41,10 @@ import {
     compilePattern,
     finishedChapterStates,
     matchingIndices,
+    parseChapterRange,
+    storyOptionSwitches,
     type Chapter,
+    type ChapterRange,
     type FilterState,
     type StoryMeta,
     type WorkbenchState,
@@ -102,6 +105,7 @@ class WorkbenchController {
         this.#settingsValue = await this.#settings.get();
         themeController.start();
         themeController.applySettings(this.#settingsValue.appearance);
+        this.#applyStoryOptions(this.#settingsValue);
         this.#render();
 
         // The popup hands over the URL it was invoked on. When the workbench is
@@ -119,6 +123,19 @@ class WorkbenchController {
         // would only add a second error on top of the first.
         if (this.#store.state.error) return;
         await this.#loadChapters(url);
+    }
+
+    /**
+     * Show the story options as the settings have them.
+     *
+     * The switches used to start blank whatever the user had chosen, so a
+     * story that had the author notes removed — or the contents page
+     * included — showed the opposite of what was actually going to happen.
+     */
+    #applyStoryOptions(settings: Settings): void {
+        const switches = storyOptionSwitches(settings.story);
+        this.#elements.authorNotesSwitch.checked = switches.includeAuthorNotes;
+        this.#elements.tocPageSwitch.checked = switches.includeTocPage;
     }
 
     /** Analyse the page, to fill in the metadata. */
@@ -289,6 +306,9 @@ class WorkbenchController {
             this.#store.setAllSelected(false),
         );
         elements.invertButton.addEventListener("k-click", () => this.#store.invertSelection());
+        elements.rangesButton.addEventListener("k-click", () => {
+            this.#openRangeDialog();
+        });
         elements.filterButton.addEventListener("k-click", () => {
             this.#openFilter();
         });
@@ -317,6 +337,19 @@ class WorkbenchController {
         elements.filterDialog.addEventListener("k-close", () => {
             this.#resetFilterDraft();
         });
+
+        // --- The range dialog ---
+        elements.rangeSelect.addEventListener("k-click", () => {
+            this.#applyRange(true);
+        });
+        elements.rangeDeselect.addEventListener("k-click", () => {
+            this.#applyRange(false);
+        });
+        for (const input of [elements.rangeFrom, elements.rangeTo]) {
+            input.addEventListener("input", () => {
+                this.#previewRange();
+            });
+        }
 
         // --- The site-selector dialog ---
         elements.selectorBannerButton.addEventListener("k-click", () => {
@@ -423,6 +456,70 @@ class WorkbenchController {
         elements.filterExclude.value = "";
         elements.filterRegex.toggleAttribute("checked", false);
         this.#previewFilter();
+    }
+
+    /**
+     * Open the range dialog.
+     *
+     * The fields are seeded with the whole chapter list, so the dialog opens
+     * on something sensible and the user only has to change what they mean
+     * to change.
+     */
+    #openRangeDialog(): void {
+        const elements = this.#elements;
+        const total = this.#store.state.chapters.length;
+        if (total === 0) return;
+
+        elements.rangeFrom.value = "1";
+        elements.rangeTo.value = String(total);
+        this.#previewRange();
+        (elements.rangeDialog as unknown as { open(): void }).open();
+    }
+
+    /**
+     * The range the dialog is editing, as the chapter numbers the user typed.
+     *
+     * The numbers are one-based, because that is how the chapters are
+     * numbered in the list. `null` means the range is not usable.
+     */
+    #range(): ChapterRange | null {
+        const elements = this.#elements;
+        return parseChapterRange(
+            elements.rangeFrom.value,
+            elements.rangeTo.value,
+            this.#store.state.chapters.length,
+        );
+    }
+
+    /** Check the range the user typed, and say what it covers. */
+    #previewRange(): void {
+        const elements = this.#elements;
+        const total = this.#store.state.chapters.length;
+        const range = this.#range();
+        if (!range) {
+            elements.rangeError.hidden = false;
+            elements.rangeError.textContent = t("workbenchRangeInvalid", [String(total)]);
+            elements.rangeCount.textContent = "";
+            return;
+        }
+        elements.rangeError.hidden = true;
+        elements.rangeError.textContent = "";
+        elements.rangeCount.textContent = t("workbenchRangeCount", [
+            String(range.to - range.from + 1),
+        ]);
+    }
+
+    /** Apply the range to the selection. */
+    #applyRange(selected: boolean): void {
+        const range = this.#range();
+        if (!range) {
+            this.#previewRange();
+            return;
+        }
+        // The store counts the chapters from zero; the dialog counts them
+        // from one.
+        this.#store.setRange(range.from - 1, range.to - 1, selected);
+        (this.#elements.rangeDialog as unknown as { close(): void }).close();
     }
 
     /** Reset the draft, so the next open starts from the applied filter. */
@@ -646,7 +743,15 @@ class WorkbenchController {
         value: boolean,
     ): Promise<void> {
         const current = await this.#settings.get();
-        await this.#settings.update({ story: { ...current.story, [key]: value } });
+        const next = await this.#settings.update({
+            story: { ...current.story, [key]: value },
+        });
+        // The snapshot has to be kept in step with the write. `#save` writes
+        // the whole story group from the snapshot, so a stale one would undo
+        // the option the user had just toggled: they turned the switch on,
+        // pressed Save to save the metadata, and the switch silently went
+        // back off.
+        this.#settingsValue = next;
     }
 
     /** Save the metadata. */

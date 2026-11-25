@@ -323,6 +323,78 @@ export class WorkbenchStore {
 }
 
 /**
+ * A range of chapters, as the user typed it.
+ *
+ * The numbers are one-based, because that is how the chapters are numbered in
+ * the list.
+ */
+export interface ChapterRange {
+    /** The first chapter of the range, one-based. */
+    from: number;
+    /** The last chapter of the range, one-based. */
+    to: number;
+}
+
+/**
+ * Parse the two numbers of the range dialog.
+ *
+ * The result is `null` when the range cannot be used: the numbers are not
+ * numbers, they are below one, or they reach past the end of the list.
+ *
+ * The order the two numbers are given in does not matter: a range typed
+ * backwards is the range the user meant.
+ *
+ * @param fromText The first field's value.
+ * @param toText The second field's value.
+ * @param total How many chapters the list holds.
+ * @returns The range, or `null` when it is not usable.
+ */
+export function parseChapterRange(
+    fromText: string,
+    toText: string,
+    total: number,
+): ChapterRange | null {
+    if (total <= 0) return null;
+
+    const from = Number.parseInt(fromText, 10);
+    const to = Number.parseInt(toText, 10);
+    if (!Number.isFinite(from) || !Number.isFinite(to)) return null;
+    if (from < 1 || to < 1 || from > total || to > total) return null;
+
+    return { from: Math.min(from, to), to: Math.max(from, to) };
+}
+
+/**
+ * The story options, as the workbench's switches show them.
+ *
+ * The switches and the settings do not use the same words, which is why this
+ * mapping lives in one place: the switch says "include the author notes" and
+ * the setting says "remove the author notes", so the two are opposites.
+ */
+export interface StoryOptionSwitches {
+    /** Whether the "include the author notes" switch is on. */
+    includeAuthorNotes: boolean;
+    /** Whether the "include the contents page" switch is on. */
+    includeTocPage: boolean;
+}
+
+/**
+ * Read the story options out of the settings, for the switches to show.
+ *
+ * @param story The story group's settings.
+ * @returns The switches' states.
+ */
+export function storyOptionSwitches(story: {
+    removeAuthorNotes: boolean;
+    includeTocPage: boolean;
+}): StoryOptionSwitches {
+    return {
+        includeAuthorNotes: !story.removeAuthorNotes,
+        includeTocPage: story.includeTocPage,
+    };
+}
+
+/**
  * The chapters that match a filter.
  *
  * The match is a plain substring test by default. The baseline built a

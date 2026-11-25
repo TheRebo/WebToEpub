@@ -79,6 +79,46 @@
     "message": "Plages",
     "description": "Le bouton qui choisit une plage de chapitres."
   },
+  "workbenchRangeTitle": {
+    "message": "Sélectionner une plage",
+    "description": "Le titre de la boîte de dialogue."
+  },
+  "workbenchRangeFrom": {
+    "message": "Premier chapitre",
+    "description": "Le premier chapitre de la plage."
+  },
+  "workbenchRangeTo": {
+    "message": "Dernier chapitre",
+    "description": "Le dernier chapitre de la plage."
+  },
+  "workbenchRangeCount": {
+    "message": "$COUNT$ chapitres",
+    "description": "Combien de chapitres la plage contient.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeSelect": {
+    "message": "Sélectionner la plage",
+    "description": "Sélectionne les chapitres de la plage."
+  },
+  "workbenchRangeDeselect": {
+    "message": "Désélectionner la plage",
+    "description": "Désélectionne les chapitres de la plage."
+  },
+  "workbenchRangeInvalid": {
+    "message": "Saisissez un numéro de chapitre entre 1 et $COUNT$.",
+    "description": "Affiché quand la plage est inutilisable.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
   "workbenchFilter": {
     "message": "Filtrer",
     "description": "Le bouton qui ouvre le filtre."

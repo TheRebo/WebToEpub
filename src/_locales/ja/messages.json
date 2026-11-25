@@ -79,6 +79,46 @@
     "message": "範囲",
     "description": "章の範囲を選ぶボタン。"
   },
+  "workbenchRangeTitle": {
+    "message": "範囲の選択",
+    "description": "範囲ダイアログのタイトル。"
+  },
+  "workbenchRangeFrom": {
+    "message": "最初の章",
+    "description": "範囲の最初の章。"
+  },
+  "workbenchRangeTo": {
+    "message": "最後の章",
+    "description": "範囲の最後の章。"
+  },
+  "workbenchRangeCount": {
+    "message": "$COUNT$ 章",
+    "description": "範囲に含まれる章の数。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeSelect": {
+    "message": "範囲を選択",
+    "description": "範囲内の章を選択します。"
+  },
+  "workbenchRangeDeselect": {
+    "message": "範囲を選択解除",
+    "description": "範囲内の章の選択を解除します。"
+  },
+  "workbenchRangeInvalid": {
+    "message": "1 から $COUNT$ までの章番号を入力してください。",
+    "description": "範囲を使用できないときに表示。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
   "workbenchFilter": {
     "message": "フィルター",
     "description": "フィルターを開くボタン。"

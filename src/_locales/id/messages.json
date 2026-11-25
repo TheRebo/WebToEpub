@@ -79,6 +79,46 @@
     "message": "Rentang",
     "description": "Tombol untuk memilih rentang bab."
   },
+  "workbenchRangeTitle": {
+    "message": "Pilih rentang",
+    "description": "Judul dialog rentang."
+  },
+  "workbenchRangeFrom": {
+    "message": "Bab pertama",
+    "description": "Bab pertama dalam rentang."
+  },
+  "workbenchRangeTo": {
+    "message": "Bab terakhir",
+    "description": "Bab terakhir dalam rentang."
+  },
+  "workbenchRangeCount": {
+    "message": "$COUNT$ bab",
+    "description": "Berapa banyak bab yang ada dalam rentang.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeSelect": {
+    "message": "Pilih rentang",
+    "description": "Memilih bab dalam rentang."
+  },
+  "workbenchRangeDeselect": {
+    "message": "Batalkan rentang",
+    "description": "Membatalkan pilihan bab dalam rentang."
+  },
+  "workbenchRangeInvalid": {
+    "message": "Masukkan nomor bab antara 1 dan $COUNT$.",
+    "description": "Ditampilkan saat rentang tidak dapat dipakai.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
   "workbenchFilter": {
     "message": "Saring",
     "description": "Tombol untuk membuka penyaring."
