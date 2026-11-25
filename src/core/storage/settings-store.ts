@@ -304,6 +304,22 @@ export interface SettingsStorage {
 export class SettingsStore {
     #storage: SettingsStorage;
     #cache: Settings | undefined;
+    /**
+     * The queue of pending writes.
+     *
+     * A write is a read-modify-write: the current settings are read, the
+     * change is merged into them, and the whole object is written back. Two
+     * updates that overlap would each read the same snapshot, and the second
+     * write would discard the first one's change.
+     *
+     * The workbench saves the story's options from two different handlers,
+     * both of them fire-and-forget, so the overlap is real rather than
+     * theoretical: toggling two options in quick succession silently
+     * reverted one of them.
+     *
+     * Chaining the writes makes each one see the previous one's result.
+     */
+    #queue: Promise<unknown> = Promise.resolve();
 
     constructor(storage: SettingsStorage) {
         this.#storage = storage;
@@ -321,18 +337,32 @@ export class SettingsStore {
     /** Write the settings. */
     async set(settings: Settings): Promise<void> {
         const validated = validateSettings(settings);
-        this.#cache = validated;
+        // The cache is updated only once the write has succeeded. Setting it
+        // first would let a failed write — a full disk, say — leave the
+        // store reporting a value that was never persisted, and the failure
+        // would be masked.
         await this.#storage.set({ [SETTINGS_KEY]: validated });
+        this.#cache = validated;
     }
 
     /**
      * Update part of the settings.
      */
     async update(partial: Partial<Settings>): Promise<Settings> {
-        const current = await this.get();
-        const next = validateSettings(deepMerge(current, partial as Record<string, unknown>));
-        await this.set(next);
-        return next;
+        // The whole read-modify-write is queued, so two overlapping updates
+        // cannot discard each other.
+        const result = this.#queue.then(async () => {
+            const current = await this.get();
+            const next = validateSettings(deepMerge(current, partial as Record<string, unknown>));
+            await this.set(next);
+            return next;
+        });
+        // The queue must not be broken by a failed write: the next update
+        // still has to run.
+        this.#queue = result.catch(() => {
+            // The failure is reported to the caller of `update`.
+        });
+        return result;
     }
 
     /**

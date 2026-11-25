@@ -133,4 +133,74 @@ describe("SettingsStore", () => {
         expect(storage.data[SETTINGS_KEY]).toBeUndefined();
         expect(storage.data["something.else"]).toBe("keep me");
     });
+
+    it("does not let two overlapping updates discard each other", async () => {
+        // An update is a read-modify-write. Two of them that overlap each
+        // read the same snapshot, so the second write would drop the first
+        // one's change. The workbench saves the story's options from two
+        // different handlers, so this happens in real use.
+        const storage = memoryStorage();
+        const store = new SettingsStore(storage);
+
+        const first = store.update({
+            appearance: { ...DEFAULT_SETTINGS.appearance, theme: "dark" },
+        });
+        const second = store.update({
+            story: { ...DEFAULT_SETTINGS.story, defaultLanguage: "fr" },
+        });
+        await Promise.all([first, second]);
+
+        const settings = await store.get();
+        expect(settings.appearance.theme).toBe("dark");
+        expect(settings.story.defaultLanguage).toBe("fr");
+    });
+
+    it("keeps the queue working after a failed write", async () => {
+        const storage = memoryStorage();
+        let failNext = true;
+        const failing: SettingsStorage = {
+            ...storage,
+            async set(items) {
+                if (failNext) {
+                    failNext = false;
+                    throw new Error("the disk is full");
+                }
+                await storage.set(items);
+            },
+        };
+        const store = new SettingsStore(failing);
+
+        await expect(
+            store.update({ appearance: { ...DEFAULT_SETTINGS.appearance, theme: "dark" } }),
+        ).rejects.toThrow("the disk is full");
+
+        // The next update still runs.
+        await store.update({ appearance: { ...DEFAULT_SETTINGS.appearance, theme: "light" } });
+        expect((await store.get()).appearance.theme).toBe("light");
+    });
+
+    it("does not report a value that was never written", async () => {
+        // The cache is only updated once the write has succeeded. A failed
+        // write — a full disk, say — must not leave the store reporting a
+        // value that was never persisted.
+        const storage = memoryStorage();
+        const failing: SettingsStorage = {
+            ...storage,
+            async set() {
+                throw new Error("the disk is full");
+            },
+        };
+        const store = new SettingsStore(failing);
+
+        // The default settings object is shared, so it is copied deeply
+        // before anything is changed.
+        const settings = structuredClone(DEFAULT_SETTINGS) as Settings;
+        settings.appearance.theme = "dark";
+        await expect(store.set(settings)).rejects.toThrow("the disk is full");
+
+        // Nothing was stored, so a read still reports the defaults rather
+        // than the theme that failed to save.
+        expect((await store.get()).appearance.theme).toBe("system");
+        expect(storage.data[SETTINGS_KEY]).toBeUndefined();
+    });
 });

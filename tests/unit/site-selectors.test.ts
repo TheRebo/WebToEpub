@@ -160,6 +160,28 @@ describe("SiteSelectorStore", () => {
         await store.hydrate();
         expect((await store.list()).size).toBe(0);
     });
+
+    it("does not report a configuration that was never written", async () => {
+        // The cache is only replaced once the write has succeeded. A failed
+        // write must not leave the store claiming a configuration that was
+        // never saved.
+        const failing: SiteSelectorStorage = {
+            ...storage,
+            async set() {
+                throw new Error("the disk is full");
+            },
+        };
+        const failingStore = new SiteSelectorStore(failing);
+        await expect(
+            failingStore.setForHost("example.com", {
+                ...emptySiteSelectorConfig(),
+                contentCss: "div.chapter",
+            }),
+        ).rejects.toThrow("the disk is full");
+
+        expect(await failingStore.getForHost("example.com")).toBeNull();
+        expect(failingStore.peek("example.com")).toBeNull();
+    });
 });
 
 describe("the CSS helpers", () => {

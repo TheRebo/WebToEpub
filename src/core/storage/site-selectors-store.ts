@@ -159,20 +159,23 @@ export class SiteSelectorStore {
         const validated = validateSiteSelectorConfig(config);
         if (validated === null) throw new Error("The content selector is not usable.");
 
-        const cache = this.#cache ?? new Map<string, SiteSelectorConfig>();
+        const cache = new Map(this.#cache ?? []);
         cache.set(key, validated);
-        this.#cache = cache;
+        // The cache is only replaced once the write has succeeded, so a failed
+        // write does not leave the store claiming a configuration that was
+        // never saved.
         await this.#persist(cache);
+        this.#cache = cache;
     }
 
     /** Forget the configuration for a host name. */
     async removeForHost(hostName: string): Promise<void> {
         await this.#hydrateIfNeeded();
         const key = normaliseHostName(hostName);
-        const cache = this.#cache ?? new Map<string, SiteSelectorConfig>();
+        const cache = new Map(this.#cache ?? []);
         cache.delete(key);
-        this.#cache = cache;
         await this.#persist(cache);
+        this.#cache = cache;
     }
 
     /** Fill the cache, if it is not already filled. */
