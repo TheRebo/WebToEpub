@@ -35,6 +35,7 @@ import { DefaultParser } from "./parsers/default-parser";
 import { registerAllParsers } from "./parsers/register-all";
 import type { ParserServices } from "./parsers/parser";
 import { listChapterUrls } from "./parsers/parser";
+import { removeChapterNumber } from "./util/chapter-title";
 
 /** The worker. */
 class BackgroundWorker {
@@ -411,10 +412,20 @@ class BackgroundWorker {
 
             const chapters = await listChapterUrls(parser, result.dom);
             diagnosticUrl("Found chapters with", url, parser.constructor.name, chapters.length);
+
+            // The chapter numbers are stripped here rather than in the
+            // download pipeline, so that the list the user looks at is the
+            // list the book will have.
+            const settings = await this.#settings.get();
+            const stripNumbers = settings.story.removeChapterNumbers;
+
             return {
                 chapters: chapters.map((chapter) => ({
                     sourceUrl: chapter.sourceUrl,
-                    title: chapter.title,
+                    title:
+                        stripNumbers && chapter.title
+                            ? removeChapterNumber(chapter.title)
+                            : chapter.title,
                     // A chapter the parser marks as not includeable starts
                     // unchecked in the UI.
                     isIncludeable: chapter.isIncludeable ?? true,

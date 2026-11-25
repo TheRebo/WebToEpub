@@ -177,6 +177,10 @@ export default {
         "作者のあとがきを削除する設定の説明。",
     ],
     settingRemoveChapterNumbers: ["タイトルから章番号を削除", "章番号をタイトルから削除する設定。"],
+    settingRemoveChapterNumbersHint: [
+        "サイトがチャプネルの先頭に付けている番号を取り除きます。",
+        "章番号をタイトルから削除する設定の説明。",
+    ],
     settingIncludeTocPage: ["目次を1つの章として含める", "目次を含める設定。"],
     settingEpubVersion: ["バージョン", "EPUB のバージョンの設定。"],
     settingEpubVersionHint: [

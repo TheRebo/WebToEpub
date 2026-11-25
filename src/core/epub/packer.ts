@@ -21,7 +21,7 @@ import {
 } from "./document";
 import { buildXhtml, collectFiles, makeItemId } from "./writer";
 import { serializeAsXml } from "./xhtml";
-import { isPackagedReference, parseSrcset, resolveUrl } from "../util/image-references";
+import { rewriteImageElements } from "../util/image-references";
 
 /**
  * Rewrite a chapter's image references to the packaged copies.
@@ -46,60 +46,9 @@ function rewriteImageHrefs(html: string, images: Map<string, ImageData>, baseUrl
     if (images.size === 0) return html;
 
     const document = new DOMParser().parseFromString(html, "text/html");
-    let changed = false;
-
-    const replace = (element: Element, attribute: string): void => {
-        const value = element.getAttribute(attribute);
-        if (!value) return;
-
-        // A reference that already points at a packaged image is left alone.
-        if (isPackagedReference(value)) return;
-
-        if (attribute === "srcset") {
-            const candidates = parseSrcset(value);
-            if (candidates.length === 0) return;
-            let dirty = false;
-            const rewritten = candidates.map((candidate) => {
-                const absolute = resolveUrl(candidate.url, baseUrl);
-                const image = absolute ? images.get(absolute) : undefined;
-                if (!image) return candidate;
-                dirty = true;
-                return {
-                    url: chapterImageHref(image.url, image.mediaType),
-                    descriptor: candidate.descriptor,
-                };
-            });
-            if (!dirty) return;
-            element.setAttribute(
-                attribute,
-                rewritten
-                    .map((candidate) =>
-                        candidate.descriptor
-                            ? `${candidate.url} ${candidate.descriptor}`
-                            : candidate.url,
-                    )
-                    .join(", "),
-            );
-            changed = true;
-            return;
-        }
-
-        const absolute = resolveUrl(value, baseUrl);
-        if (!absolute) return;
-        const image = images.get(absolute);
-        if (!image) return;
-
-        element.setAttribute(attribute, chapterImageHref(image.url, image.mediaType));
-        changed = true;
-    };
-
-    for (const image of document.querySelectorAll("img")) {
-        replace(image, "src");
-        replace(image, "srcset");
-    }
-    for (const source of document.querySelectorAll("source")) {
-        replace(source, "srcset");
-    }
+    const changed = rewriteImageElements(document, images, baseUrl, (image) =>
+        chapterImageHref(image.url, image.mediaType),
+    );
 
     if (!changed) return html;
     return serializeAsXml(document.body);

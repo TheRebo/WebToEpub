@@ -219,6 +219,10 @@ export default {
         "Supprimer les numéros de chapitre des titres",
         "Le réglage de suppression des numéros de chapitre.",
     ],
+    settingRemoveChapterNumbersHint: [
+        "Supprime le numéro qu'un site place au début du titre d'un chapitre.",
+        "Explique le réglage de suppression des numéros de chapitre.",
+    ],
     settingIncludeTocPage: [
         "Inclure le sommaire comme chapitre",
         "Le réglage d'inclusion du sommaire.",

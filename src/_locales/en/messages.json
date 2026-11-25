@@ -521,6 +521,10 @@
     "message": "Remove chapter numbers from titles",
     "description": "The remove-chapter-numbers setting."
   },
+  "settingRemoveChapterNumbersHint": {
+    "message": "Removes the number a site puts at the start of a chapter's title.",
+    "description": "Explains the remove-chapter-numbers setting."
+  },
   "settingIncludeTocPage": {
     "message": "Include the table of contents as a chapter",
     "description": "The include-toc-page setting."

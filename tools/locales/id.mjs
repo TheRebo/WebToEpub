@@ -209,6 +209,10 @@ export default {
         "Hapus nomor bab dari judul",
         "Pengaturan penghapusan nomor bab.",
     ],
+    settingRemoveChapterNumbersHint: [
+        "Menghapus nomor yang situs tempatkan di awal judul bab.",
+        "Penjelasan pengaturan penghapusan nomor bab.",
+    ],
     settingIncludeTocPage: ["Sertakan daftar isi sebagai bab", "Pengaturan penyertaan daftar isi."],
     settingEpubVersion: ["Versi", "Pengaturan versi EPUB."],
     settingEpubVersionHint: [

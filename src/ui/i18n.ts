@@ -151,6 +151,7 @@ export const MESSAGES = {
     settingRemoveAuthorNotes: "settingRemoveAuthorNotes",
     settingRemoveAuthorNotesHint: "settingRemoveAuthorNotesHint",
     settingRemoveChapterNumbers: "settingRemoveChapterNumbers",
+    settingRemoveChapterNumbersHint: "settingRemoveChapterNumbersHint",
     settingIncludeTocPage: "settingIncludeTocPage",
     settingEpubVersion: "settingEpubVersion",
     settingEpubVersionHint: "settingEpubVersionHint",

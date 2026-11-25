@@ -22,7 +22,7 @@ import {
     type ImageData,
 } from "../../src/core/epub/packer";
 import { collectImageUrls, rewriteImageReferences } from "../../src/core/download-manager";
-import { parseSrcset } from "../../src/core/util/image-references";
+import { parseSrcset, pickSrcsetCandidate } from "../../src/core/util/image-references";
 import { OPF_PATH } from "../../src/core/epub/document";
 
 /** An image with some bytes in it. */
@@ -107,21 +107,76 @@ describe("collectImageUrls", () => {
         );
     });
 
-    it("finds every candidate in a srcset", () => {
+    it("keeps only one candidate of a srcset", () => {
+        // A `srcset` lists the same picture at several sizes. Keeping them
+        // all would put every size of every picture into the book.
         const content = fragment(
             '<p><img srcset="https://example.com/a.png 1x, https://example.com/b.png 2x"></p>',
         );
         expect(collectImageUrls(content, "https://example.com/c/1")).toEqual(
-            new Set(["https://example.com/a.png", "https://example.com/b.png"]),
+            new Set(["https://example.com/a.png"]),
         );
     });
 
-    it("finds a source element inside a picture", () => {
+    it("keeps the largest candidate of a srcset when the user asks for it", () => {
+        const content = fragment(
+            '<p><img srcset="https://example.com/a.png 1x, https://example.com/b.png 2x"></p>',
+        );
+        expect(
+            collectImageUrls(content, "https://example.com/c/1", {
+                preferHighestResolution: true,
+            }),
+        ).toEqual(new Set(["https://example.com/b.png"]));
+    });
+
+    it("keeps the widest candidate of a srcset when the user asks for it", () => {
+        const content = fragment(
+            '<p><img srcset="https://example.com/a.png 320w, https://example.com/b.png 1280w"></p>',
+        );
+        expect(
+            collectImageUrls(content, "https://example.com/c/1", {
+                preferHighestResolution: true,
+            }),
+        ).toEqual(new Set(["https://example.com/b.png"]));
+    });
+
+    it("prefers the srcset over the src when the user asks for the largest", () => {
+        const content = fragment(
+            '<p><img src="https://example.com/a.png" srcset="https://example.com/b.png 2x"></p>',
+        );
+        expect(
+            collectImageUrls(content, "https://example.com/c/1", {
+                preferHighestResolution: true,
+            }),
+        ).toEqual(new Set(["https://example.com/b.png"]));
+    });
+
+    it("uses the src when the user does not ask for the largest", () => {
+        const content = fragment(
+            '<p><img src="https://example.com/a.png" srcset="https://example.com/b.png 2x"></p>',
+        );
+        expect(collectImageUrls(content, "https://example.com/c/1")).toEqual(
+            new Set(["https://example.com/a.png"]),
+        );
+    });
+
+    it("takes one image from a picture", () => {
+        // The `<source>` and the `<img>` are the same picture in two formats.
+        // Only one of them goes into the book.
         const content = fragment(
             '<picture><source srcset="https://example.com/a.webp"><img src="https://example.com/a.png"></picture>',
         );
         expect(collectImageUrls(content, "https://example.com/c/1")).toEqual(
-            new Set(["https://example.com/a.webp", "https://example.com/a.png"]),
+            new Set(["https://example.com/a.png"]),
+        );
+    });
+
+    it("falls back to a picture's source when the image has no reference", () => {
+        const content = fragment(
+            '<picture><source srcset="https://example.com/a.webp"><img alt="a"></picture>',
+        );
+        expect(collectImageUrls(content, "https://example.com/c/1")).toEqual(
+            new Set(["https://example.com/a.webp"]),
         );
     });
 
@@ -155,6 +210,45 @@ describe("parseSrcset", () => {
 
     it("returns nothing for an absent attribute", () => {
         expect(parseSrcset(null)).toEqual([]);
+    });
+
+    it("keeps a comma that is part of a URL", () => {
+        expect(parseSrcset("https://example.com/a,b.png 2x")).toEqual([
+            { url: "https://example.com/a,b.png", descriptor: "2x" },
+        ]);
+    });
+
+    it("reads a candidate that follows a comma without a space", () => {
+        expect(parseSrcset("a.png 1x,b.png 2x")).toEqual([
+            { url: "a.png", descriptor: "1x" },
+            { url: "b.png", descriptor: "2x" },
+        ]);
+    });
+});
+
+describe("pickSrcsetCandidate", () => {
+    it("returns nothing when there are no candidates", () => {
+        expect(pickSrcsetCandidate([], true)).toBeUndefined();
+    });
+
+    it("takes the first candidate when the user does not ask for the largest", () => {
+        const candidates = parseSrcset("a.png 1x, b.png 2x");
+        expect(pickSrcsetCandidate(candidates, false)?.url).toBe("a.png");
+    });
+
+    it("takes the largest density when the user asks for it", () => {
+        const candidates = parseSrcset("a.png 1x, b.png 2x");
+        expect(pickSrcsetCandidate(candidates, true)?.url).toBe("b.png");
+    });
+
+    it("takes the widest candidate when the user asks for it", () => {
+        const candidates = parseSrcset("a.png 320w, b.png 1280w");
+        expect(pickSrcsetCandidate(candidates, true)?.url).toBe("b.png");
+    });
+
+    it("takes the last candidate when the descriptors cannot be compared", () => {
+        const candidates = parseSrcset("a.png, b.png");
+        expect(pickSrcsetCandidate(candidates, true)?.url).toBe("b.png");
     });
 });
 
@@ -197,6 +291,53 @@ describe("rewriteImageReferences", () => {
         expect(html).toContain("1x");
         expect(html).toContain("2x");
         expect(html).not.toContain("https://example.com/a.png");
+    });
+
+    it("drops a srcset candidate that is not in the book", () => {
+        // A candidate left pointing at the site would be fetched from the
+        // network every time the chapter is opened.
+        const first = "https://example.com/a.png";
+        const images = new Map([[first, image(first)]]);
+        const html = rewriteImageReferences(
+            '<p><img srcset="https://example.com/a.png 1x, https://example.com/b.png 2x"></p>',
+            images,
+            "https://example.com/c/1",
+        );
+        expect(html).toContain("1x");
+        expect(html).not.toContain("2x");
+        expect(html).not.toContain("https://example.com/b.png");
+    });
+
+    it("drops a srcset that has nothing in the book", () => {
+        const html = rewriteImageReferences(
+            '<p><img srcset="https://example.com/b.png 2x"></p>',
+            new Map(),
+            "https://example.com/c/1",
+        );
+        expect(html).not.toContain("srcset");
+        expect(html).not.toContain("https://example.com/b.png");
+    });
+
+    it("points the src at the packaged file when only the srcset was packaged", () => {
+        const second = "https://example.com/b.png";
+        const images = new Map([[second, image(second)]]);
+        const html = rewriteImageReferences(
+            '<p><img src="https://example.com/a.png" srcset="https://example.com/b.png 2x"></p>',
+            images,
+            "https://example.com/c/1",
+        );
+        expect(html).toContain(`src="../images/`);
+        expect(html).not.toContain("https://example.com/a.png");
+    });
+
+    it("removes a source that has nothing in the book", () => {
+        const html = rewriteImageReferences(
+            '<picture><source srcset="https://example.com/b.webp"><img src="https://example.com/a.png"></picture>',
+            new Map(),
+            "https://example.com/c/1",
+        );
+        expect(html).not.toContain("source");
+        expect(html).not.toContain("https://example.com/b.webp");
     });
 
     it("leaves an image it does not have alone", () => {

@@ -521,6 +521,10 @@
     "message": "Kapitelnummern aus Titeln entfernen",
     "description": "Die Einstellung zum Entfernen von Kapitelnummern."
   },
+  "settingRemoveChapterNumbersHint": {
+    "message": "Entfernt die Nummer, die eine Seite an den Anfang eines Kapiteltitels setzt.",
+    "description": "Erklärt die Einstellung zum Entfernen von Kapitelnummern."
+  },
   "settingIncludeTocPage": {
     "message": "Inhaltsverzeichnis als Kapitel einfügen",
     "description": "Die Einstellung zum Einfügen des Inhaltsverzeichnisses."

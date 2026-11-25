@@ -27,7 +27,12 @@ import type { EpubFile } from "./epub/document";
 import { SVG_MEDIA_TYPE } from "./epub/document";
 import { buildEpubArchive } from "./epub/archiver";
 import { sanitizeHtml } from "./util/sanitize";
-import { parseSrcset, resolveUrl } from "./util/image-references";
+import {
+    parseSrcset,
+    pickSrcsetCandidate,
+    resolveUrl,
+    rewriteImageElements,
+} from "./util/image-references";
 import { buildFileName, DEFAULT_FILENAME_TEMPLATE } from "./util/file-name";
 import { diagnostic } from "./util/diagnostics";
 import type { Parser } from "./parsers/parser";
@@ -553,7 +558,9 @@ export class DownloadManager {
                         // reach the site every time the page is opened.
                         const referenced = imageSettings.skipImages
                             ? new Set<string>()
-                            : collectImageUrls(content, chapter.sourceUrl);
+                            : collectImageUrls(content, chapter.sourceUrl, {
+                                  preferHighestResolution: imageSettings.preferHighestResolution,
+                              });
                         const chapterImageMap = new Map<string, ImageData>();
                         for (const url of referenced) {
                             if (!images.has(url)) {
@@ -1051,14 +1058,25 @@ export class DownloadManager {
  *
  * Three attributes carry an image reference: an `<img>`'s `src`, an
  * `<img>`'s `srcset` (a comma-separated list of candidates with widths), and
- * a `<source>`'s `srcset` inside a `<picture>`. All three are collected,
+ * a `<source>`'s `srcset` inside a `<picture>`. All three are looked at,
  * because a chapter that uses `<picture>` would otherwise lose its images.
+ *
+ * Only *one* candidate of a `srcset` is collected. A `srcset` lists the same
+ * picture at several sizes, and a book that carries every size of every
+ * picture is several times larger than it needs to be — for nothing, because
+ * a reader only ever shows one of them.
  *
  * @param content The chapter's content element.
  * @param baseUrl The chapter's URL, used to resolve relative references.
+ * @param options Which candidate of a `srcset` to prefer.
  * @returns The absolute URLs of the images.
  */
-export function collectImageUrls(content: Element, baseUrl: string): Set<string> {
+export function collectImageUrls(
+    content: Element,
+    baseUrl: string,
+    options: CollectImageOptions = {},
+): Set<string> {
+    const preferHighest = options.preferHighestResolution === true;
     const urls = new Set<string>();
 
     const add = (value: string | null): void => {
@@ -1068,19 +1086,46 @@ export function collectImageUrls(content: Element, baseUrl: string): Set<string>
     };
 
     for (const image of content.querySelectorAll("img")) {
-        add(image.getAttribute("src"));
-        for (const candidate of parseSrcset(image.getAttribute("srcset"))) {
-            add(candidate.url);
-        }
-    }
+        const src = image.getAttribute("src");
+        const candidates = parseSrcset(image.getAttribute("srcset"));
 
-    for (const source of content.querySelectorAll("source")) {
-        for (const candidate of parseSrcset(source.getAttribute("srcset"))) {
-            add(candidate.url);
+        if (preferHighest && candidates.length > 0) {
+            const best = pickSrcsetCandidate(candidates, true);
+            if (best) add(best.url);
+            continue;
         }
+
+        if (src) {
+            add(src);
+            continue;
+        }
+
+        if (candidates.length > 0) {
+            const first = pickSrcsetCandidate(candidates, false);
+            if (first) add(first.url);
+            continue;
+        }
+
+        // An image with no reference of its own may still be described by the
+        // `<source>` elements of the `<picture>` around it.
+        const picture = image.closest("picture");
+        const source = picture?.querySelector("source[srcset]");
+        if (!source) continue;
+        const sourceCandidates = parseSrcset(source.getAttribute("srcset"));
+        const chosen = pickSrcsetCandidate(sourceCandidates, preferHighest);
+        if (chosen) add(chosen.url);
     }
 
     return urls;
+}
+
+/** Which candidate of a `srcset` the collector should keep. */
+export interface CollectImageOptions {
+    /**
+     * Whether the largest candidate of a `srcset` is preferred over the one
+     * the site chose as its default.
+     */
+    preferHighestResolution?: boolean;
 }
 
 /**
@@ -1184,55 +1229,9 @@ export function rewriteImageReferences(
     baseUrl: string,
 ): string {
     const document = new DOMParser().parseFromString(html, "text/html");
-    let changed = false;
-
-    const replace = (element: Element, attribute: string): void => {
-        const value = element.getAttribute(attribute);
-        if (!value) return;
-
-        if (attribute === "srcset") {
-            const candidates = parseSrcset(value);
-            if (candidates.length === 0) return;
-            let dirty = false;
-            const rewritten = candidates.map((candidate) => {
-                const absolute = resolveUrl(candidate.url, baseUrl);
-                const image = absolute ? images.get(absolute) : undefined;
-                if (!image) return candidate;
-                dirty = true;
-                const href = chapterImageHref(image.url, image.mediaType);
-                return candidate.descriptor
-                    ? { url: href, descriptor: candidate.descriptor }
-                    : { url: href, descriptor: "" };
-            });
-            if (!dirty) return;
-            element.setAttribute(
-                attribute,
-                rewritten
-                    .map((candidate) =>
-                        candidate.descriptor
-                            ? `${candidate.url} ${candidate.descriptor}`
-                            : candidate.url,
-                    )
-                    .join(", "),
-            );
-            changed = true;
-            return;
-        }
-
-        const absolute = resolveUrl(value, baseUrl);
-        const image = absolute ? images.get(absolute) : undefined;
-        if (!image) return;
-        element.setAttribute(attribute, chapterImageHref(image.url, image.mediaType));
-        changed = true;
-    };
-
-    for (const image of document.querySelectorAll("img")) {
-        replace(image, "src");
-        replace(image, "srcset");
-    }
-    for (const source of document.querySelectorAll("source")) {
-        replace(source, "srcset");
-    }
+    const changed = rewriteImageElements(document, images, baseUrl, (image) =>
+        chapterImageHref(image.url, image.mediaType),
+    );
 
     if (!changed) return html;
     return document.body.innerHTML;

@@ -521,6 +521,10 @@
     "message": "Supprimer les numéros de chapitre des titres",
     "description": "Le réglage de suppression des numéros de chapitre."
   },
+  "settingRemoveChapterNumbersHint": {
+    "message": "Supprime le numéro qu'un site place au début du titre d'un chapitre.",
+    "description": "Explique le réglage de suppression des numéros de chapitre."
+  },
   "settingIncludeTocPage": {
     "message": "Inclure le sommaire comme chapitre",
     "description": "Le réglage d'inclusion du sommaire."

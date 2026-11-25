@@ -89,6 +89,7 @@ export const GROUPS: GroupSpec[] = [
                 kind: "switch",
                 path: "story.removeChapterNumbers",
                 label: "settingRemoveChapterNumbers",
+                hint: "settingRemoveChapterNumbersHint",
             },
             {
                 kind: "switch",

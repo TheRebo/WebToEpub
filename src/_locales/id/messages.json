@@ -521,6 +521,10 @@
     "message": "Hapus nomor bab dari judul",
     "description": "Pengaturan penghapusan nomor bab."
   },
+  "settingRemoveChapterNumbersHint": {
+    "message": "Menghapus nomor yang situs tempatkan di awal judul bab.",
+    "description": "Penjelasan pengaturan penghapusan nomor bab."
+  },
   "settingIncludeTocPage": {
     "message": "Sertakan daftar isi sebagai bab",
     "description": "Pengaturan penyertaan daftar isi."

@@ -521,6 +521,10 @@
     "message": "タイトルから章番号を削除",
     "description": "章番号をタイトルから削除する設定。"
   },
+  "settingRemoveChapterNumbersHint": {
+    "message": "サイトがチャプネルの先頭に付けている番号を取り除きます。",
+    "description": "章番号をタイトルから削除する設定の説明。"
+  },
   "settingIncludeTocPage": {
     "message": "目次を1つの章として含める",
     "description": "目次を含める設定。"

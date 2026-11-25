@@ -210,6 +210,10 @@ export default {
         "Kapitelnummern aus Titeln entfernen",
         "Die Einstellung zum Entfernen von Kapitelnummern.",
     ],
+    settingRemoveChapterNumbersHint: [
+        "Entfernt die Nummer, die eine Seite an den Anfang eines Kapiteltitels setzt.",
+        "Erklärt die Einstellung zum Entfernen von Kapitelnummern.",
+    ],
     settingIncludeTocPage: [
         "Inhaltsverzeichnis als Kapitel einfügen",
         "Die Einstellung zum Einfügen des Inhaltsverzeichnisses.",

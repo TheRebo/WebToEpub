@@ -220,6 +220,10 @@ const SOURCE = {
         "Remove chapter numbers from titles",
         "The remove-chapter-numbers setting.",
     ],
+    settingRemoveChapterNumbersHint: [
+        "Removes the number a site puts at the start of a chapter's title.",
+        "Explains the remove-chapter-numbers setting.",
+    ],
     settingIncludeTocPage: [
         "Include the table of contents as a chapter",
         "The include-toc-page setting.",
