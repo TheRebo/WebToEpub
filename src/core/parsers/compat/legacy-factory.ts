@@ -171,8 +171,13 @@ export class LegacyParserFactory {
             const responseXML = (await HttpClient.wrapFetch(url)).responseXML;
             parser = this.fetch(url, responseXML);
         }
-        if (parser === null) return;
-        const legacyParser = parser as LegacyParser;
+
+        // When no parser can be found for the group, the parser that listed
+        // the chapters is the one that fetches them. Leaving the chapters
+        // without a parser would mean they were fetched by whatever parser
+        // happened to be running, which is rarely the right one.
+        const legacyParser = (parser as LegacyParser | null) ?? initialParser;
+
         if (typeof legacyParser.copyState === "function") {
             legacyParser.copyState(initialParser);
         }

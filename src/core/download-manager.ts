@@ -238,8 +238,25 @@ export class DownloadManager {
 
         // The parser is chosen from the story's page, so the same rules the
         // workbench used to build the chapter list apply to the content.
-        const storyDom = await this.#fetchStoryDom(job.sourceUrl, signal);
-        const parser = storyDom ? parserFor(job.sourceUrl, storyDom) : null;
+        // A failure here is fatal: without the story's page there is no
+        // parser, no cover and no metadata, and every chapter would become a
+        // placeholder. Failing loudly is better than saving a book that
+        // looks complete but is empty.
+        let storyDom: Document;
+        try {
+            storyDom = await this.#fetchStoryDom(job.sourceUrl, signal);
+        } catch (error) {
+            if (signal.aborted) {
+                job.phase = "cancelled";
+                this.#report(job);
+                return;
+            }
+            job.phase = "failed";
+            job.error = toUserFacingError(error);
+            this.#report(job);
+            return;
+        }
+        const parser = parserFor(job.sourceUrl, storyDom);
 
         // The parser owns the politeness budget. Some sites need seconds
         // between requests, and the baseline's parsers said so.
@@ -530,14 +547,15 @@ export class DownloadManager {
         return parser.fetchChapter(url);
     }
 
-    /** Fetch the story's page, tolerating a failure. */
-    async #fetchStoryDom(url: string, signal: AbortSignal): Promise<Document | null> {
-        try {
-            const result = await this.#dependencies.fetchHtml(url, { signal });
-            return result.dom;
-        } catch {
-            return null;
-        }
+    /**
+     * Fetch the story's page.
+     *
+     * A failure here is fatal and the error is re-thrown, so the job can
+     * report it instead of quietly building a book of placeholders.
+     */
+    async #fetchStoryDom(url: string, signal: AbortSignal): Promise<Document> {
+        const result = await this.#dependencies.fetchHtml(url, { signal });
+        return result.dom;
     }
 
     /** Zip the EPUB's files. */

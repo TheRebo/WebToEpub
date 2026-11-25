@@ -38,7 +38,7 @@
 "use strict";
 
 import { Parser } from "../parser";
-import type { ParserServices, TocProgress, WebPage } from "../parser";
+import type { ParserServices, ParserUtilities, TocProgress, WebPage } from "../parser";
 import { NULL_TOC_PROGRESS, listChapterUrls } from "../parser";
 import type { ChapterLink } from "../../util/dom";
 import { util } from "./legacy-util";
@@ -605,13 +605,13 @@ export class LegacyParser extends Parser {
         chapterUrlsUI?: TocProgress,
     ): Promise<LegacyChapter[]> {
         let chapters = chaptersFromDom(dom);
-        chapterUrlsUI?.showTocProgress(chapters as never);
+        chapterUrlsUI?.showTocProgress(chapters);
         let url = nextTocPageUrl(dom, chapters, chapters);
         while (url !== null) {
             await this.rateLimitDelay();
             const nextDom = (await HttpClient.wrapFetch(url)).responseXML;
             const partialList = chaptersFromDom(nextDom);
-            chapterUrlsUI?.showTocProgress(partialList as never);
+            chapterUrlsUI?.showTocProgress(partialList);
             chapters = chapters.concat(partialList);
             url = nextTocPageUrl(nextDom, chapters, partialList);
         }
@@ -629,14 +629,14 @@ export class LegacyParser extends Parser {
         wrapOptions?: unknown,
     ): Promise<LegacyChapter[]> {
         if (chapters.length > 0) {
-            chapterUrlsUI?.showTocProgress(chapters as never);
+            chapterUrlsUI?.showTocProgress(chapters);
         }
         for (const url of urlsOfTocPages) {
             await this.rateLimitDelay();
             const newDom = (await HttpClient.wrapFetch(url, wrapOptions as LegacyWrapOptions))
                 .responseXML;
             const partialList = extractPartialChapterList(newDom);
-            chapterUrlsUI?.showTocProgress(partialList as never);
+            chapterUrlsUI?.showTocProgress(partialList);
             chapters = chapters.concat(partialList);
         }
         return chapters;
@@ -825,8 +825,8 @@ export class LegacyParser extends Parser {
     makePlaceholderEpubItem(webPage: LegacyChapter, epubItemIndex: number): EpubItem[] {
         const temp = LegacyParser.makeEmptyDocForContent(webPage.sourceUrl);
         temp.content.textContent = UIText.Default.chapterPlaceholderMessage(
-            webPage.title,
             webPage.sourceUrl,
+            webPage.error?.message ?? "",
         );
         util.convertPreTagToPTags(temp.dom, temp.content);
         return [new ChapterEpubItem(webPage, temp.content, epubItemIndex)];
@@ -855,7 +855,7 @@ export class LegacyParser extends Parser {
             title: titleText,
             newArc: null,
         };
-        return new ChapterEpubItem(chapter, { childNodes: [title, div, infoDiv] } as never, 0);
+        return new ChapterEpubItem(chapter, { childNodes: [title, div, infoDiv] }, 0);
     }
 
     /** Fill the information page's container. */
@@ -888,7 +888,12 @@ export class LegacyParser extends Parser {
         for (const webPage of webPages.filter((c) => this.isWebPagePackable(c))) {
             const newItems =
                 webPage.error === null || webPage.error === undefined
-                    ? this.webPageToEpubItems(webPage, index)
+                    ? // The chapter's own parser builds the items, not this
+                      // one. A chapter can be fetched by a different parser
+                      // from the one that listed it — the chapter list can
+                      // link to a site with its own parser — and that parser
+                      // may split the chapter into several EPUB items.
+                      (webPage.parser ?? this).webPageToEpubItems(webPage, index)
                     : this.makePlaceholderEpubItem(webPage, index);
             epubItems.push(...newItems);
             index += newItems.length;
@@ -1077,6 +1082,10 @@ export class LegacyParser extends Parser {
             }
         } catch (error) {
             ErrorLog.log(error);
+            // The error is re-thrown after being logged, so a caller awaiting
+            // the fetch can tell that it failed. Swallowing it here made a
+            // failed run look like a successful one.
+            throw error;
         }
     }
 
@@ -1240,7 +1249,11 @@ function makeFallbackServices(): ParserServices {
     return {
         fetchHtml: async () => fail(),
         fetchJson: async () => fail(),
-        util: util as never,
+        // The legacy `util` is a superset of the parser utilities: it has the
+        // same functions, with a couple of extra optional parameters and the
+        // legacy chapter shape. Every call the parser interface makes is
+        // satisfied by it, so the cast is safe.
+        util: util as unknown as ParserUtilities,
         imageCollector: {
             images: new Map<string, unknown>(),
             addImage: async () => undefined,

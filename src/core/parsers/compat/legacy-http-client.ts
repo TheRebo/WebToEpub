@@ -521,9 +521,12 @@ class LegacyParserBridge implements CustomErrorHandler {
         this.#response = response;
         try {
             return parser.isCustomError(createLegacyResponse(response, bodyText)) === true;
-        } catch {
+        } catch (error) {
             // A parser that throws while inspecting a response must not break
-            // the download.
+            // the download. The error is logged, because a parser that throws
+            // here is a parser that cannot tell a challenge from a normal
+            // page, and that is worth knowing about.
+            console.warn("Kintsugi: a parser's isCustomError hook threw.", error);
             return false;
         }
     }
@@ -547,7 +550,10 @@ class LegacyParserBridge implements CustomErrorHandler {
                 this.#wrapOptions,
                 createLegacyResponse(response, bodyText),
             );
-        } catch {
+        } catch (error) {
+            // A parser that throws while deciding on an error must not break
+            // the download; the fetch client's own handling takes over.
+            console.warn("Kintsugi: a parser's setCustomErrorResponse hook threw.", error);
             result = undefined;
         }
 
@@ -580,7 +586,11 @@ class LegacyParserBridge implements CustomErrorHandler {
         if (!parser?.isNoContentToError403AndContentNull) return false;
         try {
             return parser.isNoContentToError403AndContentNull(response) === true;
-        } catch {
+        } catch (error) {
+            console.warn(
+                "Kintsugi: a parser's isNoContentToError403AndContentNull hook threw.",
+                error,
+            );
             return false;
         }
     }
