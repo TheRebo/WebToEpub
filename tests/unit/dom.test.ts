@@ -6,6 +6,7 @@ import {
     hyperLinkToChapter,
     hyperlinksToChapterList,
     moveChildElements,
+    normaliseUrlForCompare,
     removeChildElementsMatchingSelector,
     removeComments,
     removeEmptyDivElements,
@@ -16,6 +17,28 @@ import {
     removeUnwantedWordpressElements,
     resolveUrl,
 } from "../../src/core/util/dom";
+
+describe("normaliseUrlForCompare", () => {
+    it("drops the protocol", () => {
+        expect(normaliseUrlForCompare("https://example.com/a")).toBe("example.com/a");
+    });
+
+    it("drops the anchor", () => {
+        expect(normaliseUrlForCompare("https://example.com/a#part")).toBe("example.com/a");
+    });
+
+    it("drops the trailing slash", () => {
+        expect(normaliseUrlForCompare("https://example.com/a/")).toBe("example.com/a");
+    });
+
+    it("keeps the rest of the URL", () => {
+        expect(normaliseUrlForCompare("https://example.com/a/b?c=1")).toBe("example.com/a/b?c=1");
+    });
+
+    it("leaves a URL without a protocol alone", () => {
+        expect(normaliseUrlForCompare("/a/b")).toBe("/a/b");
+    });
+});
 
 /** Parse an HTML fragment into a document. */
 function parse(html: string): Document {

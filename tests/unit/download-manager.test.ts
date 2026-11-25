@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 import {
     DEFAULT_BEHAVIOUR,
     DownloadManager,
+    neighbourUrls,
     type DownloadBehaviour,
     type DownloadManagerDependencies,
     type JobProgress,
@@ -98,6 +99,38 @@ async function settle(manager: DownloadManager, jobId: string): Promise<JobProgr
     }
     throw new Error("The job never finished.");
 }
+
+describe("the chapter's neighbours", () => {
+    it("are the chapters before and after it", () => {
+        const chapters = [
+            { sourceUrl: "https://example.com/1", title: "One" },
+            { sourceUrl: "https://example.com/2", title: "Two" },
+            { sourceUrl: "https://example.com/3", title: "Three" },
+        ];
+        expect(neighbourUrls(chapters, 1)).toEqual(new Set(["example.com/1", "example.com/3"]));
+    });
+
+    it("are normalised, so a link to the same page matches", () => {
+        const chapters = [
+            { sourceUrl: "https://example.com/1/", title: "One" },
+            { sourceUrl: "https://example.com/2", title: "Two" },
+        ];
+        expect(neighbourUrls(chapters, 1)).toEqual(new Set(["example.com/1"]));
+    });
+
+    it("are empty for the first chapter", () => {
+        const chapters = [
+            { sourceUrl: "https://example.com/1", title: "One" },
+            { sourceUrl: "https://example.com/2", title: "Two" },
+        ];
+        expect(neighbourUrls(chapters, 0)).toEqual(new Set(["example.com/2"]));
+    });
+
+    it("are empty for the last chapter when it is alone", () => {
+        const chapters = [{ sourceUrl: "https://example.com/1", title: "One" }];
+        expect(neighbourUrls(chapters, 0)).toEqual(new Set());
+    });
+});
 
 describe("the download manager's behaviour settings", () => {
     it("refuses a book with more chapters than the user allows", async () => {

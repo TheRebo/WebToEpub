@@ -26,6 +26,28 @@ export interface ChapterLink {
     isIncludeable?: boolean;
 }
 
+/**
+ * Reduce a URL to the form two URLs are compared by.
+ *
+ * The protocol, the anchor and the trailing slash are all noise when the
+ * question is "are these the same page?". The result is what the migrated
+ * parsers compare against, so it has to match their idea of a URL.
+ *
+ * @param url The URL to normalise.
+ * @returns The normalised URL.
+ */
+export function normaliseUrlForCompare(url: string): string {
+    let result = url;
+
+    const anchor = result.indexOf("#");
+    if (anchor >= 0) result = result.slice(0, anchor);
+
+    if (result.endsWith("/")) result = result.slice(0, -1);
+
+    const separator = result.indexOf("://");
+    return separator < 0 ? result : result.slice(separator + 3);
+}
+
 /** Remove every element in a list from its parent. */
 export function removeElements(nodes: ArrayLike<Element> | null | undefined): void {
     if (!nodes) return;

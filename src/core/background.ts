@@ -133,6 +133,16 @@ class BackgroundWorker {
                 const settings = await this.#settings.get();
                 return settings.story.filenameTemplate;
             },
+            // The book settings are read at the same moment, for the same
+            // reason.
+            book: async () => {
+                const settings = await this.#settings.get();
+                return {
+                    version: settings.epub.version === 2 ? 2 : 3,
+                    addInfoPage: settings.epub.addInfoPage,
+                    defaultLanguage: settings.story.defaultLanguage,
+                };
+            },
             // The user's preferences are refreshed before the job's parser is
             // built, so the parser sees the settings the user has right now.
             prepare: async () => {

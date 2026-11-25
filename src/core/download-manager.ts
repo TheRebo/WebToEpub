@@ -34,6 +34,7 @@ import {
     rewriteImageElements,
 } from "./util/image-references";
 import { buildFileName, DEFAULT_FILENAME_TEMPLATE } from "./util/file-name";
+import { normaliseUrlForCompare } from "./util/dom";
 import { diagnostic } from "./util/diagnostics";
 import type { Parser } from "./parsers/parser";
 import { toUserFacingError, type UserFacingError } from "./util/errors";
@@ -163,7 +164,127 @@ export const DEFAULT_BEHAVIOUR: DownloadBehaviour = {
     delayPerChapter: 0,
 };
 
-/** The image settings the download pipeline honours. */
+/**
+ * The metadata the packer needs, plus the settings that shape it.
+ */
+export interface BookMetadata {
+    /** The title. */
+    title: string;
+    /** The author. */
+    author?: string;
+    /** The language. */
+    language?: string;
+    /** The publisher. */
+    publisher?: string;
+    /** The description. */
+    description?: string;
+    /** The subjects. */
+    subjects?: string[];
+    /** The publication date. */
+    date?: string;
+    /** The cover image. */
+    cover?: ImageData;
+    /** The EPUB version. */
+    version: 2 | 3;
+    /** Whether the book carries an information page. */
+    includeInfoPage: boolean;
+}
+
+/**
+ * Build the EPUB's metadata from the story's page.
+ *
+ * The parser knows the site, so it knows the author, the language and where
+ * the cover is. The baseline wrote all of this into the EPUB; the rewrite
+ * keeps the same fields but fills them in from the rewrite's own extraction
+ * methods.
+ *
+ * The language is the one thing the parser does not have the last word on: a
+ * site that does not declare a language leaves the book without one, and a
+ * reader that has to guess reads it badly. The user's default language is
+ * used instead.
+ *
+ * @param title The book's title.
+ * @param sourceUrl The story's URL, used to resolve the cover's URL.
+ * @param storyDom The story's page.
+ * @param parser The parser for the story.
+ * @param images The images that were downloaded, keyed by their URL.
+ * @param book The book settings.
+ * @returns The metadata.
+ */
+export function buildBookMetadata(
+    title: string,
+    sourceUrl: string,
+    storyDom: Document | null,
+    parser: Parser | null,
+    images: Map<string, ImageData>,
+    book: DownloadBook,
+): BookMetadata {
+    const metadata: BookMetadata = {
+        title: title || "Untitled",
+        version: book.version,
+        includeInfoPage: book.addInfoPage,
+        language: book.defaultLanguage,
+    };
+
+    if (!parser || !storyDom) return metadata;
+
+    const author = parser.extractAuthor(storyDom);
+    if (author) metadata.author = author;
+
+    const language = parser.extractLanguage(storyDom);
+    if (language) metadata.language = language;
+
+    const publisher = parser.extractPublisher(storyDom);
+    if (publisher) metadata.publisher = publisher;
+
+    const description = parser.extractDescription(storyDom);
+    if (description) metadata.description = description;
+
+    const subject = parser.extractSubject(storyDom);
+    if (subject) metadata.subjects = [subject];
+
+    const date = parser.extractDatePublished(storyDom);
+    if (date) metadata.date = date;
+
+    // The cover is one of the images the chapters referenced, if the parser
+    // named one that was downloaded.
+    const coverUrl = parser.findCoverImageUrl(storyDom);
+    if (coverUrl) {
+        const absolute = resolveUrl(coverUrl, sourceUrl);
+        const cover = absolute ? images.get(absolute) : undefined;
+        if (cover) metadata.cover = cover;
+    }
+
+    return metadata;
+}
+
+/**
+ * The URLs of a chapter's neighbours.
+ *
+ * A chapter page usually carries a link to the chapter before it and to the
+ * chapter after it. Those links are noise in a book, and the parser is told
+ * which URLs they point at so that it can remove them.
+ *
+ * The comparison is done on the normalised URL, so that a link to
+ * `https://example.com/chapter-2` matches a chapter list that says
+ * `https://example.com/chapter-2/`.
+ *
+ * @param chapters The chapters of the book, in order.
+ * @param index The chapter's own index.
+ * @returns The neighbours' URLs, normalised.
+ */
+export function neighbourUrls(chapters: DownloadChapter[], index: number): Set<string> {
+    const neighbours = new Set<string>();
+    const previous = chapters[index - 1];
+    const next = chapters[index + 1];
+    if (previous) neighbours.add(normaliseUrlForCompare(previous.sourceUrl));
+    if (next) neighbours.add(normaliseUrlForCompare(next.sourceUrl));
+    return neighbours;
+}
+
+/**
+ * The image settings the download pipeline honours.
+ */
 export interface DownloadImages {
     /** Whether the images are left out of the book entirely. */
     skipImages: boolean;
@@ -186,6 +307,34 @@ export const DEFAULT_IMAGES: DownloadImages = {
     removeDuplicates: true,
     preferHighestResolution: true,
     useSvg: true,
+};
+
+/**
+ * The book settings the download pipeline honours.
+ *
+ * These decide what the book itself looks like: which version of the format
+ * it is written in, whether it carries an information page, and what language
+ * it is in when the site does not say.
+ */
+export interface DownloadBook {
+    /** The EPUB version to write. */
+    version: 2 | 3;
+    /** Whether the book carries an information page. */
+    addInfoPage: boolean;
+    /** The language to use when the site does not declare one. */
+    defaultLanguage: string;
+}
+
+/**
+ * The book settings, when nothing else is known.
+ *
+ * These match the defaults in the settings store, so a download behaves the
+ * same way whether or not the settings have been read yet.
+ */
+export const DEFAULT_BOOK: DownloadBook = {
+    version: 3,
+    addInfoPage: false,
+    defaultLanguage: "en",
 };
 
 /** The dependencies the manager needs. */
@@ -227,6 +376,13 @@ export interface DownloadManagerDependencies {
      * settings.
      */
     filenameTemplate?(): string | Promise<string>;
+    /**
+     * The book settings to apply to a job.
+     *
+     * Read at the moment the job starts, for the same reason as the other
+     * settings.
+     */
+    book?(): DownloadBook | Promise<DownloadBook>;
     /**
      * Prepare for a job, before the parser is built.
      *
@@ -427,6 +583,8 @@ export class DownloadManager {
         const behaviour = await this.#readBehaviour();
         // The image settings are read at the same moment, for the same reason.
         const imageSettings = await this.#readImageSettings();
+        // So are the book settings.
+        const bookSettings = await this.#readBookSettings();
         // The worker refreshes the user's preferences here, so the parser
         // built below sees the settings the user has right now.
         await this.#dependencies.prepare?.();
@@ -526,10 +684,16 @@ export class DownloadManager {
                 } else {
                     // The parser decides what the content is and how it is
                     // cleaned up. The pipeline does not second-guess it.
+                    //
+                    // The chapter's neighbours are handed over with it, so
+                    // that a parser can remove the links to the previous and
+                    // the next chapter — the setting that asks for it would
+                    // otherwise have nothing to compare the links against.
                     const content = parser
                         ? parser.extractChapterContent(dom, {
                               sourceUrl: chapter.sourceUrl,
                               title: chapter.title,
+                              nextPrevChapters: neighbourUrls(job.chapters, chapterIndex),
                           })
                         : null;
 
@@ -721,7 +885,7 @@ export class DownloadManager {
         this.#report(job);
         diagnostic("Building the EPUB", job.id, packed.length, "chapters");
 
-        const metadata = this.#buildMetadata(job, storyDom, parser, downloaded);
+        const metadata = this.#buildMetadata(job, storyDom, parser, downloaded, bookSettings);
         const result = packEpub(packed, metadata);
 
         // --- Save ---
@@ -821,15 +985,11 @@ export class DownloadManager {
     /**
      * Build the EPUB's metadata from the story's page.
      *
-     * The parser knows the site, so it knows the author, the language and
-     * where the cover is. The baseline wrote all of this into the EPUB; a
-     * rewrite keeps the same fields but fills them in from the rewrite's own
-     * extraction methods.
-     *
      * @param job The job.
      * @param storyDom The story's page.
      * @param parser The parser for the story.
      * @param images The images that were downloaded, keyed by their URL.
+     * @param book The book settings.
      * @returns The metadata.
      */
     #buildMetadata(
@@ -837,62 +997,9 @@ export class DownloadManager {
         storyDom: Document | null,
         parser: Parser | null,
         images: Map<string, ImageData>,
-    ): {
-        title: string;
-        author?: string;
-        language?: string;
-        publisher?: string;
-        description?: string;
-        subjects?: string[];
-        date?: string;
-        cover?: ImageData;
-        version: 2 | 3;
-    } {
-        const metadata: {
-            title: string;
-            author?: string;
-            language?: string;
-            publisher?: string;
-            description?: string;
-            subjects?: string[];
-            date?: string;
-            cover?: ImageData;
-            version: 2 | 3;
-        } = {
-            title: job.title || "Untitled",
-            version: 3,
-        };
-
-        if (!parser || !storyDom) return metadata;
-
-        const author = parser.extractAuthor(storyDom);
-        if (author) metadata.author = author;
-
-        const language = parser.extractLanguage(storyDom);
-        if (language) metadata.language = language;
-
-        const publisher = parser.extractPublisher(storyDom);
-        if (publisher) metadata.publisher = publisher;
-
-        const description = parser.extractDescription(storyDom);
-        if (description) metadata.description = description;
-
-        const subject = parser.extractSubject(storyDom);
-        if (subject) metadata.subjects = [subject];
-
-        const date = parser.extractDatePublished(storyDom);
-        if (date) metadata.date = date;
-
-        // The cover is one of the images the chapters referenced, if the
-        // parser named one that was downloaded.
-        const coverUrl = parser.findCoverImageUrl(storyDom);
-        if (coverUrl) {
-            const absolute = resolveUrl(coverUrl, job.sourceUrl);
-            const cover = absolute ? images.get(absolute) : undefined;
-            if (cover) metadata.cover = cover;
-        }
-
-        return metadata;
+        book: DownloadBook,
+    ): BookMetadata {
+        return buildBookMetadata(job.title, job.sourceUrl, storyDom, parser, images, book);
     }
 
     /**
@@ -990,6 +1097,27 @@ export class DownloadManager {
             };
         } catch {
             return { ...DEFAULT_IMAGES };
+        }
+    }
+
+    /**
+     * The book settings for a job.
+     *
+     * A store that cannot be read is not a reason to fail the download: the
+     * defaults are used instead.
+     */
+    async #readBookSettings(): Promise<DownloadBook> {
+        const read = this.#dependencies.book;
+        if (!read) return { ...DEFAULT_BOOK };
+        try {
+            const value = await read();
+            return {
+                version: value.version === 2 ? 2 : 3,
+                addInfoPage: value.addInfoPage,
+                defaultLanguage: value.defaultLanguage,
+            };
+        } catch {
+            return { ...DEFAULT_BOOK };
         }
     }
 
