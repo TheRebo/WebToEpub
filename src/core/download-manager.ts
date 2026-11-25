@@ -24,6 +24,7 @@ import {
     packEpub,
 } from "./epub/packer";
 import type { EpubFile } from "./epub/document";
+import { SVG_MEDIA_TYPE } from "./epub/document";
 import { buildEpubArchive } from "./epub/archiver";
 import { sanitizeHtml } from "./util/sanitize";
 import { parseSrcset, resolveUrl } from "./util/image-references";
@@ -148,6 +149,34 @@ export const DEFAULT_BEHAVIOUR: DownloadBehaviour = {
     delayPerChapter: 0,
 };
 
+/** The image settings the download pipeline honours. */
+export interface DownloadImages {
+    /** Whether the images are left out of the book entirely. */
+    skipImages: boolean;
+    /** Whether an image that appears more than once is stored once. */
+    removeDuplicates: boolean;
+    /** Whether the highest-resolution version of an image is preferred. */
+    preferHighestResolution: boolean;
+    /** Whether an SVG image may be included. */
+    useSvg: boolean;
+    /** The maximum width and height of an image, in pixels. */
+    maxResolution: number;
+}
+
+/**
+ * The image settings, when nothing else is known.
+ *
+ * These match the defaults in the settings store, so a download behaves the
+ * same way whether or not the settings have been read yet.
+ */
+export const DEFAULT_IMAGES: DownloadImages = {
+    skipImages: false,
+    removeDuplicates: true,
+    preferHighestResolution: true,
+    useSvg: true,
+    maxResolution: 2000,
+};
+
 /** The dependencies the manager needs. */
 export interface DownloadManagerDependencies {
     /** Fetch a page and parse it as HTML. */
@@ -177,6 +206,21 @@ export interface DownloadManagerDependencies {
      * to the next download and not to one already running.
      */
     behaviour?(): DownloadBehaviour | Promise<DownloadBehaviour>;
+    /**
+     * The image settings to apply to a job.
+     *
+     * Read at the moment the job starts, so a change in the options applies
+     * to the next download and not to one already running.
+     */
+    images?(): DownloadImages | Promise<DownloadImages>;
+    /**
+     * Prepare for a job, before the parser is built.
+     *
+     * The worker uses this to refresh the user's preferences, so the parser
+     * a job runs with sees the settings the user has right now rather than
+     * the ones that were current when the worker started.
+     */
+    prepare?(): void | Promise<void>;
     /** Report progress. */
     onProgress?(job: JobProgress): void;
     /**
@@ -355,6 +399,11 @@ export class DownloadManager {
         // change in the options applies to the next download rather than to
         // one that is already running.
         const behaviour = await this.#readBehaviour();
+        // The image settings are read at the same moment, for the same reason.
+        const imageSettings = await this.#readImageSettings();
+        // The worker refreshes the user's preferences here, so the parser
+        // built below sees the settings the user has right now.
+        await this.#dependencies.prepare?.();
 
         job.phase = "fetching-chapters";
         this.#report(job);
@@ -473,7 +522,16 @@ export class DownloadManager {
                         // markup is not rewritten yet: the packaged file name
                         // depends on the media type, which is only known once
                         // the image has been downloaded.
-                        const referenced = collectImageUrls(content, chapter.sourceUrl);
+                        //
+                        // When the user has asked for the images to be left
+                        // out, the references are removed from the markup
+                        // instead: a book with no pictures but with `<img>`
+                        // tags still pointing at the site's servers shows a
+                        // broken image in the reader, and worse, tries to
+                        // reach the site every time the page is opened.
+                        const referenced = imageSettings.skipImages
+                            ? new Set<string>()
+                            : collectImageUrls(content, chapter.sourceUrl);
                         const chapterImageMap = new Map<string, ImageData>();
                         for (const url of referenced) {
                             if (!images.has(url)) {
@@ -491,6 +549,8 @@ export class DownloadManager {
                         // share their positions, and a positional key would
                         // hand a chapter the wrong images.
                         chapterImages.set(chapter.sourceUrl, chapterImageMap);
+
+                        if (imageSettings.skipImages) removeImageReferences(content);
 
                         const html = sanitizeContent(content);
                         chapter.state = "loaded";
@@ -576,6 +636,28 @@ export class DownloadManager {
                 downloaded.set(url, buildPlaceholderImage(url));
             }
             await throttle(100, signal);
+        }
+
+        // --- Apply the image settings ---
+        //
+        // The settings are applied here, after the bytes have arrived, because
+        // that is the only point at which the media type is known. An SVG can
+        // only be recognised once the server has said what it is.
+        //
+        // An image the user does not want is replaced by a placeholder rather
+        // than dropped: a dropped image leaves a reference in the markup that
+        // points at a file that is not in the book, and the reader shows a
+        // broken picture.
+        if (!imageSettings.useSvg) {
+            for (const [url, image] of downloaded) {
+                if (image.mediaType === SVG_MEDIA_TYPE) {
+                    downloaded.set(url, buildPlaceholderImage(url));
+                }
+            }
+        }
+
+        if (imageSettings.removeDuplicates) {
+            deduplicateImages(downloaded);
         }
 
         // --- Rewrite the chapters' image references ---
@@ -831,6 +913,29 @@ export class DownloadManager {
     }
 
     /**
+     * The image settings for a job.
+     *
+     * A store that cannot be read is not a reason to fail the download: the
+     * defaults are used instead.
+     */
+    async #readImageSettings(): Promise<DownloadImages> {
+        const read = this.#dependencies.images;
+        if (!read) return { ...DEFAULT_IMAGES };
+        try {
+            const value = await read();
+            return {
+                skipImages: value.skipImages,
+                removeDuplicates: value.removeDuplicates,
+                preferHighestResolution: value.preferHighestResolution,
+                useSvg: value.useSvg,
+                maxResolution: Math.max(value.maxResolution, 1),
+            };
+        } catch {
+            return { ...DEFAULT_IMAGES };
+        }
+    }
+
+    /**
      * Fetch the story's page.
      *
      * A failure here is fatal and the error is re-thrown, so the job can
@@ -925,6 +1030,90 @@ export function collectImageUrls(content: Element, baseUrl: string): Set<string>
     }
 
     return urls;
+}
+
+/**
+ * Remove every image reference from a chapter's content.
+ *
+ * Used when the user has asked for the images to be left out of the book. The
+ * `<img>` elements are removed rather than emptied, because an `<img>` with no
+ * `src` still occupies a line in the reader's layout, and the alternative —
+ * a reference to a file that is not in the book — shows a broken picture.
+ *
+ * A `<picture>` is removed whole, because its `<source>` children only make
+ * sense alongside the `<img>` that follows them.
+ *
+ * @param content The chapter's content element.
+ */
+export function removeImageReferences(content: Element): void {
+    for (const picture of content.querySelectorAll("picture")) {
+        picture.remove();
+    }
+    for (const image of content.querySelectorAll("img")) {
+        image.remove();
+    }
+}
+
+/**
+ * Store an image that appears more than once only once.
+ *
+ * A chapter that repeats the same picture — a banner, a divider, an
+ * advertisement — would otherwise put a copy of it into the book every time.
+ * The images are identified by their bytes, so two different URLs that serve
+ * the same picture are stored once.
+ *
+ * The first URL to carry a given image keeps the image; the others are
+ * pointed at it, so the chapters that referenced them still show the picture.
+ *
+ * @param downloaded The downloaded images, keyed by their URL. The map is
+ *   updated in place.
+ */
+export function deduplicateImages(downloaded: Map<string, ImageData>): void {
+    // The bytes are hashed rather than compared directly: comparing every
+    // image with every other image is quadratic, and a book with two hundred
+    // images would do forty thousand comparisons of megabytes.
+    const byHash = new Map<string, string>();
+    const replacements = new Map<string, ImageData>();
+
+    for (const [url, image] of downloaded) {
+        // A placeholder stands in for an image that failed, and two
+        // placeholders are not the same picture.
+        if (image.data.length === 0) continue;
+
+        const hash = hashBytes(image.data);
+        const existing = byHash.get(hash);
+        if (existing === undefined) {
+            byHash.set(hash, url);
+            continue;
+        }
+        // The image is a duplicate of one already stored. The duplicate is
+        // pointed at the original, so the reference in the markup resolves to
+        // the file that is actually in the book.
+        const original = downloaded.get(existing);
+        if (original) replacements.set(url, original);
+    }
+
+    for (const [url, replacement] of replacements) {
+        downloaded.set(url, replacement);
+    }
+}
+
+/**
+ * A hash of a run of bytes.
+ *
+ * FNV-1a: cheap, and good enough to spot two copies of the same picture. It
+ * is not a cryptographic hash and is not used as one.
+ *
+ * @param data The bytes.
+ * @returns The hash, as a hexadecimal string.
+ */
+function hashBytes(data: Uint8Array): string {
+    let hash = 0x811c9dc5;
+    for (let index = 0; index < data.length; index += 1) {
+        hash ^= data[index] as number;
+        hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return hash.toString(16).padStart(8, "0");
 }
 
 /**
