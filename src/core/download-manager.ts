@@ -26,6 +26,7 @@ import {
 import type { EpubFile } from "./epub/document";
 import { buildEpubArchive } from "./epub/archiver";
 import { sanitizeHtml } from "./util/sanitize";
+import { parseSrcset, resolveUrl } from "./util/image-references";
 import type { Parser } from "./parsers/parser";
 import { toUserFacingError, type UserFacingError } from "./util/errors";
 
@@ -731,21 +732,6 @@ export class DownloadManager {
 }
 
 /**
- * Resolve a possibly-relative URL against a base.
- */
-export function resolveUrl(src: string, base: string): string | null {
-    try {
-        const resolved = new URL(src, base);
-        // Only HTTP and HTTPS are ever fetched. A `javascript:` or `data:` URL
-        // in an image's `src` is a script injection attempt.
-        if (resolved.protocol !== "http:" && resolved.protocol !== "https:") return null;
-        return resolved.href;
-    } catch {
-        return null;
-    }
-}
-
-/**
  * Collect the images a chapter's content references.
  *
  * Three attributes carry an image reference: an `<img>`'s `src`, an
@@ -780,48 +766,6 @@ export function collectImageUrls(content: Element, baseUrl: string): Set<string>
     }
 
     return urls;
-}
-
-/**
- * One candidate from a `srcset` attribute.
- */
-interface SrcsetCandidate {
-    /** The candidate's URL. */
-    url: string;
-    /** The candidate's descriptor, e.g. `2x` or `640w`. */
-    descriptor: string;
-}
-
-/**
- * Parse a `srcset` attribute into its candidates.
- *
- * The format is a comma-separated list of `url descriptor` pairs. The
- * descriptor is optional, and a URL may itself contain a comma, so the
- * parsing follows the HTML specification's rule: split on whitespace first,
- * then treat the first token as the URL only when it is not itself a
- * descriptor.
- *
- * @param srcset The attribute's value.
- * @returns The candidates, in the order they appear.
- */
-export function parseSrcset(srcset: string | null): SrcsetCandidate[] {
-    if (!srcset) return [];
-    const candidates: SrcsetCandidate[] = [];
-
-    for (const part of srcset.split(",")) {
-        const trimmed = part.trim();
-        if (!trimmed) continue;
-        const space = trimmed.indexOf(" ");
-        if (space === -1) {
-            candidates.push({ url: trimmed, descriptor: "" });
-            continue;
-        }
-        candidates.push({
-            url: trimmed.slice(0, space),
-            descriptor: trimmed.slice(space + 1).trim(),
-        });
-    }
-    return candidates;
 }
 
 /**

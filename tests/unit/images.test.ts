@@ -21,11 +21,8 @@ import {
     type ChapterToPack,
     type ImageData,
 } from "../../src/core/epub/packer";
-import {
-    collectImageUrls,
-    parseSrcset,
-    rewriteImageReferences,
-} from "../../src/core/download-manager";
+import { collectImageUrls, rewriteImageReferences } from "../../src/core/download-manager";
+import { parseSrcset } from "../../src/core/util/image-references";
 import { OPF_PATH } from "../../src/core/epub/document";
 
 /** An image with some bytes in it. */

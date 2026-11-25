@@ -21,6 +21,7 @@ import {
 } from "./document";
 import { buildXhtml, collectFiles, makeItemId } from "./writer";
 import { serializeAsXml } from "./xhtml";
+import { isPackagedReference, parseSrcset, resolveUrl } from "../util/image-references";
 
 /**
  * Rewrite a chapter's image references to the packaged copies.
@@ -52,9 +53,38 @@ function rewriteImageHrefs(html: string, images: Map<string, ImageData>, baseUrl
         if (!value) return;
 
         // A reference that already points at a packaged image is left alone.
-        if (value.startsWith("../images/") || value.startsWith("images/")) return;
+        if (isPackagedReference(value)) return;
 
-        const absolute = resolveAgainst(value, baseUrl);
+        if (attribute === "srcset") {
+            const candidates = parseSrcset(value);
+            if (candidates.length === 0) return;
+            let dirty = false;
+            const rewritten = candidates.map((candidate) => {
+                const absolute = resolveUrl(candidate.url, baseUrl);
+                const image = absolute ? images.get(absolute) : undefined;
+                if (!image) return candidate;
+                dirty = true;
+                return {
+                    url: chapterImageHref(image.url, image.mediaType),
+                    descriptor: candidate.descriptor,
+                };
+            });
+            if (!dirty) return;
+            element.setAttribute(
+                attribute,
+                rewritten
+                    .map((candidate) =>
+                        candidate.descriptor
+                            ? `${candidate.url} ${candidate.descriptor}`
+                            : candidate.url,
+                    )
+                    .join(", "),
+            );
+            changed = true;
+            return;
+        }
+
+        const absolute = resolveUrl(value, baseUrl);
         if (!absolute) return;
         const image = images.get(absolute);
         if (!image) return;
@@ -65,6 +95,10 @@ function rewriteImageHrefs(html: string, images: Map<string, ImageData>, baseUrl
 
     for (const image of document.querySelectorAll("img")) {
         replace(image, "src");
+        replace(image, "srcset");
+    }
+    for (const source of document.querySelectorAll("source")) {
+        replace(source, "srcset");
     }
 
     if (!changed) return html;
@@ -72,20 +106,7 @@ function rewriteImageHrefs(html: string, images: Map<string, ImageData>, baseUrl
 }
 
 /**
- * Resolve a possibly relative URL against a base.
- *
- * @param value The URL to resolve.
- * @param baseUrl The URL to resolve it against.
- * @returns The absolute URL, or `undefined` when it cannot be resolved.
- */
-function resolveAgainst(value: string, baseUrl: string): string | undefined {
-    try {
-        return new URL(value, baseUrl).href;
-    } catch {
-        return undefined;
-    }
-}
-
+ * Turn a chapter's HTML into XHTML.
 /** A chapter, ready to be packed. */
 export interface ChapterToPack {
     /** The chapter's URL. */

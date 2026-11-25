@@ -116,4 +116,41 @@ describe("a packed chapter", () => {
         const body = chapterBody("<p>The first chapter.</p>");
         expect(body).toContain("The first chapter.");
     });
+
+    it("rewrites an image's srcset to the packaged copy", () => {
+        const imageUrl = "https://example.com/a.png";
+        const packed = packEpub(
+            [
+                {
+                    sourceUrl: "https://example.com/one",
+                    title: "One",
+                    contentHtml: `<img srcset="${imageUrl} 2x" alt="x">`,
+                    images: new Map([
+                        [
+                            imageUrl,
+                            {
+                                data: new Uint8Array([1, 2, 3]),
+                                mediaType: "image/png",
+                                url: imageUrl,
+                            },
+                        ],
+                    ]),
+                },
+            ],
+            { title: "A Story" },
+        );
+        const file = packed.files.find((entry) => entry.path.endsWith("chapter-0001.xhtml"));
+        const body = typeof file?.content === "string" ? file.content : "";
+
+        expect(body).not.toContain("https://example.com/a.png");
+        expect(body).toContain("../images/");
+        expect(body).toContain("2x");
+    });
+
+    it("leaves an image that was not downloaded alone", () => {
+        const body = chapterBody('<img src="https://example.com/other.png" alt="x">');
+        // The image is not in the book, so there is nothing to point at. The
+        // reference is left as it was rather than pointing at nothing.
+        expect(body).toContain("https://example.com/other.png");
+    });
 });
