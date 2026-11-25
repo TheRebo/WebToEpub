@@ -444,7 +444,12 @@ export class OptionsController {
         const settings = this.#settings;
         if (!settings) return;
 
-        const [group, key] = path.split(".");
+        // A settings path is exactly `group.key`. Splitting it and taking the
+        // first two segments would silently write `a.b.c` to `a.b`, which is a
+        // setting nobody asked for. Reject the path instead.
+        const segments = path.split(".");
+        if (segments.length !== 2) return;
+        const [group, key] = segments;
         if (!group || !key) return;
 
         const groupValue = (settings as unknown as Record<string, Record<string, unknown>>)[group];

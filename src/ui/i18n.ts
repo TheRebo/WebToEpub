@@ -75,12 +75,18 @@ export const MESSAGES = {
     // Popup
     popupOpenWorkbench: "popupOpenWorkbench",
     popupAddToLibrary: "popupAddToLibrary",
+    popupLibraryShort: "popupLibraryShort",
+    popupWorkbenchShort: "popupWorkbenchShort",
     popupSettings: "popupSettings",
     popupNoStory: "popupNoStory",
     popupUnsupported: "popupUnsupported",
     popupSaved: "popupSaved",
     popupTryAgain: "popupTryAgain",
     popupUnsupportedHost: "popupUnsupportedHost",
+
+    // Common
+    commonClose: "commonClose",
+    commonDismiss: "commonDismiss",
 
     // Options
     optionsAppearance: "optionsAppearance",
@@ -276,13 +282,15 @@ export function uiLanguage(): string {
  * expensive cross-process call and the workbench asks for the same dozen
  * strings on every render.
  *
- * @param key The message name.
+ * @param key The message name. It must be one the catalogue lists: a typo
+ *   would otherwise show the user the raw key at runtime, which is the one
+ *   failure mode this module exists to prevent.
  * @param substitutions The substitutions, if any.
  * @returns The translated string, or the key itself when there is no
- * translation. Returning the key is better than an empty string: a missing
- * translation should be visible, not invisible.
+ *   translation. Returning the key is better than an empty string: a missing
+ *   translation should be visible, not invisible.
  */
-export function t(key: MessageName | string, substitutions?: Substitutions): string {
+export function t(key: MessageName, substitutions?: Substitutions): string {
     const cacheKey = substitutions === undefined ? key : `${key}|${JSON.stringify(substitutions)}`;
     const cached = cache.get(cacheKey);
     if (cached !== undefined) return cached;
@@ -308,12 +316,31 @@ export function t(key: MessageName | string, substitutions?: Substitutions): str
 }
 
 /**
+ * Translate a message whose name is only known at runtime.
+ *
+ * Most of the interface asks for a message by a literal name, which
+ * {@link t} type-checks against the catalogue. A few places — a label stored
+ * in a settings table, an error code mapped to a message — only learn the name
+ * at runtime, and there the compiler cannot help. Those call sites use this,
+ * so that "the key is not in the catalogue" stays a deliberate, visible choice
+ * rather than an accident.
+ *
+ * @param key The message name.
+ * @param substitutions The substitutions, if any.
+ * @returns The translated string, or the key itself when there is no
+ *   translation.
+ */
+export function tDynamic(key: string, substitutions?: Substitutions): string {
+    return t(key as MessageName, substitutions);
+}
+
+/**
  * Translate a message with a count.
  *
  * The message must have a `one` and a `many` form, which is what
  * `browser.i18n.getMessage` expects for a counted string.
  */
-export function tCount(key: MessageName | string, count: number, substitutions?: string[]): string {
+export function tCount(key: MessageName, count: number, substitutions?: string[]): string {
     const cacheKey = `${key}|count:${count}|${JSON.stringify(substitutions ?? [])}`;
     const cached = cache.get(cacheKey);
     if (cached !== undefined) return cached;

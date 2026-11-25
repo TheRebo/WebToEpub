@@ -32,7 +32,7 @@ import { SettingsStore, type Settings } from "../../../core/storage/settings-sto
 import { caughtErrorMessage, errorMessage } from "../../error-messages";
 import { pollUntilDone } from "../../poll";
 import { themeController } from "../../styles/theme-controller";
-import { t } from "../../i18n";
+import { t, tDynamic } from "../../i18n";
 import { installI18n } from "../../i18n-bootstrap";
 import { buildWorkbench, renderWorkbench, type WorkbenchElements } from "./view";
 import {
@@ -682,7 +682,7 @@ class WorkbenchController {
                     percent: progress.percent,
                     // The worker sends the message *key*, so the page translates
                     // it in its own locale.
-                    message: t(progress.message),
+                    message: tDynamic(progress.message),
                     succeeded: progress.phase === "complete",
                 });
 

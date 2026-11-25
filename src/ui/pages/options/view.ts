@@ -16,7 +16,7 @@
  * the focus.
  */
 import { createIcon } from "../../components/icons";
-import { t } from "../../i18n";
+import { t, tDynamic } from "../../i18n";
 
 /** The settings groups. */
 export type GroupId =
@@ -256,7 +256,7 @@ export function renderNav(elements: OptionsElements, groups: GroupSpec[]): void 
 
     const targets: Array<{ id: NavTarget; title: string; panel: string }> = groups.map((group) => ({
         id: group.id,
-        title: t(group.title),
+        title: tDynamic(group.title),
         panel: `group-${group.id}`,
     }));
 
@@ -380,7 +380,7 @@ export function renderGroups(
 
         const heading = document.createElement("h2");
         heading.className = "options-group-title";
-        heading.textContent = t(group.title);
+        heading.textContent = tDynamic(group.title);
         section.appendChild(heading);
 
         const body = document.createElement("div");
@@ -419,42 +419,42 @@ function buildControl(control: ControlSpec, value: unknown): HTMLElement {
     switch (control.kind) {
         case "switch": {
             const toggle = document.createElement("k-switch");
-            toggle.setAttribute("label", t(control.label));
+            toggle.setAttribute("label", tDynamic(control.label));
             toggle.dataset["path"] = control.path;
             if (value === true) toggle.setAttribute("checked", "");
             return toggle;
         }
         case "text": {
             const field = document.createElement("k-field");
-            field.setAttribute("label", t(control.label));
+            field.setAttribute("label", tDynamic(control.label));
             field.setAttribute("type", "text");
             field.setAttribute("value", String(value ?? ""));
             field.setAttribute("name", control.path);
             field.dataset["path"] = control.path;
             if (control.placeholder) field.setAttribute("placeholder", control.placeholder);
-            if (control.hint) field.setAttribute("hint", t(control.hint));
+            if (control.hint) field.setAttribute("hint", tDynamic(control.hint));
             return field;
         }
         case "number": {
             const field = document.createElement("k-field");
-            field.setAttribute("label", t(control.label));
+            field.setAttribute("label", tDynamic(control.label));
             field.setAttribute("type", "number");
             field.setAttribute("value", String(value ?? ""));
             field.setAttribute("name", control.path);
             field.dataset["path"] = control.path;
             field.setAttribute("min", String(control.min));
             field.setAttribute("max", String(control.max));
-            if (control.hint) field.setAttribute("hint", t(control.hint));
+            if (control.hint) field.setAttribute("hint", tDynamic(control.hint));
             return field;
         }
         case "select": {
             const field = document.createElement("k-field");
-            field.setAttribute("label", t(control.label));
+            field.setAttribute("label", tDynamic(control.label));
             field.setAttribute("type", "select");
             field.setAttribute("value", String(value ?? ""));
             field.setAttribute("name", control.path);
             field.dataset["path"] = control.path;
-            if (control.hint) field.setAttribute("hint", t(control.hint));
+            if (control.hint) field.setAttribute("hint", tDynamic(control.hint));
             for (const option of control.options) {
                 const element = document.createElement("option");
                 element.value = option.value;
@@ -470,8 +470,8 @@ function buildControl(control: ControlSpec, value: unknown): HTMLElement {
             // field renders no control of its own.
             const field = document.createElement("k-field");
             field.setAttribute("group", "");
-            field.setAttribute("label", t(control.label));
-            if (control.hint) field.setAttribute("hint", t(control.hint));
+            field.setAttribute("label", tDynamic(control.label));
+            if (control.hint) field.setAttribute("hint", tDynamic(control.hint));
             field.dataset["path"] = control.path;
 
             const choice = buildChoice(control, String(value ?? ""));
@@ -479,7 +479,7 @@ function buildControl(control: ControlSpec, value: unknown): HTMLElement {
             // resolved from the light DOM. The choice is named with an
             // `aria-label` instead, and the group's own legend names it
             // inside the shadow root.
-            choice.setAttribute("aria-label", t(control.label));
+            choice.setAttribute("aria-label", tDynamic(control.label));
 
             const wrapper = document.createElement("div");
             wrapper.className = "options-choice";
@@ -499,12 +499,12 @@ function buildChoice(control: ControlSpec, value: string): HTMLElement {
     group.dataset["path"] = control.path;
 
     if (control.kind === "theme") {
-        group.setAttribute("legend", t(control.label));
+        group.setAttribute("legend", tDynamic(control.label));
         group.addOption("light", t("optionsThemeLight"));
         group.addOption("dark", t("optionsThemeDark"));
         group.addOption("system", t("optionsThemeSystem"));
     } else if (control.kind === "accent") {
-        group.setAttribute("legend", t(control.label));
+        group.setAttribute("legend", tDynamic(control.label));
         // The swatches show the *other* accents, so the picker cannot be
         // rendered with `var(--accent-500)` for every row: the current
         // accent would make all four swatches look the same.
@@ -513,7 +513,7 @@ function buildChoice(control: ControlSpec, value: string): HTMLElement {
         group.addOption("verdigris", t("optionsAccentVerdigris"), "#359c8b");
         group.addOption("plum", t("optionsAccentPlum"), "#b0529c");
     } else {
-        group.setAttribute("legend", t(control.label));
+        group.setAttribute("legend", tDynamic(control.label));
         group.addOption("comfortable", t("optionsDensityComfortable"));
         group.addOption("compact", t("optionsDensityCompact"));
     }
@@ -550,7 +550,7 @@ export function updateGroups(
 
         // Only the selected group is shown, whatever the search says.
         const selected = group.id === active;
-        const groupMatches = needle ? t(group.title).toLowerCase().includes(needle) : false;
+        const groupMatches = needle ? tDynamic(group.title).toLowerCase().includes(needle) : false;
         let groupMatched = 0;
 
         for (const control of group.controls) {
@@ -588,7 +588,7 @@ export function firstMatchingGroup(groups: GroupSpec[], query: string): GroupId 
     if (!needle) return undefined;
 
     for (const group of groups) {
-        const groupMatches = t(group.title).toLowerCase().includes(needle);
+        const groupMatches = tDynamic(group.title).toLowerCase().includes(needle);
         if (groupMatches) return group.id;
         for (const control of group.controls) {
             if (matches(control, needle)) return group.id;
@@ -605,8 +605,8 @@ export function firstMatchingGroup(groups: GroupSpec[], query: string): GroupId 
  * works in the user's own language rather than only in English.
  */
 function matches(control: ControlSpec, needle: string): boolean {
-    if (t(control.label).toLowerCase().includes(needle)) return true;
-    if (control.hint && t(control.hint).toLowerCase().includes(needle)) return true;
+    if (tDynamic(control.label).toLowerCase().includes(needle)) return true;
+    if (control.hint && tDynamic(control.hint).toLowerCase().includes(needle)) return true;
     if (control.kind === "select") {
         return control.options.some((option) => option.label.toLowerCase().includes(needle));
     }

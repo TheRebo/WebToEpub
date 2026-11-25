@@ -9,7 +9,7 @@
  * Shadow DOM boundary means the page's styles cannot reach the UI, which
  * matters because the extension renders untrusted content.
  */
-import { t } from "../i18n";
+import { tDynamic } from "../i18n";
 
 /** The parts of a component's shadow DOM that can be styled from outside. */
 export type PartName = string;
@@ -260,6 +260,6 @@ const sharedSubscribers = new Set<(reduced: boolean) => void>();
  * @returns The translated string, or the fallback.
  */
 export function translate(key: string, fallback: string): string {
-    const message = t(key);
+    const message = tDynamic(key);
     return message && message !== key ? message : fallback;
 }

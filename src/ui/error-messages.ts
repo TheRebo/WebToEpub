@@ -11,7 +11,7 @@
  *
  * See ADR-0010.
  */
-import { t } from "./i18n";
+import { t, tDynamic } from "./i18n";
 import { UserFacingErrorError, type ErrorCode, type UserFacingError } from "../core/util/errors";
 
 /**
@@ -71,7 +71,7 @@ function errorSentence(message: string, code: ErrorCode, url: string | undefined
     if (key) {
         // The worker's message names the host, which is worth keeping, so it
         // is appended when it adds something the translation does not say.
-        const translated = t(key);
+        const translated = tDynamic(key);
         const host = hostOf(url);
         if (host && !translated.includes(host)) {
             return `${translated} (${host})`;

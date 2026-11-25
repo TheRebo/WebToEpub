@@ -494,19 +494,22 @@ export abstract class Parser {
         moreChapterTextUrl: (dom: Document) => string | null,
     ): Promise<Document> {
         const first = await this.services.fetchHtml(url, { signal: this.signal });
-        let dom = first.dom;
+        // The **first** page is the accumulator. Every later page's content is
+        // merged into it, because that is the document the caller will read.
+        // Returning the last page's document instead would throw away
+        // everything that was merged.
+        const dom = first.dom;
+        const target = this.findContent(dom);
         let count = 2;
         let nextUrl = moreChapterTextUrl(dom);
 
         while (nextUrl !== null && count < 1000) {
             const result = await this.services.fetchHtml(nextUrl, { signal: this.signal });
             const content = this.findContent(result.dom);
-            if (content) {
-                const target = this.findContent(dom);
-                if (target) this.services.util.moveChildElements(content, target);
+            if (content && target) {
+                this.services.util.moveChildElements(content, target);
             }
-            dom = result.dom;
-            nextUrl = moreChapterTextUrl(dom);
+            nextUrl = moreChapterTextUrl(result.dom);
             count += 1;
         }
         return dom;

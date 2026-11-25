@@ -16,7 +16,7 @@
  * the option's name.
  */
 import { createIcon } from "../../components/icons";
-import { t } from "../../i18n";
+import { t, tDynamic } from "../../i18n";
 import type { AppearanceSettings } from "../../../core/storage/settings-store";
 
 /** The onboarding steps. */
@@ -462,7 +462,7 @@ function buildChoice(spec: ChoiceSpec): HTMLElement {
 
     const legend = document.createElement("legend");
     legend.className = "onboarding-choice-legend";
-    legend.textContent = t(spec.label);
+    legend.textContent = tDynamic(spec.label);
     fieldset.appendChild(legend);
 
     const options = document.createElement("div");
@@ -496,7 +496,7 @@ function buildChoice(spec: ChoiceSpec): HTMLElement {
 
         const text = document.createElement("span");
         text.className = "onboarding-option-text";
-        text.textContent = t(key);
+        text.textContent = tDynamic(key);
         label.appendChild(text);
 
         options.appendChild(input);
@@ -526,13 +526,13 @@ function buildMotion(spec: {
     wrapper.className = "onboarding-choice onboarding-choice--motion";
 
     const toggle = document.createElement("k-switch");
-    toggle.setAttribute("label", t(spec.label));
+    toggle.setAttribute("label", tDynamic(spec.label));
     toggle.dataset["path"] = `appearance.${spec.id}`;
     if (spec.value) toggle.setAttribute("checked", "");
 
     const hint = document.createElement("p");
     hint.className = "onboarding-choice-hint";
-    hint.textContent = t(spec.hint);
+    hint.textContent = tDynamic(spec.hint);
 
     wrapper.appendChild(toggle);
     wrapper.appendChild(hint);

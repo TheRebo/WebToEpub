@@ -27,7 +27,7 @@ import {
 } from "../../../core/browser-api";
 import { SettingsStore } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
-import { t } from "../../i18n";
+import { t, tDynamic } from "../../i18n";
 import { caughtErrorMessage } from "../../error-messages";
 import { pollUntilDone } from "../../poll";
 import { installI18n } from "../../i18n-bootstrap";
@@ -181,7 +181,7 @@ class PopupController {
                     state: "running",
                     // The worker sends the message *key*, so the popup
                     // translates it in its own locale.
-                    phase: t(progress.message),
+                    phase: tDynamic(progress.message),
                     done: progress.chaptersDone,
                     total: progress.chaptersTotal,
                     percent: progress.percent,

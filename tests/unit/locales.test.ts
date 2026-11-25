@@ -84,6 +84,19 @@ describe("the message catalogue", () => {
         }
     });
 
+    it("lists every shipped message in the catalogue", () => {
+        // The catalogue is the type-level source of truth: `t()` accepts a
+        // `MessageName`, so a key that is missing from `MESSAGES` cannot be
+        // used without the compiler complaining. This check makes sure a
+        // message that ships in the locale files is also *reachable* through
+        // the typed API — otherwise the key is only usable through the
+        // untyped `translate()` helper, and a typo in a `t()` call would slip
+        // through the type checker.
+        const catalogue = new Set(Object.keys(MESSAGES));
+        const unlisted = Object.keys(english).filter((key) => !catalogue.has(key));
+        expect(unlisted, "these messages are not in the catalogue").toEqual([]);
+    });
+
     it("declares every placeholder a message uses", () => {
         for (const locale of LOCALES) {
             const catalogue = readCatalogue(locale);

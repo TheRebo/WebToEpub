@@ -32,6 +32,12 @@ export class ThemeController {
 
     /** Start listening for the system theme. */
     start(): void {
+        // `start` is called by every page that owns the controller, and a page
+        // can be re-entered (the options page is opened in a new tab while the
+        // old one is still alive). Registering the listener twice would make
+        // every system theme change apply the theme twice.
+        if (this.#mediaQuery) return;
+
         this.#mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
         this.#onChange = () => this.#apply();
         this.#mediaQuery.addEventListener("change", this.#onChange);
@@ -42,6 +48,8 @@ export class ThemeController {
         if (this.#mediaQuery && this.#onChange) {
             this.#mediaQuery.removeEventListener("change", this.#onChange);
         }
+        this.#mediaQuery = undefined;
+        this.#onChange = undefined;
     }
 
     /** The user's chosen theme. */
