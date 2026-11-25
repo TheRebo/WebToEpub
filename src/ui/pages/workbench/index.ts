@@ -24,11 +24,12 @@ import "../../components/k-skeleton";
 import "../../components/k-switch";
 import "../../components/k-toast";
 
-import { sendRequest } from "../../../core/message/bus";
+import { sendRequest, type DownloadProgress } from "../../../core/message/bus";
 import { isParsableSelector } from "../../../core/util/css";
 import { localStorageAdapter, activeTab } from "../../../core/browser-api";
 import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
 import { caughtErrorMessage, errorMessage } from "../../error-messages";
+import { pollUntilDone } from "../../poll";
 import { themeController } from "../../styles/theme-controller";
 import { t } from "../../i18n";
 import { installI18n } from "../../i18n-bootstrap";
@@ -72,6 +73,8 @@ class WorkbenchController {
     #settingsValue: Settings | undefined;
     #jobId: string | undefined;
     #pollTimer: ReturnType<typeof setTimeout> | undefined;
+    /** Stops the poll for a running download. */
+    #stopPoll: (() => void) | undefined;
     #renderQueued = false;
 
     constructor(root: HTMLElement) {
@@ -98,6 +101,9 @@ class WorkbenchController {
         }
 
         await this.#analyse(url);
+        // An analysis that failed has nothing to offer, and the chapter list
+        // would only add a second error on top of the first.
+        if (this.#store.state.error) return;
         await this.#loadChapters(url);
     }
 
@@ -594,12 +600,20 @@ class WorkbenchController {
     /** Save the metadata. */
     async #save(): Promise<void> {
         const state = this.#store.state;
+        // The settings are already held from the start of the page; reading
+        // them again would risk saving a value the user has changed
+        // elsewhere since.
+        const settings = this.#settingsValue ?? (await this.#settings.get());
         await this.#settings.update({
             story: {
-                ...(await this.#settings.get()).story,
+                ...settings.story,
                 defaultLanguage: state.story.language,
             },
         });
+        this.#settingsValue = {
+            ...settings,
+            story: { ...settings.story, defaultLanguage: state.story.language },
+        };
         this.#store.markDirty(false);
     }
 
@@ -623,50 +637,65 @@ class WorkbenchController {
                 },
             );
             this.#jobId = jobId;
-            this.#pollProgress();
+            this.#startPolling();
         } catch (error) {
             this.#store.setError(caughtErrorMessage(error));
         }
     }
 
     /** Poll the download's progress. */
-    async #pollProgress(): Promise<void> {
+    #startPolling(): void {
         if (!this.#jobId) return;
-        try {
-            const progress = await sendRequest(
-                { sendMessage: (message) => sendMessageToWorker(message) },
-                "download:progress",
-                { jobId: this.#jobId },
-            );
-            this.#store.setProgress({
-                phase: progress.phase,
-                done: progress.chaptersDone,
-                total: progress.chaptersTotal,
-                percent: progress.percent,
-                // The worker sends the message *key*, so the page translates
-                // it in its own locale.
-                message: t(progress.message),
-                succeeded: progress.phase === "complete",
-            });
+        this.#stopPolling();
+        this.#stopPoll = pollUntilDone<DownloadProgress>({
+            intervalMs: 500,
+            step: async () => {
+                const jobId = this.#jobId;
+                if (!jobId) return undefined;
+                const progress = await sendRequest(
+                    { sendMessage: (message) => sendMessageToWorker(message) },
+                    "download:progress",
+                    { jobId },
+                );
+                this.#store.setProgress({
+                    phase: progress.phase,
+                    done: progress.chaptersDone,
+                    total: progress.chaptersTotal,
+                    percent: progress.percent,
+                    // The worker sends the message *key*, so the page translates
+                    // it in its own locale.
+                    message: t(progress.message),
+                    succeeded: progress.phase === "complete",
+                });
 
-            if (
-                progress.phase === "complete" ||
-                progress.phase === "failed" ||
-                progress.phase === "cancelled"
-            ) {
+                if (
+                    progress.phase === "complete" ||
+                    progress.phase === "failed" ||
+                    progress.phase === "cancelled"
+                ) {
+                    this.#jobId = undefined;
+                    return undefined;
+                }
+                return progress;
+            },
+            onGiveUp: (error) => {
+                // The job is gone: the worker was restarted, or the job was
+                // cleaned up. Asking again would fail for ever.
                 this.#jobId = undefined;
-                return;
-            }
-        } catch {
-            // The worker may have been suspended. Keep polling; the job's
-            // state is durable.
-        }
-
-        this.#pollTimer = setTimeout(() => void this.#pollProgress(), 500);
+                this.#store.setError(caughtErrorMessage(error));
+            },
+        });
     }
 
     /** Stop polling, if the page is being torn down. */
     dispose(): void {
+        this.#stopPolling();
+    }
+
+    /** Stop the progress poll. */
+    #stopPolling(): void {
+        this.#stopPoll?.();
+        this.#stopPoll = undefined;
         if (this.#pollTimer) clearTimeout(this.#pollTimer);
         this.#pollTimer = undefined;
     }
@@ -676,10 +705,7 @@ class WorkbenchController {
         if (!this.#jobId) return;
         const jobId = this.#jobId;
         this.#jobId = undefined;
-        if (this.#pollTimer) {
-            clearTimeout(this.#pollTimer);
-            this.#pollTimer = undefined;
-        }
+        this.#stopPolling();
         try {
             await sendRequest(
                 { sendMessage: (message) => sendMessageToWorker(message) },

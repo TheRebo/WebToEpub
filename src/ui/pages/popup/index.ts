@@ -17,7 +17,7 @@ import "../../components/k-button";
 import "../../components/k-progress";
 import "../../components/k-toast";
 
-import { sendRequest } from "../../../core/message/bus";
+import { sendRequest, type DownloadProgress } from "../../../core/message/bus";
 import {
     activeTab,
     openTab,
@@ -29,6 +29,7 @@ import { SettingsStore } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
 import { t } from "../../i18n";
 import { caughtErrorMessage } from "../../error-messages";
+import { pollUntilDone } from "../../poll";
 import { installI18n } from "../../i18n-bootstrap";
 import { buildPopup, renderPopup, type PopupElements, type PopupViewState } from "./view";
 
@@ -49,6 +50,8 @@ class PopupController {
         percent: 0,
     };
     #pollTimer: ReturnType<typeof setTimeout> | undefined;
+    /** Stops the poll for a running download. */
+    #stopPoll: (() => void) | undefined;
     #jobId: string | undefined;
 
     constructor(root: HTMLElement) {
@@ -154,51 +157,63 @@ class PopupController {
                 total: running.chaptersTotal,
                 percent: running.percent,
             });
-            this.#poll();
+            this.#startPolling();
         } catch {
             // The worker may be asleep. The popup still works without this.
         }
     }
 
     /** Follow the running download. */
-    async #poll(): Promise<void> {
+    #startPolling(): void {
         if (!this.#jobId) return;
-        try {
-            const progress = await sendRequest(
-                { sendMessage: (message) => sendMessage(message) },
-                "download:progress",
-                { jobId: this.#jobId },
-            );
-            this.#set({
-                state: "running",
-                // The worker sends the message *key*, so the popup translates
-                // it in its own locale.
-                phase: t(progress.message),
-                done: progress.chaptersDone,
-                total: progress.chaptersTotal,
-                percent: progress.percent,
-            });
+        this.#stopPolling();
+        this.#stopPoll = pollUntilDone<DownloadProgress>({
+            intervalMs: 600,
+            step: async () => {
+                const jobId = this.#jobId;
+                if (!jobId) return undefined;
+                const progress = await sendRequest(
+                    { sendMessage: (message) => sendMessage(message) },
+                    "download:progress",
+                    { jobId },
+                );
+                this.#set({
+                    state: "running",
+                    // The worker sends the message *key*, so the popup
+                    // translates it in its own locale.
+                    phase: t(progress.message),
+                    done: progress.chaptersDone,
+                    total: progress.chaptersTotal,
+                    percent: progress.percent,
+                });
 
-            if (
-                progress.phase === "complete" ||
-                progress.phase === "failed" ||
-                progress.phase === "cancelled"
-            ) {
-                this.#jobId = undefined;
-                if (progress.phase === "complete") {
-                    this.#toast(t("popupSaved"), "success");
-                    this.#set({ state: "story" });
+                if (
+                    progress.phase === "complete" ||
+                    progress.phase === "failed" ||
+                    progress.phase === "cancelled"
+                ) {
+                    this.#jobId = undefined;
+                    if (progress.phase === "complete") {
+                        this.#toast(t("popupSaved"), "success");
+                        this.#set({ state: "story" });
+                    }
+                    return undefined;
                 }
-                return;
-            }
-        } catch {
-            // Keep polling: the job's state is durable.
-        }
-        this.#pollTimer = setTimeout(() => void this.#poll(), 600);
+                return progress;
+            },
+            onGiveUp: () => {
+                // The job is gone: the worker was restarted, or the job was
+                // cleaned up. Asking again would fail for ever.
+                this.#jobId = undefined;
+                this.#set({ state: "error", error: t("errorGeneric") });
+            },
+        });
     }
 
     /** Stop polling. */
     #stopPolling(): void {
+        this.#stopPoll?.();
+        this.#stopPoll = undefined;
         if (this.#pollTimer) clearTimeout(this.#pollTimer);
         this.#pollTimer = undefined;
     }
