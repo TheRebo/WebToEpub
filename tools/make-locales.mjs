@@ -379,6 +379,10 @@ const SOURCE = {
         "That page looks like a table of contents, not a chapter. Open a chapter and try again.",
         "Shown when the scanner recognises a table of contents.",
     ],
+
+    // --- Shared across the components ---
+    commonClose: ["Close", "The label of a button that closes a dialog."],
+    commonDismiss: ["Dismiss", "The label of a button that dismisses a notification."],
 };
 
 /**

@@ -74,7 +74,7 @@ const ICON_STATES = new Map<IconName, ListItemState>(
  * @param state The state to label.
  * @returns The label.
  */
-function stateLabel(state: ListItemState): string {
+export function stateLabel(state: ListItemState): string {
     switch (state) {
         case "queued":
             return translate("chapterStateQueued", "Queued");

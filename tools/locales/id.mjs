@@ -368,4 +368,6 @@ export default {
         "Halaman itu terlihat seperti daftar isi, bukan bab. Buka sebuah bab lalu coba lagi.",
         "Ditampilkan saat pemindai mengenali daftar isi.",
     ],
+    commonClose: ["Tutup", "Label tombol yang menutup dialog."],
+    commonDismiss: ["Tutup", "Label tombol yang menutup notifikasi."],
 };

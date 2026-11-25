@@ -800,5 +800,13 @@
   "siteSelectorTocDetected": {
     "message": "Halaman itu terlihat seperti daftar isi, bukan bab. Buka sebuah bab lalu coba lagi.",
     "description": "Ditampilkan saat pemindai mengenali daftar isi."
+  },
+  "commonClose": {
+    "message": "Tutup",
+    "description": "Label tombol yang menutup dialog."
+  },
+  "commonDismiss": {
+    "message": "Tutup",
+    "description": "Label tombol yang menutup notifikasi."
   }
 }

@@ -800,5 +800,13 @@
   "siteSelectorTocDetected": {
     "message": "このページの目次です。章を開いてからやり直してください。",
     "description": "スキャナーが目次と判定したとき。"
+  },
+  "commonClose": {
+    "message": "閉じる",
+    "description": "ダイアログを閉じるボタンのラベル。"
+  },
+  "commonDismiss": {
+    "message": "閉じる",
+    "description": "通知を閉じるボタンのラベル。"
   }
 }

@@ -9,6 +9,7 @@
  */
 import { t } from "../../i18n";
 import { createIcon, type IconName } from "../../components/icons";
+import { stateLabel } from "../../components/k-list";
 import type { KList } from "../../components/k-list";
 import type { KButton } from "../../components/k-button";
 import type { KSwitch } from "../../components/k-switch";
@@ -22,16 +23,6 @@ const STATE_ICONS: Record<ChapterState, IconName> = {
     loaded: "filled-circle",
     downloaded: "check-circle",
     failed: "alert-triangle",
-};
-
-/** The labels for each chapter state, for the accessible name. */
-const STATE_LABELS: Record<ChapterState, string> = {
-    idle: "not started",
-    queued: "queued",
-    fetching: "fetching",
-    loaded: "loaded",
-    downloaded: "already downloaded",
-    failed: "failed",
 };
 
 /** The workbench's elements. */
@@ -745,7 +736,7 @@ export function renderWorkbench(
                 selected: chapter.selected,
                 icon: STATE_ICONS[chapter.state],
                 meta: chapter.size !== undefined ? formatSize(chapter.size) : "",
-                accessibleName: `${chapter.title}, ${STATE_LABELS[chapter.state]}`,
+                accessibleName: `${chapter.title}, ${stateLabel(chapter.state)}`,
             };
         });
         const list = elements.list as unknown as { setItems(items: unknown[]): void };

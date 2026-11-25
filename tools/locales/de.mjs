@@ -412,4 +412,9 @@ export default {
         "Diese Seite sieht wie ein Inhaltsverzeichnis aus, nicht wie ein Kapitel. Öffnen Sie ein Kapitel und versuchen Sie es erneut.",
         "Wenn der Scanner ein Inhaltsverzeichnis erkennt.",
     ],
+    commonClose: ["Schließen", "Die Beschriftung einer Schaltfläche, die einen Dialog schließt."],
+    commonDismiss: [
+        "Ausblenden",
+        "Die Beschriftung einer Schaltfläche, die eine Meldung ausblendet.",
+    ],
 };

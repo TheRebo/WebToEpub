@@ -800,5 +800,13 @@
   "siteSelectorTocDetected": {
     "message": "That page looks like a table of contents, not a chapter. Open a chapter and try again.",
     "description": "Shown when the scanner recognises a table of contents."
+  },
+  "commonClose": {
+    "message": "Close",
+    "description": "The label of a button that closes a dialog."
+  },
+  "commonDismiss": {
+    "message": "Dismiss",
+    "description": "The label of a button that dismisses a notification."
   }
 }

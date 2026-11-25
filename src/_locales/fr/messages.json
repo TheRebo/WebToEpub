@@ -800,5 +800,13 @@
   "siteSelectorTocDetected": {
     "message": "Cette page ressemble à un sommaire, pas à un chapitre. Ouvrez un chapitre et réessayez.",
     "description": "Quand le scanner reconnaît un sommaire."
+  },
+  "commonClose": {
+    "message": "Fermer",
+    "description": "Le libellé d'un bouton qui ferme une boîte de dialogue."
+  },
+  "commonDismiss": {
+    "message": "Ignorer",
+    "description": "Le libellé d'un bouton qui ferme une notification."
   }
 }

@@ -800,5 +800,13 @@
   "siteSelectorTocDetected": {
     "message": "Diese Seite sieht wie ein Inhaltsverzeichnis aus, nicht wie ein Kapitel. Öffnen Sie ein Kapitel und versuchen Sie es erneut.",
     "description": "Wenn der Scanner ein Inhaltsverzeichnis erkennt."
+  },
+  "commonClose": {
+    "message": "Schließen",
+    "description": "Die Beschriftung einer Schaltfläche, die einen Dialog schließt."
+  },
+  "commonDismiss": {
+    "message": "Ausblenden",
+    "description": "Die Beschriftung einer Schaltfläche, die eine Meldung ausblendet."
   }
 }

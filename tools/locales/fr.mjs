@@ -397,4 +397,6 @@ export default {
         "Cette page ressemble à un sommaire, pas à un chapitre. Ouvrez un chapitre et réessayez.",
         "Quand le scanner reconnaît un sommaire.",
     ],
+    commonClose: ["Fermer", "Le libellé d'un bouton qui ferme une boîte de dialogue."],
+    commonDismiss: ["Ignorer", "Le libellé d'un bouton qui ferme une notification."],
 };
