@@ -82,6 +82,7 @@ interface BrowserNamespace {
                 domain?: string;
                 path?: string;
                 secure?: boolean;
+                httpOnly?: boolean;
                 sameSite?: string;
                 partitionKey?: unknown;
             }>

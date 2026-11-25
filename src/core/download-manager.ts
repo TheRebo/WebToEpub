@@ -60,6 +60,13 @@ interface Job {
     fileName: string | undefined;
     /** The finished job's size, in bytes. */
     fileSize: number | undefined;
+    /**
+     * Whether the job's terminal phase has already been reported.
+     *
+     * The cleanup hook runs exactly once per job, however many times the
+     * progress is reported.
+     */
+    finished: boolean;
 }
 
 /** The phases of a job. */
@@ -97,6 +104,15 @@ export interface DownloadManagerDependencies {
     throttle(ms: number, signal: AbortSignal): Promise<void>;
     /** Report progress. */
     onProgress?(job: JobProgress): void;
+    /**
+     * Called when a job reaches a terminal phase — complete, failed or
+     * cancelled.
+     *
+     * This is where the extension cleans up after itself: the copied
+     * partitioned cookies are removed, so a long session cannot accumulate
+     * copies of the user's session cookies.
+     */
+    onFinished?(job: JobProgress): void;
 }
 
 /** The progress of a job, as reported to the UI. */
@@ -120,6 +136,9 @@ export interface JobProgress {
     /** The error, if the job failed. */
     error?: UserFacingError;
 }
+
+/** The phases a job can end in. */
+const TERMINAL_PHASES = new Set<JobPhase>(["complete", "failed", "cancelled"]);
 
 /** The messages for each phase. */
 const PHASE_MESSAGES: Record<JobPhase, string> = {
@@ -185,6 +204,7 @@ export class DownloadManager {
             controller: new AbortController(),
             fileName: undefined,
             fileSize: undefined,
+            finished: false,
         };
         this.#jobs.set(id, job);
 
@@ -570,7 +590,17 @@ export class DownloadManager {
 
     /** Report the job's progress. */
     #report(job: Job): void {
-        this.#dependencies.onProgress?.(this.#toProgress(job));
+        const progress = this.#toProgress(job);
+        this.#dependencies.onProgress?.(progress);
+
+        // A job that has reached a terminal phase is finished for good. The
+        // `onFinished` hook runs exactly once per job, so the cleanup it
+        // performs — removing the copied partitioned cookies — happens once
+        // too.
+        if (TERMINAL_PHASES.has(job.phase) && !job.finished) {
+            job.finished = true;
+            this.#dependencies.onFinished?.(progress);
+        }
     }
 }
 

@@ -11,6 +11,8 @@
  */
 import { DownloadManager } from "./download-manager";
 import { FetchClient } from "./net/fetch-client";
+import { CookieBridge } from "./net/cookie-bridge";
+import { createCookieApi } from "./net/browser-cookie-api";
 import { legacyRegistry } from "./parsers/compat/legacy-factory";
 import { installFetchClient } from "./parsers/compat/legacy-http-client";
 import { setParserServices } from "./parsers/services-context";
@@ -37,12 +39,28 @@ class BackgroundWorker {
      * writes into this registry.
      */
     #registry = legacyRegistry;
-    #fetch = new FetchClient();
+    #cookies: CookieBridge | undefined;
+    #fetch: FetchClient;
     #downloads: DownloadManager;
     #settings = new SettingsStore(localStorageAdapter);
     #library = new LibraryStore();
 
     constructor() {
+        // The cookie bridge copies the site's partitioned cookies into
+        // unpartitioned ones for the duration of a request. Without it, a
+        // site that authenticates with a partitioned cookie answers the
+        // extension's request with a login page instead of the chapter.
+        const cookieApi = createCookieApi(getNamespace()?.cookies);
+        if (cookieApi) {
+            this.#cookies = new CookieBridge(cookieApi);
+        }
+
+        this.#fetch = new FetchClient({
+            fetch: globalThis.fetch.bind(globalThis),
+            sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+            cookies: this.#cookies,
+        });
+
         // The legacy HTTP facade needs the rewrite's fetch client, so that
         // every request — whether it comes from the new pipeline or from a
         // migrated parser — goes through the same cookie handling, retry
@@ -83,6 +101,15 @@ class BackgroundWorker {
             },
             throttle: async (ms, signal) => {
                 await sleep(ms, signal);
+            },
+            // When a job ends — whether it completed, failed or was cancelled
+            // — the copied partitioned cookies are removed. Without this a
+            // long session would leave copies of the user's session cookies
+            // behind, and they would be sent with every later request.
+            onFinished: () => {
+                void this.#cookies?.removeAll().catch(() => {
+                    // Cleanup failure must never break the job's result.
+                });
             },
         });
 

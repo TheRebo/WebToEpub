@@ -214,13 +214,10 @@ export class FetchClient {
      */
     async fetchHtml(url: string, options: FetchOptions = {}): Promise<FetchResult> {
         const policy = { ...DEFAULT_RETRY_POLICY, ...options.retry };
-        const useCookies = options.useCookies ?? true;
-        const domain = useCookies ? domainOf(url) : null;
 
-        const copiedCookies: string[] = [];
-        let lastError: FetchError | undefined;
+        return this.#withCookies(url, options, async () => {
+            let lastError: FetchError | undefined;
 
-        try {
             for (let attempt = 1; attempt <= policy.maxAttempts; attempt += 1) {
                 if (options.signal?.aborted) throw abortError();
 
@@ -303,76 +300,79 @@ export class FetchClient {
                 lastError ??
                 new FetchError(`Could not fetch ${url}`, { url, attempts: policy.maxAttempts })
             );
-        } finally {
-            // The baseline leaked the copied cookies whenever the request
-            // threw. This finally block is the whole point of the rewrite.
-            if (domain && copiedCookies.length > 0 && this.#environment.cookies) {
-                await this.#environment.cookies.removeForDomain(domain, copiedCookies).catch(() => {
-                    // Cleanup failure must never mask the original error.
-                });
-            }
-        }
+        });
     }
 
     /** Fetch and parse a JSON body. */
     async fetchJson(url: string, options: FetchOptions = {}): Promise<JsonFetchResult> {
         const policy = { ...DEFAULT_RETRY_POLICY, ...options.retry };
 
-        for (let attempt = 1; attempt <= policy.maxAttempts; attempt += 1) {
-            if (options.signal?.aborted) throw abortError();
-            try {
-                const response = await this.#performRequest(url, {
-                    ...options,
-                    headers: { Accept: "application/json", ...options.headers },
-                });
-                const text = await response.text();
-
-                const custom = this.#evaluateCustomError(url, response, text);
-                if (custom && custom.status !== 999) {
-                    throw new FetchError(`Custom error for ${url}`, {
-                        status: custom.status,
-                        url,
-                        attempts: attempt,
-                        isChallenge: custom.status === 403,
-                    });
-                }
-
-                if (!response.ok) {
-                    const error = new FetchError(`HTTP ${response.status} for ${url}`, {
-                        status: response.status,
-                        url,
-                        attempts: attempt,
-                    });
-                    if (RETRYABLE_STATUSES.has(response.status) && attempt < policy.maxAttempts) {
-                        await this.#environment.sleep(this.#delayFor(policy, attempt));
-                        continue;
-                    }
-                    throw error;
-                }
-
-                let json: unknown;
+        return this.#withCookies(url, options, async () => {
+            for (let attempt = 1; attempt <= policy.maxAttempts; attempt += 1) {
+                if (options.signal?.aborted) throw abortError();
                 try {
-                    json = JSON.parse(text);
-                } catch {
-                    throw new FetchError(`Invalid JSON from ${url}`, { url, attempts: attempt });
-                }
-                return { response, json, url: response.url || url };
-            } catch (error) {
-                if (isAbort(error)) throw error;
-                if (error instanceof FetchError && error.status !== undefined) throw error;
-                if (attempt >= policy.maxAttempts) {
-                    throw error instanceof FetchError
-                        ? error
-                        : new FetchError(error instanceof Error ? error.message : String(error), {
-                              url,
-                              attempts: attempt,
-                          });
-                }
-                await this.#environment.sleep(this.#delayFor(policy, attempt));
-            }
-        }
+                    const response = await this.#performRequest(url, {
+                        ...options,
+                        headers: { Accept: "application/json", ...options.headers },
+                    });
+                    const text = await response.text();
 
-        throw new FetchError(`Could not fetch ${url}`, { url, attempts: policy.maxAttempts });
+                    const custom = this.#evaluateCustomError(url, response, text);
+                    if (custom && custom.status !== 999) {
+                        throw new FetchError(`Custom error for ${url}`, {
+                            status: custom.status,
+                            url,
+                            attempts: attempt,
+                            isChallenge: custom.status === 403,
+                        });
+                    }
+
+                    if (!response.ok) {
+                        const error = new FetchError(`HTTP ${response.status} for ${url}`, {
+                            status: response.status,
+                            url,
+                            attempts: attempt,
+                        });
+                        if (
+                            RETRYABLE_STATUSES.has(response.status) &&
+                            attempt < policy.maxAttempts
+                        ) {
+                            await this.#environment.sleep(this.#delayFor(policy, attempt));
+                            continue;
+                        }
+                        throw error;
+                    }
+
+                    let json: unknown;
+                    try {
+                        json = JSON.parse(text);
+                    } catch {
+                        throw new FetchError(`Invalid JSON from ${url}`, {
+                            url,
+                            attempts: attempt,
+                        });
+                    }
+                    return { response, json, url: response.url || url };
+                } catch (error) {
+                    if (isAbort(error)) throw error;
+                    if (error instanceof FetchError && error.status !== undefined) throw error;
+                    if (attempt >= policy.maxAttempts) {
+                        throw error instanceof FetchError
+                            ? error
+                            : new FetchError(
+                                  error instanceof Error ? error.message : String(error),
+                                  {
+                                      url,
+                                      attempts: attempt,
+                                  },
+                              );
+                    }
+                    await this.#environment.sleep(this.#delayFor(policy, attempt));
+                }
+            }
+
+            throw new FetchError(`Could not fetch ${url}`, { url, attempts: policy.maxAttempts });
+        });
     }
 
     /** Fetch a body as raw text. */
@@ -384,50 +384,87 @@ export class FetchClient {
     /** Fetch a body as bytes, for images. */
     async fetchBinary(url: string, options: FetchOptions = {}): Promise<BinaryFetchResult> {
         const policy = { ...DEFAULT_RETRY_POLICY, ...options.retry };
-        for (let attempt = 1; attempt <= policy.maxAttempts; attempt += 1) {
-            if (options.signal?.aborted) throw abortError();
-            try {
-                const response = await this.#performRequest(url, options);
-                if (!response.ok) {
-                    const error = new FetchError(`HTTP ${response.status} for ${url}`, {
-                        status: response.status,
-                        url,
-                        attempts: attempt,
-                    });
-                    if (RETRYABLE_STATUSES.has(response.status) && attempt < policy.maxAttempts) {
-                        await this.#environment.sleep(this.#delayFor(policy, attempt));
-                        continue;
+
+        return this.#withCookies(url, options, async () => {
+            for (let attempt = 1; attempt <= policy.maxAttempts; attempt += 1) {
+                if (options.signal?.aborted) throw abortError();
+                try {
+                    const response = await this.#performRequest(url, options);
+                    if (!response.ok) {
+                        const error = new FetchError(`HTTP ${response.status} for ${url}`, {
+                            status: response.status,
+                            url,
+                            attempts: attempt,
+                        });
+                        if (
+                            RETRYABLE_STATUSES.has(response.status) &&
+                            attempt < policy.maxAttempts
+                        ) {
+                            await this.#environment.sleep(this.#delayFor(policy, attempt));
+                            continue;
+                        }
+                        throw error;
                     }
-                    throw error;
+                    const buffer = await response.arrayBuffer();
+                    return {
+                        response,
+                        data: new Uint8Array(buffer),
+                        mediaType: mediaTypeOf(response.headers.get("content-type")),
+                        url: response.url || url,
+                    };
+                } catch (error) {
+                    if (isAbort(error)) throw error;
+                    if (attempt >= policy.maxAttempts) throw error;
+                    await this.#environment.sleep(this.#delayFor(policy, attempt));
                 }
-                const buffer = await response.arrayBuffer();
-                return {
-                    response,
-                    data: new Uint8Array(buffer),
-                    mediaType: mediaTypeOf(response.headers.get("content-type")),
-                    url: response.url || url,
-                };
-            } catch (error) {
-                if (isAbort(error)) throw error;
-                if (attempt >= policy.maxAttempts) throw error;
-                await this.#environment.sleep(this.#delayFor(policy, attempt));
+            }
+            throw new FetchError(`Could not fetch ${url}`, { url, attempts: policy.maxAttempts });
+        });
+    }
+
+    /**
+     * Run a request with the site's partitioned cookies copied in, and remove
+     * them again afterwards.
+     *
+     * A partitioned (CHIPS) cookie is scoped to the site that set it. A
+     * request made from the extension's own context does not receive it, so
+     * the site answers with a login page instead of the chapter. Copying the
+     * cookie into an unpartitioned one for the duration of the request makes
+     * the extension's request look like the tab's.
+     *
+     * The copy is removed in a `finally`, whether the request succeeded or
+     * threw. Leaving an unpartitioned copy of the user's session cookie
+     * behind would be a privacy problem: it would be sent to every other
+     * request the extension makes.
+     *
+     * @param url The URL being requested.
+     * @param options The fetch options.
+     * @param run The request to run.
+     * @returns Whatever `run` returns.
+     */
+    async #withCookies<T>(url: string, options: FetchOptions, run: () => Promise<T>): Promise<T> {
+        const bridge = this.#environment.cookies;
+        const useCookies = options.useCookies ?? true;
+        const domain = useCookies && bridge ? domainOf(url) : null;
+        if (!bridge || !domain) return run();
+
+        let copied: string[] = [];
+        try {
+            copied = await bridge.copyForDomain(domain);
+            return await run();
+        } finally {
+            if (copied.length > 0) {
+                await bridge.removeForDomain(domain, copied).catch(() => {
+                    // Cleanup failure must never mask the original error.
+                });
             }
         }
-        throw new FetchError(`Could not fetch ${url}`, { url, attempts: policy.maxAttempts });
     }
 
     /** Perform one request, handling cookies and the `Referer`. */
     async #performRequest(url: string, options: FetchOptions): Promise<Response> {
         const headers: Record<string, string> = { ...options.headers };
         if (options.referer) headers.Referer = options.referer;
-
-        const useCookies = options.useCookies ?? true;
-        if (useCookies && this.#environment.cookies) {
-            const domain = domainOf(url);
-            if (domain) {
-                await this.#environment.cookies.copyForDomain(domain);
-            }
-        }
 
         return this.#environment.fetch(url, {
             method: options.method ?? "GET",
