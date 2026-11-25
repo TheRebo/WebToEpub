@@ -28,6 +28,7 @@ import { sendRequest } from "../../../core/message/bus";
 import { isParsableSelector } from "../../../core/util/css";
 import { localStorageAdapter, activeTab } from "../../../core/browser-api";
 import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
+import { caughtErrorMessage, errorMessage } from "../../error-messages";
 import { themeController } from "../../styles/theme-controller";
 import { t } from "../../i18n";
 import { installI18n } from "../../i18n-bootstrap";
@@ -123,7 +124,7 @@ class WorkbenchController {
             });
             this.#store.setUsedDefaultParser(analysis.usedDefaultParser === true);
         } catch (error) {
-            this.#store.setError(error instanceof Error ? error.message : t("errorGeneric"));
+            this.#store.setError(caughtErrorMessage(error));
         }
     }
 
@@ -138,7 +139,7 @@ class WorkbenchController {
                 { url },
             );
             if (result.error) {
-                this.#store.setError(result.error.message);
+                this.#store.setError(errorMessage(result.error));
                 this.#store.setLoading(false);
                 return;
             }
@@ -153,7 +154,7 @@ class WorkbenchController {
             }));
             this.#store.setChapters(chapters);
         } catch (error) {
-            this.#store.setError(error instanceof Error ? error.message : t("errorGeneric"));
+            this.#store.setError(caughtErrorMessage(error));
             this.#store.setLoading(false);
         }
     }
@@ -451,10 +452,7 @@ class WorkbenchController {
             elements.selectorTitle.value = suggestion.titleCss;
             this.#setSelectorStatus(t("siteSelectorSuggested"));
         } catch (error) {
-            this.#setSelectorStatus(
-                error instanceof Error ? error.message : t("errorGeneric"),
-                "error",
-            );
+            this.#setSelectorStatus(caughtErrorMessage(error), "error");
         }
     }
 
@@ -492,10 +490,7 @@ class WorkbenchController {
                 this.#setSelectorStatus(t("siteSelectorTestFailed"), "error");
             }
         } catch (error) {
-            this.#setSelectorStatus(
-                error instanceof Error ? error.message : t("errorGeneric"),
-                "error",
-            );
+            this.#setSelectorStatus(caughtErrorMessage(error), "error");
         }
     }
 
@@ -534,10 +529,7 @@ class WorkbenchController {
                 },
             );
         } catch (error) {
-            this.#setSelectorStatus(
-                error instanceof Error ? error.message : t("errorGeneric"),
-                "error",
-            );
+            this.#setSelectorStatus(caughtErrorMessage(error), "error");
             return;
         }
 
@@ -564,10 +556,7 @@ class WorkbenchController {
                 { hostname: host },
             );
         } catch (error) {
-            this.#setSelectorStatus(
-                error instanceof Error ? error.message : t("errorGeneric"),
-                "error",
-            );
+            this.#setSelectorStatus(caughtErrorMessage(error), "error");
             return;
         }
 
@@ -636,7 +625,7 @@ class WorkbenchController {
             this.#jobId = jobId;
             this.#pollProgress();
         } catch (error) {
-            this.#store.setError(error instanceof Error ? error.message : t("errorGeneric"));
+            this.#store.setError(caughtErrorMessage(error));
         }
     }
 
@@ -654,7 +643,9 @@ class WorkbenchController {
                 done: progress.chaptersDone,
                 total: progress.chaptersTotal,
                 percent: progress.percent,
-                message: progress.message,
+                // The worker sends the message *key*, so the page translates
+                // it in its own locale.
+                message: t(progress.message),
                 succeeded: progress.phase === "complete",
             });
 

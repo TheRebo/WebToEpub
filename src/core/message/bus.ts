@@ -10,7 +10,7 @@
  *
  * See ADR-0005.
  */
-import type { UserFacingError } from "../util/errors";
+import { toUserFacingError, UserFacingErrorError, type UserFacingError } from "../util/errors";
 
 /** The messages the worker can receive. */
 export interface RequestMap {
@@ -270,6 +270,13 @@ export interface MessagingListenerApi {
  *
  * The response is validated before it is returned, so a malformed reply
  * surfaces as an error rather than as `undefined` fields deeper in the UI.
+ *
+ * The correlation ID is checked: a reply that carries a different ID did not
+ * answer this request, and returning it would mix one request's result into
+ * another's.
+ *
+ * @throws A {@link UserFacingError} when the worker reported a failure, so
+ * the caller keeps the machine-readable code and can translate the message.
  */
 export async function sendRequest<N extends RequestName>(
     api: MessagingApi,
@@ -285,8 +292,18 @@ export async function sendRequest<N extends RequestName>(
     if (!response || typeof response !== "object" || !("id" in response)) {
         throw new Error(`No response to ${type}`);
     }
+    if (response.id !== id) {
+        // The reply belongs to a different request. Accepting it would put
+        // one request's result into another's place.
+        throw new Error(`Mismatched response to ${type}`);
+    }
     if (response.error) {
-        throw new Error(response.error.message);
+        throw new UserFacingErrorError(
+            response.error.message,
+            response.error.code,
+            response.error.actions,
+            response.error.url,
+        );
     }
     if (!("result" in response) || response.result === undefined) {
         throw new Error(`Empty response to ${type}`);
@@ -325,7 +342,6 @@ export async function handleRequests(
                 // survives the translation into a `UserFacingError`; a plain
                 // exception would be shown as "Could not reach the site.",
                 // which would send the user looking in the wrong place.
-                const { UserFacingErrorError } = await import("../util/errors");
                 throw new UserFacingErrorError(`The ${type} request was malformed.`, "UNKNOWN");
             }
             const result = await (handler as (payload: unknown) => Promise<unknown>)(
@@ -334,7 +350,6 @@ export async function handleRequests(
             const response: ResponseEnvelope<unknown> = { id: envelope.id, result };
             return response;
         } catch (error) {
-            const { toUserFacingError } = await import("../util/errors");
             const response: ResponseEnvelope<unknown> = {
                 id: envelope.id,
                 error: toUserFacingError(error),

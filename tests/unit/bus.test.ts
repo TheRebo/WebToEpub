@@ -228,10 +228,24 @@ describe("handleRequests", () => {
 });
 
 describe("sendRequest", () => {
-    it("returns the result of a successful response", async () => {
-        const api = {
-            sendMessage: async () => ({ id: "x", result: { supported: true } }),
+    /**
+     * An API that answers with the given payload, echoing the request's own
+     * correlation ID.
+     *
+     * The echo matters: the client checks that the reply belongs to the
+     * request it made.
+     */
+    function answering(payload: Record<string, unknown>) {
+        return {
+            sendMessage: async (message: unknown) => {
+                const id = (message as { id: string }).id;
+                return { id, ...payload };
+            },
         };
+    }
+
+    it("returns the result of a successful response", async () => {
+        const api = answering({ result: { supported: true } });
         const result = await sendRequest(api, "page:analyze", {
             url: "https://example.com/story",
         });
@@ -239,15 +253,21 @@ describe("sendRequest", () => {
     });
 
     it("throws the error a failed response carries", async () => {
-        const api = {
-            sendMessage: async () => ({
-                id: "x",
-                error: { message: "no parser for this site", code: "unknown" },
-            }),
-        };
+        const api = answering({
+            error: { message: "no parser for this site", code: "UNKNOWN" },
+        });
         await expect(
             sendRequest(api, "page:analyze", { url: "https://example.com/story" }),
         ).rejects.toThrow("no parser for this site");
+    });
+
+    it("keeps the error's code, so the UI can translate it", async () => {
+        const api = answering({
+            error: { message: "The site refused the request.", code: "HTTP_STATUS" },
+        });
+        await expect(
+            sendRequest(api, "page:analyze", { url: "https://example.com/story" }),
+        ).rejects.toMatchObject({ code: "HTTP_STATUS" });
     });
 
     it("throws when there is no response at all", async () => {
@@ -258,9 +278,21 @@ describe("sendRequest", () => {
     });
 
     it("throws when the response carries no result", async () => {
-        const api = { sendMessage: async () => ({ id: "x" }) };
+        const api = answering({});
         await expect(
             sendRequest(api, "page:analyze", { url: "https://example.com/story" }),
         ).rejects.toThrow("Empty response");
+    });
+
+    it("refuses a response that answers a different request", async () => {
+        // A reply that carries somebody else's ID did not answer this
+        // request. Accepting it would put one request's result into
+        // another's place.
+        const api = {
+            sendMessage: async () => ({ id: "somebody-else", result: { supported: true } }),
+        };
+        await expect(
+            sendRequest(api, "page:analyze", { url: "https://example.com/story" }),
+        ).rejects.toThrow("Mismatched response");
     });
 });

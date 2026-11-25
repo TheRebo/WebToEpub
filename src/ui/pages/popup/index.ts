@@ -28,6 +28,7 @@ import {
 import { SettingsStore } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
 import { t } from "../../i18n";
+import { caughtErrorMessage } from "../../error-messages";
 import { installI18n } from "../../i18n-bootstrap";
 import { buildPopup, renderPopup, type PopupElements, type PopupViewState } from "./view";
 
@@ -126,7 +127,7 @@ class PopupController {
         } catch (error) {
             this.#set({
                 state: "error",
-                error: error instanceof Error ? error.message : t("errorGeneric"),
+                error: caughtErrorMessage(error),
             });
         }
     }
@@ -170,7 +171,9 @@ class PopupController {
             );
             this.#set({
                 state: "running",
-                phase: progress.message,
+                // The worker sends the message *key*, so the popup translates
+                // it in its own locale.
+                phase: t(progress.message),
                 done: progress.chaptersDone,
                 total: progress.chaptersTotal,
                 percent: progress.percent,
