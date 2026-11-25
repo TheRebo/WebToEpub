@@ -36,9 +36,19 @@ const neverCustom: CustomErrorHandler = {
 
 /**
  * Build a client whose fetch always succeeds with the given body.
+ *
+ * The response declares `text/html`, because these tests fetch pages. A
+ * response that declares a different type is refused by the client, which is
+ * the behaviour the content-type tests pin down.
  */
-function clientReturning(body: string, handler?: CustomErrorHandler) {
-    const fetchMock = vi.fn(async () => new Response(body, { status: 200 }));
+function clientReturning(
+    body: string,
+    handler?: CustomErrorHandler,
+    contentType = "text/html; charset=utf-8",
+) {
+    const fetchMock = vi.fn(
+        async () => new Response(body, { status: 200, headers: { "content-type": contentType } }),
+    );
     const sleepMock = vi.fn(async () => {});
     const client = new FetchClient({ fetch: fetchMock as never, sleep: sleepMock });
     if (handler) client.setCustomErrorHandler(handler);
@@ -235,7 +245,10 @@ describe("the fetch client's URL checks", () => {
                     headers: { location: "https://example.com/chapter/2" },
                 });
             }
-            return new Response("<html>final</html>", { status: 200 });
+            return new Response("<html>final</html>", {
+                status: 200,
+                headers: { "content-type": "text/html" },
+            });
         });
         const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
 
@@ -286,7 +299,13 @@ describe("the fetch client's size limit", () => {
                 controller.close();
             },
         });
-        const fetchMock = vi.fn(async () => new Response(stream, { status: 200 }));
+        const fetchMock = vi.fn(
+            async () =>
+                new Response(stream, {
+                    status: 200,
+                    headers: { "content-type": "text/html" },
+                }),
+        );
         const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
 
         await expect(
@@ -295,10 +314,88 @@ describe("the fetch client's size limit", () => {
     });
 
     it("reads a body that is within the limit", async () => {
-        const fetchMock = vi.fn(async () => new Response("<html>ok</html>", { status: 200 }));
+        const fetchMock = vi.fn(
+            async () =>
+                new Response("<html>ok</html>", {
+                    status: 200,
+                    headers: { "content-type": "text/html" },
+                }),
+        );
         const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
 
         const result = await client.fetchHtml("https://example.com/chapter");
         expect(result.text).toBe("<html>ok</html>");
+    });
+});
+
+describe("the fetch client's content-type checks", () => {
+    it("refuses a page that is not HTML", async () => {
+        // A JSON API answering where a page was expected would be parsed as
+        // an empty document, which looks like a chapter with no prose in it.
+        const fetchMock = vi.fn(
+            async () =>
+                new Response('{"error":"nope"}', {
+                    status: 200,
+                    headers: { "content-type": "application/json" },
+                }),
+        );
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await expect(
+            client.fetchHtml("https://example.com/chapter", { retry: { maxAttempts: 1 } }),
+        ).rejects.toThrow(/Expected an HTML page/);
+    });
+
+    it("accepts a page that declares no type at all", async () => {
+        // Some sites omit the header. The body is parsed as HTML either way,
+        // so refusing it would break a working site.
+        const fetchMock = vi.fn(
+            async () =>
+                new Response("<html>ok</html>", {
+                    status: 200,
+                    headers: { "content-type": "" },
+                }),
+        );
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        const result = await client.fetchHtml("https://example.com/chapter");
+        expect(result.text).toBe("<html>ok</html>");
+    });
+
+    it("accepts an XHTML page", async () => {
+        const { client } = clientReturning("<html>ok</html>", undefined, "application/xhtml+xml");
+        const result = await client.fetchHtml("https://example.com/chapter");
+        expect(result.text).toBe("<html>ok</html>");
+    });
+
+    it("refuses an image that is not an image", async () => {
+        // An HTML error page saved as a picture would be written into the
+        // EPUB with a media type every e-reader rejects.
+        const fetchMock = vi.fn(
+            async () =>
+                new Response("<html>not found</html>", {
+                    status: 200,
+                    headers: { "content-type": "text/html" },
+                }),
+        );
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await expect(
+            client.fetchBinary("https://example.com/cover.png", { retry: { maxAttempts: 1 } }),
+        ).rejects.toThrow(/Expected an image/);
+    });
+
+    it("accepts a real image", async () => {
+        const fetchMock = vi.fn(
+            async () =>
+                new Response(new Uint8Array([1, 2, 3]), {
+                    status: 200,
+                    headers: { "content-type": "image/png" },
+                }),
+        );
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        const result = await client.fetchBinary("https://example.com/cover.png");
+        expect(result.mediaType).toBe("image/png");
     });
 });

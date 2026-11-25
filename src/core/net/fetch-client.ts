@@ -16,6 +16,7 @@
  */
 
 import { validateFetchableUrl } from "../util/sanitize";
+import { isAcceptableImageType, isAcceptablePageType, mediaTypeOf } from "./media-types";
 
 /** How a request should be retried. */
 export interface RetryPolicy {
@@ -295,6 +296,17 @@ export class FetchClient {
                         throw error;
                     }
 
+                    // A page that is not HTML is not a page. Parsing it as one
+                    // would produce an empty document that looks like a
+                    // chapter with no prose in it.
+                    const contentType = response.headers.get("content-type");
+                    if (!isAcceptablePageType(contentType)) {
+                        throw new FetchError(
+                            `Expected an HTML page from ${url} but got ${mediaTypeOf(contentType)}`,
+                            { status: response.status, url, attempts: attempt },
+                        );
+                    }
+
                     return {
                         response,
                         text,
@@ -454,10 +466,23 @@ export class FetchClient {
                         throw error;
                     }
                     const data = await this.#readBody(response, MAX_RESPONSE_BYTES);
+                    const mediaType = mediaTypeOf(response.headers.get("content-type"));
+                    // An image that is not an image would be written into the
+                    // EPUB with the media type the server declared, which
+                    // every e-reader rejects. A server that declares no type
+                    // is allowed through; the bytes are checked by what the
+                    // caller does with them.
+                    if (!isAcceptableImageType(response.headers.get("content-type"))) {
+                        throw new FetchError(`Expected an image from ${url} but got ${mediaType}`, {
+                            status: response.status,
+                            url,
+                            attempts: attempt,
+                        });
+                    }
                     return {
                         response,
                         data,
-                        mediaType: mediaTypeOf(response.headers.get("content-type")),
+                        mediaType,
                         url: response.url || url,
                     };
                 } catch (error) {
@@ -726,10 +751,6 @@ function domainOf(url: string): string | null {
  * packer treats as "unknown" and stores with a `.bin` extension. Guessing from
  * the URL is better than nothing, so the extension is used as a fallback.
  */
-function mediaTypeOf(contentType: string | null): string {
-    if (!contentType) return "";
-    return contentType.split(";")[0]?.trim().toLowerCase() ?? "";
-}
 
 /** An abort error, so the caller can distinguish a cancel from a failure. */
 function abortError(): DOMException {
