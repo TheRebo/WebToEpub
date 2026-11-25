@@ -12,6 +12,7 @@
  */
 import { toUserFacingError, UserFacingErrorError, type UserFacingError } from "../util/errors";
 import { validateHostName } from "../storage/site-selectors-store";
+import type { ChapterFetchState } from "../download-manager";
 
 /** The messages the worker can receive. */
 export interface RequestMap {
@@ -191,6 +192,15 @@ export interface DownloadProgress {
     percent: number;
     /** The message shown in the status bar. */
     message: string;
+    /**
+     * The chapter the job is on, and its state.
+     *
+     * The chapter list draws a state per row, and this is where that state
+     * comes from. The index is the chapter's index **within the job**, which
+     * is the list of chapters the user selected, not the workbench's full
+     * list.
+     */
+    current?: { index: number; state: ChapterFetchState };
     /** The name of the saved file, once the download is complete. */
     fileName?: string;
     /** The size of the saved file, in bytes. */

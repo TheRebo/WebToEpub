@@ -73,6 +73,14 @@ class WorkbenchController {
     #settings: SettingsStore = new SettingsStore(localStorageAdapter);
     #settingsValue: Settings | undefined;
     #jobId: string | undefined;
+    /**
+     * The workbench's indexes of the chapters the running job is fetching.
+     *
+     * The job counts the chapters the user *selected*, which is a subset of
+     * the workbench's list. The job's index therefore has to be mapped back
+     * through this list before it can be shown on the right row.
+     */
+    #jobChapterIndexes: number[] = [];
     #pollTimer: ReturnType<typeof setTimeout> | undefined;
     /** Stops the poll for a running download. */
     #stopPoll: (() => void) | undefined;
@@ -624,8 +632,14 @@ class WorkbenchController {
     /** Start the download. */
     async #pack(): Promise<void> {
         const state = this.#store.state;
-        const selected = state.chapters.filter((chapter) => chapter.selected);
+        const selected = state.chapters
+            .map((chapter, index) => ({ chapter, index }))
+            .filter((entry) => entry.chapter.selected);
         if (selected.length === 0) return;
+
+        // The job counts its own chapters, so the mapping back to the
+        // workbench's list is kept for the progress poll.
+        this.#jobChapterIndexes = selected.map((entry) => entry.index);
 
         try {
             const { jobId } = await sendRequest(
@@ -634,9 +648,9 @@ class WorkbenchController {
                 {
                     url: state.story.sourceUrl,
                     title: state.story.title,
-                    chapters: selected.map((chapter) => ({
-                        sourceUrl: chapter.sourceUrl,
-                        title: chapter.title,
+                    chapters: selected.map((entry) => ({
+                        sourceUrl: entry.chapter.sourceUrl,
+                        title: entry.chapter.title,
                     })),
                 },
             );
@@ -672,6 +686,8 @@ class WorkbenchController {
                     succeeded: progress.phase === "complete",
                 });
 
+                this.#applyChapterState(progress);
+
                 if (
                     progress.phase === "complete" ||
                     progress.phase === "failed" ||
@@ -694,6 +710,24 @@ class WorkbenchController {
     /** Stop polling, if the page is being torn down. */
     dispose(): void {
         this.#stopPolling();
+    }
+
+    /**
+     * Show which chapter the job is on.
+     *
+     * The job reports the chapter it is fetching, counted among the chapters
+     * the user selected. The workbench's list is the whole list, so the
+     * index is mapped back through the selection before the row is updated.
+     *
+     * Without this the chapter list sits at "idle" for the whole download,
+     * which reads as a broken list rather than a busy one.
+     */
+    #applyChapterState(progress: DownloadProgress): void {
+        const current = progress.current;
+        if (!current) return;
+        const index = this.#jobChapterIndexes[current.index];
+        if (index === undefined) return;
+        this.#store.setChapterState(index, current.state);
     }
 
     /** Stop the progress poll. */

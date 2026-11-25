@@ -331,7 +331,7 @@ class BackgroundWorker {
             throw new Error("The story's URL is not a web address.");
         }
 
-        const chapters: Array<{ sourceUrl: string; title: string }> = [];
+        const chapters: Array<{ sourceUrl: string; title: string; state: "queued" }> = [];
         for (const chapter of payload.chapters) {
             if (!validateFetchableUrl(chapter.sourceUrl)) {
                 throw new Error("A chapter's URL is not a web address.");
@@ -339,6 +339,8 @@ class BackgroundWorker {
             chapters.push({
                 sourceUrl: chapter.sourceUrl,
                 title: chapter.title || chapter.sourceUrl,
+                // Every chapter starts out waiting. The job moves it on.
+                state: "queued",
             });
         }
 

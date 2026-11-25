@@ -16,6 +16,7 @@ import {
     type DownloadManagerDependencies,
     type JobProgress,
 } from "../../src/core/download-manager";
+import type { Parser } from "../../src/core/parsers/parser";
 
 /** A chapter of the fake book. */
 const CHAPTERS = [
@@ -224,5 +225,119 @@ describe("the download manager's behaviour settings", () => {
         const progress = await settle(manager, jobId);
         expect(progress.phase).toBe("complete");
         expect(delays[0]).toBe(DEFAULT_BEHAVIOUR.minimumDelay);
+    });
+});
+
+describe("the download manager's per-chapter progress", () => {
+    /**
+     * A manager whose chapters all load.
+     */
+    function progressHarness(): {
+        manager: DownloadManager;
+        reports: JobProgress[];
+    } {
+        const reports: JobProgress[] = [];
+        const parser = {
+            getRateLimit: () => 0,
+            fetchChapter: async (url: string) => ({
+                dom: new DOMParser().parseFromString(
+                    "<html><body><p>Prose.</p></body></html>",
+                    "text/html",
+                ),
+                url,
+            }),
+            extractChapterContent: () => {
+                const dom = new DOMParser().parseFromString(
+                    "<html><body><p>Prose.</p></body></html>",
+                    "text/html",
+                );
+                return dom.body;
+            },
+        } as unknown as Parser;
+        const manager = new DownloadManager({
+            fetchHtml: async (url) => ({
+                dom: new DOMParser().parseFromString(
+                    "<html><body><p>Prose.</p></body></html>",
+                    "text/html",
+                ),
+                url,
+            }),
+            fetchBytes: async () => ({ data: new Uint8Array(), mediaType: "image/png" }),
+            saveFile: async (fileName) => ({ fileName, fileSize: 1 }),
+            parserFor: () => parser,
+            util: { safeForFileName: (title: string) => title },
+            throttle: async () => undefined,
+            behaviour: async () => ({ ...DEFAULT_BEHAVIOUR, retryOnEmptyPage: false }),
+            onProgress: (progress) => reports.push(progress),
+        });
+        return { manager, reports };
+    }
+
+    it("reports which chapter the job is on", async () => {
+        const { manager, reports } = progressHarness();
+        const jobId = manager.start("https://example.com/story", "The Story", CHAPTERS);
+        await settle(manager, jobId);
+
+        // The workbench's chapter list draws a state per row. Without this,
+        // every row would sit at "idle" for the whole download.
+        const states = reports
+            .map((report) => report.current)
+            .filter((current): current is NonNullable<typeof current> => current !== undefined);
+        expect(states.length).toBeGreaterThan(0);
+        expect(states.some((current) => current.state === "fetching")).toBe(true);
+        expect(states.some((current) => current.state === "loaded")).toBe(true);
+    });
+
+    it("reports the chapter's index, so the right row is drawn", async () => {
+        const { manager, reports } = progressHarness();
+        const jobId = manager.start("https://example.com/story", "The Story", CHAPTERS);
+        await settle(manager, jobId);
+
+        const indexes = new Set(
+            reports
+                .map((report) => report.current?.index)
+                .filter((index): index is number => index !== undefined),
+        );
+        expect(indexes.has(0)).toBe(true);
+        expect(indexes.has(1)).toBe(true);
+    });
+
+    it("reports no current chapter once the chapters are done", async () => {
+        const { manager } = progressHarness();
+        const jobId = manager.start("https://example.com/story", "The Story", CHAPTERS);
+        const progress = await settle(manager, jobId);
+
+        // During the image phase and the EPUB build no single chapter is in
+        // flight, and the workbench must not keep pointing at one.
+        expect(progress.current).toBeUndefined();
+    });
+
+    it("marks a chapter that could not be read as failed", async () => {
+        const reports: JobProgress[] = [];
+        const manager = new DownloadManager({
+            fetchHtml: async (url) => ({
+                dom: new DOMParser().parseFromString(
+                    "<html><body><p>Prose.</p></body></html>",
+                    "text/html",
+                ),
+                url,
+            }),
+            fetchBytes: async () => ({ data: new Uint8Array(), mediaType: "image/png" }),
+            saveFile: async (fileName) => ({ fileName, fileSize: 1 }),
+            parserFor: () => null,
+            util: { safeForFileName: (title: string) => title },
+            throttle: async () => undefined,
+            behaviour: async () => ({ ...DEFAULT_BEHAVIOUR, retryOnEmptyPage: false }),
+            onProgress: (progress) => reports.push(progress),
+        });
+
+        const jobId = manager.start("https://example.com/story", "The Story", CHAPTERS);
+        await settle(manager, jobId);
+
+        expect(
+            reports.some(
+                (report) => report.current?.index === 1 && report.current?.state === "failed",
+            ),
+        ).toBe(true);
     });
 });

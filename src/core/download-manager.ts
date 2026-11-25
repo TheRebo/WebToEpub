@@ -36,7 +36,24 @@ interface DownloadChapter {
     sourceUrl: string;
     /** The chapter's title. */
     title: string;
+    /**
+     * The chapter's own state.
+     *
+     * The chapter list in the workbench shows a state per row, and the only
+     * thing that can fill it in truthfully is the job itself. The state is
+     * kept on the chapter rather than on the job, because a job's chapters
+     * are its own.
+     */
+    state?: ChapterFetchState;
 }
+
+/**
+ * The state of one chapter within a job.
+ *
+ * These are the states the chapter list already knows how to draw, so the
+ * workbench does not have to translate them.
+ */
+export type ChapterFetchState = "queued" | "fetching" | "loaded" | "failed";
 
 /** A running job. */
 interface Job {
@@ -56,6 +73,15 @@ interface Job {
     failed: number;
     /** The error, if the job failed. */
     error: UserFacingError | undefined;
+    /**
+     * The index of the chapter the job is on, and its state.
+     *
+     * The workbench's chapter list shows a state per row, and this is where
+     * that state comes from. It is `undefined` while the job is between
+     * chapters — during the image phase, the EPUB build and the save — because
+     * at that point no single chapter is the one in flight.
+     */
+    current: { index: number; state: ChapterFetchState } | undefined;
     /** The controller that cancels the job. */
     controller: AbortController;
     /** The finished job's file name. */
@@ -166,6 +192,15 @@ export interface JobProgress {
     percent: number;
     /** The message, as the key the UI translates. */
     message: string;
+    /**
+     * The chapter the job is on, and its state.
+     *
+     * The workbench's chapter list draws a state per row. This is where the
+     * row's state comes from — without it every row would sit at "idle" for
+     * the whole download, which is a list that looks broken rather than
+     * busy.
+     */
+    current?: { index: number; state: ChapterFetchState };
     /** The file name, once the job is complete. */
     fileName?: string;
     /** The file size, in bytes. */
@@ -241,11 +276,13 @@ export class DownloadManager {
             id,
             sourceUrl,
             title,
-            chapters,
+            // A chapter the caller did not give a state for is waiting.
+            chapters: chapters.map((chapter) => ({ ...chapter, state: chapter.state ?? "queued" })),
             phase: "preparing",
             done: 0,
             failed: 0,
             error: undefined,
+            current: undefined,
             controller: new AbortController(),
             fileName: undefined,
             fileSize: undefined,
@@ -344,6 +381,13 @@ export class DownloadManager {
                 return;
             }
 
+            // The chapter is in flight now. The workbench draws this state on
+            // the chapter's row, so the user can see which chapter the job is
+            // on rather than only a number counting up.
+            chapter.state = "fetching";
+            job.current = { index: chapterIndex, state: "fetching" };
+            this.#report(job);
+
             try {
                 const dom = await this.#fetchChapterWithRetry(
                     parser,
@@ -366,6 +410,7 @@ export class DownloadManager {
                         );
                     }
                     job.failed += 1;
+                    chapter.state = "failed";
                 } else {
                     // The parser decides what the content is and how it is
                     // cleaned up. The pipeline does not second-guess it.
@@ -386,6 +431,7 @@ export class DownloadManager {
                             );
                         }
                         job.failed += 1;
+                        chapter.state = "failed";
                     } else {
                         // Collect the images the chapter references. The
                         // markup is not rewritten yet: the packaged file name
@@ -406,6 +452,7 @@ export class DownloadManager {
                         chapterImages.set(chapterIndex, chapterImageMap);
 
                         const html = sanitizeContent(content);
+                        chapter.state = "loaded";
                         packed.push({
                             sourceUrl: chapter.sourceUrl,
                             title: chapter.title,
@@ -430,9 +477,11 @@ export class DownloadManager {
                     );
                 }
                 job.failed += 1;
+                chapter.state = "failed";
             }
 
             job.done += 1;
+            job.current = { index: chapterIndex, state: chapter.state };
             this.#report(job);
 
             // The throttle is the site's politeness budget. It is honoured
@@ -442,6 +491,8 @@ export class DownloadManager {
 
         // --- Images ---
         job.phase = "downloading-images";
+        // No single chapter is in flight any more.
+        job.current = undefined;
         this.#report(job);
 
         // The cover is usually *not* in any chapter, so it is added to the
@@ -709,6 +760,7 @@ export class DownloadManager {
             percent,
             message: PHASE_MESSAGE_KEYS[job.phase],
         };
+        if (job.current) progress.current = { ...job.current };
         if (job.fileName) progress.fileName = job.fileName;
         if (job.fileSize !== undefined) progress.fileSize = job.fileSize;
         if (job.error) progress.error = job.error;
