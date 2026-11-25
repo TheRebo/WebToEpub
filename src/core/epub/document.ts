@@ -127,6 +127,20 @@ export const NAV_MEDIA_TYPE = "application/xhtml+xml";
 /** The container path. */
 export const CONTAINER_PATH = "META-INF/container.xml";
 
+/**
+ * The OCF `mimetype` file's path.
+ *
+ * The EPUB OCF specification requires every container to carry a `mimetype`
+ * file at its root, holding `application/epub+zip`. It is not optional: a
+ * reader that validates the container will refuse a book without it.
+ */
+export const MIMETYPE_PATH = "mimetype";
+
+/**
+ * The content of the OCF `mimetype` file.
+ */
+export const MIMETYPE_CONTENT = "application/epub+zip";
+
 /** The OPF path used by the writer. */
 export const OPF_PATH = "OEBPS/content.opf";
 

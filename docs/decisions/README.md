@@ -20,6 +20,7 @@ consequences — positive _and_ negative.
 | [0012](./ADR-0012-lazy-zip.md)                      | Load the ZIP library on demand, behind a lazy facade                        | Accepted | 155 KB of ZIP code is fetched only by the one parser that needs it                     |
 | [0013](./ADR-0013-marionette-end-to-end-testing.md) | Drive the end-to-end tests through Firefox's own Marionette protocol        | Accepted | The tier tests the artefact a user installs, with no browser to download               |
 | [0014](./ADR-0014-dark-theme-token-ramp.md)         | Reverse the neutral ramp in the dark theme instead of re-declaring it       | Accepted | `--bg` is "the background" in both themes; the dark theme is a first-class design      |
+| [0015](./ADR-0015-epub-container.md)                | Build the EPUB container ourselves, and store the `mimetype` entry          | Accepted | Every book carries a valid `mimetype` entry; the archive's bytes are asserted          |
 
 ---
 

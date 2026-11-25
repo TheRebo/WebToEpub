@@ -24,6 +24,7 @@ import {
     packEpub,
 } from "./epub/packer";
 import type { EpubFile } from "./epub/document";
+import { buildEpubArchive } from "./epub/archiver";
 import { sanitizeHtml } from "./util/sanitize";
 import type { Parser } from "./parsers/parser";
 import { toUserFacingError, type UserFacingError } from "./util/errors";
@@ -560,32 +561,7 @@ export class DownloadManager {
 
     /** Zip the EPUB's files. */
     async #zip(files: EpubFile[]): Promise<Uint8Array> {
-        const { ZipWriter, BlobWriter, TextReader, Uint8ArrayReader, configure } = await import(
-            "@zip.js/zip.js"
-        );
-
-        // zip.js offloads compression to a web worker by default. Inside a
-        // bundled extension the worker is resolved relative to the bundle's
-        // own URL, which does not exist in the packaged add-on, so the worker
-        // fails to start and the write never completes — the job then hangs
-        // in its "saving" phase for ever, with no error and no file.
-        //
-        // The worker buys nothing here: a book is a few megabytes, and
-        // compressing it on the worker's own thread takes milliseconds.
-        configure({ useWebWorkers: false });
-
-        const writer = new ZipWriter(new BlobWriter("application/epub+zip"));
-        for (const file of files) {
-            // The two content kinds need different readers: XML is text, and
-            // an image is bytes. Passing bytes as text would corrupt it.
-            if (typeof file.content === "string") {
-                await writer.add(file.path, new TextReader(file.content));
-            } else {
-                await writer.add(file.path, new Uint8ArrayReader(file.content));
-            }
-        }
-        const blob = await writer.close();
-        return new Uint8Array(await blob.arrayBuffer());
+        return buildEpubArchive(files);
     }
 
     /** Convert a job to its progress form. */

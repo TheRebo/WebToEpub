@@ -12,6 +12,8 @@
 import {
     CONTAINER_PATH,
     CSS_PATH,
+    MIMETYPE_CONTENT,
+    MIMETYPE_PATH,
     NAV_PATH,
     NCX_PATH,
     OPF_PATH,
@@ -234,6 +236,16 @@ ${bodyHtml}
 /** The files an EPUB document consists of. */
 export function collectFiles(document: EpubDocument): EpubFile[] {
     const files: EpubFile[] = [];
+
+    // The `mimetype` file comes first, because the OCF specification requires
+    // it to be the very first entry in the archive, stored uncompressed, so
+    // that a reader can identify the file format from the first few bytes
+    // without unpacking it.
+    files.push({
+        path: MIMETYPE_PATH,
+        content: MIMETYPE_CONTENT,
+        mediaType: MIMETYPE_CONTENT,
+    });
 
     files.push({
         path: CONTAINER_PATH,

@@ -7,7 +7,14 @@ import {
     type ChapterToPack,
 } from "../../src/core/epub/packer";
 import { buildContainerXml, buildXhtml, makeItemId } from "../../src/core/epub/writer";
-import { CONTAINER_PATH, NCX_PATH, OPF_PATH, NAV_PATH } from "../../src/core/epub/document";
+import {
+    CONTAINER_PATH,
+    MIMETYPE_CONTENT,
+    MIMETYPE_PATH,
+    NCX_PATH,
+    OPF_PATH,
+    NAV_PATH,
+} from "../../src/core/epub/document";
 
 /** A chapter with a little content. */
 function chapter(title: string, body = "<p>Hello.</p>"): ChapterToPack {
@@ -40,6 +47,12 @@ describe("packEpub", () => {
         expect(paths).toContain(OPF_PATH);
         expect(paths).toContain(NAV_PATH);
         expect(paths).toContain(NCX_PATH);
+    });
+
+    it("writes the OCF mimetype file first", () => {
+        const result = packEpub([chapter("One")], { title: "A Story" });
+        expect(result.files[0]?.path).toBe(MIMETYPE_PATH);
+        expect(result.files[0]?.content).toBe(MIMETYPE_CONTENT);
     });
 
     it("writes well-formed XML for every document it generates", () => {
