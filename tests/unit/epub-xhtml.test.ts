@@ -31,6 +31,25 @@ function chapterBody(contentHtml: string): string {
     return typeof file?.content === "string" ? file.content : "";
 }
 
+/**
+ * Build a CDATA node.
+ *
+ * The HTML parser does not make one and the DOM in the tests does not have
+ * `createCDATASection`, so the node is described by hand.
+ */
+function makeCdataNode(text: string): Node {
+    return {
+        nodeType: 4,
+        nodeValue: text,
+        childNodes: [],
+    } as unknown as Node;
+}
+
+/** Build a fragment holding the given nodes. */
+function makeFragment(children: Node[]): DocumentFragment {
+    return { childNodes: children } as unknown as DocumentFragment;
+}
+
 describe("serializeAsXml", () => {
     it("closes the elements that have no content", () => {
         const document = new DOMParser().parseFromString(
@@ -75,6 +94,27 @@ describe("serializeAsXml", () => {
             "text/html",
         );
         expect(serializeAsXml(document.body)).not.toContain("a note");
+    });
+
+    it("keeps a CDATA section from ending early", () => {
+        // The HTML parser never makes a CDATA section, so one is built by hand
+        // here. A payload holding `]]>` would otherwise close the section and
+        // leave the rest of the chapter outside it.
+        const section = makeCdataNode("payload ]]> break");
+        const xml = serializeAsXml(makeFragment([section]));
+
+        // The canonical way to put `]]>` inside a CDATA section: close it,
+        // open a second one, and carry the `>` over.
+        expect(xml).toBe("<![CDATA[payload ]]]]><![CDATA[> break]]>");
+        expect(xml.match(/<!\[CDATA\[/g)).toHaveLength(2);
+        expect(xml.match(/\]\]>/g)).toHaveLength(2);
+    });
+
+    it("keeps the text of a CDATA section", () => {
+        const section = makeCdataNode("just text");
+        const xml = serializeAsXml(makeFragment([section]));
+
+        expect(xml).toBe("<![CDATA[just text]]>");
     });
 });
 

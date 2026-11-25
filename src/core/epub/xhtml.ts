@@ -65,7 +65,11 @@ function serializeNode(node: Node): string {
     if (node.nodeType !== 1 && node.nodeType !== 3 && node.nodeType !== 4) return "";
 
     if (node.nodeType === 3) return escapeText(node.nodeValue ?? "");
-    if (node.nodeType === 4) return `<![CDATA[${node.nodeValue ?? ""}]]>`;
+    // A CDATA section carries its payload verbatim, so a `]]>` inside it would
+    // close the section early and leave the rest of the file unparsed. The
+    // HTML parser never produces one, but the serialiser is a public helper
+    // and a caller could hand it anything.
+    if (node.nodeType === 4) return `<![CDATA[${splitCdata(node.nodeValue ?? "")}]]>`;
 
     const element = node as Element;
     const tag = element.tagName.toLowerCase();
@@ -110,4 +114,18 @@ function escapeText(text: string): string {
  */
 function escapeAttribute(value: string): string {
     return escapeText(value).replace(/"/g, "&quot;").replace(/\r?\n/g, "&#10;");
+}
+
+/**
+ * Make a payload safe to put inside a CDATA section.
+ *
+ * A CDATA section ends at the first `]]>`. Splitting the payload there and
+ * writing `]]]]><![CDATA[>` in its place keeps the text the same while
+ * making sure the section does not end early.
+ *
+ * @param text The payload.
+ * @returns The payload, made safe.
+ */
+function splitCdata(text: string): string {
+    return text.replace(/]]>/g, "]]]]><![CDATA[>");
 }
