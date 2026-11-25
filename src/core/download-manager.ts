@@ -17,7 +17,12 @@
  * See ADR-0005.
  */
 import type { ChapterToPack, ImageData } from "./epub/packer";
-import { buildPlaceholderChapter, buildPlaceholderImage, packEpub } from "./epub/packer";
+import {
+    buildPlaceholderChapter,
+    buildPlaceholderImage,
+    chapterImageHref,
+    packEpub,
+} from "./epub/packer";
 import type { EpubFile } from "./epub/document";
 import { sanitizeHtml } from "./util/sanitize";
 import type { Parser } from "./parsers/parser";
@@ -222,8 +227,16 @@ export class DownloadManager {
 
         const packed: ChapterToPack[] = [];
         const images = new Map<string, ImageData>();
+        /**
+         * The images each chapter references, keyed by the chapter's index.
+         *
+         * The rewrite of the chapter's markup happens after the images have
+         * been downloaded, because the packaged file name depends on the
+         * media type, which is only known then.
+         */
+        const chapterImages = new Map<number, Map<string, ImageData>>();
 
-        for (const chapter of job.chapters) {
+        for (const [chapterIndex, chapter] of job.chapters.entries()) {
             if (signal.aborted) {
                 job.phase = "cancelled";
                 this.#report(job);
@@ -259,26 +272,30 @@ export class DownloadManager {
                         );
                         job.failed += 1;
                     } else {
+                        // Collect the images the chapter references. The
+                        // markup is not rewritten yet: the packaged file name
+                        // depends on the media type, which is only known once
+                        // the image has been downloaded.
+                        const referenced = collectImageUrls(content, chapter.sourceUrl);
+                        const chapterImageMap = new Map<string, ImageData>();
+                        for (const url of referenced) {
+                            if (!images.has(url)) {
+                                images.set(url, {
+                                    data: new Uint8Array(),
+                                    mediaType: "",
+                                    url,
+                                });
+                            }
+                            chapterImageMap.set(url, images.get(url)!);
+                        }
+                        chapterImages.set(chapterIndex, chapterImageMap);
+
                         const html = sanitizeContent(content);
                         packed.push({
                             sourceUrl: chapter.sourceUrl,
                             title: chapter.title,
                             contentHtml: html,
                         });
-
-                        // Collect the images the chapter references.
-                        for (const image of content.querySelectorAll("img")) {
-                            const src = image.getAttribute("src");
-                            if (!src) continue;
-                            const absolute = resolveUrl(src, chapter.sourceUrl);
-                            if (absolute && !images.has(absolute)) {
-                                images.set(absolute, {
-                                    data: new Uint8Array(),
-                                    mediaType: "",
-                                    url: absolute,
-                                });
-                            }
-                        }
                     }
                 }
             } catch (error) {
@@ -310,6 +327,21 @@ export class DownloadManager {
         job.phase = "downloading-images";
         this.#report(job);
 
+        // The cover is usually *not* in any chapter, so it is added to the
+        // set of images to fetch here. Without this, a book whose cover
+        // lives only on the story page would be built without one.
+        const coverUrl = parser && storyDom ? parser.findCoverImageUrl(storyDom) : null;
+        if (coverUrl) {
+            const absolute = resolveUrl(coverUrl, job.sourceUrl);
+            if (absolute && !images.has(absolute)) {
+                images.set(absolute, {
+                    data: new Uint8Array(),
+                    mediaType: "",
+                    url: absolute,
+                });
+            }
+        }
+
         const downloaded = new Map<string, ImageData>();
         for (const url of images.keys()) {
             if (signal.aborted) {
@@ -330,6 +362,32 @@ export class DownloadManager {
                 downloaded.set(url, buildPlaceholderImage(url));
             }
             await throttle(100, signal);
+        }
+
+        // --- Rewrite the chapters' image references ---
+        //
+        // The chapters' markup still points at the site's own servers, which
+        // are not in the EPUB. Now that the images have been downloaded, each
+        // reference is rewritten to the packaged file's path, and each
+        // chapter is given the images it owns.
+        for (const [index, chapter] of packed.entries()) {
+            const owned = chapterImages.get(index);
+            if (!owned || owned.size === 0) continue;
+
+            const resolved = new Map<string, ImageData>();
+            for (const url of owned.keys()) {
+                const fetched = downloaded.get(url);
+                if (!fetched) continue;
+                resolved.set(url, fetched);
+            }
+            if (resolved.size === 0) continue;
+
+            chapter.images = resolved;
+            chapter.contentHtml = rewriteImageReferences(
+                chapter.contentHtml,
+                resolved,
+                chapter.sourceUrl,
+            );
         }
 
         // --- Build ---
@@ -358,7 +416,14 @@ export class DownloadManager {
      *
      * The parser knows the site, so it knows the author, the language and
      * where the cover is. The baseline wrote all of this into the EPUB; a
-     * rewrite that dropped it would produce a worse book.
+     * rewrite keeps the same fields but fills them in from the rewrite's own
+     * extraction methods.
+     *
+     * @param job The job.
+     * @param storyDom The story's page.
+     * @param parser The parser for the story.
+     * @param images The images that were downloaded, keyed by their URL.
+     * @returns The metadata.
      */
     #buildMetadata(
         job: Job,
@@ -522,6 +587,156 @@ export function resolveUrl(src: string, base: string): string | null {
     } catch {
         return null;
     }
+}
+
+/**
+ * Collect the images a chapter's content references.
+ *
+ * Three attributes carry an image reference: an `<img>`'s `src`, an
+ * `<img>`'s `srcset` (a comma-separated list of candidates with widths), and
+ * a `<source>`'s `srcset` inside a `<picture>`. All three are collected,
+ * because a chapter that uses `<picture>` would otherwise lose its images.
+ *
+ * @param content The chapter's content element.
+ * @param baseUrl The chapter's URL, used to resolve relative references.
+ * @returns The absolute URLs of the images.
+ */
+export function collectImageUrls(content: Element, baseUrl: string): Set<string> {
+    const urls = new Set<string>();
+
+    const add = (value: string | null): void => {
+        if (!value) return;
+        const absolute = resolveUrl(value, baseUrl);
+        if (absolute) urls.add(absolute);
+    };
+
+    for (const image of content.querySelectorAll("img")) {
+        add(image.getAttribute("src"));
+        for (const candidate of parseSrcset(image.getAttribute("srcset"))) {
+            add(candidate.url);
+        }
+    }
+
+    for (const source of content.querySelectorAll("source")) {
+        for (const candidate of parseSrcset(source.getAttribute("srcset"))) {
+            add(candidate.url);
+        }
+    }
+
+    return urls;
+}
+
+/**
+ * One candidate from a `srcset` attribute.
+ */
+interface SrcsetCandidate {
+    /** The candidate's URL. */
+    url: string;
+    /** The candidate's descriptor, e.g. `2x` or `640w`. */
+    descriptor: string;
+}
+
+/**
+ * Parse a `srcset` attribute into its candidates.
+ *
+ * The format is a comma-separated list of `url descriptor` pairs. The
+ * descriptor is optional, and a URL may itself contain a comma, so the
+ * parsing follows the HTML specification's rule: split on whitespace first,
+ * then treat the first token as the URL only when it is not itself a
+ * descriptor.
+ *
+ * @param srcset The attribute's value.
+ * @returns The candidates, in the order they appear.
+ */
+export function parseSrcset(srcset: string | null): SrcsetCandidate[] {
+    if (!srcset) return [];
+    const candidates: SrcsetCandidate[] = [];
+
+    for (const part of srcset.split(",")) {
+        const trimmed = part.trim();
+        if (!trimmed) continue;
+        const space = trimmed.indexOf(" ");
+        if (space === -1) {
+            candidates.push({ url: trimmed, descriptor: "" });
+            continue;
+        }
+        candidates.push({
+            url: trimmed.slice(0, space),
+            descriptor: trimmed.slice(space + 1).trim(),
+        });
+    }
+    return candidates;
+}
+
+/**
+ * Rewrite a chapter's image references to point at the packaged images.
+ *
+ * The chapter's markup is HTML, and it is parsed rather than pattern-matched,
+ * so an attribute value that merely *contains* a URL is left alone.
+ *
+ * @param html The chapter's HTML.
+ * @param images The images the chapter owns, keyed by their original URL.
+ * @param baseUrl The chapter's URL, used to resolve relative references.
+ * @returns The HTML with the references rewritten.
+ */
+export function rewriteImageReferences(
+    html: string,
+    images: Map<string, ImageData>,
+    baseUrl: string,
+): string {
+    const document = new DOMParser().parseFromString(html, "text/html");
+    let changed = false;
+
+    const replace = (element: Element, attribute: string): void => {
+        const value = element.getAttribute(attribute);
+        if (!value) return;
+
+        if (attribute === "srcset") {
+            const candidates = parseSrcset(value);
+            if (candidates.length === 0) return;
+            let dirty = false;
+            const rewritten = candidates.map((candidate) => {
+                const absolute = resolveUrl(candidate.url, baseUrl);
+                const image = absolute ? images.get(absolute) : undefined;
+                if (!image) return candidate;
+                dirty = true;
+                const href = chapterImageHref(image.url, image.mediaType);
+                return candidate.descriptor
+                    ? { url: href, descriptor: candidate.descriptor }
+                    : { url: href, descriptor: "" };
+            });
+            if (!dirty) return;
+            element.setAttribute(
+                attribute,
+                rewritten
+                    .map((candidate) =>
+                        candidate.descriptor
+                            ? `${candidate.url} ${candidate.descriptor}`
+                            : candidate.url,
+                    )
+                    .join(", "),
+            );
+            changed = true;
+            return;
+        }
+
+        const absolute = resolveUrl(value, baseUrl);
+        const image = absolute ? images.get(absolute) : undefined;
+        if (!image) return;
+        element.setAttribute(attribute, chapterImageHref(image.url, image.mediaType));
+        changed = true;
+    };
+
+    for (const image of document.querySelectorAll("img")) {
+        replace(image, "src");
+        replace(image, "srcset");
+    }
+    for (const source of document.querySelectorAll("source")) {
+        replace(source, "srcset");
+    }
+
+    if (!changed) return html;
+    return document.body.innerHTML;
 }
 
 /**

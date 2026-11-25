@@ -79,6 +79,78 @@ export interface PackResult {
     coverPath?: string;
 }
 
+/** The directory the packaged images live in, inside the container. */
+export const IMAGES_DIRECTORY = "OEBPS/images";
+
+/**
+ * The relative reference a chapter file uses for a packaged image.
+ *
+ * Chapter files live in `OEBPS/text`, so the images directory is one level
+ * up. Getting this wrong produces an EPUB whose pictures are all broken, so
+ * the reference is computed in one place and used by both the packer and the
+ * download manager.
+ */
+export function chapterImageHref(url: string, mediaType: string): string {
+    return `../images/${imageFileName(url, mediaType)}`;
+}
+
+/**
+ * The path a packaged image occupies inside the container.
+ */
+export function imagePath(url: string, mediaType: string): string {
+    return `${IMAGES_DIRECTORY}/${imageFileName(url, mediaType)}`;
+}
+
+/**
+ * The file name of a packaged image.
+ *
+ * The name is derived from the URL, so the same image always lands on the
+ * same file, and two images with the same base name on different sites do
+ * not collide. The `img-` prefix keeps a chapter image away from the cover,
+ * which is written to `cover.<ext>`.
+ */
+export function imageFileName(url: string, mediaType: string): string {
+    return `img-${imageBaseName(url)}-${hashOf(url)}.${extensionFor(mediaType)}`;
+}
+
+/**
+ * A readable stem for an image's file name.
+ *
+ * The URL's last path segment is the closest thing the image has to a name.
+ * It is stripped of its extension and of anything that would be awkward in a
+ * file name.
+ */
+function imageBaseName(url: string): string {
+    let path = url;
+    try {
+        path = new URL(url).pathname;
+    } catch {
+        // A relative or malformed URL still has a usable tail.
+    }
+    const last = path.split("/").pop() ?? "";
+    const stem = last.replace(/\.[^.]*$/, "");
+    const safe = stem
+        .replace(/[^A-Za-z0-9_-]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 24);
+    return safe || "image";
+}
+
+/**
+ * A short, stable hash of a string.
+ *
+ * Two different images on the same site often share a file name — `cover.jpg`
+ * is common — so the name alone is not enough to keep them apart.
+ */
+function hashOf(text: string): string {
+    let hash = 0x811c9dc5;
+    for (let index = 0; index < text.length; ++index) {
+        hash ^= text.charCodeAt(index);
+        hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return hash.toString(16).padStart(8, "0");
+}
+
 /** The path of a chapter file within the container. */
 function chapterPath(index: number): string {
     return `OEBPS/text/chapter-${String(index + 1).padStart(4, "0")}.xhtml`;
@@ -127,6 +199,13 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
     for (const [index, chapter] of chapters.entries()) {
         const path = chapterPath(index);
         const body = buildChapterBody(chapter, metadata.author);
+
+        // The chapter's images are packaged alongside it, and the chapter's
+        // markup points at them. The manifest entries are added here, before
+        // the chapter file is written, because the reference and the manifest
+        // have to agree.
+        packageChapterImages(chapter, files, manifest, nextId);
+
         files.set(path, {
             path,
             content: buildXhtml(chapter.title, body, language),
@@ -207,6 +286,49 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
     };
 
     return { document, files: collectFiles(document), coverPath };
+}
+
+/**
+ * Package a chapter's images and register them in the manifest.
+ *
+ * Each image becomes a file in `OEBPS/images`, and each becomes a manifest
+ * item, so a reader can find it. An image that is already in the container —
+ * because another chapter used it — is not written twice, and does not get a
+ * second manifest entry.
+ *
+ * @param chapter The chapter whose images to package.
+ * @param files The container's files.
+ * @param manifest The manifest to add to.
+ * @param nextId Hands out the manifest item IDs.
+ */
+function packageChapterImages(
+    chapter: ChapterToPack,
+    files: Map<string, { path: string; content: string | Uint8Array; mediaType: string }>,
+    manifest: ManifestItem[],
+    nextId: (href: string) => string,
+): void {
+    if (!chapter.images) return;
+
+    for (const [url, image] of chapter.images) {
+        // An image with no bytes is a placeholder that was never filled in.
+        // There is nothing to write, and a zero-byte file would corrupt the
+        // EPUB.
+        if (image.data.length === 0) continue;
+
+        const path = imagePath(url, image.mediaType);
+        if (!files.has(path)) {
+            files.set(path, {
+                path,
+                content: image.data,
+                mediaType: image.mediaType,
+            });
+            manifest.push({
+                id: nextId(path),
+                href: path.replace(/^OEBPS\//, ""),
+                mediaType: image.mediaType,
+            });
+        }
+    }
 }
 
 /** The body of a chapter. */
