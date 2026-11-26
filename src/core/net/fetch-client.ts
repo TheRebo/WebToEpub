@@ -786,10 +786,15 @@ export function parseHtml(html: string, url: string): Document {
     const parser = new DOMParser();
     const dom = parser.parseFromString(html, "text/html");
     try {
-        // Give the document a base URL so relative links resolve.
-        const base = dom.createElement("base");
-        base.href = url;
-        dom.head?.prepend(base);
+        // Give the document a base URL so relative links resolve — but only
+        // when the page does not have a base of its own. The *first* `<base>`
+        // in a document wins, so prepending ours over a site's own `<base>`
+        // would send every relative link on the page to the wrong place.
+        if (!dom.querySelector("base[href]")) {
+            const base = dom.createElement("base");
+            base.href = url;
+            dom.head?.prepend(base);
+        }
     } catch {
         // A document with no head is unusual but not fatal.
     }

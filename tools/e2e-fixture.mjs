@@ -61,14 +61,27 @@ ${body}
 </html>`;
 }
 
-/** The table of contents. */
+/**
+ * The table of contents.
+ *
+ * The chapter list is **built in the browser**, not in the markup the server
+ * sends. The server sends an empty list and a script that fills it in — which
+ * is how a great many novel sites work, and it is the reason the extension
+ * has to read the page the user is looking at rather than only the bytes on
+ * the wire.
+ *
+ * Making the fixture behave this way is deliberate: a fixture that served its
+ * chapter list in the markup would pass whether the extension read the live
+ * page or fetched it, and so would prove nothing about the behaviour that
+ * matters.
+ */
 function tocPage() {
-    const items = [];
+    const chapters = [];
     for (let index = 1; index <= CHAPTER_COUNT; index += 1) {
-        items.push(
-            `    <li><a href="/chapter/${index}">Chapter ${index}: The ${ordinal(index)} Seal</a></li>`,
-        );
+        chapters.push({ number: index, title: `Chapter ${index}: The ${ordinal(index)} Seal` });
     }
+    const data = JSON.stringify(chapters).replace(/</g, "\\u003c");
+
     return shell(
         "The Kintsugi Test Novel",
         `<h1 class="title">The Kintsugi Test Novel</h1>
@@ -76,10 +89,22 @@ function tocPage() {
 <img class="cover" src="/cover.png" alt="Cover" width="120" height="180">
 <div class="chapter-list-wrapper">
 <h2>Chapters</h2>
-<ul class="chapter-list">
-${items.join("\n")}
-</ul>
-</div>`,
+<ul class="chapter-list"></ul>
+</div>
+<script>
+(() => {
+    const chapters = ${data};
+    const list = document.querySelector("ul.chapter-list");
+    for (const chapter of chapters) {
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = "/chapter/" + chapter.number;
+        link.textContent = chapter.title;
+        item.appendChild(link);
+        list.appendChild(item);
+    }
+})();
+</script>`,
     );
 }
 

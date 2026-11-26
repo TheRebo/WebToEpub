@@ -128,7 +128,7 @@ interface BrowserNamespace {
             target: { tabId: number };
             func?: (...args: never[]) => unknown;
             files?: string[];
-        }): Promise<unknown[]>;
+        }): Promise<Array<{ result?: unknown }>>;
     };
     i18n: {
         getMessage(key: string, substitutions?: string | string[]): string;

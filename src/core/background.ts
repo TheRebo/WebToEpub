@@ -37,6 +37,7 @@ import { registerAllParsers } from "./parsers/register-all";
 import type { ParserServices } from "./parsers/parser";
 import { listChapterUrls } from "./parsers/parser";
 import { removeChapterNumber } from "./util/chapter-title";
+import { readLivePageDom } from "./live-page";
 
 /** The worker. */
 class BackgroundWorker {
@@ -212,6 +213,25 @@ class BackgroundWorker {
     ): Promise<{ dom: Document; url: string }> {
         const result = await this.#fetch.fetchHtml(url, options);
         return { dom: result.dom, url: result.url };
+    }
+
+    /**
+     * The page the user asked about, as the user sees it.
+     *
+     * Many novel sites build their table of contents in the browser. The
+     * markup that arrives over the wire is an empty shell, so fetching it
+     * tells the parser nothing and the user is told the site is not supported
+     * while looking at a perfectly good list of chapters.
+     *
+     * So the live tab is asked for its DOM first, and the network is only
+     * used when there is no tab to ask. See ADR-0033.
+     */
+    async #storyPageDom(url: string): Promise<Document> {
+        const live = await readLivePageDom(url);
+        if (live) return live;
+
+        const result = await this.#fetch.fetchHtml(url);
+        return result.dom;
     }
 
     /**
@@ -431,14 +451,14 @@ class BackgroundWorker {
         }
 
         try {
-            const result = await this.#fetch.fetchHtml(url);
-            const parser = this.#registry.fetch(url, result.dom);
+            const dom = await this.#storyPageDom(url);
+            const parser = this.#registry.fetch(url, dom);
             if (!parser) {
                 return { supported: false, error: unsupportedSiteError() };
             }
             diagnosticUrl("Analysed the page with", url, parser.constructor.name);
 
-            const title = parser.extractTitleImpl(result.dom);
+            const title = parser.extractTitleImpl(dom);
             const titleText =
                 typeof title === "string"
                     ? title
@@ -451,10 +471,10 @@ class BackgroundWorker {
                 parserName: parser.constructor.name,
                 usedDefaultParser: parser instanceof DefaultParser,
                 title: titleText.trim() || undefined,
-                author: parser.extractAuthor(result.dom)?.trim() || undefined,
-                language: parser.extractLanguage(result.dom)?.trim() || undefined,
-                coverUrl: parser.findCoverImageUrl(result.dom) ?? undefined,
-                description: parser.extractDescription(result.dom)?.trim() || undefined,
+                author: parser.extractAuthor(dom)?.trim() || undefined,
+                language: parser.extractLanguage(dom)?.trim() || undefined,
+                coverUrl: parser.findCoverImageUrl(dom) ?? undefined,
+                description: parser.extractDescription(dom)?.trim() || undefined,
             };
         } catch (error) {
             return { supported: false, error: toUserFacingError(error, { url }) };
@@ -469,16 +489,16 @@ class BackgroundWorker {
         }
 
         try {
-            const result = await this.#fetch.fetchHtml(url);
+            const dom = await this.#storyPageDom(url);
             // The preferences are refreshed before the parser is built, so the
             // parser sees the settings the user has right now.
             await this.#refreshPreferences();
-            const parser = this.#registry.fetch(url, result.dom);
+            const parser = this.#registry.fetch(url, dom);
             if (!parser) {
                 return { chapters: [], error: unsupportedSiteError() };
             }
 
-            const chapters = await listChapterUrls(parser, result.dom);
+            const chapters = await listChapterUrls(parser, dom);
             diagnosticUrl("Found chapters with", url, parser.constructor.name, chapters.length);
 
             // The chapter numbers are stripped here rather than in the

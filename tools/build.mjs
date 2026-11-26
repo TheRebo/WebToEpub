@@ -111,21 +111,18 @@ async function buildManifest() {
             type: "module",
         },
 
-        content_scripts: [
-            {
-                matches: ["<all_urls>"],
-                js: ["assets/content-script.js"],
-                run_at: "document_idle",
-                all_frames: false,
-            },
-        ],
-
-        web_accessible_resources: [
-            {
-                resources: ["assets/*"],
-                matches: ["<all_urls>"],
-            },
-        ],
+        // No content script is declared, and no resource is web-accessible.
+        //
+        // A content script would be injected into *every* page the user
+        // visits, which is more reach than the extension needs: it reads the
+        // page it was asked about, and only then. The `scripting` permission
+        // is still needed, but for a one-off injection into a tab the user
+        // has already opened — see ADR-0033.
+        //
+        // Publishing `assets/*` to `<all_urls>` would let any web page read
+        // the extension's own bundles, including the background worker. It
+        // is removed, and nothing needs it: the parsers inject a function,
+        // never a file.
 
         content_security_policy: {
             extension_pages:
@@ -200,39 +197,6 @@ async function bundleScripts() {
     });
 
     await buildVendorBundle();
-    await buildContentScript();
-}
-
-/**
- * Build the content script.
- *
- * The content script is the one file that runs in the *page's* world, where
- * Firefox does not support ES modules — so it is bundled as a classic script
- * rather than as a module. Bundling it with the rest would ship an `export`
- * statement into a classic script, which the browser rejects with a syntax
- * error, and the content script would silently never run.
- *
- * It is built on its own because a classic script cannot be code-split.
- *
- * @returns {Promise<void>} Resolves when the bundle is written.
- */
-async function buildContentScript() {
-    await build({
-        entryPoints: { "content-script": join(SRC, "core", "content-script.ts") },
-        outfile: join(DIST, "assets", "content-script.js"),
-        bundle: true,
-        format: "iife",
-        target: ["firefox140"],
-        platform: "browser",
-        splitting: false,
-        minify: !isDev,
-        sourcemap: isDev ? "inline" : false,
-        legalComments: "none",
-        logLevel: "info",
-        define: {
-            "process.env.NODE_ENV": JSON.stringify(isDev ? "development" : "production"),
-        },
-    });
 }
 
 /**
