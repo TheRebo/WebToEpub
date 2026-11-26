@@ -20,7 +20,11 @@ import "../../components/k-toast";
 
 import { localStorageAdapter, sendMessage } from "../../../core/browser-api";
 import { listHostAccess, revokeHostPattern } from "../../../core/host-access";
-import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
+import {
+    SettingsStore,
+    type Settings,
+    type SettingsPatch,
+} from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
 import { sendRequest } from "../../../core/message/bus";
 import { installI18n } from "../../i18n-bootstrap";
@@ -89,7 +93,7 @@ async function main(): Promise<void> {
         root: document.body,
         store: {
             get: () => store.get(),
-            update: (partial: Partial<Settings>) => store.update(partial),
+            update: (partial: SettingsPatch) => store.update(partial),
             set: async (settings: Settings) => {
                 await store.set(settings);
                 return store.get();

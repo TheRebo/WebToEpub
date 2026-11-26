@@ -17,7 +17,7 @@ import "../../components/k-switch";
 import "../../components/k-toast";
 
 import { localStorageAdapter, getURL } from "../../../core/browser-api";
-import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
+import { SettingsStore, type SettingsPatch } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
 import { installI18n } from "../../i18n-bootstrap";
 import { OnboardingController } from "./controller";
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
         root: document.body,
         store: {
             get: () => store.get(),
-            update: (partial: Partial<Settings>) => store.update(partial),
+            update: (partial: SettingsPatch) => store.update(partial),
         },
         theme: themeController,
         // The onboarding is opened in a tab, so it cannot close itself the way

@@ -179,6 +179,47 @@ describe("SettingsStore", () => {
         expect(settings.appearance.accent).toBe("gold");
     });
 
+    it("merges a partial group over the group that is stored", async () => {
+        // A patch names the fields it changes. The rest of the group keeps the
+        // value it had, so a caller that only means to change the language
+        // cannot accidentally reset the options beside it.
+        const storage = memoryStorage();
+        const store = new SettingsStore(storage);
+        await store.update({ story: { includeTocPage: true, removeAuthorNotes: true } });
+        await store.update({ story: { defaultLanguage: "fr" } });
+
+        const settings = await store.get();
+        expect(settings.story.defaultLanguage).toBe("fr");
+        expect(settings.story.includeTocPage).toBe(true);
+        expect(settings.story.removeAuthorNotes).toBe(true);
+    });
+
+    it("does not let one page's change undo another page's change", async () => {
+        // The workbench and the options page each have their own store, and
+        // each has its own cache. The workbench's cache does not know about
+        // a change the options page has made, so a write that merged over the
+        // cache would put back the old value.
+        //
+        // A write merges over the *stored* value, and a patch names only the
+        // fields it changes, so the two changes both survive.
+        const storage = memoryStorage();
+        const workbench = new SettingsStore(storage);
+        const options = new SettingsStore(storage);
+
+        // The workbench reads its snapshot, which is now out of date.
+        await workbench.get();
+
+        // The options page changes an option.
+        await options.update({ story: { includeTocPage: true } });
+
+        // The workbench then saves the language.
+        await workbench.update({ story: { defaultLanguage: "fr" } });
+
+        const settings = await new SettingsStore(storage).get();
+        expect(settings.story.defaultLanguage).toBe("fr");
+        expect(settings.story.includeTocPage).toBe(true);
+    });
+
     it("removes only its own key when it is reset", async () => {
         const storage = memoryStorage({ "something.else": "keep me" });
         const store = new SettingsStore(storage);

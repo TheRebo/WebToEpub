@@ -16,7 +16,7 @@
  * extension runtime.
  */
 import { t } from "../../i18n";
-import type { Settings } from "../../../core/storage/settings-store";
+import type { Settings, SettingsPatch } from "../../../core/storage/settings-store";
 import {
     buildOnboarding,
     renderStatus,
@@ -32,7 +32,7 @@ export interface SettingsStorePort {
     /** Read the settings. */
     get(): Promise<Settings>;
     /** Write part of the settings, and return the whole result. */
-    update(partial: Partial<Settings>): Promise<Settings>;
+    update(partial: SettingsPatch): Promise<Settings>;
 }
 
 /** The theme controller, as the controller uses it. */
@@ -132,7 +132,12 @@ export class OnboardingController {
             );
             const action = target?.dataset["action"];
             if (!action) return;
-            void this.#handle(action);
+            // The handler cannot be `async` — the browser does not wait for
+            // it — so a failure inside it has to be caught here rather than
+            // left as an unhandled rejection.
+            void this.#handle(action).catch((error: unknown) => {
+                this.#toast(messageOf(error) || t("errorGeneric"), "error");
+            });
         });
 
         // The radio choices are native inputs in the light DOM, so their own

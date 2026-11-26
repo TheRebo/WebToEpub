@@ -11,7 +11,8 @@
  * extension runtime.
  */
 import { t } from "../../i18n";
-import type { Settings } from "../../../core/storage/settings-store";
+import { runGuarded } from "../../guarded";
+import type { Settings, SettingsPatch } from "../../../core/storage/settings-store";
 import {
     buildSettingsFile,
     parseSettingsFile,
@@ -217,7 +218,7 @@ export interface SettingsStorePort {
     /** Read the settings. */
     get(): Promise<Settings>;
     /** Write part of the settings, and return the whole result. */
-    update(partial: Partial<Settings>): Promise<Settings>;
+    update(partial: SettingsPatch): Promise<Settings>;
     /** Write the whole settings, and return the result. */
     set?(settings: Settings): Promise<Settings>;
     /** Put the settings back to their defaults, and return the result. */
@@ -317,6 +318,21 @@ export class OptionsController {
         return this.#active;
     }
 
+    /**
+     * Run work that the user started, without waiting for it.
+     *
+     * An event handler cannot be `async` — the browser does not wait for it —
+     * so a failure inside it would be an unhandled rejection: logged by the
+     * browser, shown to nobody, and the thing the user asked for silently not
+     * happening. The work is started through {@link runGuarded}, and a failure
+     * is shown as a toast.
+     *
+     * @param work The work to do.
+     */
+    #run(work: () => Promise<unknown>): void {
+        runGuarded(work, (error) => this.#toast(messageOf(error) || t("errorGeneric"), "error"));
+    }
+
     /** Start the page. */
     async start(): Promise<void> {
         this.#theme.start();
@@ -383,9 +399,9 @@ export class OptionsController {
 
             this.#render();
 
-            if (this.#active === "library") void this.#loadLibrary();
-            if (this.#active === "site-selectors") void this.#loadSiteSelectors();
-            if (this.#active === "site-access") void this.#loadSiteAccess();
+            if (this.#active === "library") this.#run(() => this.#loadLibrary());
+            if (this.#active === "site-selectors") this.#run(() => this.#loadSiteSelectors());
+            if (this.#active === "site-access") this.#run(() => this.#loadSiteAccess());
         });
 
         // The search box. It is outside the content column, so it keeps its
@@ -416,7 +432,7 @@ export class OptionsController {
             if (!path) return;
             const value = detail.value ?? detail.checked;
             if (value === undefined) return;
-            void this.#write(path, value);
+            this.#run(() => this.#write(path, value));
         });
 
         // The buttons in the status panels and the site-selector list. The
@@ -428,11 +444,11 @@ export class OptionsController {
             );
             const action = target?.dataset["action"];
             if (action === "retry") {
-                void this.#loadSettings();
+                this.#run(() => this.#loadSettings());
                 return;
             }
             if (action === "export") {
-                void this.#exportSettings();
+                this.#run(() => this.#exportSettings());
                 return;
             }
             if (action === "import") {
@@ -448,36 +464,36 @@ export class OptionsController {
             }
             if (action === "retry-library") {
                 this.#libraryLoaded = false;
-                void this.#loadLibrary();
+                this.#run(() => this.#loadLibrary());
                 return;
             }
             if (action === "retry-site-selectors") {
                 this.#selectorsLoaded = false;
-                void this.#loadSiteSelectors();
+                this.#run(() => this.#loadSiteSelectors());
                 return;
             }
             if (action === "retry-site-access") {
                 this.#accessLoaded = false;
-                void this.#loadSiteAccess();
+                this.#run(() => this.#loadSiteAccess());
                 return;
             }
             if (action === "revoke-all-access") {
-                void this.#revokeAllAccess();
+                this.#run(() => this.#revokeAllAccess());
                 return;
             }
             const origin = target?.dataset["origin"];
             if (origin) {
-                void this.#revokeAccess(origin);
+                this.#run(() => this.#revokeAccess(origin));
                 return;
             }
             const hostname = target?.dataset["hostname"];
             if (hostname) {
-                void this.#forgetSiteSelectors(hostname);
+                this.#run(() => this.#forgetSiteSelectors(hostname));
                 return;
             }
 
             const libraryId = target?.dataset["libraryId"];
-            if (libraryId) void this.#removeFromLibrary(libraryId);
+            if (libraryId) this.#run(() => this.#removeFromLibrary(libraryId));
         });
 
         // The file input behind the import button.
@@ -491,13 +507,13 @@ export class OptionsController {
             // row fires the change event again.
             target.value = "";
             if (!file) return;
-            void this.#importSettings(file);
+            this.#run(() => this.#importSettings(file));
         });
 
         // The reset dialog's buttons.
         this.#elements.resetConfirm.addEventListener("k-click", () => {
             this.#elements.resetDialog.removeAttribute("open");
-            void this.#resetSettings();
+            this.#run(() => this.#resetSettings());
         });
         this.#elements.resetCancel.addEventListener("k-click", () => {
             this.#elements.resetDialog.removeAttribute("open");
@@ -537,8 +553,8 @@ export class OptionsController {
 
         try {
             this.#settings = await this.#store.update({
-                [group]: { ...groupValue, [key]: next },
-            } as unknown as Partial<Settings>);
+                [group]: { [key]: next },
+            } as unknown as SettingsPatch);
         } catch (error) {
             // The value on the control stays as the user left it — they can
             // see what they typed — but the page says the write failed.

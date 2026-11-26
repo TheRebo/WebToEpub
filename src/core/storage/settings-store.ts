@@ -105,6 +105,24 @@ export interface Settings {
     onboardingComplete: boolean;
 }
 
+/**
+ * A change to the settings.
+ *
+ * Every group may be left out, and every group that is given may itself be
+ * partial: `update({ story: { defaultLanguage: "fr" } })` changes the language
+ * and leaves the rest of the story settings alone.
+ *
+ * This matters. A caller that had to hand over a whole group had to build it
+ * from a snapshot it had read earlier, and a snapshot that has gone stale
+ * carries the old values of everything it did not mean to change. The
+ * workbench's Save button wrote the whole story group from its snapshot, so
+ * saving the language could quietly undo the option the user had toggled a
+ * moment earlier.
+ */
+export type SettingsPatch = {
+    [K in keyof Settings]?: Partial<Settings[K]>;
+};
+
 /** The default settings. */
 export const DEFAULT_SETTINGS: Settings = {
     appearance: {
@@ -331,6 +349,22 @@ export class SettingsStore {
     /** Read the settings, validating them. */
     async get(): Promise<Settings> {
         if (this.#cache) return this.#cache;
+        return this.#read();
+    }
+
+    /**
+     * Read the settings from storage, whether or not there is a cache.
+     *
+     * The cache belongs to one store, and there is one store per page. The
+     * options page and the workbench each have their own, and a change made
+     * in one of them is not in the other's cache — the browser's storage
+     * events are only wired up in the worker.
+     *
+     * So a write that merges over the cache can merge over a stale copy and
+     * put back the value the other page has just changed. The write reads
+     * the stored value instead, which is always the truth.
+     */
+    async #read(): Promise<Settings> {
         const stored = await this.#storage.get(SETTINGS_KEY);
         const raw = stored[SETTINGS_KEY];
         this.#cache = validateSettings(raw);
@@ -352,12 +386,20 @@ export class SettingsStore {
 
     /**
      * Update part of the settings.
+     *
+     * The change is merged over the current settings, so a group that is named
+     * does not have to be given in full.
+     *
+     * @param partial The change to make.
+     * @returns The settings as they are after the change.
      */
-    async update(partial: Partial<Settings>): Promise<Settings> {
+    async update(partial: SettingsPatch): Promise<Settings> {
         // The whole read-modify-write is queued, so two overlapping updates
         // cannot discard each other.
         return this.#enqueue(async () => {
-            const current = await this.get();
+            // The stored value is read, not the cache: another page may have
+            // changed the settings since this one last read them.
+            const current = await this.#read();
             const next = validateSettings(deepMerge(current, partial as Record<string, unknown>));
             await this.#storage.set({ [SETTINGS_KEY]: next });
             this.#cache = next;
