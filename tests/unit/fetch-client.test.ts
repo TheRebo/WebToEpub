@@ -384,6 +384,80 @@ describe("the fetch client's size limit", () => {
         const result = await client.fetchHtml("https://example.com/chapter");
         expect(result.text).toBe("<html>ok</html>");
     });
+
+    it("refuses a body with no stream that is over the limit", async () => {
+        // A response whose body has already been read has no stream to count
+        // the bytes through. The size is still checked, or a body that
+        // declares nothing is a body of any size at all.
+        const fetchMock = vi.fn(async () => {
+            const response = new Response("small", {
+                status: 200,
+                headers: { "content-type": "text/html" },
+            });
+            // Take the stream away, so the reader has to fall back.
+            Object.defineProperty(response, "body", { value: null });
+            Object.defineProperty(response, "arrayBuffer", {
+                value: async () => new ArrayBuffer(MAX_RESPONSE_BYTES + 1),
+            });
+            return response;
+        });
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await expect(
+            client.fetchHtml("https://example.com/chapter", { retry: { maxAttempts: 1 } }),
+        ).rejects.toThrow(/too large/);
+    });
+
+    it("closes the stream when the read is cancelled", async () => {
+        // A cancelled download leaves the connection open unless the reader is
+        // cancelled: the browser keeps pulling bytes for a job the user has
+        // already stopped.
+        let cancelCalls = 0;
+        const controller = new AbortController();
+        const stream = new ReadableStream<Uint8Array>({
+            async pull(streamController) {
+                // The stream never ends on its own: the read is stopped by the
+                // abort, which is the case under test. The pause gives the
+                // abort a turn, so the read is genuinely in flight when the
+                // user stops the job.
+                await new Promise((resolve) => setTimeout(resolve, 5));
+                streamController.enqueue(new Uint8Array(16));
+            },
+        });
+        const originalGetReader = stream.getReader.bind(stream);
+        stream.getReader = () => {
+            const reader = originalGetReader();
+            const originalCancel = reader.cancel.bind(reader);
+            reader.cancel = async (reason?: unknown) => {
+                cancelCalls += 1;
+                return originalCancel(reason);
+            };
+            return reader;
+        };
+        const fetchMock = vi.fn(
+            async () =>
+                new Response(stream, {
+                    status: 200,
+                    headers: { "content-type": "text/html" },
+                }),
+        );
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        const pending = client.fetchHtml("https://example.com/chapter", {
+            signal: controller.signal,
+            retry: { maxAttempts: 1 },
+        });
+        const expectation = expect(pending).rejects.toThrow();
+        // Let the read get going, then stop it.
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        controller.abort();
+
+        await expectation;
+        // The reader must have been cancelled by the fetch layer, so the
+        // connection is closed rather than left pulling bytes for a job that
+        // has been stopped.
+        expect(cancelCalls).toBeGreaterThan(0);
+    });
 });
 
 describe("the fetch client's content-type checks", () => {

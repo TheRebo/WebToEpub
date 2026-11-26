@@ -743,7 +743,20 @@ export class FetchClient {
 
         const body = response.body;
         if (!body) {
-            return new Uint8Array(await response.arrayBuffer());
+            // A response without a stream — a `null` body for a `204`, or a
+            // body that has already been read — is read the plain way. The
+            // size is checked afterwards, because the size is known only
+            // once the bytes are in hand. The check is not optional: a body
+            // that does not declare its size must not be an unlimited one.
+            const bytes = new Uint8Array(await response.arrayBuffer());
+            if (bytes.byteLength > limit) {
+                throw new FetchError("The response was too large to read.", {
+                    status: response.status,
+                    url: response.url,
+                    attempts: 1,
+                });
+            }
+            return bytes;
         }
 
         const reader = body.getReader();
@@ -769,6 +782,17 @@ export class FetchClient {
                 }
                 chunks.push(value);
             }
+        } catch (error) {
+            // The read did not finish, so the stream is still open. Leaving it
+            // open holds the connection — and the memory behind it — for as
+            // long as the browser feels like. A cancel that arrives mid-read
+            // has to close the stream, or the download keeps pulling bytes for
+            // a job the user has already stopped.
+            await reader.cancel().catch(() => {
+                // Cancelling a stream that has already ended is not an error
+                // worth reporting.
+            });
+            throw error;
         } finally {
             reader.releaseLock?.();
         }
