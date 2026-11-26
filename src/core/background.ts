@@ -692,9 +692,16 @@ function createImageCollector() {
     };
 }
 
-/** Sleep, but stop early when the signal aborts. */
+/**
+ * Sleep, but stop early when the signal aborts.
+ *
+ * The rejection is an `AbortError` in name as well as in kind: the error
+ * model tells a cancelled download from a failed one by the name, and an
+ * error called "Aborted" that is not an `AbortError` is reported to the user
+ * as a network failure.
+ */
 async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-    if (signal?.aborted) throw new Error("Aborted");
+    if (signal?.aborted) throw abortError();
     await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(() => {
             signal?.removeEventListener("abort", onAbort);
@@ -702,10 +709,25 @@ async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
         }, ms);
         const onAbort = (): void => {
             clearTimeout(timer);
-            reject(new Error("Aborted"));
+            reject(abortError());
         };
         signal?.addEventListener("abort", onAbort, { once: true });
     });
+}
+
+/**
+ * An error that says it is an abort.
+ *
+ * A `DOMException` would do, but the worker cannot rely on one existing in
+ * every context it runs in, and an error that is an `Error` as well as an
+ * abort is understood everywhere.
+ *
+ * @returns The error.
+ */
+function abortError(): Error {
+    const error = new Error("The operation was aborted.");
+    error.name = "AbortError";
+    return error;
 }
 
 /** Start the worker. */

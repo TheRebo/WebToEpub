@@ -348,18 +348,29 @@ export class KList extends KComponent {
 
     /** Set the items and re-render. */
     setItems(items: ListItemData[]): void {
+        // The list is re-set on every state change — a chapter's icon changes,
+        // a row is ticked — and the scroll position is part of what the user
+        // is looking at. Resetting it on every change yanked the list back to
+        // the top as soon as the user ticked anything, which made the list
+        // feel like it was fighting them.
+        const continues = continuesRows(this.#items, items);
+
         this.#items = items;
         this.#byId = new Map(items.map((item) => [item.id, item]));
         this.#focusIndex = Math.min(this.#focusIndex, Math.max(0, items.length - 1));
 
-        // The scroll window is reset. The list may have been scrolled a long
-        // way down — the user had read to chapter four thousand — and the
-        // new list may be three chapters long. Without the reset the
-        // virtualiser would look for rows from index three thousand nine
-        // hundred and render nothing at all: an empty list, with no error
-        // and no way for the user to tell what had happened.
-        this.#startIndex = 0;
-        if (this.viewport) this.viewport.scrollTop = 0;
+        if (!continues) {
+            // The list itself changed — a different book, or a filter that
+            // shows different chapters. The scroll window is reset: the list
+            // may have been scrolled a long way down — the user had read to
+            // chapter four thousand — and the new list may be three chapters
+            // long. Without the reset the virtualiser would look for rows
+            // from index three thousand nine hundred and render nothing at
+            // all: an empty list, with no error and no way for the user to
+            // tell what had happened.
+            this.#startIndex = 0;
+            if (this.viewport) this.viewport.scrollTop = 0;
+        }
 
         this.#renderRows();
     }
@@ -405,6 +416,11 @@ export class KList extends KComponent {
         if (!this.rows || !this.spacer || !this.viewport) return;
 
         const total = this.#items.length;
+        // The start index is clamped to the list, so that a list which has
+        // shrunk cannot leave the virtualiser looking for rows that are not
+        // there.
+        this.#startIndex = Math.min(this.#startIndex, Math.max(0, total - 1));
+
         // The spacer carries a margin, so the scroll range is the rows'
         // height *plus* the margin. The comment in the stylesheet says the
         // virtualiser adds the same offset; this is where it does it.
@@ -620,6 +636,34 @@ export class KList extends KComponent {
             this.#renderRows();
         }
     };
+}
+
+/**
+ * Whether the new list continues the old one.
+ *
+ * A list that continues is the old list with the same rows in the same order,
+ * with more rows added at the end at most. That is what happens when a
+ * chapter's state changes, when a row is ticked, or when more chapters are
+ * loaded — and in those cases the scroll position is part of what the user is
+ * looking at, so it must not move.
+ *
+ * A list that does not continue is a *different* list: another book, or
+ * another filter. There the scroll position means nothing, and it is reset.
+ *
+ * The comparison is by identifier and by position, so a list that has been
+ * reordered or filtered counts as different even when it holds the same
+ * rows.
+ *
+ * @param previous The items that were shown.
+ * @param next The items that are about to be shown.
+ * @returns True when the new list continues the old one.
+ */
+function continuesRows(previous: readonly ListItemData[], next: readonly ListItemData[]): boolean {
+    if (next.length < previous.length) return false;
+    for (let index = 0; index < previous.length; index += 1) {
+        if (previous[index]?.id !== next[index]?.id) return false;
+    }
+    return true;
 }
 
 defineComponent("k-list", KList);

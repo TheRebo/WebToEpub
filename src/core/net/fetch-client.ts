@@ -18,6 +18,8 @@
 import { mayFetchUrl } from "./fetch-policy";
 import { diagnosticUrl } from "../util/diagnostics";
 import { isAcceptableImageType, isAcceptablePageType, mediaTypeOf } from "./media-types";
+import type { CopiedCookie } from "./cookie-bridge";
+import type { ErrorCode } from "../util/errors";
 
 /** How a request should be retried. */
 export interface RetryPolicy {
@@ -139,10 +141,26 @@ export class FetchError extends Error {
     readonly url: string;
     readonly attempts: number;
     readonly isChallenge: boolean;
+    /**
+     * The cause, when the failure is not about the server's answer.
+     *
+     * A server that answers with a PDF when a page was asked for has answered
+     * perfectly well; the failure is in what it sent, and the code says so.
+     */
+    readonly code: ErrorCode | undefined;
+    /** The media type the server sent, when it was the wrong one. */
+    readonly mediaType: string | undefined;
 
     constructor(
         message: string,
-        options: { status?: number; url: string; attempts: number; isChallenge?: boolean },
+        options: {
+            status?: number;
+            url: string;
+            attempts: number;
+            isChallenge?: boolean;
+            code?: ErrorCode;
+            mediaType?: string;
+        },
     ) {
         super(message);
         this.name = "FetchError";
@@ -150,6 +168,8 @@ export class FetchError extends Error {
         this.url = options.url;
         this.attempts = options.attempts;
         this.isChallenge = options.isChallenge ?? false;
+        this.code = options.code;
+        this.mediaType = options.mediaType;
     }
 }
 
@@ -159,11 +179,12 @@ export interface CookieBridge {
      * Copy the site's partitioned cookies into unpartitioned cookies so the
      * extension's request authenticates the same way the tab does.
      *
-     * @returns The names of the cookies that were set, so they can be removed.
+     * @returns The cookies that were set, each with the place it was put, so
+     *   that exactly those can be removed again.
      */
-    copyForDomain(domain: string): Promise<string[]>;
-    /** Remove cookies previously copied for a domain. */
-    removeForDomain(domain: string, names: string[]): Promise<void>;
+    copyForDomain(domain: string): Promise<CopiedCookie[]>;
+    /** Remove the copies a request made. */
+    removeForDomain(domain: string, copies: CopiedCookie[]): Promise<void>;
 }
 
 /** The browser APIs the fetch layer depends on, injected for testability. */
@@ -250,7 +271,7 @@ export class FetchClient {
 
                 try {
                     const response = await this.#performRequest(url, options);
-                    const text = await this.#readText(response);
+                    const text = await this.#readText(response, options.signal);
                     diagnosticUrl(
                         `Fetched (attempt ${attempt})`,
                         url,
@@ -306,11 +327,20 @@ export class FetchClient {
                     // A page that is not HTML is not a page. Parsing it as one
                     // would produce an empty document that looks like a
                     // chapter with no prose in it.
+                    //
+                    // The status is deliberately left out: the server answered
+                    // with a 200, and telling the user that the server
+                    // returned 200 would be true and useless.
                     const contentType = response.headers.get("content-type");
                     if (!isAcceptablePageType(contentType)) {
                         throw new FetchError(
                             `Expected an HTML page from ${url} but got ${mediaTypeOf(contentType)}`,
-                            { status: response.status, url, attempts: attempt },
+                            {
+                                url,
+                                attempts: attempt,
+                                code: "UNSUPPORTED_CONTENT",
+                                mediaType: mediaTypeOf(contentType),
+                            },
                         );
                     }
 
@@ -368,7 +398,7 @@ export class FetchClient {
                         ...options,
                         headers: { Accept: "application/json", ...options.headers },
                     });
-                    const text = await this.#readText(response);
+                    const text = await this.#readText(response, options.signal);
 
                     const custom = this.#evaluateCustomError(url, response, text);
                     if (custom?.status === 999) {
@@ -423,6 +453,10 @@ export class FetchClient {
                 } catch (error) {
                     if (isAbort(error)) throw error;
                     if (error instanceof FetchError && error.status !== undefined) throw error;
+                    // A failure the layer has already classified — a refused
+                    // URL, a body that is not JSON — is the server's answer,
+                    // not a hiccup, and asking again only wastes its time.
+                    if (error instanceof FetchError && error.code !== undefined) throw error;
                     if (attempt >= policy.maxAttempts) {
                         throw error instanceof FetchError
                             ? error
@@ -472,7 +506,7 @@ export class FetchClient {
                         }
                         throw error;
                     }
-                    const data = await this.#readBody(response, MAX_RESPONSE_BYTES);
+                    const data = await this.#readBody(response, MAX_RESPONSE_BYTES, options.signal);
                     const mediaType = mediaTypeOf(response.headers.get("content-type"));
                     // An image that is not an image would be written into the
                     // EPUB with the media type the server declared, which
@@ -481,9 +515,10 @@ export class FetchClient {
                     // caller does with them.
                     if (!isAcceptableImageType(response.headers.get("content-type"))) {
                         throw new FetchError(`Expected an image from ${url} but got ${mediaType}`, {
-                            status: response.status,
                             url,
                             attempts: attempt,
+                            code: "UNSUPPORTED_CONTENT",
+                            mediaType,
                         });
                     }
                     return {
@@ -494,7 +529,11 @@ export class FetchClient {
                     };
                 } catch (error) {
                     if (isAbort(error)) throw error;
-                    if (attempt >= policy.maxAttempts) throw error;
+                    // Only a transport failure or a status the server might
+                    // answer differently next time is worth retrying. A 404, a
+                    // 403 or a page that is not a page is the server's answer,
+                    // and asking again only wastes the site's time.
+                    if (!isRetryable(error) || attempt >= policy.maxAttempts) throw error;
                     await this.#environment.sleep(this.#delayFor(policy, attempt));
                 }
             }
@@ -528,7 +567,7 @@ export class FetchClient {
         const domain = useCookies && bridge ? domainOf(url) : null;
         if (!bridge || !domain) return run();
 
-        let copied: string[] = [];
+        let copied: CopiedCookie[] = [];
         try {
             copied = await bridge.copyForDomain(domain);
             return await run();
@@ -566,17 +605,23 @@ export class FetchClient {
         if (options.referer) headers.Referer = options.referer;
 
         let current = url;
+        // The method and the body are tracked separately from the options,
+        // because a redirect can change them: a 303 after a POST means "go
+        // and GET the thing I am pointing at", not "do the same POST again".
+        let method = options.method ?? "GET";
+        let body = options.body ?? null;
+
         for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
             const validated = await mayFetchUrl(current);
             if (!validated) {
                 throw new FetchError(`Refused to fetch ${current}`, {
-                    status: 0,
                     url: current,
                     attempts: 1,
+                    code: "PERMISSION_DENIED",
                 });
             }
 
-            const response = await this.#request(validated.href, headers, options);
+            const response = await this.#request(validated.href, headers, options, method, body);
 
             // The browser's own redirect handling is not used, so a redirect is
             // a response with a location rather than a followed request.
@@ -601,6 +646,18 @@ export class FetchClient {
                     attempts: 1,
                 });
             }
+
+            // RFC 9110 §15.4: a 303 always becomes a GET, and a 301 or 302
+            // turns a POST into a GET as well. 307 and 308 keep both, because
+            // they say the method is not what changed.
+            if (
+                response.status === 303 ||
+                ((response.status === 301 || response.status === 302) && method === "POST")
+            ) {
+                method = "GET";
+                body = null;
+            }
+
             current = next;
         }
 
@@ -618,15 +675,17 @@ export class FetchClient {
         url: string,
         headers: Record<string, string>,
         options: FetchOptions,
+        method: string,
+        body: BodyInit | null,
     ): Promise<Response> {
         const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
         const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
 
         try {
             return await this.#environment.fetch(url, {
-                method: options.method ?? "GET",
+                method,
                 headers,
-                body: options.body ?? null,
+                body,
                 signal,
                 credentials: options.credentials ?? "include",
                 // The redirects are followed by hand, so the browser must not
@@ -651,10 +710,11 @@ export class FetchClient {
      * Read a response's body as text, refusing one that is too large.
      *
      * @param response The response.
+     * @param signal The signal that stops the read, when there is one.
      * @returns The body's text.
      */
-    async #readText(response: Response): Promise<string> {
-        const bytes = await this.#readBody(response, MAX_RESPONSE_BYTES);
+    async #readText(response: Response, signal?: AbortSignal): Promise<string> {
+        const bytes = await this.#readBody(response, MAX_RESPONSE_BYTES, signal);
         return new TextDecoder().decode(bytes);
     }
 
@@ -668,9 +728,10 @@ export class FetchClient {
      *
      * @param response The response.
      * @param limit The largest body to accept, in bytes.
+     * @param signal The signal that stops the read, when there is one.
      * @returns The body's bytes.
      */
-    async #readBody(response: Response, limit: number): Promise<Uint8Array> {
+    async #readBody(response: Response, limit: number, signal?: AbortSignal): Promise<Uint8Array> {
         const declared = Number(response.headers.get("content-length") ?? "");
         if (Number.isFinite(declared) && declared > limit) {
             throw new FetchError("The response was too large to read.", {
@@ -690,6 +751,7 @@ export class FetchClient {
         let total = 0;
         try {
             for (;;) {
+                if (signal?.aborted) throw abortError();
                 const { done, value } = await reader.read();
                 if (done) break;
                 if (!value) continue;
@@ -761,6 +823,23 @@ function domainOf(url: string): string | null {
  * packer treats as "unknown" and stores with a `.bin` extension. Guessing from
  * the URL is better than nothing, so the extension is used as a fallback.
  */
+
+/**
+ * True when the failure is worth asking the server again.
+ *
+ * A status the server might answer differently next time — a rate limit, a
+ * gateway error — is worth retrying. Everything else is the server's answer:
+ * a 404 stays a 404, a PDF stays a PDF, and a refused URL stays refused.
+ *
+ * A failure that carries a code has already been classified by the layer that
+ * raised it, so it is never retried here.
+ */
+function isRetryable(error: unknown): boolean {
+    if (!(error instanceof FetchError)) return true;
+    if (error.code !== undefined) return false;
+    if (error.status === undefined) return true;
+    return RETRYABLE_STATUSES.has(error.status);
+}
 
 /** An abort error, so the caller can distinguish a cancel from a failure. */
 function abortError(): DOMException {

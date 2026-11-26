@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { CookieBridge, type CookieApi, type CookieRecord } from "../../src/core/net/cookie-bridge";
+import {
+    CookieBridge,
+    type CookieApi,
+    type CookieRecord,
+    type CopiedCookie,
+} from "../../src/core/net/cookie-bridge";
 import { FetchClient } from "../../src/core/net/fetch-client";
 import { createCookieApi } from "../../src/core/net/browser-cookie-api";
 
@@ -49,7 +54,9 @@ describe("CookieBridge", () => {
         const bridge = new CookieBridge(api);
         const copied = await bridge.copyForDomain("example.com");
 
-        expect(copied).toEqual(["session"]);
+        // The copy is remembered with the place it was put, so that exactly
+        // that copy can be removed again.
+        expect(copied).toEqual([{ name: "session", path: "/", domain: "example.com" }]);
         expect(set).toHaveBeenCalledTimes(1);
         // The copy is explicitly unpartitioned, which is what lets the
         // extension's own request carry it.
@@ -57,6 +64,10 @@ describe("CookieBridge", () => {
             name: "session",
             value: "abc",
             partitionKey: null,
+            // The copy is set on the cookie's own host, not on the host that
+            // was asked for: a cookie set on `.example.com` belongs to
+            // `example.com` and to everything under it.
+            url: "https://example.com/",
         });
     });
 
@@ -93,7 +104,9 @@ describe("CookieBridge", () => {
 
         const bridge = new CookieBridge(api);
         await bridge.copyForDomain("example.com");
-        await bridge.removeForDomain("example.com", ["session"]);
+        await bridge.removeForDomain("example.com", [
+            { name: "session", path: "/", domain: "example.com" },
+        ]);
 
         expect(remove).toHaveBeenCalledWith({
             url: "https://example.com/",
@@ -122,7 +135,9 @@ describe("CookieBridge", () => {
 
         const bridge = new CookieBridge(api);
         await bridge.copyForDomain("example.com");
-        await bridge.removeForDomain("example.com", ["session"]);
+        await bridge.removeForDomain("example.com", [
+            { name: "session", path: "/app", domain: "example.com" },
+        ]);
 
         expect(set).toHaveBeenCalledWith(
             expect.objectContaining({ path: "/app", url: "https://example.com/app" }),
@@ -153,10 +168,10 @@ describe("FetchClient's cookie handling", () => {
     function clientWithBridge(): {
         client: FetchClient;
         copied: string[];
-        removed: string[][];
+        removed: CopiedCookie[][];
     } {
         const copied: string[] = [];
-        const removed: string[][] = [];
+        const removed: CopiedCookie[][] = [];
         const client = new FetchClient({
             fetch: vi.fn(
                 async () =>
@@ -169,10 +184,10 @@ describe("FetchClient's cookie handling", () => {
             cookies: {
                 copyForDomain: async (domain: string) => {
                     copied.push(domain);
-                    return ["session"];
+                    return [{ name: "session", path: "/", domain }];
                 },
-                removeForDomain: async (_domain: string, names: string[]) => {
-                    removed.push(names);
+                removeForDomain: async (_domain: string, copies: CopiedCookie[]) => {
+                    removed.push(copies);
                 },
             },
         });
@@ -188,26 +203,26 @@ describe("FetchClient's cookie handling", () => {
     it("removes the copied cookies after a successful request", async () => {
         const { client, removed } = clientWithBridge();
         await client.fetchHtml("https://example.com/chapter/1");
-        expect(removed).toEqual([["session"]]);
+        expect(removed).toEqual([[{ name: "session", path: "/", domain: "example.com" }]]);
     });
 
     it("removes the copied cookies after a request that throws", async () => {
-        const removed: string[][] = [];
+        const removed: CopiedCookie[][] = [];
         const client = new FetchClient({
             fetch: vi.fn(async () => {
                 throw new Error("Network is down");
             }) as unknown as typeof globalThis.fetch,
             sleep: async () => {},
             cookies: {
-                copyForDomain: async () => ["session"],
-                removeForDomain: async (_domain, names) => {
-                    removed.push(names);
+                copyForDomain: async (domain) => [{ name: "session", path: "/", domain }],
+                removeForDomain: async (_domain, copies) => {
+                    removed.push(copies);
                 },
             },
         });
 
         await expect(client.fetchHtml("https://example.com/chapter/1")).rejects.toThrow();
-        expect(removed).toEqual([["session"]]);
+        expect(removed).toEqual([[{ name: "session", path: "/", domain: "example.com" }]]);
     });
 
     it("does not touch the cookies when the request opts out", async () => {
@@ -218,7 +233,7 @@ describe("FetchClient's cookie handling", () => {
     });
 
     it("cleans the cookies up for a JSON request too", async () => {
-        const removed: string[][] = [];
+        const removed: CopiedCookie[][] = [];
         const client = new FetchClient({
             fetch: vi.fn(
                 async () =>
@@ -229,15 +244,15 @@ describe("FetchClient's cookie handling", () => {
             ) as unknown as typeof globalThis.fetch,
             sleep: async () => {},
             cookies: {
-                copyForDomain: async () => ["session"],
-                removeForDomain: async (_domain, names) => {
-                    removed.push(names);
+                copyForDomain: async (domain) => [{ name: "session", path: "/", domain }],
+                removeForDomain: async (_domain, copies) => {
+                    removed.push(copies);
                 },
             },
         });
 
         await client.fetchJson("https://example.com/api/chapters");
-        expect(removed).toEqual([["session"]]);
+        expect(removed).toEqual([[{ name: "session", path: "/", domain: "example.com" }]]);
     });
 });
 

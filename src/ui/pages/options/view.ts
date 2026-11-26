@@ -769,13 +769,29 @@ export function applyValues(elements: OptionsElements, values: Record<string, un
         const value = values[path];
         if (value === undefined) continue;
 
-        const target = control as unknown as { value?: unknown };
-        if (!("value" in target)) continue;
+        // A switch holds a boolean and exposes it as `checked`; a field and a
+        // segmented choice hold a string and expose it as `value`.
+        //
+        // The old code looked for `value` only, so every switch in the page
+        // kept the value it was built with: importing a settings file or
+        // resetting the settings changed the stored values and left the
+        // controls showing the old ones.
+        const target = control as unknown as { value?: unknown; checked?: unknown };
 
-        // Every control's value is a string except a switch, which is a
-        // boolean.
-        if (typeof value === "boolean") target.value = value;
-        else target.value = String(value);
+        if (typeof value === "boolean") {
+            if ("checked" in target) {
+                target.checked = value;
+                continue;
+            }
+            if ("value" in target) {
+                target.value = value;
+                continue;
+            }
+            continue;
+        }
+
+        if (!("value" in target)) continue;
+        target.value = String(value);
     }
 }
 

@@ -308,6 +308,61 @@ describe("k-list", () => {
 
             expect(viewport.scrollTop).toBe(0);
         });
+
+        it("keeps the scroll position when the same list is set again", () => {
+            // The list is set again on every state change — a chapter's icon
+            // changes, a row is ticked — and the user must not be thrown back
+            // to the top every time it happens.
+            const list = buildList(5000);
+
+            const viewport = shadow(list).querySelector(".viewport") as HTMLElement;
+            viewport.scrollTop = 4000 * 32;
+            viewport.dispatchEvent(new Event("scroll"));
+
+            const items = Array.from({ length: 5000 }, (_unused, index) => ({
+                id: `chapter-${index}`,
+                title: `Chapter ${index}`,
+                state: "downloaded" as const,
+            }));
+            (list as unknown as { setItems(items: unknown[]): void }).setItems(items);
+
+            expect(viewport.scrollTop).toBe(4000 * 32);
+        });
+
+        it("keeps the scroll position when the list grows", () => {
+            // More chapters are loaded at the end of the list; the rows the
+            // user is reading have not moved.
+            const list = buildList(100);
+
+            const viewport = shadow(list).querySelector(".viewport") as HTMLElement;
+            viewport.scrollTop = 50 * 32;
+            viewport.dispatchEvent(new Event("scroll"));
+
+            const items = Array.from({ length: 200 }, (_unused, index) => ({
+                id: `chapter-${index}`,
+                title: `Chapter ${index}`,
+            }));
+            (list as unknown as { setItems(items: unknown[]): void }).setItems(items);
+
+            expect(viewport.scrollTop).toBe(50 * 32);
+        });
+
+        it("moves the scroll position back to the top when the list is filtered", () => {
+            // A filter shows a different set of rows, so the old scroll
+            // position means nothing.
+            const list = buildList(100);
+
+            const viewport = shadow(list).querySelector(".viewport") as HTMLElement;
+            viewport.scrollTop = 50 * 32;
+            viewport.dispatchEvent(new Event("scroll"));
+
+            (list as unknown as { setItems(items: unknown[]): void }).setItems([
+                { id: "chapter-7", title: "Chapter 7" },
+                { id: "chapter-9", title: "Chapter 9" },
+            ]);
+
+            expect(viewport.scrollTop).toBe(0);
+        });
     });
 
     describe("the list's focus", () => {

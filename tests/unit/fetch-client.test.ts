@@ -11,6 +11,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
     FetchClient,
+    FetchError,
     MAX_RESPONSE_BYTES,
     type CustomErrorHandler,
 } from "../../src/core/net/fetch-client";
@@ -257,6 +258,63 @@ describe("the fetch client's URL checks", () => {
         expect(fetchMock.mock.calls.length).toBe(2);
     });
 
+    it("turns a POST into a GET after a 303", async () => {
+        // RFC 9110 §15.4: a 303 always means "go and GET the thing I am
+        // pointing at". Repeating the POST would submit the form again.
+        const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
+        const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+            calls.push({ url, init });
+            if (url === "https://example.com/submit") {
+                return new Response("", {
+                    status: 303,
+                    headers: { location: "https://example.com/result" },
+                });
+            }
+            return new Response("<html>done</html>", {
+                status: 200,
+                headers: { "content-type": "text/html" },
+            });
+        });
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await client.fetchHtml("https://example.com/submit", {
+            method: "POST",
+            body: "a=1",
+        });
+
+        const second = calls[1]?.init;
+        expect(second?.method).toBe("GET");
+        expect(second?.body).toBeNull();
+    });
+
+    it("keeps the method and body after a 307", async () => {
+        // A 307 says the method is not what changed, so it is repeated.
+        const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
+        const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+            calls.push({ url, init });
+            if (url === "https://example.com/submit") {
+                return new Response("", {
+                    status: 307,
+                    headers: { location: "https://example.com/other" },
+                });
+            }
+            return new Response("<html>done</html>", {
+                status: 200,
+                headers: { "content-type": "text/html" },
+            });
+        });
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await client.fetchHtml("https://example.com/submit", {
+            method: "POST",
+            body: "a=1",
+        });
+
+        const second = calls[1]?.init;
+        expect(second?.method).toBe("POST");
+        expect(second?.body).toBe("a=1");
+    });
+
     it("gives up on a redirect loop", async () => {
         const fetchMock = vi.fn(
             async () =>
@@ -346,6 +404,49 @@ describe("the fetch client's content-type checks", () => {
         ).rejects.toThrow(/Expected an HTML page/);
     });
 
+    it("reports the wrong content type as its own failure, not as a 200", async () => {
+        // The server answered with a 200. Telling the user "the server
+        // returned 200" would be true and useless; the problem is what it
+        // sent, so the failure has to say so.
+        const fetchMock = vi.fn(
+            async () =>
+                new Response("%PDF-1.4", {
+                    status: 200,
+                    headers: { "content-type": "application/pdf" },
+                }),
+        );
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        const error = await client
+            .fetchHtml("https://example.com/chapter", { retry: { maxAttempts: 1 } })
+            .catch((caught: unknown) => caught);
+
+        expect(error).toBeInstanceOf(FetchError);
+        expect((error as FetchError).status).toBeUndefined();
+        expect((error as FetchError).code).toBe("UNSUPPORTED_CONTENT");
+        expect((error as FetchError).mediaType).toBe("application/pdf");
+    });
+
+    it("does not retry a page that is not a page", async () => {
+        // Asking again will not make the server send HTML.
+        const fetchMock = vi.fn(
+            async () =>
+                new Response("%PDF-1.4", {
+                    status: 200,
+                    headers: { "content-type": "application/pdf" },
+                }),
+        );
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await expect(
+            client.fetchHtml("https://example.com/chapter", {
+                retry: { maxAttempts: 3, baseDelayMs: 1 },
+            }),
+        ).rejects.toThrow(/Expected an HTML page/);
+
+        expect(fetchMock.mock.calls.length).toBe(1);
+    });
+
     it("accepts a page that declares no type at all", async () => {
         // Some sites omit the header. The body is parsed as HTML either way,
         // so refusing it would break a working site.
@@ -397,5 +498,46 @@ describe("the fetch client's content-type checks", () => {
 
         const result = await client.fetchBinary("https://example.com/cover.png");
         expect(result.mediaType).toBe("image/png");
+    });
+
+    it("does not retry an image that is not an image", async () => {
+        const fetchMock = vi.fn(
+            async () =>
+                new Response("<html>not found</html>", {
+                    status: 200,
+                    headers: { "content-type": "text/html" },
+                }),
+        );
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await expect(
+            client.fetchBinary("https://example.com/cover.png", {
+                retry: { maxAttempts: 3, baseDelayMs: 1 },
+            }),
+        ).rejects.toThrow(/Expected an image/);
+
+        expect(fetchMock.mock.calls.length).toBe(1);
+    });
+
+    it("does retry an image the server failed to serve", async () => {
+        let calls = 0;
+        const fetchMock = vi.fn(async () => {
+            calls += 1;
+            if (calls < 3) {
+                return new Response("", { status: 503 });
+            }
+            return new Response(new Uint8Array([1, 2, 3]), {
+                status: 200,
+                headers: { "content-type": "image/png" },
+            });
+        });
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        const result = await client.fetchBinary("https://example.com/cover.png", {
+            retry: { maxAttempts: 3, baseDelayMs: 1 },
+        });
+
+        expect(result.mediaType).toBe("image/png");
+        expect(fetchMock.mock.calls.length).toBe(3);
     });
 });
