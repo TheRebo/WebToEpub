@@ -267,7 +267,13 @@ class BackgroundWorker {
         // the user, and the worker may still be registering its parsers — is
         // then answered rather than lost, which would show the user an error
         // that had nothing to do with what they did.
-        this.#ready = this.#prepare();
+        this.#ready = this.#prepare().catch((error) => {
+            // The promise is awaited by every handler, so it must never be a
+            // rejected promise: a rejection would fail every request for the
+            // life of the worker, with no way back. The worker starts with
+            // whatever it managed to prepare.
+            console.error("[kintsugi] The worker could not start:", error);
+        });
         handleRequests({ onMessage }, this.#handlers());
         await this.#ready;
     }
@@ -279,14 +285,31 @@ class BackgroundWorker {
      * not awaited, a request that arrived during the registration would find
      * an empty registry and fall back to the default parser for a site that
      * does have a dedicated one.
+     *
+     * Every step is allowed to fail. The promise this returns is awaited by
+     * every handler, so a rejection here would leave the promise permanently
+     * rejected and *every* request would fail for the life of the worker —
+     * one unavailable storage area would take the whole extension down. A
+     * step that fails leaves the extension in the state it would have been in
+     * before that step ran, which is a state it already knows how to work in.
      */
     async #prepare(): Promise<void> {
-        await registerAllParsers(this.#registry);
+        try {
+            await registerAllParsers(this.#registry);
+        } catch (error) {
+            console.error("[kintsugi] The parsers could not be registered:", error);
+        }
 
         // The saved site selectors have to be in the cache before the first
         // chapter is fetched, or a site the user has already taught would be
-        // parsed by the fallback parser one more time.
-        await siteSelectors.hydrate();
+        // parsed by the fallback parser one more time. Without the cache the
+        // parsers simply fall back to their own selectors, which is what
+        // happens on a first run anyway.
+        try {
+            await siteSelectors.hydrate();
+        } catch (error) {
+            console.error("[kintsugi] The site selectors could not be read:", error);
+        }
 
         // The user's preferences are read before the first parser is built, so
         // the very first run already honours them.
