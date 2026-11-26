@@ -27,16 +27,6 @@
     "message": "Chapitres",
     "description": "Le titre de la liste des chapitres."
   },
-  "workbenchChaptersFound": {
-    "message": "$COUNT$ chapitres trouvés",
-    "description": "Combien de chapitres ont été trouvés.",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
-  },
   "workbenchChapterCount": {
     "message": "$VISIBLE$ sur $TOTAL$",
     "description": "Combien de chapitres sont visibles, sur combien ont été trouvés.",
@@ -94,6 +84,16 @@
   "workbenchRangeCount": {
     "message": "$COUNT$ chapitres",
     "description": "Combien de chapitres la plage contient.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeCountOne": {
+    "message": "$COUNT$ chapitre",
+    "description": "Combien de chapitres la plage contient, quand il n'y en a qu'un.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -349,6 +349,26 @@
       }
     }
   },
+  "popupChapterCount": {
+    "message": "$COUNT$ chapitres",
+    "description": "Combien de chapitres la fenêtre a trouvés.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "popupChapterCountOne": {
+    "message": "$COUNT$ chapitre",
+    "description": "Combien de chapitres la fenêtre a trouvés, quand il n'y en a qu'un.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
   "optionsAppearance": {
     "message": "Apparence",
     "description": "Le groupe des réglages d'apparence."
@@ -505,16 +525,6 @@
     "message": "Les livres que vous créez sont conservés ici, pour pouvoir les mettre à jour quand un nouveau chapitre est publié.",
     "description": "L'explication de la bibliothèque vide."
   },
-  "optionsLibraryChapters": {
-    "message": "$COUNT$ chapitres",
-    "description": "Combien de chapitres contient un livre.",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
-  },
   "optionsNoResults": {
     "message": "Aucun résultat pour cette recherche.",
     "description": "Affiché quand une recherche dans les paramètres ne trouve rien."
@@ -526,6 +536,20 @@
   "optionsLibraryMeta": {
     "message": "$CHAPTERS$ chapitres · $SIZE$",
     "description": "La ligne de métadonnées de la carte de bibliothèque.",
+    "placeholders": {
+      "chapters": {
+        "content": "$1",
+        "example": "42"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "optionsLibraryMetaOne": {
+    "message": "$CHAPTERS$ chapitre · $SIZE$",
+    "description": "La ligne de métadonnées de la carte de bibliothèque, quand le livre n'a qu'un chapitre.",
     "placeholders": {
       "chapters": {
         "content": "$1",

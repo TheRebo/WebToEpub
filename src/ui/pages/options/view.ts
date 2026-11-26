@@ -17,7 +17,7 @@
  */
 import { createIcon } from "../../components/icons";
 import { displayHost } from "../../../core/host-access";
-import { t, tDynamic } from "../../i18n";
+import { t, tDynamic, tCount } from "../../i18n";
 
 /** The settings groups. */
 export type GroupId = "appearance" | "story" | "epub" | "images" | "behaviour" | "advanced";
@@ -970,8 +970,7 @@ export function renderLibrary(
 
             const meta = document.createElement("p");
             meta.className = "options-library-meta";
-            meta.textContent = t("optionsLibraryMeta", [
-                String(entry.chapterCount),
+            meta.textContent = tCount("optionsLibraryMeta", entry.chapterCount, [
                 formatBytes(entry.size),
             ]);
 

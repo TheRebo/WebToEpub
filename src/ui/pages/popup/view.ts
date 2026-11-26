@@ -8,7 +8,7 @@
  * markup from a string, so a page title can never become HTML.
  */
 import { createIcon } from "../../components/icons";
-import { t } from "../../i18n";
+import { t, tCount } from "../../i18n";
 
 /** The states the popup can be in. */
 export type PopupState =
@@ -315,9 +315,7 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
     }
 
     elements.chapterCount.textContent =
-        state.chapterCount > 0
-            ? `${state.chapterCount} ${state.chapterCount === 1 ? "chapter" : "chapters"}`
-            : "";
+        state.chapterCount > 0 ? tCount("popupChapterCount", state.chapterCount) : "";
 
     // --- The empty state ---
     const showEmpty =

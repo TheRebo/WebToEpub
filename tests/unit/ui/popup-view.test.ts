@@ -34,15 +34,19 @@ interface LocaleEntry {
  * way the browser's API does, so the tests prove that a message with a
  * placeholder — such as the unsupported-host message — really does reach the
  * user with the host name in it.
+ *
+ * @param overrides Messages to answer with something else, so that a test can
+ *   tell a translated string from a hard-coded English one.
  */
-function stubI18n(): void {
+function stubI18n(overrides: Record<string, string> = {}): void {
     setI18nApi({
         getMessage(key, substitutions) {
             const entry = (en as Record<string, LocaleEntry | undefined>)[key];
-            if (!entry) return "";
+            const override = overrides[key];
+            if (!entry && override === undefined) return "";
             const values = substitutions === undefined ? [] : [substitutions].flat().map(String);
-            let text = entry.message;
-            for (const [name, placeholder] of Object.entries(entry.placeholders ?? {})) {
+            let text = override ?? entry?.message ?? "";
+            for (const [name, placeholder] of Object.entries(entry?.placeholders ?? {})) {
                 const index = Number(placeholder.content.replace("$", "")) - 1;
                 const value = values[index];
                 if (value !== undefined) {
@@ -142,6 +146,22 @@ describe("the popup's view", () => {
 
         expect(elements.chapterCount.textContent).toContain("1");
         expect(elements.chapterCount.textContent).not.toContain("chapters");
+    });
+
+    it("takes the chapter count from the catalogue, not from English", () => {
+        // The popup used to write "chapters" into the page itself, so a user
+        // with Firefox in another language saw an English word in an
+        // otherwise translated window.
+        stubI18n({
+            popupChapterCount: "$COUNT$ hoofdstukken",
+            popupChapterCountOne: "$COUNT$ hoofdstuk",
+        });
+
+        const many = render({ state: "story", chapterCount: 4 });
+        expect(many.elements.chapterCount.textContent).toBe("4 hoofdstukken");
+
+        const one = render({ state: "story", chapterCount: 1 });
+        expect(one.elements.chapterCount.textContent).toBe("1 hoofdstuk");
     });
 
     it("hides the cover when there is none", () => {

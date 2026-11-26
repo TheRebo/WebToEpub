@@ -12,7 +12,6 @@ export default {
     workbenchCover: ["表紙", "表紙セクションの見出し。"],
     workbenchOptions: ["オプション", "オプションセクションの見出し。"],
     workbenchChapters: ["話数", "章リストの見出し。"],
-    workbenchChaptersFound: ["$COUNT$ 話が見つかりました", "見つかった章の数。"],
     workbenchChapterCount: [
         "$VISIBLE$ 件 / $TOTAL$ 件",
         "見つかった章のうち、今表示されている章の数。",
@@ -28,6 +27,7 @@ export default {
     workbenchRangeFrom: ["最初の章", "範囲の最初の章。"],
     workbenchRangeTo: ["最後の章", "範囲の最後の章。"],
     workbenchRangeCount: ["$COUNT$ 章", "範囲に含まれる章の数。"],
+    workbenchRangeCountOne: ["$COUNT$ 章", "範囲に含まれる章の数（一章のみの場合）。"],
     workbenchRangeSelect: ["範囲を選択", "範囲内の章を選択します。"],
     workbenchRangeDeselect: ["範囲を選択解除", "範囲内の章の選択を解除します。"],
     workbenchRangeInvalid: [
@@ -116,6 +116,8 @@ export default {
         "$HOST$ はまだ対応していません。",
         "現在のサイトに一致するパーサーがなかったときに表示。",
     ],
+    popupChapterCount: ["$COUNT$ 話", "ポップアップが見つけた話の数。"],
+    popupChapterCountOne: ["$COUNT$ 話", "ポップアップが見つけた話の数（一話のみの場合）。"],
     optionsAppearance: ["外観", "外観設定のグループ。"],
     optionsStory: ["物語", "物語設定のグループ。"],
     optionsEpub: ["EPUB", "EPUB 設定のグループ。"],
@@ -184,13 +186,16 @@ export default {
         "作成した本はここに保存されます。新しい章が公開されたら更新できます。",
         "空のライブラリの説明。",
     ],
-    optionsLibraryChapters: ["$COUNT$ 章", "本に含まれる章の数。"],
     optionsNoResults: [
         "検索に一致するものはありません。",
         "設定の検索で何も見つからなかったときに表示。",
     ],
     optionsNavLabel: ["設定グループ", "設定ナビゲーションのアクセシブルな名前。"],
     optionsLibraryMeta: ["$CHAPTERS$ 章 · $SIZE$", "ライブラリカードのメタ情報行。"],
+    optionsLibraryMetaOne: [
+        "$CHAPTERS$ 章 · $SIZE$",
+        "ライブラリカードのメタ情報行（章が一つだけの場合）。",
+    ],
     libraryRemove: ["削除", "ライブラリから本を削除します。"],
     libraryRemoved: ["ライブラリから削除しました。", "本を削除した後の確認。"],
 

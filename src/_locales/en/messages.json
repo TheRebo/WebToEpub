@@ -27,16 +27,6 @@
     "message": "Chapters",
     "description": "The heading of the chapter list."
   },
-  "workbenchChaptersFound": {
-    "message": "$COUNT$ chapters found",
-    "description": "How many chapters were found.",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
-  },
   "workbenchChapterCount": {
     "message": "$VISIBLE$ of $TOTAL$",
     "description": "How many chapters are visible, out of how many were found.",
@@ -94,6 +84,16 @@
   "workbenchRangeCount": {
     "message": "$COUNT$ chapters",
     "description": "How many chapters the range covers.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeCountOne": {
+    "message": "$COUNT$ chapter",
+    "description": "How many chapters the range covers, when there is one.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -349,6 +349,26 @@
       }
     }
   },
+  "popupChapterCount": {
+    "message": "$COUNT$ chapters",
+    "description": "How many chapters the popup found.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "popupChapterCountOne": {
+    "message": "$COUNT$ chapter",
+    "description": "How many chapters the popup found, when there is one.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
   "optionsAppearance": {
     "message": "Appearance",
     "description": "The appearance settings group."
@@ -505,16 +525,6 @@
     "message": "Books you build are kept here, so you can update them when a new chapter is posted.",
     "description": "The empty library's explanation."
   },
-  "optionsLibraryChapters": {
-    "message": "$COUNT$ chapters",
-    "description": "How many chapters a book has.",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
-  },
   "optionsNoResults": {
     "message": "Nothing matches that search.",
     "description": "Shown when a settings search finds nothing."
@@ -526,6 +536,20 @@
   "optionsLibraryMeta": {
     "message": "$CHAPTERS$ chapters · $SIZE$",
     "description": "The library card's metadata line.",
+    "placeholders": {
+      "chapters": {
+        "content": "$1",
+        "example": "42"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "optionsLibraryMetaOne": {
+    "message": "$CHAPTERS$ chapter · $SIZE$",
+    "description": "The library card's metadata line, when the book has one chapter.",
     "placeholders": {
       "chapters": {
         "content": "$1",

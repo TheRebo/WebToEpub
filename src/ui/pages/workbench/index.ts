@@ -37,7 +37,7 @@ import { runGuarded } from "../../guarded";
 import { LatestOnly } from "../../latest-only";
 import { pollUntilDone } from "../../poll";
 import { themeController } from "../../styles/theme-controller";
-import { t, tDynamic } from "../../i18n";
+import { t, tCount, tDynamic } from "../../i18n";
 import { installI18n } from "../../i18n-bootstrap";
 import { buildWorkbench, deriveFilename, renderWorkbench, type WorkbenchElements } from "./view";
 import {
@@ -723,9 +723,7 @@ export class WorkbenchController {
         }
         elements.rangeError.hidden = true;
         elements.rangeError.textContent = "";
-        elements.rangeCount.textContent = t("workbenchRangeCount", [
-            String(range.to - range.from + 1),
-        ]);
+        elements.rangeCount.textContent = tCount("workbenchRangeCount", range.to - range.from + 1);
     }
 
     /** Apply the range to the selection. */

@@ -17,7 +17,6 @@ export default {
     workbenchCover: ["Sampul", "Judul bagian sampul."],
     workbenchOptions: ["Pilihan", "Judul bagian opsi."],
     workbenchChapters: ["Bab", "Judul daftar bab."],
-    workbenchChaptersFound: ["$COUNT$ bab ditemukan", "Berapa banyak bab yang ditemukan."],
     workbenchChapterCount: [
         "$VISIBLE$ dari $TOTAL$",
         "Berapa banyak bab yang terlihat dari total yang ditemukan.",
@@ -33,6 +32,10 @@ export default {
     workbenchRangeFrom: ["Bab pertama", "Bab pertama dalam rentang."],
     workbenchRangeTo: ["Bab terakhir", "Bab terakhir dalam rentang."],
     workbenchRangeCount: ["$COUNT$ bab", "Berapa banyak bab yang ada dalam rentang."],
+    workbenchRangeCountOne: [
+        "$COUNT$ bab",
+        "Berapa banyak bab yang ada dalam rentang, ketika hanya ada satu.",
+    ],
     workbenchRangeSelect: ["Pilih rentang", "Memilih bab dalam rentang."],
     workbenchRangeDeselect: ["Batalkan rentang", "Membatalkan pilihan bab dalam rentang."],
     workbenchRangeInvalid: [
@@ -137,6 +140,11 @@ export default {
         "$HOST$ belum didukung.",
         "Ditampilkan saat tidak ada parser yang cocok dengan situs saat ini.",
     ],
+    popupChapterCount: ["$COUNT$ bab", "Berapa banyak bab yang ditemukan popup."],
+    popupChapterCountOne: [
+        "$COUNT$ bab",
+        "Berapa banyak bab yang ditemukan popup, ketika hanya ada satu.",
+    ],
 
     // --- Options ---
     optionsAppearance: ["Tampilan", "Kelompok pengaturan tampilan."],
@@ -213,13 +221,16 @@ export default {
         "Buku yang Anda buat disimpan di sini, sehingga Anda dapat memperbarui buku saat ada bab baru.",
         "Penjelasan untuk pustaka yang kosong.",
     ],
-    optionsLibraryChapters: ["$COUNT$ bab", "Berapa banyak bab yang dimiliki sebuah buku."],
     optionsNoResults: [
         "Tidak ada yang cocok dengan pencarian itu.",
         "Ditampilkan saat pencarian pengaturan tidak menemukan hasil.",
     ],
     optionsNavLabel: ["Kelompok pengaturan", "Nama yang dapat diakses untuk navigasi pengaturan."],
     optionsLibraryMeta: ["$CHAPTERS$ bab · $SIZE$", "Baris metadata pada kartu pustaka."],
+    optionsLibraryMetaOne: [
+        "$CHAPTERS$ bab · $SIZE$",
+        "Baris metadata pada kartu pustaka, ketika buku hanya memiliki satu bab.",
+    ],
     libraryRemove: ["Hapus", "Menghapus buku dari pustaka."],
     libraryRemoved: ["Dihapus dari pustaka.", "Konfirmasi setelah menghapus buku."],
 

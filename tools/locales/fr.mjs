@@ -15,7 +15,6 @@ export default {
     workbenchCover: ["Couverture", "Le titre de la section de couverture."],
     workbenchOptions: ["Options", "Le titre de la section des options."],
     workbenchChapters: ["Chapitres", "Le titre de la liste des chapitres."],
-    workbenchChaptersFound: ["$COUNT$ chapitres trouvés", "Combien de chapitres ont été trouvés."],
     workbenchChapterCount: [
         "$VISIBLE$ sur $TOTAL$",
         "Combien de chapitres sont visibles, sur combien ont été trouvés.",
@@ -31,6 +30,10 @@ export default {
     workbenchRangeFrom: ["Premier chapitre", "Le premier chapitre de la plage."],
     workbenchRangeTo: ["Dernier chapitre", "Le dernier chapitre de la plage."],
     workbenchRangeCount: ["$COUNT$ chapitres", "Combien de chapitres la plage contient."],
+    workbenchRangeCountOne: [
+        "$COUNT$ chapitre",
+        "Combien de chapitres la plage contient, quand il n'y en a qu'un.",
+    ],
     workbenchRangeSelect: ["Sélectionner la plage", "Sélectionne les chapitres de la plage."],
     workbenchRangeDeselect: ["Désélectionner la plage", "Désélectionne les chapitres de la plage."],
     workbenchRangeInvalid: [
@@ -135,6 +138,11 @@ export default {
         "$HOST$ n'est pas encore pris en charge.",
         "Affiché quand aucun analyseur ne correspond au site actuel.",
     ],
+    popupChapterCount: ["$COUNT$ chapitres", "Combien de chapitres la fenêtre a trouvés."],
+    popupChapterCountOne: [
+        "$COUNT$ chapitre",
+        "Combien de chapitres la fenêtre a trouvés, quand il n'y en a qu'un.",
+    ],
     optionsAppearance: ["Apparence", "Le groupe des réglages d'apparence."],
     optionsStory: ["Histoire", "Le groupe des réglages d'histoire."],
     optionsEpub: ["EPUB", "Le groupe des réglages EPUB."],
@@ -216,7 +224,6 @@ export default {
         "Les livres que vous créez sont conservés ici, pour pouvoir les mettre à jour quand un nouveau chapitre est publié.",
         "L'explication de la bibliothèque vide.",
     ],
-    optionsLibraryChapters: ["$COUNT$ chapitres", "Combien de chapitres contient un livre."],
     optionsNoResults: [
         "Aucun résultat pour cette recherche.",
         "Affiché quand une recherche dans les paramètres ne trouve rien.",
@@ -228,6 +235,10 @@ export default {
     optionsLibraryMeta: [
         "$CHAPTERS$ chapitres · $SIZE$",
         "La ligne de métadonnées de la carte de bibliothèque.",
+    ],
+    optionsLibraryMetaOne: [
+        "$CHAPTERS$ chapitre · $SIZE$",
+        "La ligne de métadonnées de la carte de bibliothèque, quand le livre n'a qu'un chapitre.",
     ],
     libraryRemove: ["Retirer", "Retire un livre de la bibliothèque."],
     libraryRemoved: ["Retiré de la bibliothèque.", "Confirmation après le retrait d'un livre."],

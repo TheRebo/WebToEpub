@@ -27,16 +27,6 @@
     "message": "話数",
     "description": "章リストの見出し。"
   },
-  "workbenchChaptersFound": {
-    "message": "$COUNT$ 話が見つかりました",
-    "description": "見つかった章の数。",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
-  },
   "workbenchChapterCount": {
     "message": "$VISIBLE$ 件 / $TOTAL$ 件",
     "description": "見つかった章のうち、今表示されている章の数。",
@@ -94,6 +84,16 @@
   "workbenchRangeCount": {
     "message": "$COUNT$ 章",
     "description": "範囲に含まれる章の数。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeCountOne": {
+    "message": "$COUNT$ 章",
+    "description": "範囲に含まれる章の数（一章のみの場合）。",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -349,6 +349,26 @@
       }
     }
   },
+  "popupChapterCount": {
+    "message": "$COUNT$ 話",
+    "description": "ポップアップが見つけた話の数。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "popupChapterCountOne": {
+    "message": "$COUNT$ 話",
+    "description": "ポップアップが見つけた話の数（一話のみの場合）。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
   "optionsAppearance": {
     "message": "外観",
     "description": "外観設定のグループ。"
@@ -505,16 +525,6 @@
     "message": "作成した本はここに保存されます。新しい章が公開されたら更新できます。",
     "description": "空のライブラリの説明。"
   },
-  "optionsLibraryChapters": {
-    "message": "$COUNT$ 章",
-    "description": "本に含まれる章の数。",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
-  },
   "optionsNoResults": {
     "message": "検索に一致するものはありません。",
     "description": "設定の検索で何も見つからなかったときに表示。"
@@ -526,6 +536,20 @@
   "optionsLibraryMeta": {
     "message": "$CHAPTERS$ 章 · $SIZE$",
     "description": "ライブラリカードのメタ情報行。",
+    "placeholders": {
+      "chapters": {
+        "content": "$1",
+        "example": "42"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "optionsLibraryMetaOne": {
+    "message": "$CHAPTERS$ 章 · $SIZE$",
+    "description": "ライブラリカードのメタ情報行（章が一つだけの場合）。",
     "placeholders": {
       "chapters": {
         "content": "$1",

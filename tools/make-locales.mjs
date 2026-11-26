@@ -43,7 +43,6 @@ const SOURCE = {
     workbenchCover: ["Cover", "The heading of the cover section."],
     workbenchOptions: ["Options", "The heading of the options section."],
     workbenchChapters: ["Chapters", "The heading of the chapter list."],
-    workbenchChaptersFound: ["$COUNT$ chapters found", "How many chapters were found."],
     workbenchChapterCount: [
         "$VISIBLE$ of $TOTAL$",
         "How many chapters are visible, out of how many were found.",
@@ -59,6 +58,10 @@ const SOURCE = {
     workbenchRangeFrom: ["First chapter", "The first chapter of the range."],
     workbenchRangeTo: ["Last chapter", "The last chapter of the range."],
     workbenchRangeCount: ["$COUNT$ chapters", "How many chapters the range covers."],
+    workbenchRangeCountOne: [
+        "$COUNT$ chapter",
+        "How many chapters the range covers, when there is one.",
+    ],
     workbenchRangeSelect: ["Select range", "Selects the chapters in the range."],
     workbenchRangeDeselect: ["Deselect range", "Deselects the chapters in the range."],
     workbenchRangeInvalid: [
@@ -156,6 +159,11 @@ const SOURCE = {
         "$HOST$ is not supported yet.",
         "Shown when no parser matched the current site.",
     ],
+    popupChapterCount: ["$COUNT$ chapters", "How many chapters the popup found."],
+    popupChapterCountOne: [
+        "$COUNT$ chapter",
+        "How many chapters the popup found, when there is one.",
+    ],
 
     // --- Options ---
     optionsAppearance: ["Appearance", "The appearance settings group."],
@@ -232,13 +240,16 @@ const SOURCE = {
         "Books you build are kept here, so you can update them when a new chapter is posted.",
         "The empty library's explanation.",
     ],
-    optionsLibraryChapters: ["$COUNT$ chapters", "How many chapters a book has."],
     optionsNoResults: [
         "Nothing matches that search.",
         "Shown when a settings search finds nothing.",
     ],
     optionsNavLabel: ["Settings groups", "The accessible name of the settings navigation."],
     optionsLibraryMeta: ["$CHAPTERS$ chapters · $SIZE$", "The library card's metadata line."],
+    optionsLibraryMetaOne: [
+        "$CHAPTERS$ chapter · $SIZE$",
+        "The library card's metadata line, when the book has one chapter.",
+    ],
     libraryRemove: ["Remove", "Removes a book from the library."],
     libraryRemoved: ["Removed from the library.", "Confirmation after removing a book."],
 

@@ -27,16 +27,6 @@
     "message": "Bab",
     "description": "Judul daftar bab."
   },
-  "workbenchChaptersFound": {
-    "message": "$COUNT$ bab ditemukan",
-    "description": "Berapa banyak bab yang ditemukan.",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
-  },
   "workbenchChapterCount": {
     "message": "$VISIBLE$ dari $TOTAL$",
     "description": "Berapa banyak bab yang terlihat dari total yang ditemukan.",
@@ -94,6 +84,16 @@
   "workbenchRangeCount": {
     "message": "$COUNT$ bab",
     "description": "Berapa banyak bab yang ada dalam rentang.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeCountOne": {
+    "message": "$COUNT$ bab",
+    "description": "Berapa banyak bab yang ada dalam rentang, ketika hanya ada satu.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -349,6 +349,26 @@
       }
     }
   },
+  "popupChapterCount": {
+    "message": "$COUNT$ bab",
+    "description": "Berapa banyak bab yang ditemukan popup.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "popupChapterCountOne": {
+    "message": "$COUNT$ bab",
+    "description": "Berapa banyak bab yang ditemukan popup, ketika hanya ada satu.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
   "optionsAppearance": {
     "message": "Tampilan",
     "description": "Kelompok pengaturan tampilan."
@@ -505,16 +525,6 @@
     "message": "Buku yang Anda buat disimpan di sini, sehingga Anda dapat memperbarui buku saat ada bab baru.",
     "description": "Penjelasan untuk pustaka yang kosong."
   },
-  "optionsLibraryChapters": {
-    "message": "$COUNT$ bab",
-    "description": "Berapa banyak bab yang dimiliki sebuah buku.",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
-  },
   "optionsNoResults": {
     "message": "Tidak ada yang cocok dengan pencarian itu.",
     "description": "Ditampilkan saat pencarian pengaturan tidak menemukan hasil."
@@ -526,6 +536,20 @@
   "optionsLibraryMeta": {
     "message": "$CHAPTERS$ bab · $SIZE$",
     "description": "Baris metadata pada kartu pustaka.",
+    "placeholders": {
+      "chapters": {
+        "content": "$1",
+        "example": "42"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "optionsLibraryMetaOne": {
+    "message": "$CHAPTERS$ bab · $SIZE$",
+    "description": "Baris metadata pada kartu pustaka, ketika buku hanya memiliki satu bab.",
     "placeholders": {
       "chapters": {
         "content": "$1",

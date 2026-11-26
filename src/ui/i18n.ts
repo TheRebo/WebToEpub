@@ -23,7 +23,6 @@ export const MESSAGES = {
     workbenchCover: "workbenchCover",
     workbenchOptions: "workbenchOptions",
     workbenchChapters: "workbenchChapters",
-    workbenchChaptersFound: "workbenchChaptersFound",
     workbenchChapterCount: "workbenchChapterCount",
     workbenchPack: "workbenchPack",
     workbenchSave: "workbenchSave",
@@ -36,6 +35,7 @@ export const MESSAGES = {
     workbenchRangeFrom: "workbenchRangeFrom",
     workbenchRangeTo: "workbenchRangeTo",
     workbenchRangeCount: "workbenchRangeCount",
+    workbenchRangeCountOne: "workbenchRangeCountOne",
     workbenchRangeSelect: "workbenchRangeSelect",
     workbenchRangeDeselect: "workbenchRangeDeselect",
     workbenchRangeInvalid: "workbenchRangeInvalid",
@@ -103,6 +103,8 @@ export const MESSAGES = {
     popupSaved: "popupSaved",
     popupTryAgain: "popupTryAgain",
     popupUnsupportedHost: "popupUnsupportedHost",
+    popupChapterCount: "popupChapterCount",
+    popupChapterCountOne: "popupChapterCountOne",
 
     // Common
     commonClose: "commonClose",
@@ -151,10 +153,10 @@ export const MESSAGES = {
     optionsLibrary: "optionsLibrary",
     optionsLibraryEmptyTitle: "optionsLibraryEmptyTitle",
     optionsLibraryEmptyText: "optionsLibraryEmptyText",
-    optionsLibraryChapters: "optionsLibraryChapters",
     optionsNoResults: "optionsNoResults",
     optionsNavLabel: "optionsNavLabel",
     optionsLibraryMeta: "optionsLibraryMeta",
+    optionsLibraryMetaOne: "optionsLibraryMetaOne",
     libraryRemove: "libraryRemove",
     libraryRemoved: "libraryRemoved",
 
@@ -361,27 +363,41 @@ export function tDynamic(key: string, substitutions?: Substitutions): string {
 }
 
 /**
- * Translate a message with a count.
+ * The counted messages, and the singular form of each.
  *
- * The message must have a `one` and a `many` form, which is what
- * `browser.i18n.getMessage` expects for a counted string.
+ * Firefox's `browser.i18n` does not choose a plural form on its own. The
+ * `_one` and `_other` variants that Chrome understands are ignored there, and
+ * the base message is returned whatever the count is — so a message that
+ * counted chapters would say "1 chapters". A counted message therefore comes
+ * in two: the base name for the plural, and the base name with `One` for the
+ * singular. See ADR-0010.
+ *
+ * The map is the single list of messages that are counted, so a message
+ * cannot be counted without a singular form existing for it.
  */
-export function tCount(key: MessageName, count: number, substitutions?: string[]): string {
-    const cacheKey = `${key}|count:${count}|${JSON.stringify(substitutions ?? [])}`;
-    const cached = cache.get(cacheKey);
-    if (cached !== undefined) return cached;
+export const COUNTED = {
+    popupChapterCount: "popupChapterCountOne",
+    workbenchRangeCount: "workbenchRangeCountOne",
+    optionsLibraryMeta: "optionsLibraryMetaOne",
+} as const;
 
-    let message = "";
-    if (api) {
-        try {
-            message = api.getMessage(key, [...(substitutions ?? []), String(count)]);
-        } catch {
-            message = "";
-        }
-    }
-    if (!message) message = key;
-    cache.set(cacheKey, message);
-    return message;
+/** The name of a message that can be counted. */
+export type CountedName = keyof typeof COUNTED;
+
+/**
+ * Translate a message that counts something.
+ *
+ * The count is the first substitution, so a message that counts chapters and
+ * shows a size as well takes the size second.
+ *
+ * @param key The message name for the plural form.
+ * @param count The number being counted.
+ * @param substitutions The other substitutions, after the count.
+ * @returns The translated string, in the right number.
+ */
+export function tCount(key: CountedName, count: number, substitutions: string[] = []): string {
+    const name = count === 1 ? COUNTED[key] : key;
+    return t(name, [String(count), ...substitutions]);
 }
 
 /** Clear the memoisation cache. */

@@ -15,7 +15,6 @@ export default {
     workbenchCover: ["Cover", "Die Überschrift des Cover-Bereichs."],
     workbenchOptions: ["Optionen", "Die Überschrift des Optionsbereichs."],
     workbenchChapters: ["Kapitel", "Die Überschrift der Kapitelliste."],
-    workbenchChaptersFound: ["$COUNT$ Kapitel gefunden", "Wie viele Kapitel gefunden wurden."],
     workbenchChapterCount: [
         "$VISIBLE$ von $TOTAL$",
         "Wie viele Kapitel sichtbar sind, von wie vielen gefunden wurden.",
@@ -31,6 +30,10 @@ export default {
     workbenchRangeFrom: ["Erstes Kapitel", "Das erste Kapitel des Bereichs."],
     workbenchRangeTo: ["Letztes Kapitel", "Das letzte Kapitel des Bereichs."],
     workbenchRangeCount: ["$COUNT$ Kapitel", "Wie viele Kapitel der Bereich umfasst."],
+    workbenchRangeCountOne: [
+        "$COUNT$ Kapitel",
+        "Wie viele Kapitel der Bereich umfasst, wenn es nur eines ist.",
+    ],
     workbenchRangeSelect: ["Bereich auswählen", "Wählt die Kapitel im Bereich aus."],
     workbenchRangeDeselect: ["Bereich abwählen", "Hebt die Auswahl im Bereich auf."],
     workbenchRangeInvalid: [
@@ -135,6 +138,11 @@ export default {
         "$HOST$ wird noch nicht unterstützt.",
         "Wird angezeigt, wenn kein Parser zur aktuellen Seite passt.",
     ],
+    popupChapterCount: ["$COUNT$ Kapitel", "Wie viele Kapitel das Popup gefunden hat."],
+    popupChapterCountOne: [
+        "$COUNT$ Kapitel",
+        "Wie viele Kapitel das Popup gefunden hat, wenn es nur eines ist.",
+    ],
     optionsAppearance: ["Darstellung", "Die Gruppe der Darstellungsoptionen."],
     optionsStory: ["Story", "Die Gruppe der Story-Optionen."],
     optionsEpub: ["EPUB", "Die Gruppe der EPUB-Optionen."],
@@ -216,13 +224,16 @@ export default {
         "Erstellte Bücher bleiben hier, damit Sie sie aktualisieren können, sobald ein neues Kapitel erscheint.",
         "Die Erklärung der leeren Bibliothek.",
     ],
-    optionsLibraryChapters: ["$COUNT$ Kapitel", "Wie viele Kapitel ein Buch hat."],
     optionsNoResults: [
         "Nichts passt zu dieser Suche.",
         "Wird angezeigt, wenn eine Suche in den Einstellungen nichts findet.",
     ],
     optionsNavLabel: ["Einstellungsgruppen", "Der zugängliche Name der Einstellungs-Navigation."],
     optionsLibraryMeta: ["$CHAPTERS$ Kapitel · $SIZE$", "Die Metadatenzeile der Bibliothekskarte."],
+    optionsLibraryMetaOne: [
+        "$CHAPTERS$ Kapitel · $SIZE$",
+        "Die Metadatenzeile der Bibliothekskarte, wenn das Buch nur ein Kapitel hat.",
+    ],
     libraryRemove: ["Entfernen", "Entfernt ein Buch aus der Bibliothek."],
     libraryRemoved: ["Aus der Bibliothek entfernt.", "Bestätigung nach dem Entfernen eines Buchs."],
     settingReduceMotion: [
