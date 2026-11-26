@@ -99,14 +99,30 @@ export function mergeLibraryEntry(
  * The library store.
  */
 export class LibraryStore {
-    #db: IDBDatabase | undefined;
+    /**
+     * The open database, or the promise of it.
+     *
+     * The promise is what is kept, rather than the database itself: two
+     * callers that arrive at the same time would otherwise each open the
+     * database, and the connection that lost the race would be left open for
+     * ever. An open connection blocks the next version of the schema from
+     * being installed — the browser calls it a *blocked* database — so the
+     * leak is not a slow one, it is a broken one.
+     */
+    #opening: Promise<IDBDatabase> | undefined;
 
     constructor(private readonly factory: IDBFactory = indexedDB) {}
 
     /** The open database, opening it if necessary. */
     async #database(): Promise<IDBDatabase> {
-        if (!this.#db) this.#db = await openLibraryDatabase(this.factory);
-        return this.#db;
+        if (!this.#opening) {
+            this.#opening = openLibraryDatabase(this.factory).catch((error: unknown) => {
+                // A failed open is not remembered: the next call tries again.
+                this.#opening = undefined;
+                throw error;
+            });
+        }
+        return this.#opening;
     }
 
     /**
@@ -220,7 +236,7 @@ export class LibraryStore {
 
     /** Close the database. */
     close(): void {
-        this.#db?.close();
-        this.#db = undefined;
+        void this.#opening?.then((db) => db.close());
+        this.#opening = undefined;
     }
 }

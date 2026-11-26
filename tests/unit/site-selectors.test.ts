@@ -221,6 +221,29 @@ describe("SiteSelectorStore", () => {
         expect((await store.list()).size).toBe(1);
     });
 
+    it("keeps both configurations when two saves overlap", async () => {
+        // Saving a configuration is a read-modify-write: the saved set is
+        // read, one entry is changed, and the whole set is written back. Two
+        // saves that overlap each read the same snapshot, so the second write
+        // drops the first one's configuration — and the user is left with one
+        // selector instead of two, with nothing to say so.
+        await Promise.all([
+            store.setForHost("a.example", {
+                ...emptySiteSelectorConfig(),
+                contentCss: "div.a",
+            }),
+            store.setForHost("b.example", {
+                ...emptySiteSelectorConfig(),
+                contentCss: "div.b",
+            }),
+        ]);
+
+        const all = await store.list();
+        expect(all.size).toBe(2);
+        expect(all.get("a.example")?.contentCss).toBe("div.a");
+        expect(all.get("b.example")?.contentCss).toBe("div.b");
+    });
+
     it("drops a stored configuration whose key is not a host name", async () => {
         await store.hydrate();
         storage.data["kintsugi.siteSelectors"] = {

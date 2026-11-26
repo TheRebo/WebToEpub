@@ -209,6 +209,37 @@ describe("SettingsStore", () => {
         expect(settings.story.defaultLanguage).toBe("fr");
     });
 
+    it("does not let a whole write overlap an update", async () => {
+        // A write that runs beside an update can land between the update's
+        // read and its write, and the update's change is then lost. The
+        // options page writes the whole object while the workbench updates
+        // one group, so the two really do meet.
+        const storage = memoryStorage();
+        let writing = 0;
+        let overlapped = false;
+        const counting: SettingsStorage = {
+            ...storage,
+            async set(items) {
+                writing += 1;
+                if (writing > 1) overlapped = true;
+                await new Promise((resolve) => setTimeout(resolve, 1));
+                await storage.set(items);
+                writing -= 1;
+            },
+        };
+        const store = new SettingsStore(counting);
+
+        await Promise.all([
+            store.update({ appearance: { ...DEFAULT_SETTINGS.appearance, theme: "dark" } }),
+            store.set({
+                ...DEFAULT_SETTINGS,
+                story: { ...DEFAULT_SETTINGS.story, defaultLanguage: "fr" },
+            }),
+        ]);
+
+        expect(overlapped).toBe(false);
+    });
+
     it("keeps the queue working after a failed write", async () => {
         const storage = memoryStorage();
         let failNext = true;

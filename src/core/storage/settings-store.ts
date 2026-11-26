@@ -340,12 +340,14 @@ export class SettingsStore {
     /** Write the settings. */
     async set(settings: Settings): Promise<void> {
         const validated = validateSettings(settings);
-        // The cache is updated only once the write has succeeded. Setting it
-        // first would let a failed write — a full disk, say — leave the
-        // store reporting a value that was never persisted, and the failure
-        // would be masked.
-        await this.#storage.set({ [SETTINGS_KEY]: validated });
-        this.#cache = validated;
+        await this.#enqueue(async () => {
+            // The cache is updated only once the write has succeeded. Setting
+            // it first would let a failed write — a full disk, say — leave the
+            // store reporting a value that was never persisted, and the
+            // failure would be masked.
+            await this.#storage.set({ [SETTINGS_KEY]: validated });
+            this.#cache = validated;
+        });
     }
 
     /**
@@ -354,18 +356,13 @@ export class SettingsStore {
     async update(partial: Partial<Settings>): Promise<Settings> {
         // The whole read-modify-write is queued, so two overlapping updates
         // cannot discard each other.
-        const result = this.#queue.then(async () => {
+        return this.#enqueue(async () => {
             const current = await this.get();
             const next = validateSettings(deepMerge(current, partial as Record<string, unknown>));
-            await this.set(next);
+            await this.#storage.set({ [SETTINGS_KEY]: next });
+            this.#cache = next;
             return next;
         });
-        // The queue must not be broken by a failed write: the next update
-        // still has to run.
-        this.#queue = result.catch(() => {
-            // The failure is reported to the caller of `update`.
-        });
-        return result;
     }
 
     /**
@@ -376,9 +373,31 @@ export class SettingsStore {
      * parsers — are untouched.
      */
     async reset(): Promise<Settings> {
-        await this.#storage.remove(SETTINGS_KEY);
-        this.#cache = undefined;
-        return this.get();
+        return this.#enqueue(async () => {
+            await this.#storage.remove(SETTINGS_KEY);
+            this.#cache = undefined;
+            return this.get();
+        });
+    }
+
+    /**
+     * Run work after everything already queued.
+     *
+     * The queue is what keeps two overlapping writes from discarding each
+     * other: each one sees the result of the one before it. The queue is not
+     * broken by a failure — the next write still has to run — but the failure
+     * is reported to whoever asked for the work.
+     *
+     * @param work The work to do.
+     * @returns Whatever the work returned.
+     */
+    async #enqueue<T>(work: () => Promise<T>): Promise<T> {
+        const result = this.#queue.then(work);
+        this.#queue = result.then(
+            () => undefined,
+            () => undefined,
+        );
+        return result;
     }
 
     /** Clear the cache, so the next read comes from storage. */
