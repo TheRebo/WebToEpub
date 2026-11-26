@@ -112,6 +112,29 @@ describe("sanitizeHtml", () => {
     it("removes a data: URL in an href", () => {
         expect(sanitizeHtml('<a href="data:text/html,x">y</a>')).not.toContain("data:");
     });
+
+    it("keeps a picture and its sources", () => {
+        // A responsive image is a `<picture>` with a `<source>` for each
+        // format. Dropping them loses the picture's own markup, and a
+        // `<picture>` whose image has no `src` of its own loses the picture
+        // entirely.
+        const html = sanitizeHtml(
+            '<picture><source srcset="https://example.com/a.webp" type="image/webp"><img src="https://example.com/a.png" alt="a"></picture>',
+        );
+        expect(html).toContain("<picture");
+        expect(html).toContain("<source");
+        expect(html).toContain("a.webp");
+        expect(html).toContain("a.png");
+    });
+
+    it("removes a dangerous URL that hides in a srcset", () => {
+        // The attribute as a whole starts with an harmless URL, so it has to
+        // be checked candidate by candidate.
+        const html = sanitizeHtml(
+            '<img srcset="https://example.com/a.png 1x, javascript:alert(1) 2x">',
+        );
+        expect(html).not.toContain("javascript:");
+    });
 });
 
 describe("sanitizeToFragment", () => {

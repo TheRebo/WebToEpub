@@ -44,7 +44,10 @@ import { redactUrl } from "../util/url";
  * @returns The markup, with its references rewritten, as XML.
  */
 function rewriteImageHrefs(html: string, images: Map<string, ImageData>, baseUrl: string): string {
-    if (images.size === 0) return html;
+    // A chapter with no image markup at all cannot hold a stray reference, and
+    // parsing every chapter of a long book to find that out is work worth
+    // avoiding.
+    if (!/<(?:img|source)\b/i.test(html)) return html;
 
     const document = new DOMParser().parseFromString(html, "text/html");
     const changed = rewriteImageElements(document, images, baseUrl, (image) =>
@@ -274,10 +277,13 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
 
         // The references are rewritten here, so that the chapter points at the
         // packaged image rather than at the site's own servers. A caller that
-        // already rewrote them is not disturbed.
-        const contentHtml = chapter.images
-            ? rewriteImageHrefs(chapter.contentHtml, chapter.images, chapter.sourceUrl)
-            : chapter.contentHtml;
+        // already rewrote them is not disturbed, and a chapter with no images
+        // at all still has its stray references removed.
+        const contentHtml = rewriteImageHrefs(
+            chapter.contentHtml,
+            chapter.images ?? new Map<string, ImageData>(),
+            chapter.sourceUrl,
+        );
 
         const body = buildChapterBody({ ...chapter, contentHtml }, metadata.author);
 

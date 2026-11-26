@@ -187,10 +187,12 @@ describe("a packed chapter", () => {
         expect(body).toContain("2x");
     });
 
-    it("leaves an image that was not downloaded alone", () => {
+    it("removes an image that was not downloaded", () => {
         const body = chapterBody('<img src="https://example.com/other.png" alt="x">');
-        // The image is not in the book, so there is nothing to point at. The
-        // reference is left as it was rather than pointing at nothing.
-        expect(body).toContain("https://example.com/other.png");
+        // The image is not in the book. Leaving the reference would point the
+        // reader at the site's own servers — which are not in the book, and
+        // which the reader's copy of the book has no business calling.
+        expect(body).not.toContain("https://example.com/other.png");
+        expect(body).not.toContain("<img");
     });
 });

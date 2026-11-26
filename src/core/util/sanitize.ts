@@ -8,6 +8,7 @@
  * See `SECURITY.md` §3.3.
  */
 import DOMPurify from "../vendor/dompurify";
+import { parseSrcset } from "./image-references";
 
 /**
  * The tags that survive sanitisation.
@@ -46,10 +47,12 @@ const ALLOWED_TAGS = [
     "li",
     "ol",
     "p",
+    "picture",
     "pre",
     "q",
     "s",
     "small",
+    "source",
     "span",
     "strong",
     "sub",
@@ -76,11 +79,14 @@ const ALLOWED_ATTRIBUTES = [
     "href",
     "id",
     "lang",
+    "media",
     "rowspan",
+    "sizes",
     "span",
     "src",
     "srcset",
     "title",
+    "type",
     "width",
 ];
 
@@ -137,7 +143,7 @@ function isAllowedDataUrl(value: string): boolean {
 }
 
 /**
- * Hook that strips dangerous URLs from `href` and `src`.
+ * Hook that strips dangerous URLs from `href`, `src` and `srcset`.
  *
  * DOMPurify removes most dangerous URLs on its own, but the allow-list
  * approach here means a URL that somehow survives the tag filter is still
@@ -148,6 +154,10 @@ function isAllowedDataUrl(value: string): boolean {
  * an SVG document, which can carry a script. The extension's own placeholder
  * images are SVG, so SVG cannot simply be banned: instead only the inert
  * raster types are allowed, and everything else is removed.
+ *
+ * A `srcset` is checked candidate by candidate. DOMPurify looks at the
+ * attribute as a whole, so a list whose first candidate is harmless can carry
+ * a dangerous one further along.
  */
 function sanitiseHook(_domPurify: typeof DOMPurify): void {
     DOMPurify.addHook("afterSanitizeAttributes", (node) => {
@@ -156,16 +166,27 @@ function sanitiseHook(_domPurify: typeof DOMPurify): void {
         for (const attribute of ["href", "src"]) {
             const value = element.getAttribute(attribute);
             if (value === null) continue;
-            const trimmed = value.trim().toLowerCase();
-            if (
-                trimmed.startsWith("javascript:") ||
-                trimmed.startsWith("vbscript:") ||
-                (trimmed.startsWith("data:") && !isAllowedDataUrl(trimmed))
-            ) {
-                element.removeAttribute(attribute);
-            }
+            if (isUnsafeUrl(value)) element.removeAttribute(attribute);
+        }
+
+        const srcset = element.getAttribute("srcset");
+        if (srcset === null) return;
+        if (parseSrcset(srcset).some((candidate) => isUnsafeUrl(candidate.url))) {
+            element.removeAttribute("srcset");
         }
     });
+}
+
+/**
+ * Whether a URL is one that must not reach the book.
+ *
+ * @param value The URL.
+ * @returns Whether the URL is dangerous.
+ */
+function isUnsafeUrl(value: string): boolean {
+    const trimmed = value.trim().toLowerCase();
+    if (trimmed.startsWith("javascript:") || trimmed.startsWith("vbscript:")) return true;
+    return trimmed.startsWith("data:") && !isAllowedDataUrl(trimmed);
 }
 
 let hookInstalled = false;

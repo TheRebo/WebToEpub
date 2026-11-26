@@ -340,13 +340,16 @@ describe("rewriteImageReferences", () => {
         expect(html).not.toContain("https://example.com/b.webp");
     });
 
-    it("leaves an image it does not have alone", () => {
+    it("removes an image it does not have", () => {
+        // Leaving it would point the reader at the site's own servers, which
+        // are not in the book.
         const html = rewriteImageReferences(
             '<p><img src="https://example.com/other.png"></p>',
             new Map(),
             "https://example.com/c/1",
         );
-        expect(html).toContain("https://example.com/other.png");
+        expect(html).not.toContain("<img");
+        expect(html).not.toContain("https://example.com/other.png");
     });
 
     it("does not touch text that merely mentions a URL", () => {

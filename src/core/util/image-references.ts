@@ -213,6 +213,10 @@ export interface PackagedImage {
  * picture, and one that can tries to load the image from the network every
  * time the chapter is opened.
  *
+ * An image that is *self-contained* — a `data:` URL — is left alone: it carries
+ * its own bytes, so it reaches out to nothing, and it is already valid where
+ * it stands.
+ *
  * @param document The document to rewrite, in place.
  * @param images The packaged images, keyed by their original URL.
  * @param baseUrl The chapter's URL, used to resolve relative references.
@@ -238,16 +242,12 @@ export function rewriteImageElements(
 
     for (const image of document.querySelectorAll("img")) {
         const src = image.getAttribute("src");
+        // A reference that already points at a packaged image is left exactly
+        // as it is: rewriting it again would point it at the site instead.
         const srcImage = src && !isPackagedReference(src) ? packaged(src) : undefined;
-        if (srcImage) {
-            image.setAttribute("src", hrefFor(srcImage));
-            changed = true;
-        }
 
         const srcset = image.getAttribute("srcset");
-        if (srcset === null) continue;
-
-        const candidates = parseSrcset(srcset);
+        const candidates = srcset === null ? [] : parseSrcset(srcset);
         const kept: string[] = [];
         let firstKept: PackagedImage | undefined;
 
@@ -264,24 +264,44 @@ export function rewriteImageElements(
             kept.push(format(hrefFor(found), candidate.descriptor));
         }
 
-        if (kept.length === 0) {
-            // Nothing in this `srcset` is in the book, so the attribute is
-            // dropped: leaving it would point the reader at the site.
-            image.removeAttribute("srcset");
-            changed = true;
-        } else {
-            const rewritten = kept.join(", ");
-            if (rewritten !== srcset) {
-                image.setAttribute("srcset", rewritten);
+        if (srcset !== null) {
+            if (kept.length === 0) {
+                // Nothing in this `srcset` is in the book, so the attribute is
+                // dropped: leaving it would point the reader at the site.
+                image.removeAttribute("srcset");
+                changed = true;
+            } else {
+                const rewritten = kept.join(", ");
+                if (rewritten !== srcset) {
+                    image.setAttribute("srcset", rewritten);
+                    changed = true;
+                }
+            }
+        }
+
+        if (srcImage) {
+            const href = hrefFor(srcImage);
+            if (image.getAttribute("src") !== href) {
+                image.setAttribute("src", href);
                 changed = true;
             }
-
+        } else if (firstKept) {
             // An image whose `src` was not packaged but whose `srcset` was
             // needs its `src` pointed at the packaged file, because a reader
             // is free to ignore `srcset`.
-            if (!srcImage && firstKept) {
-                image.setAttribute("src", hrefFor(firstKept));
+            const href = hrefFor(firstKept);
+            if (image.getAttribute("src") !== href) {
+                image.setAttribute("src", href);
+                changed = true;
             }
+        } else if (src !== null && !isPackagedReference(src) && isFetchable(src, baseUrl)) {
+            // Nothing about this image is in the book. The element is removed
+            // rather than left pointing at the site's own servers: a reader
+            // that can reach the site would fetch the picture from the network
+            // every time the chapter is opened, and one that cannot shows a
+            // broken picture.
+            removeImageElement(image);
+            changed = true;
         }
     }
 
@@ -317,4 +337,33 @@ export function rewriteImageElements(
     }
 
     return changed;
+}
+
+/**
+ * Whether a reference is one the extension would fetch.
+ *
+ * A `data:` URL carries its own bytes and reaches out to nothing, so it is
+ * left alone: it is already self-contained, and removing it would throw away
+ * a picture that the reader can show.
+ *
+ * @param value The reference.
+ * @param baseUrl The chapter's URL, used to resolve relative references.
+ * @returns Whether the reference points at something on the network.
+ */
+function isFetchable(value: string, baseUrl: string): boolean {
+    return resolveUrl(value, baseUrl) !== undefined;
+}
+
+/**
+ * Remove an image element, and the `<picture>` around it if it is left empty.
+ *
+ * A `<picture>` exists to offer an image to a reader that can use it; with
+ * its image gone it is just an empty box.
+ *
+ * @param element The image to remove.
+ */
+function removeImageElement(element: Element): void {
+    const picture = element.closest("picture");
+    element.remove();
+    if (picture && !picture.querySelector("img")) picture.remove();
 }
