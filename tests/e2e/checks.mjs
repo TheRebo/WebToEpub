@@ -203,6 +203,10 @@ export async function run(harness) {
     });
 
     await check("shows the story when the active tab is a novel", async () => {
+        // The extension asks for a site at a time, so the fixture's host has to
+        // be allowed before the extension can read anything.
+        await harness.grantHostAccess("http://localhost/*");
+
         // The popup reads the *active* tab, so a fixture page has to be the
         // active one. Marionette activates the tab it switches to, so the
         // popup cannot simply look at a background tab.

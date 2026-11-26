@@ -371,6 +371,56 @@ export class Harness {
     }
 
     /**
+     * Give the extension access to a host, the way Firefox does when a user
+     * accepts the prompt.
+     *
+     * The extension ships with no host permissions: it asks for one site at a
+     * time, and the user answers with a click. That click ends in a prompt
+     * that lives in the browser's own chrome — a doorhanger no test harness can
+     * reach — so the harness makes the grant itself, through the very
+     * mechanism the browser uses when the prompt is accepted.
+     *
+     * What is *not* simulated is the extension's own side of it: the popup
+     * still has to notice that it may not read the site, still has to offer
+     * the button, and the worker still has to obey the permission it is
+     * given. Only the browser's half of the exchange is stood in for.
+     *
+     * @param {string} pattern The host pattern, such as `http://localhost/*`.
+     * @returns {Promise<boolean>} Whether the grant was made.
+     */
+    async grantHostAccess(pattern) {
+        await this.#marionette.send("Marionette:SetContext", { value: "chrome" });
+        try {
+            const result = await this.#marionette.send("WebDriver:ExecuteScript", {
+                script: `
+                    const { ExtensionParent } = ChromeUtils.importESModule("resource://gre/modules/ExtensionParent.sys.mjs");
+                    const { ExtensionPermissions } = ChromeUtils.importESModule("resource://gre/modules/ExtensionPermissions.sys.mjs");
+                    const extension = ExtensionParent.GlobalManager.getExtension(${JSON.stringify(ADDON_ID)});
+                    if (!extension) return "no-extension";
+                    // The extension itself is the emitter, so the running
+                    // extension is told about the grant — which is what makes
+                    // the browser's own policy allow the site.
+                    return ExtensionPermissions.add(
+                        extension.id,
+                        { permissions: [], origins: [${JSON.stringify(pattern)}] },
+                        extension,
+                    )
+                        .then(() => "granted")
+                        .catch((error) => "failed: " + error);
+                `,
+                args: [],
+            });
+            const value = result?.value;
+            if (value !== "granted") {
+                throw new Error(`The host grant for "${pattern}" did not go through (${value}).`);
+            }
+            return true;
+        } finally {
+            await this.#marionette.send("Marionette:SetContext", { value: "content" });
+        }
+    }
+
+    /**
      * Exercise the extension's own flow, from a real page to a real file.
      *
      * Installing the add-on proves very little. Firefox accepts a manifest
@@ -412,6 +462,10 @@ export class Harness {
         }
         const storyUrl = `${this.fixtureOrigin}/`;
 
+        // The extension asks for a site at a time, so the fixture's host has to
+        // be allowed before the extension can read anything.
+        await this.grantHostAccess("http://localhost/*");
+
         // A real page load. The fixture goes into its own window, so the
         // window the extension's own page lives in stays as it was.
         const pageWindow = await this.newWindow();
@@ -434,27 +488,21 @@ export class Harness {
         await this.switchTo(this.mainWindow);
         await this.goto("popup.html");
 
-        // The content script has to be running in the page that was loaded —
-        // that is the extension reading the page the user is looking at.
-        const summary = await this.#pageSummary(storyUrl);
-        if (summary === null) {
+        // The extension has to be able to read the page the user is looking at
+        // — the DOM as the browser has it, after the site's own scripts have
+        // run. That is what the fixture's chapter list is: it is built in the
+        // browser, so the markup on the wire has nothing in it.
+        //
+        // The extension reads it with a one-off injection into that tab.
+        const liveLinks = await this.#livePageChapterLinks(storyUrl);
+        if (liveLinks === null) {
             throw new Error(
-                "The extension's content script did not answer in the page that was loaded.",
+                "The extension could not read the page that was loaded, in the tab that was loaded.",
             );
         }
-        if (summary.title !== "The Kintsugi Test Novel") {
+        if (liveLinks.length !== 12) {
             throw new Error(
-                `The content script read the title "${summary.title}" instead of the fixture's.`,
-            );
-        }
-        if (summary.looksLikeToc !== true) {
-            throw new Error(
-                "The content script did not recognise the page as a table of contents.",
-            );
-        }
-        if (summary.chapterLinks.length !== 12) {
-            throw new Error(
-                `The content script found ${summary.chapterLinks.length} chapter links, not 12.`,
+                `The extension read ${liveLinks.length} chapter links from the live page, not 12.`,
             );
         }
 
@@ -485,7 +533,7 @@ export class Harness {
             );
         }
 
-        steps.push("reads a real page through the extension's own content script");
+        steps.push("reads the live DOM of the page the user is looking at");
         steps.push("analyses the page and lists every chapter");
     }
 
@@ -774,30 +822,34 @@ export class Harness {
     }
 
     /**
-     * The content script's summary of a page.
+     * The chapter links the extension can see in the live page.
      *
-     * The content script only answers in the pages it was injected into, so
-     * the tabs are asked one by one until the one that was loaded answers.
+     * The extension reads a page by injecting a function into the tab that is
+     * showing it, so this does the same thing: it finds the tab, asks the
+     * browser to run a function there, and returns the links the function
+     * found.
      *
      * @param {string} storyUrl The URL of the page that was loaded.
-     * @returns {Promise<{title: string, looksLikeToc: boolean, chapterLinks: string[]} | null>}
-     *   The summary, or `null` when no tab answered.
+     * @returns {Promise<string[] | null>} The links, or `null` when no tab
+     *   showed the page.
      */
-    async #pageSummary(storyUrl) {
+    async #livePageChapterLinks(storyUrl) {
         const raw = await this.asyncScript(`
             const api = globalThis.browser ?? globalThis.chrome;
             const tabs = await api.tabs.query({});
             for (const tab of tabs) {
+                if (!tab.url || !tab.url.startsWith(${JSON.stringify(storyUrl)})) continue;
                 try {
-                    const response = await api.tabs.sendMessage(tab.id, {
-                        type: "kintsugi:page-summary",
+                    const results = await api.scripting.executeScript({
+                        target: { tabId: tab.id },
+                        func: () =>
+                            Array.from(
+                                document.querySelectorAll("ul.chapter-list a"),
+                            ).map((anchor) => anchor.getAttribute("href")),
                     });
-                    if (response?.ok && response.summary?.url?.startsWith(${JSON.stringify(storyUrl)})) {
-                        return JSON.stringify(response.summary);
-                    }
+                    return JSON.stringify(results?.[0]?.result ?? []);
                 } catch {
-                    // Tabs without the content script — the extension's own
-                    // pages — cannot answer. The next tab is tried.
+                    // A tab the extension may not touch: the next one is tried.
                 }
             }
             return null;
