@@ -540,27 +540,16 @@ export function buildPlaceholderChapter(url: string, reason: string): ChapterToP
  * The placeholder for an image that could not be downloaded.
  *
  * The baseline packed a zero-byte file, which corrupts the EPUB. This is a
- * visible placeholder image instead: a small SVG that says the image is
+ * visible placeholder image instead: a small picture that says the image is
  * missing. The EPUB stays valid, and the reader can see what happened.
  *
- * The address is written without its query string, for the same reason the
- * placeholder chapter does not carry one.
+ * The placeholder is a PNG rather than an SVG: a book that carries SVG files
+ * is a book many readers cannot show, and the extension has a setting that
+ * says so.
+ *
+ * See `epub/placeholder.ts`.
  */
-export function buildPlaceholderImage(url: string): ImageData {
-    const safeUrl = redactUrl(url) ?? url;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300" role="img" aria-label="Image unavailable">
-  <rect width="400" height="300" fill="#f2efe8" stroke="#cfc8b9" stroke-width="2"/>
-  <path d="M120 190 L170 130 L210 175 L250 125 L290 190 Z" fill="#e5e0d5" stroke="#a69e8d" stroke-width="2" stroke-linejoin="round"/>
-  <circle cx="145" cy="105" r="14" fill="none" stroke="#a69e8d" stroke-width="2"/>
-  <text x="200" y="225" font-family="sans-serif" font-size="14" fill="#7c7466" text-anchor="middle">Image unavailable</text>
-  <text x="200" y="248" font-family="sans-serif" font-size="11" fill="#a69e8d" text-anchor="middle">${escapeText(safeUrl.slice(0, 60))}</text>
-</svg>`;
-    return {
-        data: new TextEncoder().encode(svg),
-        mediaType: "image/svg+xml",
-        url,
-    };
-}
+export { buildPlaceholderImage } from "./placeholder";
 
 /** The file extension for a media type. */
 export function extensionFor(mediaType: string): string {

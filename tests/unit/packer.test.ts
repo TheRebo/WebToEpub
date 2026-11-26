@@ -188,18 +188,25 @@ describe("buildPlaceholderChapter", () => {
 });
 
 describe("buildPlaceholderImage", () => {
-    it("is a real SVG with bytes, not an empty file", () => {
-        const image = buildPlaceholderImage("https://example.com/a.png");
+    it("is a real PNG with bytes, not an empty file", () => {
+        const image = buildPlaceholderImage();
         expect(image.data.length).toBeGreaterThan(0);
-        expect(image.mediaType).toBe("image/svg+xml");
-        const text = new TextDecoder().decode(image.data);
-        expect(text).toContain("<svg");
+        expect(image.mediaType).toBe("image/png");
+        // The PNG signature.
+        expect([...image.data.subarray(0, 8)]).toEqual([
+            0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+        ]);
     });
 
-    it("keeps the image's secrets out of the book", () => {
-        const image = buildPlaceholderImage("https://example.com/a.png?token=secret");
-        const text = new TextDecoder().decode(image.data);
-        expect(text).not.toContain("secret");
+    it("is not an SVG, because a reader may not be able to show one", () => {
+        // The extension has a setting that says SVG images are not wanted.
+        // A placeholder that was itself an SVG would defeat it.
+        const image = buildPlaceholderImage();
+        expect(image.mediaType).not.toBe("image/svg+xml");
+    });
+
+    it("is the same mark every time, so a book carries one copy of it", () => {
+        expect(buildPlaceholderImage().url).toBe(buildPlaceholderImage().url);
     });
 });
 

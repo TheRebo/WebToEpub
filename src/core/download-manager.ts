@@ -858,7 +858,7 @@ export class DownloadManager {
             } catch {
                 // A failed image becomes a visible placeholder rather than a
                 // zero-byte file, which would corrupt the EPUB.
-                downloaded.set(url, buildPlaceholderImage(url));
+                downloaded.set(url, buildPlaceholderImage());
             }
             await throttle(100, signal);
         }
@@ -876,7 +876,7 @@ export class DownloadManager {
         if (!imageSettings.useSvg) {
             for (const [url, image] of downloaded) {
                 if (image.mediaType === SVG_MEDIA_TYPE) {
-                    downloaded.set(url, buildPlaceholderImage(url));
+                    downloaded.set(url, buildPlaceholderImage());
                 }
             }
         }

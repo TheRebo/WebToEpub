@@ -167,14 +167,17 @@ describe("the image settings", () => {
         const images = [...epub.files.keys()].filter((path) => path.startsWith("OEBPS/images/"));
         expect(images).toHaveLength(1);
         // The packaged file is the extension's own placeholder, not the SVG the
-        // site served. The placeholder names the source so the user can tell
-        // which picture is missing, so the URL is expected in the text — what
-        // must not be there is the site's own SVG.
-        expect(images[0]).toMatch(/\.svg$/);
-        const text = textOf(epub.files.get(images[0]!)!);
-        expect(text).toContain("<svg");
-        expect(text).toContain("Image unavailable");
-        expect(text).not.toContain('http://www.w3.org/2000/svg" base');
+        // site served. The placeholder is a PNG: a book that carries SVG files
+        // is a book many readers cannot show, which is why the setting exists.
+        expect(images[0]).toMatch(/\.png$/);
+        const file = epub.files.get(images[0]!)!;
+        const bytes =
+            typeof file.content === "string"
+                ? new TextEncoder().encode(file.content)
+                : file.content;
+        expect([...bytes.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+        // The site's own SVG is nowhere in the book.
+        expect(textOf(file)).not.toContain("<svg");
     });
 
     it("keep an SVG when the user wants SVGs", async () => {
