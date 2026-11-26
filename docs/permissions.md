@@ -13,16 +13,19 @@ itself.
 
 ## 1. The short version
 
-|                           | Baseline (WebToEpub 1.x)           | Kintsugi 2.0                           |
-| ------------------------- | ---------------------------------- | -------------------------------------- |
-| Permissions               | 7                                  | **5**                                  |
-| Static host permissions   | `<all_urls>` (every site, forever) | **none**                               |
-| Optional host permissions | —                                  | `*://*/*`, granted per site, revocable |
-| Telemetry                 | none                               | none                                   |
-| Accounts / sync           | none                               | none                                   |
+|                           | Baseline (WebToEpub 1.x)           | Kintsugi 2.0                                                |
+| ------------------------- | ---------------------------------- | ----------------------------------------------------------- |
+| Permissions               | 7                                  | **6**                                                       |
+| Static host permissions   | `<all_urls>` (every site, forever) | **none**                                                    |
+| Optional host permissions | —                                  | `http://*/*` and `https://*/*`, granted per site, revocable |
+| Telemetry                 | none                               | none                                                        |
+| Accounts / sync           | none                               | none                                                        |
 
 Kintsugi asks for **fewer** permissions than the baseline and removes the
-broadest one of all — the permanent grant to every site on the web.
+broadest one of all — the permanent grant to every site on the web. The one
+permission it adds (`activeTab`) is the narrowest one Firefox offers: it
+covers the single tab the user invoked the extension from, for that
+invocation, and nothing else.
 
 ---
 
@@ -34,7 +37,7 @@ broadest one of all — the permanent grant to every site on the web.
 the only supported way for an extension to write a file the user can open in
 their operating system.
 
-**Where.** `src/core/epub/save.ts` — the final step of every pack.
+**Where.** `src/core/background.ts` — the final step of every pack.
 
 **What we do not do with it.** We never read the user's download history, we
 never touch files that did not come from this extension, and we never set a
@@ -45,19 +48,39 @@ controls, into whatever folder their browser is already configured to use.
 
 ---
 
+### `activeTab`
+
+**Why.** To know which page the user is on. Firefox does not report a tab's
+address to an extension that has no access to it, so without this the
+extension would have to ask for a host permission just to learn the address
+of the tab the user clicked it from.
+
+**Where.** `src/core/browser-api.ts` — `activePageUrl()`.
+
+**What we do not do with it.** We do not read the tab's contents. The grant
+covers the address of the tab the user invoked the extension from, for that
+invocation; it is not a standing grant to that site, and it does not reach
+any other tab.
+
+**Without it.** The popup could not pre-fill the story's address, and the
+user would have to paste it every time.
+
+---
+
 ### `scripting`
 
 **Why.** To read the source page the way the _user_ sees it. Many novel sites
 render chapter content with JavaScript, so the HTML that `fetch` returns is an
-empty shell. The extension must inject a small script into the tab and read the
-live DOM.
+empty shell. The extension reads the live DOM of the tab showing the page.
 
-**Where.** `src/core/page/dom-reader.ts` — injected on demand by the workbench
-when it opens for a page.
+**Where.** `src/core/live-page.ts` — read on demand, for one tab, through
+`browser.scripting.executeScript`.
 
-**What we do not do with it.** The injected script is a **reader**: it extracts
-the DOM and sends it back. It does not modify the page, does not inject UI
-into the page, does not read other tabs, and does not observe navigation.
+**What we do not do with it.** The manifest declares **no content script**:
+nothing is injected into the pages the user visits. The single function that
+is run returns the page's markup and nothing else. It does not modify the
+page, does not inject UI into the page, does not read other tabs, and does
+not observe navigation.
 
 **Without it.** The extension would only work on server-rendered sites — a
 small fraction of the 434 supported sites.
@@ -151,7 +174,7 @@ line of the extension's description.
 
 ```json
 "host_permissions": [],
-"optional_host_permissions": ["*://*/*"]
+"optional_host_permissions": ["http://*/*", "https://*/*"]
 ```
 
 Host access is requested **at the moment the user chooses a site**, and only
@@ -191,8 +214,11 @@ the wrong side of it.
 | `scripting`             | **Kept**                      | Reading the live, JS-rendered DOM.                                                                                                                                                                                      |
 | `storage`               | **Kept**                      | Preferences and per-site parser configs.                                                                                                                                                                                |
 | `declarativeNetRequest` | **Kept**, scope made explicit | Header spoofing and the origin-stripping replacement for `webRequest`.                                                                                                                                                  |
+| `activeTab`             | **Added**                     | The narrowest way to learn the address of the tab the user invoked the extension from. It covers that tab, for that invocation, and nothing else.                                                                       |
 
-**Net: 3 permissions removed, 0 added.**
+**Net: 3 permissions removed, 1 added (`activeTab`).** The set is smaller
+than the baseline's, and the broadest grant of all — the static `<all_urls>` —
+is gone.
 
 ---
 
@@ -202,6 +228,7 @@ the wrong side of it.
 {
     "manifest_version": 3,
     "permissions": [
+        "activeTab",
         "downloads",
         "scripting",
         "storage",
@@ -209,9 +236,9 @@ the wrong side of it.
         "cookies"
     ],
     "host_permissions": [],
-    "optional_host_permissions": ["*://*/*"],
+    "optional_host_permissions": ["http://*/*", "https://*/*"],
     "content_security_policy": {
-        "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'"
+        "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; frame-src 'none'"
     }
 }
 ```

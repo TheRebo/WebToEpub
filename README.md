@@ -93,16 +93,16 @@ primary action thirteen rows below the fold.
 Kintsugi splits that in two: a **popup that is only a launcher**, and a
 **workbench** — a real tab that can hold a long download open.
 
-|                            | **WebToEpub 1.x**                                                           | **Kintsugi 2.0**                                                             |
-| -------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| **Where you work**         | One popup that does everything                                              | A launcher popup, plus a full workbench tab                                  |
-| **Time to first feedback** | Popup re-opens itself in a tab; the popup flashes and vanishes              | Popup answers "is this supported?" in under a second; the tab opens directly |
-| **Parsers loaded at once** | Every parser script in the popup's document                                 | None in the popup — the background worker owns all 434                       |
-| **Theming**                | Dark mode as five inverted background rules                                 | Light, dark, and system themes, each designed, plus an accent colour         |
-| **Keyboard support**       | Effectively none                                                            | Every action has a keyboard path; focus rings are a token, never removed     |
-| **Languages**              | English only                                                                | English, French, German, Japanese, Indonesian — 188 keys each, none partial  |
-| **Permissions**            | 7, including `webRequest`, `unlimitedStorage`, and a permanent `<all_urls>` | 5, no static host permissions; `*://*/*` is optional and granted per site    |
-| **Bundle size**            | One 1090-line HTML file plus a 461-entry hand-maintained script list        | `dist/` ≈ 1.17 MB; packaged `.xpi` ≈ 343 KB                                  |
+|                            | **WebToEpub 1.x**                                                           | **Kintsugi 2.0**                                                                      |
+| -------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Where you work**         | One popup that does everything                                              | A launcher popup, plus a full workbench tab                                           |
+| **Time to first feedback** | Popup re-opens itself in a tab; the popup flashes and vanishes              | Popup answers "is this supported?" in under a second; the tab opens directly          |
+| **Parsers loaded at once** | Every parser script in the popup's document                                 | None in the popup — the background worker owns all 434                                |
+| **Theming**                | Dark mode as five inverted background rules                                 | Light, dark, and system themes, each designed, plus an accent colour                  |
+| **Keyboard support**       | Effectively none                                                            | Every action has a keyboard path; focus rings are a token, never removed              |
+| **Languages**              | English only                                                                | English, French, German, Japanese, Indonesian — 218 keys each, none partial           |
+| **Permissions**            | 7, including `webRequest`, `unlimitedStorage`, and a permanent `<all_urls>` | 6, no static host permissions; `http:` and `https:` are optional and granted per site |
+| **Bundle size**            | One 1090-line HTML file plus a 461-entry hand-maintained script list        | `dist/` ≈ 1.4 MB; packaged `.xpi` ≈ 374 KB                                            |
 
 The permission reduction is the part worth being precise about. The original
 held a permanent, install-time grant to every site you visit. Kintsugi holds
@@ -234,8 +234,10 @@ flowchart TD
     B -->|progress and result| J[Workbench and popup]
 ```
 
-- The **content script** reads the live, JavaScript-rendered DOM. It is a
-  reader: it extracts and sends back, and never modifies the page.
+- The extension injects **no content script**. When it needs the story page as
+  it appears on your screen — some sites build their chapter list in the
+  browser — it reads that one tab's DOM through the browser's scripting API.
+  It never modifies a page, and never injects UI into one.
 - The **background worker** owns the registry, the network layer, and the
   download. It is the only place that holds the parsers, which is what keeps
   the popup small — the popup ships no parser code at all.

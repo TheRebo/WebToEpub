@@ -89,12 +89,18 @@ No regex touches XML anywhere in the product.
 
 ### 3. Failure semantics are explicit
 
-A resource that failed to download is **not** packed. Instead:
+A resource that failed to download is **not** packed as an empty file. Instead:
 
-- the image element in the chapter is replaced with a **visible, styled
-  placeholder** (`<span class="kintsugi-missing-image" role="img"
-aria-label="Image unavailable">`) that carries the original source URL, so
-  the reader knows something was there;
+- the image is replaced by a **packaged placeholder picture** — a small PNG
+  mark, drawn by `epub/placeholder.ts` and written into the book as an
+  ordinary image file. The chapter's `<img>` is rewritten to point at it, so
+  the reader shows a picture-shaped mark instead of a broken picture;
+- the placeholder is **one file shared by every missing image** in the book
+  (`kintsugi:missing-image`), so a book with fifty missing pictures carries
+  one copy of the mark rather than fifty;
+- the mark is a PNG rather than an SVG on purpose: the extension has a
+  setting that says SVG images are not wanted, and an SVG placeholder would
+  have defeated the setting it was standing in for;
 - the failure is recorded in the error log and reported in the completion
   summary: _"3 images could not be downloaded."_;
 - the EPUB is still produced, and it is **valid**.

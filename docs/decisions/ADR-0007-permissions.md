@@ -82,28 +82,41 @@ to a specific origin at the moment the user chooses that site.
 
 ```json
 "permissions": [
+  "activeTab",
   "downloads",
   "scripting",
   "storage",
   "declarativeNetRequest",
   "cookies"
 ],
-"optional_host_permissions": ["*://*/*"],
+"optional_host_permissions": ["http://*/*", "https://*/*"],
 "host_permissions": []
 ```
 
 **Three permissions removed** (`webRequest`, `unlimitedStorage`, and the
-static `<all_urls>`), **none added.**
+static `<all_urls>`), **one added** (`activeTab`).
+
+`activeTab` is added because it is the narrowest grant available: it lets
+the extension read the address of the tab the user invoked it from, and it
+grants access to that tab only for that invocation. Without it, the extension
+would have to ask for a host permission just to know which page the user is
+looking at — and Firefox will not report a tab's address to an extension
+that has no access to it. See [ADR-0033](ADR-0033-read-the-page-the-user-is-looking-at.md).
+
+The optional host patterns are `http:` and `https:` rather than `*://*/*`,
+because the extension has no reason to ask for a `ftp:` or a `file:` site.
+See [ADR-0032](ADR-0032-what-the-extension-may-fetch.md).
 
 ### Permission-by-permission justification
 
-| Permission              | Why it is needed                                                                                                                           | Why it is justified                                                                                                                                                                                     |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `downloads`             | Save the generated EPUB to disk                                                                                                            | The product's output. `chrome.downloads.download` is the only supported way to write a file the user can open.                                                                                          |
-| `scripting`             | Inject a content script into the source tab to read its live, JS-rendered DOM                                                              | The extension must read the DOM _as the user sees it_, including content injected by the site's own scripts. A plain `fetch` would miss it.                                                             |
-| `storage`               | Preferences, reading list, per-host parser configs                                                                                         | Small structured settings. `browser.storage.local` is the only extension-scoped key/value store.                                                                                                        |
-| `declarativeNetRequest` | Header spoofing (`Referer`, `Sec-Fetch-*`) for Cloudflare-protected sites; and the scoped origin-stripping rule that replaces `webRequest` | Session-scoped rules, restricted to the extension's own `initiatorDomains`. No persistent or global effect.                                                                                             |
-| `cookies`               | Copy the site's partitioned (CHIPS) cookies into unpartitioned cookies so extension-context fetches authenticate                           | Required for a meaningful subset of protected sites. Behaviourally scoped to the registrable domain of the URL being fetched; cookies are removed in a `finally` ([ADR-0004](ADR-0004-fetch-layer.md)). |
+| Permission              | Why it is needed                                                                                                                           | Why it is justified                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `downloads`             | Save the generated EPUB to disk                                                                                                            | The product's output. `chrome.downloads.download` is the only supported way to write a file the user can open.                                                                                                                                                                                                                                                                                                                    |
+| `scripting`             | Read the live, JS-rendered DOM of the tab showing the story page                                                                           | A plain `fetch` returns the server's shell, which on many sites has no chapter list in it at all. The extension runs a single function in the tab and takes the page's DOM as it is _now_. The manifest declares **no** content script, so nothing is injected into pages the user visits; the call happens only for a tab the extension already has access to. See [ADR-0033](ADR-0033-read-the-page-the-user-is-looking-at.md). |
+| `activeTab`             | Read the address of the tab the user invoked the extension from                                                                            | The narrowest grant that answers "which page is the user on?". It applies to that tab, for that invocation, and to nothing else.                                                                                                                                                                                                                                                                                                  |
+| `storage`               | Preferences, reading list, per-host parser configs                                                                                         | Small structured settings. `browser.storage.local` is the only extension-scoped key/value store.                                                                                                                                                                                                                                                                                                                                  |
+| `declarativeNetRequest` | Header spoofing (`Referer`, `Sec-Fetch-*`) for Cloudflare-protected sites; and the scoped origin-stripping rule that replaces `webRequest` | Session-scoped rules, restricted to the extension's own `initiatorDomains`. No persistent or global effect.                                                                                                                                                                                                                                                                                                                       |
+| `cookies`               | Copy the site's partitioned (CHIPS) cookies into unpartitioned cookies so extension-context fetches authenticate                           | Required for a meaningful subset of protected sites. Behaviourally scoped to the registrable domain of the URL being fetched; cookies are removed in a `finally` ([ADR-0004](ADR-0004-fetch-layer.md)).                                                                                                                                                                                                                           |
 
 ### Optional host permissions
 

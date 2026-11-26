@@ -139,11 +139,21 @@ Because the pages use Shadow DOM, the inspector's element picker will show
 `<k-button>` rather than the `<button>` inside it. Enable **Settings → Show
 Shadow DOM** in the inspector to see through.
 
-### The content script
+### The live page read
 
-The content script runs in the page's world. To debug it, open the page the
-extension is running on and use the inspector's **Console** — the content
-script's `console.log` output appears there, prefixed with `[kintsugi]`.
+The extension declares **no content script**: nothing is injected into the
+pages the user visits. When the extension needs the story page as the user
+sees it, it calls `browser.scripting.executeScript` for that one tab, running
+a small function that returns the page's markup, and reads the result in the
+worker.
+
+To watch it happen, open the story page, open the **browser console**
+(`Ctrl+Shift+J`), and look for the worker's diagnostics — the read is logged
+when diagnostics are on. To inspect the page the extension saw, run
+`document.documentElement.outerHTML` in the page's own console: that is the
+same thing the extension receives.
+
+See [ADR-0033](./decisions/ADR-0033-read-the-page-the-user-is-looking-at.md).
 
 ### Logging
 

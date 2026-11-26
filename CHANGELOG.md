@@ -78,6 +78,37 @@ user report — which is why several of them are severe.
   state keys; they now come from the message catalogue like everything else,
   and every locale is complete.
 
+### Added
+
+- **The page the user is looking at is read as the user sees it.** Many sites
+  build their chapter list in the browser, so the HTML the server sends is an
+  empty shell and no parser can find a list in it. The extension now reads the
+  live DOM of the tab showing the story, and falls back to fetching the page
+  when there is no such tab. See
+  [ADR-0033](docs/decisions/ADR-0033-read-the-page-the-user-is-looking-at.md).
+- **Host access is asked for one site at a time.** The extension ships with no
+  host permissions; the user grants a site when they choose it, the granted
+  sites are listed in the settings, and each can be revoked. See
+  [ADR-0030](docs/decisions/ADR-0030-host-access-one-site-at-a-time.md).
+- **A private host can be read when the user has allowed it.** A story served
+  from a home server is a real thing; a page that links to the network's
+  metadata service is an attack. The difference is the user's own grant. See
+  [ADR-0032](docs/decisions/ADR-0032-what-the-extension-may-fetch.md).
+- **The library records the books the user makes**, with their covers and their
+  chapter counts, and can be emptied. See
+  [ADR-0019](docs/decisions/ADR-0019-library-shelf.md).
+- **The first run explains itself.** A user who has not been through the
+  welcome is shown a short onboarding that ends on the workbench. See
+  [ADR-0020](docs/decisions/ADR-0020-first-run-explains-itself.md).
+- **A chapter range.** Two hundred checkboxes is a wall; a first and last
+  chapter number trims a hundred-volume story in two seconds, and the list is
+  still there to change the answer. See
+  [ADR-0027](docs/decisions/ADR-0027-the-user-chooses-the-chapters.md).
+- **The settings can be exported, imported and reset**, and the diagnostics
+  switch now does what it says.
+- **The workbench shows which chapter the download is on**, and the story's
+  options are wired up.
+
 ### Changed
 
 - The end-to-end checks now assert what the pages _do_ rather than what they
@@ -85,10 +116,93 @@ user report — which is why several of them are severe.
   themselves wrong — the settings search counted hidden groups, and the
   onboarding looked for a custom element where the design uses native radio
   inputs — and were corrected.
-- The test suite has grown from 169 to 369 tests across 21 files, with new
+- The test suite has grown from 169 to **866 tests across 59 files**, with new
   coverage for the archiver, the fetch client's error handling, the cookie
   bridge, the network rules, the image packaging, the message bus, the URL
-  and origin validators, and the stylesheet references.
+  and origin validators, the stylesheet references, the EPUB round trip, the
+  component library's reactivity and accessibility, and the locale catalogue.
+
+### Fixed (second audit round)
+
+- **A book could not be read back.** The reader took the first `<nav>` in the
+  navigation document, which is the landmarks list rather than the table of
+  contents, and read the chapters twice — once from the list and once from the
+  nested list under it. The table of contents is now found by its type, and
+  each chapter is read once.
+- **A book with more than a hundred chapters had colliding navigation
+  numbers.** The numbers were derived from the entry's index, so two chapters
+  in different groups could carry the same number. Each navigation point is
+  now numbered from its own counters.
+- **A book with no modification date was rejected.** The date is optional in
+  the specification; the writer now falls back to the moment the book was
+  built.
+- **Counts were shown in English.** The popup said "3 chapter(s)" in every
+  language. Firefox's `browser.i18n` does **not** choose a plural form — the
+  `_one` / `_other` suffixes are Chrome's, and Firefox ignores them — so the
+  extension now keeps two messages and picks between them itself. The
+  finding was measured in a real Firefox, not assumed.
+- **Two switches had no name.** Their labels are drawn outside the control,
+  so a screen reader announced them as "switch". The label is now mirrored
+  onto the control itself.
+- **The default dialog had no size of its own.** Every size but the default
+  had a rule; the default fell through to the component's own width. Each
+  size now has a rule, and the class documents what they are.
+- **Six message types were declared, validated and answered that nothing ever
+  sent.** They are gone, and a test now compares the registry against the
+  messages the interface really sends, in both directions.
+- **Overlapping saves could undo each other.** Two pages writing settings at
+  once could lose one of the changes. Writes are now serialised, so each one
+  sees the result of the one before it. See
+  [ADR-0021](docs/decisions/ADR-0021-serialised-settings-writes.md).
+- **A chapter was written as HTML into a book that has to be XML.** A chapter
+  containing a line break produced a file that was not well-formed, and a
+  reader that checked refused the whole book. Chapters are now serialised
+  from the parsed document as XML. See
+  [ADR-0025](docs/decisions/ADR-0025-chapters-are-written-as-xml.md).
+- **The book's own settings never reached the book.** The cover, the
+  language, the direction and the identifier were dropped on the way out.
+- **A missing image was stood in for by an SVG.** The extension has a setting
+  that says SVG images are not wanted, and an SVG placeholder defeated it.
+  The stand-in is now a PNG, and one copy is shared by every missing image.
+- **A failed image download wrote nothing at all**, leaving a reference in the
+  markup pointing at a file that was not in the book.
+- **The images were not inside the book.** They were fetched, and the
+  chapter's markup still pointed at the site's own servers.
+- **The library recorded the wrong book.** It saved the metadata of the story
+  that had been analysed rather than the book that had been made.
+- **The sample-book builder did not run.** It imported the TypeScript sources
+  directly, which Node cannot resolve. It now bundles them first, and the
+  books it produces validate with zero errors and zero warnings.
+- **A page could not say what had gone wrong.** A failure was logged to a
+  console nobody reads; it is now reported in the interface.
+- **The fetch layer misreported what went wrong**, hiding the real message
+  behind a generic one.
+- **A host permission pattern could name a port**, which matches nothing.
+- **The copy of a partitioned cookie was removed from the wrong path**, so it
+  survived the request it belonged to.
+- **A `data:` URL carrying a script could reach a chapter.**
+- **The end-to-end suite granted the fixture's host in a way Firefox would
+  not**, and asserted less than it claimed to.
+
+### Removed
+
+- Six message types that nothing sent (`settings:get`, `settings:set` and the
+  four `permissions:*` requests), their payload rules and their handlers.
+- The EPUB reader from the shipped tree: Kintsugi writes EPUBs, it never
+  reads them, and the reader exists only to prove the round trip. It now
+  lives in `tests/support/`.
+
+### Security
+
+- A page cannot use the extension to reach the user's own network: a private
+  host is fetched only when the user has granted access to it, and the grant
+  is checked per host. See
+  [ADR-0032](docs/decisions/ADR-0032-what-the-extension-may-fetch.md).
+- The extension injects **no content script**. It reads the story tab's DOM
+  through the browser's scripting API, for one tab, and takes the markup
+  only.
+- Every message's payload is validated at the bus, and every URL and origin a
+  message carries is validated before it is used.
 
 ### Fixed (false positives)
 
@@ -234,7 +348,7 @@ Resetting settings removes only the `kintsugi.settings` key and leaves site sele
 
 #### Permission changes
 
-The original manifest requested seven permissions — `cookies`, `downloads`, `webRequest`, `declarativeNetRequest`, `scripting`, `storage` and `unlimitedStorage` — plus static `<all_urls>` host access for every site. Kintsugi requests **five** permissions:
+The original manifest requested seven permissions — `cookies`, `downloads`, `webRequest`, `declarativeNetRequest`, `scripting`, `storage` and `unlimitedStorage` — plus static `<all_urls>` host access for every site. Kintsugi requests **six**:
 
 | Permission               | Change      |
 | ------------------------ | ----------- |
@@ -243,11 +357,24 @@ The original manifest requested seven permissions — `cookies`, `downloads`, `w
 | `storage`                | kept        |
 | `declarativeNetRequest`  | kept        |
 | `cookies`                | kept        |
+| `activeTab`              | **added**   |
 | `webRequest`             | **removed** |
 | `unlimitedStorage`       | **removed** |
 | `<all_urls>` host access | **removed** |
 
-There are no static host permissions at all. Instead, `*://*/*` is declared as an _optional_ host permission, and host access is requested per site at the moment the user picks one — the background worker exposes `permissions:check`, `permissions:request`, `permissions:list` and `permissions:revoke` handlers for that flow. Full rationale is in [docs/permissions.md](docs/permissions.md) and [ADR-0007](docs/decisions/ADR-0007-permissions.md).
+`activeTab` is the narrowest grant Firefox offers: it covers the address of
+the tab the user invoked the extension from, for that invocation, and nothing
+else. Without it the extension would have to ask for a host permission just
+to learn which page the user is on.
+
+There are no static host permissions at all. Instead, `http://*/*` and
+`https://*/*` are declared as _optional_ host permissions, and host access is
+requested per site at the moment the user picks one. The request is made from
+an extension page, in the handler of a real click — Firefox will not honour a
+request that has no user gesture behind it. Full rationale is in
+[docs/permissions.md](docs/permissions.md),
+[ADR-0007](docs/decisions/ADR-0007-permissions.md) and
+[ADR-0030](docs/decisions/ADR-0030-host-access-one-site-at-a-time.md).
 
 #### Parser compatibility
 
@@ -259,12 +386,12 @@ What _has_ changed is the plumbing around the parsers, not the parsers themselve
 
 ### Notes
 
-- Build output is approximately 1.18 MB unpacked, and the packaged `.xpi` is approximately 337 KB.
+- Build output is approximately 1.4 MB unpacked, and the packaged `.xpi` is approximately 374 KB.
 - The full source is not needed to run the extension: DOMPurify is vendored and no code is fetched at runtime.
 
 ## [Comparison links]
 
-- [Unreleased]: https://github.com/kintsugi/webtoepub/compare/v2.0.0-alpha.1...HEAD
-- [2.0.0-alpha.1]: https://github.com/kintsugi/webtoepub/releases/tag/v2.0.0-alpha.1
+- [Unreleased]: https://github.com/TheRebo/WebToEpub/compare/v2.0.0-alpha.1...HEAD
+- [2.0.0-alpha.1]: https://github.com/TheRebo/WebToEpub/releases/tag/v2.0.0-alpha.1
 - [Keep a Changelog]: https://keepachangelog.com/en/1.1.0/
 - [Semantic Versioning]: https://semver.org/spec/v2.0.0.html

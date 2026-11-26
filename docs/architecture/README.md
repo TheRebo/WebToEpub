@@ -101,7 +101,7 @@ anything.
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `background.ts`                   | The service worker entry point: message routing, download orchestration, and the parser registry's lifetime.                            |
 | `browser-api.ts`                  | The single place that touches `browser.*`. Every other module goes through it, so the extension's API surface is auditable in one file. |
-| `content-script.ts`               | The injected script: extracts the page's DOM and hands it to the worker.                                                                |
+| `live-page.ts`                    | Reads the DOM of the tab showing the story, as the user sees it — and falls back to fetching the page.                                  |
 | `download-manager.ts`             | Owns the running downloads, their progress, and their cancellation.                                                                     |
 | `epub/document.ts`                | The typed EPUB document model.                                                                                                          |
 | `epub/writer.ts`                  | Serialise the model, canonically.                                                                                                       |
