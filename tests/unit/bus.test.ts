@@ -170,6 +170,25 @@ describe("isValidPayload", () => {
         expect(isValidPayload("nope" as RequestName, {})).toBe(false);
     });
 
+    it("rejects a request named after an inherited property", () => {
+        // The rules are a plain object, and a plain object inherits from
+        // `Object.prototype`. A request named `"constructor"` used to find an
+        // inherited function where a rule should be, and was accepted without
+        // being checked at all.
+        for (const name of [
+            "constructor",
+            "toString",
+            "valueOf",
+            "hasOwnProperty",
+            "__proto__",
+            "isPrototypeOf",
+            "propertyIsEnumerable",
+            "toLocaleString",
+        ]) {
+            expect(isValidPayload(name as RequestName, {}), name).toBe(false);
+        }
+    });
+
     it("rejects a host name that does not name a host", () => {
         // The host name is the key the selectors are filed under, and it
         // decides which site they are applied to.
@@ -258,6 +277,22 @@ describe("handleRequests", () => {
         await handleRequests(api, { "page:analyze": okHandler });
 
         expect(await send({ type: "library:list", payload: {}, id: "1" })).toBeUndefined();
+    });
+
+    it("never dispatches to a request named after an inherited property", async () => {
+        // The handlers are a plain object, and a plain object inherits from
+        // `Object.prototype`. A request named `"constructor"` used to find
+        // `Object.prototype.constructor` where a handler should be, and was
+        // dispatched to it — with the payload, unvalidated, echoed back.
+        const { api, send } = captureListener();
+        const handler = vi.fn(okHandler);
+        await handleRequests(api, { "page:analyze": handler });
+
+        for (const name of ["constructor", "toString", "valueOf", "hasOwnProperty"]) {
+            const response = await send({ type: name, payload: { evil: true }, id: "1" });
+            expect(response, name).toBeUndefined();
+        }
+        expect(handler).not.toHaveBeenCalled();
     });
 
     it("turns a handler's exception into an error response", async () => {

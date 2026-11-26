@@ -372,6 +372,12 @@ export async function handleRequests(
             return undefined;
         }
         const type = envelope.type as RequestName;
+
+        // The name is looked up with `hasOwn`, not with `in`. The handlers are
+        // a plain object, and a plain object inherits from `Object.prototype`,
+        // so a message named `"constructor"` or `"toString"` would find an
+        // inherited function where a handler should be — and dispatch to it.
+        if (!Object.hasOwn(handlers, type)) return undefined;
         const handler = handlers[type];
         if (!handler) return undefined;
 
@@ -510,6 +516,12 @@ function isValidHostName(hostName: string): boolean {
  * @returns Whether the payload is acceptable.
  */
 export function isValidPayload(type: RequestName, payload: unknown): boolean {
+    // The rule is looked up with `hasOwn`, not with `in`. Both the rules and
+    // the handlers are plain objects, and a plain object inherits from
+    // `Object.prototype` — so a message named `"constructor"` or
+    // `"toString"` would find a function where a rule should be, and skip the
+    // validation entirely.
+    if (!Object.hasOwn(PAYLOAD_RULES, type)) return false;
     const rule = PAYLOAD_RULES[type];
     if (!rule) return false;
     return rule(payload);
