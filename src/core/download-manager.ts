@@ -37,7 +37,7 @@ import { buildFileName, DEFAULT_FILENAME_TEMPLATE } from "./util/file-name";
 import { normaliseUrlForCompare } from "./util/dom";
 import { diagnostic } from "./util/diagnostics";
 import type { Parser } from "./parsers/parser";
-import { toUserFacingError, type UserFacingError } from "./util/errors";
+import { isAbortError, toUserFacingError, type UserFacingError } from "./util/errors";
 import type { LibraryEntry } from "./storage/library-store";
 
 /** A chapter being downloaded. */
@@ -580,6 +580,17 @@ export class DownloadManager {
         this.#jobs.set(id, job);
 
         void this.#run(job).catch((error) => {
+            // A cancellation is not a failure. The user asked for the job to
+            // stop, and the abort error that carries that request must not be
+            // allowed to turn "cancelled" into "failed" — the user pressed the
+            // button and would then be told the download went wrong.
+            if (job.controller.signal.aborted || isAbortError(error)) {
+                job.phase = "cancelled";
+                job.error = undefined;
+                this.#report(job);
+                this.#pruneFinishedJobs();
+                return;
+            }
             job.phase = "failed";
             job.error = toUserFacingError(error);
             this.#report(job);

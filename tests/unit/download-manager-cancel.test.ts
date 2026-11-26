@@ -50,6 +50,20 @@ function harness(): {
     saved: string[];
     releaseImage: () => void;
 } {
+    return harnessWithThrottle();
+}
+
+/**
+ * Build a manager, with the throttle under the test's control.
+ *
+ * @param overrides The dependencies to change.
+ * @returns The manager, the saved file names, and the image gate's release.
+ */
+function harnessWithThrottle(overrides: Partial<DownloadManagerDependencies> = {}): {
+    manager: DownloadManager;
+    saved: string[];
+    releaseImage: () => void;
+} {
     const saved: string[] = [];
     let release = (): void => {
         // Nothing to release yet.
@@ -78,6 +92,7 @@ function harness(): {
         parserFor: () => parserWithImage(),
         throttle: async () => undefined,
         behaviour: async () => ({ ...DEFAULT_BEHAVIOUR, skipFailedChapters: true }),
+        ...overrides,
     };
 
     return { manager: new DownloadManager(dependencies), saved, releaseImage: () => release() };
@@ -123,5 +138,57 @@ describe("cancelling a download", () => {
         await new Promise((resolve) => setTimeout(resolve, 50));
 
         expect(saved).toEqual([]);
+    });
+
+    it("is reported as cancelled, and not as failed, when cancelled between chapters", async () => {
+        // The pause between two chapters is part of the download, and the
+        // cancel can land in it. The abort error must not escape the job and
+        // turn "the user stopped it" into "it went wrong".
+        let throttleEntered = (): void => {
+            // Nothing to wait for yet.
+        };
+        const throttleStarted = new Promise<void>((resolve) => {
+            throttleEntered = resolve;
+        });
+
+        const { manager, saved } = harnessWithThrottle({
+            throttle: async (_ms, signal) => {
+                // The pause is where the cancel lands: the signal is already
+                // aborted when the wait is asked for.
+                throttleEntered();
+                if (signal.aborted) {
+                    const error = new Error("The operation was aborted.");
+                    error.name = "AbortError";
+                    throw error;
+                }
+                await new Promise((resolve) => setTimeout(resolve, 1));
+                if (signal.aborted) {
+                    const error = new Error("The operation was aborted.");
+                    error.name = "AbortError";
+                    throw error;
+                }
+            },
+        });
+
+        const jobId = manager.start("https://example.com/story", "The Story", [
+            { sourceUrl: "https://example.com/1", title: "One" },
+            { sourceUrl: "https://example.com/2", title: "Two" },
+        ]);
+
+        // Wait until the job is waiting between the two chapters, then cancel.
+        await throttleStarted;
+        expect(manager.cancel(jobId)).toBe(true);
+
+        const progress = await settle(manager, jobId);
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        // The job settles on "cancelled" the moment the user presses the
+        // button, and the work that was in flight unwinds afterwards. The
+        // state the user is left looking at is the *last* one, so the
+        // assertion is made after the unwind has had its turn.
+        expect(manager.progress(jobId)?.phase).toBe("cancelled");
+        expect(manager.progress(jobId)?.error).toBeUndefined();
+        expect(saved).toEqual([]);
+        expect(progress.phase).toBe("cancelled");
     });
 });
