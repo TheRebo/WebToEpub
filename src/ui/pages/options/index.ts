@@ -19,11 +19,12 @@ import "../../components/k-switch";
 import "../../components/k-toast";
 
 import { localStorageAdapter, sendMessage } from "../../../core/browser-api";
+import { listHostAccess, revokeHostPattern } from "../../../core/host-access";
 import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
 import { sendRequest } from "../../../core/message/bus";
 import { installI18n } from "../../i18n-bootstrap";
-import { OptionsController, type BackgroundPort } from "./controller";
+import { OptionsController, type BackgroundPort, type HostAccessPort } from "./controller";
 import type { NavTarget } from "./view";
 
 /** The messaging API the background port uses. */
@@ -52,8 +53,32 @@ function initialTarget(): NavTarget {
     const hash = window.location.hash.replace("#", "");
     if (hash === "library") return "library";
     if (hash === "site-selectors") return "site-selectors";
+    if (hash === "site-access") return "site-access";
     return "appearance";
 }
+
+/**
+ * The host access the options page shows.
+ *
+ * The permissions API is available to the options page directly, so this does
+ * not go through the background worker. Asking the worker would be the wrong
+ * shape anyway: a permission *request* needs a user gesture, and the options
+ * page is not the place where one is made.
+ */
+const hostAccess: HostAccessPort = {
+    list: () => listHostAccess(),
+    async revoke(pattern: string) {
+        return revokeHostPattern(pattern);
+    },
+    async revokeAll() {
+        const origins = await listHostAccess();
+        let revoked = false;
+        for (const pattern of origins) {
+            if (await revokeHostPattern(pattern)) revoked = true;
+        }
+        return revoked;
+    },
+};
 
 /** Start the page. */
 async function main(): Promise<void> {
@@ -73,6 +98,7 @@ async function main(): Promise<void> {
         },
         theme: themeController,
         background,
+        hostAccess,
         target: initialTarget(),
     });
 

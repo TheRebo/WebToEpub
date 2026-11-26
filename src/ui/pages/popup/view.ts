@@ -17,6 +17,7 @@ export type PopupState =
     | "story"
     | "no-story"
     | "unsupported"
+    | "access"
     | "running"
     | "error";
 
@@ -34,6 +35,12 @@ export interface PopupViewState {
     chapterCount: number;
     /** The site's host name. */
     hostName: string;
+    /**
+     * The host the extension is asking to be allowed to read.
+     *
+     * It is set in the `access` state, and is empty everywhere else.
+     */
+    accessHost: string;
     /** The error, if the state is `error`. */
     error: string;
     /** The download's phase, when a download is running. */
@@ -64,6 +71,10 @@ export interface PopupElements {
     chapterCount: HTMLElement;
     /** The empty state. */
     empty: HTMLElement;
+    /** The state that asks the user for access to the site. */
+    access: HTMLElement;
+    /** The host in the access state. */
+    accessHost: HTMLElement;
     /** The live progress strip. */
     progress: HTMLElement;
     /** The progress label. */
@@ -160,6 +171,38 @@ export function buildPopup(root: HTMLElement): PopupElements {
     empty.appendChild(emptyIcon);
     empty.appendChild(emptyText);
 
+    // --- The access state ---
+    //
+    // The extension can only read a site the user has allowed. When it has not
+    // been allowed, the popup says so and offers the one button that fixes it,
+    // rather than showing a network error the user cannot act on.
+    const access = document.createElement("div");
+    access.className = "popup-access";
+
+    const accessIcon = document.createElement("span");
+    accessIcon.className = "popup-access-icon";
+    accessIcon.setAttribute("aria-hidden", "true");
+    accessIcon.appendChild(createIcon("lock", 20));
+
+    const accessTitle = document.createElement("p");
+    accessTitle.className = "popup-access-title";
+    accessTitle.textContent = t("accessTitle");
+
+    const accessHostNode = document.createElement("p");
+    accessHostNode.className = "popup-access-host";
+
+    const accessButton = document.createElement("k-button");
+    accessButton.className = "popup-access-button";
+    accessButton.setAttribute("variant", "primary");
+    accessButton.setAttribute("size", "lg");
+    accessButton.dataset["action"] = "grant-access";
+    accessButton.textContent = t("accessGrant");
+
+    access.appendChild(accessIcon);
+    access.appendChild(accessTitle);
+    access.appendChild(accessHostNode);
+    access.appendChild(accessButton);
+
     // --- The live progress strip ---
     const progress = document.createElement("div");
     progress.className = "popup-progress";
@@ -219,6 +262,7 @@ export function buildPopup(root: HTMLElement): PopupElements {
     body.className = "popup-body";
     body.appendChild(card);
     body.appendChild(empty);
+    body.appendChild(access);
     body.appendChild(progress);
     body.appendChild(primary);
     body.appendChild(actions);
@@ -235,6 +279,8 @@ export function buildPopup(root: HTMLElement): PopupElements {
         subtitle,
         chapterCount,
         empty,
+        access,
+        accessHost: accessHostNode,
         progress,
         progressLabel,
         progressBar,
@@ -287,6 +333,15 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
                   : t("popupNoStory");
     }
 
+    // --- The access state ---
+    //
+    // The extension is asking to be allowed to read the site. The button that
+    // grants it has to be the primary action, because it is the only thing
+    // that makes the rest of the popup work.
+    const showAccess = state.state === "access";
+    elements.access.hidden = !showAccess;
+    elements.accessHost.textContent = state.accessHost;
+
     // --- The progress strip ---
     const showProgress = state.state === "running";
     elements.progress.hidden = !showProgress;
@@ -314,6 +369,12 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
         elements.primary.setAttribute("variant", "secondary");
         elements.primary.textContent = t("workbenchTryAnyway");
         elements.primary.dataset["action"] = "primary";
+    } else if (state.state === "access") {
+        // The access state has its own button, so the primary action would be
+        // a second way of doing the same thing. It is hidden rather than
+        // disabled, so a screen reader is not offered a button that does
+        // nothing.
+        elements.primary.hidden = true;
     } else {
         elements.primary.setAttribute("variant", "primary");
         elements.primary.textContent = t("popupOpenWorkbench");

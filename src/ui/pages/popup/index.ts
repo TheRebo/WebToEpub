@@ -19,16 +19,18 @@ import "../../components/k-toast";
 
 import { sendRequest, type DownloadProgress } from "../../../core/message/bus";
 import {
-    activeTab,
+    activePageUrl,
     openTab,
     sendMessage,
     getURL,
     localStorageAdapter,
 } from "../../../core/browser-api";
+import { displayHost, hasHostAccess, originOf, requestHostAccess } from "../../../core/host-access";
 import { SettingsStore } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
 import { t, tDynamic } from "../../i18n";
 import { caughtErrorMessage } from "../../error-messages";
+import type { UserFacingError } from "../../../core/util/errors";
 import { pollUntilDone } from "../../poll";
 import { installI18n } from "../../i18n-bootstrap";
 import { buildPopup, renderPopup, type PopupElements, type PopupViewState } from "./view";
@@ -43,12 +45,15 @@ class PopupController {
         coverUrl: "",
         chapterCount: 0,
         hostName: "",
+        accessHost: "",
         error: "",
         phase: "",
         done: 0,
         total: 0,
         percent: 0,
     };
+    /** The URL the popup is looking at. */
+    #url: string | undefined;
     #pollTimer: ReturnType<typeof setTimeout> | undefined;
     /** Stops the poll for a running download. */
     #stopPoll: (() => void) | undefined;
@@ -92,13 +97,13 @@ class PopupController {
         // query string overrides that, which is what makes the popup
         // linkable: a site can offer "add this chapter to your library"
         // without sending the user to the workbench first.
-        const tab = await activeTab();
-        const url = requestedUrl() ?? tab?.url;
+        const url = requestedUrl() ?? (await activePageUrl());
         if (!url) {
             this.#set({ state: "no-story", error: t("popupNoStory") });
             return;
         }
 
+        this.#url = url;
         this.#set({ hostName: hostOf(url) });
         await this.#analyse(url);
     }
@@ -111,6 +116,17 @@ class PopupController {
                 "page:analyze",
                 { url },
             );
+
+            // The worker reports a failure as an error rather than as an
+            // exception, so the error is read first: a page that could not be
+            // reached is not the same as a page no parser understands, and
+            // telling the user the site is "not supported yet" when the real
+            // problem is the network would send them off to write a parser
+            // they do not need.
+            if (analysis.error) {
+                await this.#handleAnalysisError(url, analysis.error);
+                return;
+            }
 
             if (!analysis.supported) {
                 this.#set({ state: "unsupported" });
@@ -142,6 +158,59 @@ class PopupController {
                 error: caughtErrorMessage(error),
             });
         }
+    }
+
+    /**
+     * Show what the analysis failure means.
+     *
+     * The one case that gets its own state is the one the user can fix: the
+     * extension was not allowed to read the site. Everything else is an error
+     * with the worker's own wording.
+     *
+     * @param url The URL that was analysed.
+     * @param error The failure the worker reported.
+     */
+    async #handleAnalysisError(url: string, error: UserFacingError): Promise<void> {
+        if (error.code === "UNSUPPORTED") {
+            this.#set({ state: "unsupported" });
+            return;
+        }
+
+        // A page the extension may not read fails to load, and the failure
+        // looks exactly like a site that is down. When the extension has not
+        // been allowed to read the site, that is what actually happened, and
+        // the fix is one button.
+        const origin = originOf(url);
+        if (error.code === "NETWORK" && origin && !(await hasHostAccess(origin))) {
+            this.#set({ state: "access", accessHost: displayHost(`${origin}/*`) });
+            return;
+        }
+
+        this.#set({ state: "error", error: error.message });
+    }
+
+    /**
+     * Ask the browser for access to the site.
+     *
+     * The request has to be made from the handler of the user's click, with
+     * nothing awaited before it: Firefox only shows the prompt when the
+     * request follows a real gesture. The request is therefore made on the
+     * first line, before any other work happens.
+     */
+    async #grantAccess(): Promise<void> {
+        const url = this.#url;
+        if (!url) return;
+        const origin = originOf(url);
+        if (!origin) return;
+
+        const granted = await requestHostAccess(origin);
+        if (!granted) {
+            this.#toast(t("accessDenied"), "warning");
+            return;
+        }
+
+        this.#toast(t("accessAlreadyGranted"), "success");
+        await this.#analyse(url);
     }
 
     /** Check whether a download is running, and follow it if so. */
@@ -241,8 +310,7 @@ class PopupController {
     async #handle(action: string): Promise<void> {
         switch (action) {
             case "primary": {
-                const tab = await activeTab();
-                const url = requestedUrl() ?? tab?.url;
+                const url = this.#url;
                 await openTab(
                     getURL(`workbench.html${url ? `?url=${encodeURIComponent(url)}` : ""}`),
                 );
@@ -270,8 +338,11 @@ class PopupController {
                 return;
             }
             case "retry": {
-                const tab = await activeTab();
-                if (tab?.url) await this.#analyse(tab.url);
+                if (this.#url) await this.#analyse(this.#url);
+                return;
+            }
+            case "grant-access": {
+                await this.#grantAccess();
                 return;
             }
             default:

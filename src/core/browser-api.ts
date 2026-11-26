@@ -68,6 +68,7 @@ interface BrowserNamespace {
                 title?: string;
                 active?: boolean;
                 windowId?: number;
+                lastAccessed?: number;
             }>
         >;
         create(options: { url?: string; active?: boolean }): Promise<{ id?: number }>;
@@ -233,6 +234,51 @@ export async function activeTab(): Promise<
     if (!api) return undefined;
     const tabs = await api.tabs.query({ active: true, currentWindow: true });
     return tabs[0];
+}
+
+/**
+ * The address of the page the user is looking at.
+ *
+ * The `activeTab` permission only lets the extension see the address of the tab
+ * the user invoked it from, and only while that tab stays where it is. When the
+ * extension is opened from somewhere else — the options page, a bookmark — the
+ * active tab is the extension's own page, and its address says nothing about
+ * the story.
+ *
+ * So the active tab is used when it is a web page, and otherwise the most
+ * recently used web page in the window is used: that is the page the user was
+ * on a moment ago, which is the page they mean.
+ *
+ * @returns The address, or `undefined` when there is no page to speak of.
+ */
+export async function activePageUrl(): Promise<string | undefined> {
+    const api = getNamespace();
+    if (!api) return undefined;
+
+    const tabs = await api.tabs.query({ currentWindow: true });
+    const pages = tabs.filter((tab) => isWebUrl(tab.url));
+
+    const active = pages.find((tab) => tab.active);
+    if (active?.url) return active.url;
+
+    // The most recently accessed page. Firefox reports when a tab was last
+    // used; when it does not, the first web page in the list is as good a
+    // guess as any.
+    const recent = pages
+        .filter((tab) => typeof tab.lastAccessed === "number")
+        .sort((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0))[0];
+    return recent?.url ?? pages[0]?.url;
+}
+
+/**
+ * Whether an address is one the extension can work with.
+ *
+ * @param url The address.
+ * @returns Whether it is an `http:` or `https:` address.
+ */
+function isWebUrl(url: string | undefined): url is string {
+    if (!url) return false;
+    return url.startsWith("http://") || url.startsWith("https://");
 }
 
 /**

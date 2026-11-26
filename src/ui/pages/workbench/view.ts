@@ -9,6 +9,7 @@
  */
 import { t } from "../../i18n";
 import { buildFileName, DEFAULT_FILENAME_TEMPLATE } from "../../../core/util/file-name";
+import { displayHost } from "../../../core/host-access";
 import { createIcon, type IconName } from "../../components/icons";
 import { stateLabel } from "../../components/k-list";
 import type { KList } from "../../components/k-list";
@@ -32,6 +33,10 @@ export interface WorkbenchElements {
     title: HTMLElement;
     /** The story's author. */
     author: HTMLElement;
+    /** The story's address field. */
+    urlField: HTMLInputElement;
+    /** The button that loads the story at the given address. */
+    urlLoadButton: KButton;
     /** The title field. */
     titleField: HTMLInputElement;
     /** The author field. */
@@ -128,6 +133,12 @@ export interface WorkbenchElements {
     filterApply: HTMLElement;
     /** The banner that offers the site-selector dialog. */
     selectorBanner: HTMLElement;
+    /** The banner that asks for access to the site. */
+    accessBanner: HTMLElement;
+    /** The site the banner is asking about. */
+    accessBannerHost: HTMLElement;
+    /** The banner's "allow access" button. */
+    accessGrantButton: KButton;
     /** The error banner. */
     errorBanner: HTMLElement;
     /** The error banner's message. */
@@ -236,6 +247,37 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     layout.append(sidebar, main);
     shell.appendChild(layout);
 
+    // --- The site access banner ---
+    //
+    // The extension ships with no host permissions at all. It asks for one
+    // site at a time, at the moment the user opens a story there. Until the
+    // user says yes, the page cannot be read — so this banner is the one thing
+    // the workbench has to say, and it says it plainly rather than failing
+    // with a network error the user cannot act on.
+    const accessBanner = el("div", "access-banner");
+    accessBanner.setAttribute("role", "status");
+    accessBanner.hidden = true;
+
+    const accessBannerIcon = el("div", "access-banner__icon");
+    accessBannerIcon.setAttribute("aria-hidden", "true");
+    accessBannerIcon.appendChild(createIcon("lock", 18));
+
+    const accessBannerBody = el("div", "access-banner__body");
+    const accessBannerTitle = el("p", "access-banner__title");
+    accessBannerTitle.textContent = t("accessTitle");
+    const accessBannerText = el("p", "access-banner__text");
+    accessBannerText.textContent = t("accessText");
+    const accessBannerHost = el("p", "access-banner__host");
+    accessBannerBody.append(accessBannerTitle, accessBannerText, accessBannerHost);
+
+    const accessGrantButton = document.createElement("k-button") as KButton;
+    accessGrantButton.setAttribute("variant", "primary");
+    accessGrantButton.setAttribute("size", "sm");
+    accessGrantButton.textContent = t("accessGrant");
+
+    accessBanner.append(accessBannerIcon, accessBannerBody, accessGrantButton);
+    main.appendChild(accessBanner);
+
     // --- The error banner ---
     //
     // An error that is stored but never shown is a silent failure: the user
@@ -270,6 +312,24 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const titleField = makeTextField(t("workbenchFieldTitle"), "story-title");
     const authorField = makeTextField(t("workbenchFieldAuthor"), "story-author");
 
+    // The story's address.
+    //
+    // The workbench is normally opened on a page, and the address is already
+    // known. But it can also be opened on its own, and then it has nothing to
+    // work with. The field is what makes that case usable: paste the address
+    // of a chapter list, and the workbench reads it.
+    const urlField = makeTextField(t("workbenchFieldUrl"), "story-url");
+    const urlRow = el("div", "story-field__row");
+    const urlLoadButton = document.createElement("k-button") as KButton;
+    urlLoadButton.setAttribute("variant", "secondary");
+    urlLoadButton.setAttribute("size", "sm");
+    urlLoadButton.textContent = t("workbenchLoadStory");
+    urlRow.append(urlField.wrapper, urlLoadButton);
+    const urlHint = el("p", "story-field__hint");
+    urlHint.textContent = t("workbenchFieldUrlHint");
+    const urlGroup = el("div", "story-field__group");
+    urlGroup.append(urlRow, urlHint);
+
     const languageField = document.createElement("select");
     languageField.id = "story-language";
     languageField.className = "story-field__input";
@@ -293,7 +353,13 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     filenameRow.append(filenameField.wrapper, resetFilename);
     filenameGroup.appendChild(filenameRow);
 
-    storyFields.append(titleField.wrapper, authorField.wrapper, languageGroup, filenameGroup);
+    storyFields.append(
+        urlGroup,
+        titleField.wrapper,
+        authorField.wrapper,
+        languageGroup,
+        filenameGroup,
+    );
     storyPanel.append(storySummary, storyBody);
     sidebar.appendChild(storyPanel);
 
@@ -664,6 +730,8 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     return {
         title,
         author,
+        urlField: urlField.input,
+        urlLoadButton,
         titleField: titleField.input,
         authorField: authorField.input,
         languageField,
@@ -713,6 +781,9 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         filterApply,
         selectorBanner,
         selectorBannerButton,
+        accessBanner,
+        accessBannerHost,
+        accessGrantButton,
         errorBanner,
         errorText,
         selectorDialog,
@@ -766,6 +837,16 @@ export function renderWorkbench(
 
     // --- Cover ---
     renderCover(elements, state.story.coverUrl);
+
+    // --- The site-access banner ---
+    //
+    // The banner is shown only while the extension is waiting to be allowed to
+    // read the site. It carries the host name, so the user can see that the
+    // request is about the site they are on and nothing else.
+    elements.accessBanner.hidden = !state.accessOrigin;
+    elements.accessBannerHost.textContent = state.accessOrigin
+        ? displayHost(`${state.accessOrigin}/*`)
+        : "";
 
     // --- The site-selector banner ---
     //

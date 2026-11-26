@@ -28,7 +28,9 @@ import { sendRequest, type DownloadProgress } from "../../../core/message/bus";
 import { isParsableSelector } from "../../../core/util/css";
 import { validateHostName } from "../../../core/storage/site-selectors-store";
 import { DEFAULT_FILENAME_TEMPLATE } from "../../../core/util/file-name";
-import { localStorageAdapter, activeTab } from "../../../core/browser-api";
+import { localStorageAdapter, activePageUrl } from "../../../core/browser-api";
+import { hasHostAccess, originOf, requestHostAccess } from "../../../core/host-access";
+import { normaliseStoryUrl } from "../../../core/util/url";
 import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
 import { caughtErrorMessage, errorMessage } from "../../error-messages";
 import { pollUntilDone } from "../../poll";
@@ -69,6 +71,7 @@ function initialState(): WorkbenchState {
         filter: { query: "", useRegex: false, include: [], exclude: [] },
         dirty: false,
         usedDefaultParser: false,
+        accessOrigin: undefined,
         progress: undefined,
         error: undefined,
     };
@@ -109,20 +112,93 @@ class WorkbenchController {
         this.#render();
 
         // The popup hands over the URL it was invoked on. When the workbench is
-        // opened directly, there is no query string and the active tab is the
-        // right source.
-        const url = requestedUrl() ?? (await activeTab())?.url;
+        // opened directly, there is no query string, and the most recently
+        // used web page is the best guess at what the user means.
+        //
+        // The address is checked before it is used: the workbench is an
+        // extension page, so the tab it is looking at is the workbench itself,
+        // and its address says nothing about a story.
+        const url = requestedUrl() ?? (await activePageUrl());
         if (!url) {
-            this.#store.setError(t("errorGeneric"));
+            // The workbench can be opened on its own, without a page to read.
+            // Rather than showing an error, the story address field is put
+            // ready for the user to paste an address into.
+            this.#elements.urlField.focus();
             this.#render();
             return;
         }
 
+        await this.#loadStory(url);
+    }
+
+    /**
+     * Load a story.
+     *
+     * The extension has no host permissions of its own, so it has to be
+     * allowed to read the site before it can read anything there. When it has
+     * not been allowed, the workbench asks for that permission instead of
+     * failing with a network error the user cannot act on.
+     *
+     * @param url The story's URL.
+     */
+    async #loadStory(url: string): Promise<void> {
+        this.#store.setError(undefined);
+        this.#elements.urlField.value = url;
+
+        const origin = originOf(url);
+        if (origin && !(await hasHostAccess(origin))) {
+            this.#store.setAccessOrigin(origin);
+            this.#render();
+            return;
+        }
+
+        this.#store.setAccessOrigin(undefined);
         await this.#analyse(url);
         // An analysis that failed has nothing to offer, and the chapter list
         // would only add a second error on top of the first.
         if (this.#store.state.error) return;
         await this.#loadChapters(url);
+    }
+
+    /**
+     * Load the story at the address in the field.
+     *
+     * The address is checked before anything is fetched: a mistyped or
+     * non-web address would otherwise turn into a confusing network error.
+     */
+    async #loadFromField(): Promise<void> {
+        const url = normaliseStoryUrl(this.#elements.urlField.value);
+        if (!url) {
+            this.#store.setError(t("workbenchUrlInvalid"));
+            this.#render();
+            return;
+        }
+        await this.#loadStory(url);
+    }
+
+    /**
+     * Ask the browser for access to the site the story is on.
+     *
+     * The permission request has to be made from the handler of the user's
+     * click, with nothing awaited before it: Firefox only shows the prompt
+     * when the request follows a real gesture. The origin is therefore read
+     * from the state, and the request is made on the first line, before any
+     * other work happens.
+     */
+    async #grantAccess(): Promise<void> {
+        const origin = this.#store.state.accessOrigin;
+        if (!origin) return;
+
+        const granted = await requestHostAccess(origin);
+        if (!granted) {
+            this.#toast(t("accessDenied"), "warning");
+            return;
+        }
+
+        const url = this.#elements.urlField.value;
+        this.#store.setAccessOrigin(undefined);
+        this.#toast(t("accessAlreadyGranted"), "success");
+        await this.#loadStory(url);
     }
 
     /**
@@ -219,6 +295,25 @@ class WorkbenchController {
     /** Wire the events. */
     #wire(): void {
         const elements = this.#elements;
+
+        // --- The story's address ---
+        //
+        // The workbench can be opened on its own, without a page to read. The
+        // field is what makes that case usable: paste an address, and the
+        // workbench reads it.
+        elements.urlLoadButton.addEventListener("k-click", () => {
+            void this.#loadFromField();
+        });
+        elements.urlField.addEventListener("keydown", (event) => {
+            if ((event as KeyboardEvent).key !== "Enter") return;
+            event.preventDefault();
+            void this.#loadFromField();
+        });
+
+        // --- The site access prompt ---
+        elements.accessGrantButton.addEventListener("k-click", () => {
+            void this.#grantAccess();
+        });
 
         // --- Metadata fields ---
         elements.titleField.addEventListener("input", () => {

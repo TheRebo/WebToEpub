@@ -27,6 +27,9 @@ import {
     renderLibraryError,
     renderLibraryLoading,
     renderNav,
+    renderSiteAccess,
+    renderSiteAccessError,
+    renderSiteAccessLoading,
     renderSiteSelectors,
     renderSiteSelectorsError,
     renderSiteSelectorsLoading,
@@ -248,6 +251,22 @@ export interface BackgroundPort {
     forgetSiteSelectors(hostname: string): Promise<void>;
 }
 
+/**
+ * The host access the options page shows and changes.
+ *
+ * The permissions API is available to the options page directly — it is an
+ * extension page, and it is the user who is in front of it — so this does not
+ * go through the background worker.
+ */
+export interface HostAccessPort {
+    /** The sites the extension may read. */
+    list(): Promise<string[]>;
+    /** Take away access to one site. */
+    revoke(pattern: string): Promise<boolean>;
+    /** Take away access to every site. */
+    revokeAll(): Promise<boolean>;
+}
+
 /** The controller's dependencies. */
 export interface OptionsControllerOptions {
     /** Where the page is built. */
@@ -258,6 +277,8 @@ export interface OptionsControllerOptions {
     theme: ThemePort;
     /** The background worker. */
     background?: BackgroundPort;
+    /** The host access the page shows. */
+    hostAccess?: HostAccessPort;
     /** The navigation target to open on. */
     target?: NavTarget;
 }
@@ -268,17 +289,20 @@ export class OptionsController {
     #store: SettingsStorePort;
     #theme: ThemePort;
     #background: BackgroundPort | undefined;
+    #hostAccess: HostAccessPort | undefined;
     #settings: Settings | undefined;
     #active: NavTarget = "appearance";
     #query = "";
     #libraryLoaded = false;
     #selectorsLoaded = false;
+    #accessLoaded = false;
 
     constructor(options: OptionsControllerOptions) {
         this.#elements = buildOptions(options.root);
         this.#store = options.store;
         this.#theme = options.theme;
         this.#background = options.background;
+        this.#hostAccess = options.hostAccess;
         if (options.target) this.#active = options.target;
         this.#wire();
     }
@@ -361,6 +385,7 @@ export class OptionsController {
 
             if (this.#active === "library") void this.#loadLibrary();
             if (this.#active === "site-selectors") void this.#loadSiteSelectors();
+            if (this.#active === "site-access") void this.#loadSiteAccess();
         });
 
         // The search box. It is outside the content column, so it keeps its
@@ -429,6 +454,20 @@ export class OptionsController {
             if (action === "retry-site-selectors") {
                 this.#selectorsLoaded = false;
                 void this.#loadSiteSelectors();
+                return;
+            }
+            if (action === "retry-site-access") {
+                this.#accessLoaded = false;
+                void this.#loadSiteAccess();
+                return;
+            }
+            if (action === "revoke-all-access") {
+                void this.#revokeAllAccess();
+                return;
+            }
+            const origin = target?.dataset["origin"];
+            if (origin) {
+                void this.#revokeAccess(origin);
                 return;
             }
             const hostname = target?.dataset["hostname"];
@@ -585,6 +624,65 @@ export class OptionsController {
     }
 
     /**
+     * Load the list of sites the extension may read.
+     *
+     * The list is read from the browser's own permissions, so it is the truth:
+     * it says what the extension can reach right now, not what the extension
+     * believes it was given.
+     */
+    async #loadSiteAccess(): Promise<void> {
+        if (this.#accessLoaded) return;
+        this.#accessLoaded = true;
+
+        if (!this.#hostAccess) {
+            renderSiteAccessError(this.#elements, t("errorGeneric"));
+            return;
+        }
+
+        renderSiteAccessLoading(this.#elements);
+
+        try {
+            const origins = await this.#hostAccess.list();
+            renderSiteAccess(this.#elements, origins);
+        } catch (error) {
+            this.#accessLoaded = false;
+            renderSiteAccessError(this.#elements, messageOf(error));
+        }
+    }
+
+    /**
+     * Take away access to one site.
+     *
+     * @param pattern The site's granted pattern.
+     */
+    async #revokeAccess(pattern: string): Promise<void> {
+        if (!this.#hostAccess) return;
+        try {
+            await this.#hostAccess.revoke(pattern);
+        } catch (error) {
+            this.#toast(messageOf(error) || t("errorGeneric"), "error");
+            return;
+        }
+        this.#accessLoaded = false;
+        await this.#loadSiteAccess();
+        this.#toast(t("optionsRevoked"), "info");
+    }
+
+    /** Take away access to every site. */
+    async #revokeAllAccess(): Promise<void> {
+        if (!this.#hostAccess) return;
+        try {
+            await this.#hostAccess.revokeAll();
+        } catch (error) {
+            this.#toast(messageOf(error) || t("errorGeneric"), "error");
+            return;
+        }
+        this.#accessLoaded = false;
+        await this.#loadSiteAccess();
+        this.#toast(t("optionsRevokedAll"), "info");
+    }
+
+    /**
      * Remove a book from the library.
      *
      * The book itself is on the user's disk; this removes the library's
@@ -731,9 +829,11 @@ export class OptionsController {
 
         const onLibrary = this.#active === "library";
         const onSelectors = this.#active === "site-selectors";
-        this.#elements.content.hidden = onLibrary || onSelectors;
+        const onAccess = this.#active === "site-access";
+        this.#elements.content.hidden = onLibrary || onSelectors || onAccess;
         this.#elements.library.hidden = !onLibrary;
         this.#elements.siteSelectors.hidden = !onSelectors;
+        this.#elements.siteAccess.hidden = !onAccess;
     }
 }
 

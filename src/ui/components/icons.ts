@@ -43,7 +43,9 @@ export type IconName =
     | "check-circle"
     | "alert-triangle"
     | "arrow-right"
-    | "external-link";
+    | "external-link"
+    | "lock"
+    | "shield";
 
 /** The path data for each icon. */
 const PATHS: Record<IconName, string[]> = {
@@ -107,6 +109,11 @@ const PATHS: Record<IconName, string[]> = {
         "m20 4-9 9",
         "M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
     ],
+    lock: [
+        "M7 10V7a5 5 0 0 1 10 0v3",
+        "M5 10h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z",
+    ],
+    shield: ["M12 2 4 5.5V11c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5.5L12 2Z"],
 };
 
 /** The SVG markup for an icon. */

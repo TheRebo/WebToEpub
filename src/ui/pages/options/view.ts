@@ -16,6 +16,7 @@
  * the focus.
  */
 import { createIcon } from "../../components/icons";
+import { displayHost } from "../../../core/host-access";
 import { t, tDynamic } from "../../i18n";
 
 /** The settings groups. */
@@ -70,7 +71,7 @@ export interface GroupSpec {
  * The library and the site selectors are peers of the settings rather than
  * groups inside them, so they are navigable in the same way.
  */
-export type NavTarget = GroupId | "library" | "site-selectors";
+export type NavTarget = GroupId | "library" | "site-selectors" | "site-access";
 
 /** The options page's elements. */
 export interface OptionsElements {
@@ -84,6 +85,8 @@ export interface OptionsElements {
     library: HTMLElement;
     /** The site-selector section. */
     siteSelectors: HTMLElement;
+    /** The site-access section. */
+    siteAccess: HTMLElement;
     /** The search box. */
     search: HTMLInputElement;
     /** The toast host. */
@@ -241,6 +244,41 @@ export function buildOptions(root: HTMLElement): OptionsElements {
     siteSelectorsBar.appendChild(siteSelectorsTitle);
     siteSelectors.appendChild(siteSelectorsBar);
 
+    // --- The site access ---
+    //
+    // The list of sites the extension has been allowed to read. It is the one
+    // place the user can see — and take back — what the extension can reach.
+    const siteAccess = document.createElement("section");
+    siteAccess.className = "options-site-access";
+    siteAccess.id = "site-access";
+    siteAccess.setAttribute("role", "tabpanel");
+    siteAccess.setAttribute("aria-labelledby", "options-tab-site-access");
+    siteAccess.hidden = true;
+
+    const siteAccessBar = document.createElement("div");
+    siteAccessBar.className = "options-library-bar";
+
+    const siteAccessTitle = document.createElement("h2");
+    siteAccessTitle.className = "options-library-title";
+    siteAccessTitle.textContent = t("optionsSiteAccess");
+
+    const siteAccessHint = document.createElement("p");
+    siteAccessHint.className = "options-site-access-hint";
+    siteAccessHint.textContent = t("optionsSiteAccessHint");
+
+    const siteAccessActions = document.createElement("div");
+    siteAccessActions.className = "options-library-actions";
+
+    const revokeAll = document.createElement("k-button");
+    revokeAll.setAttribute("variant", "ghost");
+    revokeAll.setAttribute("size", "sm");
+    revokeAll.textContent = t("optionsRevokeAll");
+    revokeAll.dataset["action"] = "revoke-all-access";
+    siteAccessActions.appendChild(revokeAll);
+
+    siteAccessBar.append(siteAccessTitle, siteAccessActions);
+    siteAccess.append(siteAccessBar, siteAccessHint);
+
     const toastHost = document.createElement("div");
     toastHost.className = "options-toasts";
 
@@ -276,6 +314,7 @@ export function buildOptions(root: HTMLElement): OptionsElements {
     root.appendChild(layout);
     root.appendChild(library);
     root.appendChild(siteSelectors);
+    root.appendChild(siteAccess);
     root.appendChild(resetDialog);
     root.appendChild(toastHost);
 
@@ -285,6 +324,7 @@ export function buildOptions(root: HTMLElement): OptionsElements {
         content,
         library,
         siteSelectors,
+        siteAccess,
         search,
         toastHost,
         status,
@@ -339,6 +379,13 @@ export function renderNav(elements: OptionsElements, groups: GroupSpec[]): void 
         id: "site-selectors",
         title: t("siteSelectorList"),
         panel: "site-selectors",
+    });
+
+    // And the list of sites the extension has been allowed to read.
+    targets.push({
+        id: "site-access",
+        title: t("optionsSiteAccess"),
+        panel: "site-access",
     });
 
     for (const target of targets) {
@@ -1072,6 +1119,147 @@ export function renderSiteSelectors(
     }
 
     elements.siteSelectors.appendChild(body);
+}
+
+/**
+ * Render the list of sites the extension may read.
+ *
+ * Each entry is a host permission the user has granted. The Revoke button
+ * emits a `k-click` event on the container, so the controller can do the work
+ * without the view knowing about the permissions API.
+ *
+ * @param elements The page's elements.
+ * @param origins The granted patterns.
+ */
+export function renderSiteAccess(elements: OptionsElements, origins: string[]): void {
+    const container = elements.siteAccess.querySelector(".options-site-access-body");
+    if (container) container.remove();
+
+    const body = document.createElement("div");
+    body.className = "options-site-access-body";
+
+    if (origins.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "options-library-empty";
+
+        const icon = document.createElement("span");
+        icon.setAttribute("aria-hidden", "true");
+        icon.className = "options-library-empty-icon";
+        icon.appendChild(createIcon("shield", 40));
+
+        const heading = document.createElement("p");
+        heading.className = "options-library-empty-title";
+        heading.textContent = t("optionsSiteAccessEmpty");
+
+        empty.append(icon, heading);
+        body.appendChild(empty);
+    } else {
+        const list = document.createElement("ul");
+        list.className = "options-site-access-list";
+
+        for (const origin of origins) {
+            const item = document.createElement("li");
+            item.className = "options-site-access-item";
+
+            const name = document.createElement("span");
+            name.className = "options-site-access-host";
+            name.textContent = displayHost(origin);
+
+            const detail = document.createElement("span");
+            detail.className = "options-site-access-pattern";
+            detail.textContent = origin;
+
+            const revoke = document.createElement("k-button");
+            revoke.setAttribute("variant", "ghost");
+            revoke.setAttribute("size", "sm");
+            revoke.textContent = t("optionsRevoke");
+            revoke.dataset["origin"] = origin;
+
+            item.append(name, detail, revoke);
+            list.appendChild(item);
+        }
+
+        body.appendChild(list);
+    }
+
+    elements.siteAccess.appendChild(body);
+}
+
+/**
+ * Render the site-access list's loading state.
+ *
+ * @param elements The page's elements.
+ */
+export function renderSiteAccessLoading(elements: OptionsElements): void {
+    const container = elements.siteAccess.querySelector(".options-site-access-body");
+    if (container) container.remove();
+
+    const body = document.createElement("div");
+    body.className = "options-site-access-body";
+
+    const panel = document.createElement("div");
+    panel.className = "options-status-panel options-status-panel--loading";
+    panel.setAttribute("role", "status");
+    panel.setAttribute("aria-busy", "true");
+
+    const label = document.createElement("p");
+    label.className = "options-status-label";
+    label.textContent = t("phasePreparing");
+    panel.appendChild(label);
+
+    for (const width of ["100%", "80%"]) {
+        const skeleton = document.createElement("k-skeleton");
+        skeleton.setAttribute("height", "14px");
+        skeleton.setAttribute("width", width);
+        skeleton.setAttribute("radius", "4px");
+        panel.appendChild(skeleton);
+    }
+
+    body.appendChild(panel);
+    elements.siteAccess.appendChild(body);
+}
+
+/**
+ * Render the site-access list's error state.
+ *
+ * @param elements The page's elements.
+ * @param message The error message.
+ */
+export function renderSiteAccessError(elements: OptionsElements, message: string): void {
+    const container = elements.siteAccess.querySelector(".options-site-access-body");
+    if (container) container.remove();
+
+    const body = document.createElement("div");
+    body.className = "options-site-access-body";
+
+    const panel = document.createElement("div");
+    panel.className = "options-status-panel options-status-panel--error";
+    panel.setAttribute("role", "alert");
+
+    const heading = document.createElement("p");
+    heading.className = "options-status-title";
+    heading.textContent = t("errorGeneric");
+
+    const text = document.createElement("p");
+    text.className = "options-status-text";
+    text.textContent = message;
+
+    const actions = document.createElement("div");
+    actions.className = "options-status-actions";
+
+    const retry = document.createElement("k-button");
+    retry.setAttribute("variant", "primary");
+    retry.setAttribute("size", "sm");
+    retry.setAttribute("label", t("popupTryAgain"));
+    retry.dataset["action"] = "retry-site-access";
+
+    actions.appendChild(retry);
+    panel.appendChild(heading);
+    panel.appendChild(text);
+    panel.appendChild(actions);
+
+    body.appendChild(panel);
+    elements.siteAccess.appendChild(body);
 }
 
 /**

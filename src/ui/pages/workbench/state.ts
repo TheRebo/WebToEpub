@@ -94,6 +94,15 @@ export interface WorkbenchState {
      * accepting a guess on every visit.
      */
     usedDefaultParser: boolean;
+    /**
+     * The origin the extension needs access to, if any.
+     *
+     * The extension has no host permissions of its own: it asks for one site at
+     * a time, when the user opens a story there. While this is set, the
+     * workbench cannot read the story, and it says so instead of failing with
+     * a network error the user cannot act on.
+     */
+    accessOrigin: string | undefined;
     /** The progress of the running download. */
     progress: DownloadProgressState | undefined;
     /** The error, if anything failed. */
@@ -233,6 +242,13 @@ export class WorkbenchStore {
     setUsedDefaultParser(used: boolean): void {
         this.update((state) => {
             state.usedDefaultParser = used;
+        });
+    }
+
+    /** Record the origin the extension needs access to. */
+    setAccessOrigin(origin: string | undefined): void {
+        this.update((state) => {
+            state.accessOrigin = origin;
         });
     }
 

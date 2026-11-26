@@ -166,6 +166,54 @@
     line-height: var(--leading-snug);
 }
 
+/* --- The access state --- */
+
+/*
+ * The state that asks the user to let the extension read the site. It is the
+ * one state where the extension cannot do anything on its own, so it carries
+ * its own button and explains itself in one line.
+ */
+
+.popup-access {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border: 1px solid var(--warning);
+    border-radius: var(--radius-lg);
+    background: var(--warning-subtle);
+}
+
+.popup-access[hidden] {
+    display: none;
+}
+
+.popup-access-icon {
+    display: inline-flex;
+    color: var(--warning);
+    flex-shrink: 0;
+}
+
+.popup-access-title {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--text);
+    line-height: var(--leading-snug);
+}
+
+.popup-access-host {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}
+
+.popup-access-button {
+    width: 100%;
+}
+
 /* --- The live progress strip --- */
 
 .popup-progress {
