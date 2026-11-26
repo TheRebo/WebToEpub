@@ -104,7 +104,6 @@ anything.
 | `content-script.ts`               | The injected script: extracts the page's DOM and hands it to the worker.                                                                |
 | `download-manager.ts`             | Owns the running downloads, their progress, and their cancellation.                                                                     |
 | `epub/document.ts`                | The typed EPUB document model.                                                                                                          |
-| `epub/reader.ts`                  | Parse a container into the model.                                                                                                       |
 | `epub/writer.ts`                  | Serialise the model, canonically.                                                                                                       |
 | `epub/packer.ts`                  | Assemble the model into a container.                                                                                                    |
 | `message/bus.ts`                  | The typed request/response and event channels between the pages and the worker.                                                         |
@@ -161,6 +160,18 @@ being bundled from `node_modules` at build time:
 | `@zip.js/zip.js` | `src/core/parsers/compat/legacy-zip.ts` | Loaded lazily, behind a facade, so 155 KB of ZIP code is fetched only by the parser that needs it (ADR-0012). |
 
 Both are MIT-licensed. Their licences are reproduced in `LICENSE.md`.
+
+### 3.5 `tests/support/` — the test tree's own helpers
+
+Helpers that exist only to prove the code works live here, not in `src/`:
+
+| Helper           | What it is for                                                                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `epub-reader.ts` | Parses a written EPUB back into the document model, so the round trip — write, read, compare — can be asserted (see `tests/unit/epub-round-trip.test.ts`). |
+
+Kintsugi writes EPUBs; it never reads them. The reader exists so the tests can
+show that what was written is what comes back, and it is deliberately kept out
+of the shipped tree so nothing dead rides along in the bundle.
 
 ---
 

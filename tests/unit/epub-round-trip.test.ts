@@ -18,7 +18,7 @@
  *    chapters.
  */
 import { describe, expect, it } from "vitest";
-import { readEpubFromFiles } from "../../src/core/epub/reader";
+import { readEpubFromFiles } from "../support/epub-reader";
 import { buildNcxXml, buildPackageXml } from "../../src/core/epub/writer";
 import type { EpubDocument, EpubFile, NavigationPoint } from "../../src/core/epub/document";
 

@@ -1,8 +1,12 @@
 /**
- * The EPUB reader.
+ * The EPUB reader — a test helper.
  *
  * Parses an EPUB container into an {@link EpubDocument} so it can be
- * inspected, merged, or re-serialised.
+ * inspected, merged, or re-serialised. Nothing in the extension reads an
+ * EPUB back: Kintsugi writes them, and the user reads them in their own
+ * reader. This lives in the test tree because it exists to prove that what
+ * is written can be read again, and that what is read back is what was
+ * written.
  *
  * This replaces the baseline's regex surgery on the OPF and NCX, which
  * corrupted any EPUB not produced by its exact serialiser. Here the XML is
@@ -21,7 +25,7 @@ import {
     type PackageDocument,
     parseOpfVersion,
     type SpineItem,
-} from "./document";
+} from "../../src/core/epub/document";
 
 /** A parsed XML document, with a helper for namespace-agnostic queries. */
 type XmlDocument = Document;

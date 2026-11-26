@@ -17,7 +17,7 @@ import {
     type DownloadManagerDependencies,
     type JobProgress,
 } from "../../src/core/download-manager";
-import { readEpub } from "../../src/core/epub/reader";
+import { readEpub } from "../support/epub-reader";
 import type { Parser } from "../../src/core/parsers/parser";
 
 /** A parser that gives every chapter its own image. */
