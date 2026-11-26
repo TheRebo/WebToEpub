@@ -25,7 +25,12 @@ import {
     getURL,
     localStorageAdapter,
 } from "../../../core/browser-api";
-import { displayHost, hasHostAccess, originOf, requestHostAccess } from "../../../core/host-access";
+import {
+    displayOrigin,
+    hasHostAccess,
+    originOf,
+    requestHostAccess,
+} from "../../../core/host-access";
 import { SettingsStore } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
 import { t, tDynamic } from "../../i18n";
@@ -182,7 +187,7 @@ class PopupController {
         // the fix is one button.
         const origin = originOf(url);
         if (error.code === "NETWORK" && origin && !(await hasHostAccess(origin))) {
-            this.#set({ state: "access", accessHost: displayHost(`${origin}/*`) });
+            this.#set({ state: "access", accessHost: displayOrigin(origin) });
             return;
         }
 

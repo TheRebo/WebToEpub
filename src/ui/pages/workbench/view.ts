@@ -9,7 +9,7 @@
  */
 import { t } from "../../i18n";
 import { buildFileName, DEFAULT_FILENAME_TEMPLATE } from "../../../core/util/file-name";
-import { displayHost } from "../../../core/host-access";
+import { displayOrigin } from "../../../core/host-access";
 import { createIcon, type IconName } from "../../components/icons";
 import { stateLabel } from "../../components/k-list";
 import type { KList } from "../../components/k-list";
@@ -845,7 +845,7 @@ export function renderWorkbench(
     // request is about the site they are on and nothing else.
     elements.accessBanner.hidden = !state.accessOrigin;
     elements.accessBannerHost.textContent = state.accessOrigin
-        ? displayHost(`${state.accessOrigin}/*`)
+        ? displayOrigin(state.accessOrigin)
         : "";
 
     // --- The site-selector banner ---

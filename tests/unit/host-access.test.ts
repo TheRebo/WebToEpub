@@ -10,6 +10,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
     displayHost,
+    displayOrigin,
     hasHostAccess,
     hostPattern,
     isHostPattern,
@@ -57,8 +58,11 @@ describe("hostPattern", () => {
         expect(hostPattern("https://example.com")).toBe("https://example.com/*");
     });
 
-    it("keeps the port", () => {
-        expect(hostPattern("http://example.com:8080")).toBe("http://example.com:8080/*");
+    it("leaves the port out, because a permission pattern has none", () => {
+        // A browser's host permission is a scheme, a host and a path. A pattern
+        // that named a port would match nothing at all, so the port is dropped
+        // and the grant covers the host on every port.
+        expect(hostPattern("http://example.com:8080")).toBe("http://example.com/*");
     });
 
     it("refuses an origin that carries a path", () => {
@@ -214,11 +218,25 @@ describe("displayHost", () => {
         expect(displayHost("https://www.example.com/*")).toBe("example.com");
     });
 
-    it("keeps the port, because it is part of the site", () => {
-        expect(displayHost("http://example.com:8080/*")).toBe("example.com:8080");
+    it("leaves the port out, because a granted pattern has none", () => {
+        expect(displayHost("http://example.com:8080/*")).toBe("example.com");
     });
 
     it("falls back to the pattern when it has no host name", () => {
         expect(displayHost("not a pattern")).toBe("not a pattern");
+    });
+});
+
+describe("displayOrigin", () => {
+    it("shows the host the user is on", () => {
+        expect(displayOrigin("https://www.example.com")).toBe("example.com");
+    });
+
+    it("keeps the port, because it is part of the site", () => {
+        expect(displayOrigin("http://example.com:8080")).toBe("example.com:8080");
+    });
+
+    it("falls back to the origin when it is not an address", () => {
+        expect(displayOrigin("not an origin")).toBe("not an origin");
     });
 });

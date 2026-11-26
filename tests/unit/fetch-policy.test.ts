@@ -78,13 +78,16 @@ describe("mayFetchUrl", () => {
         expect(await mayFetchUrl("http://192.168.1.10/story/1")).toBeNull();
     });
 
-    it("refuses a private host when the grant covers another port", async () => {
+    it("allows a private host on another port, because a grant covers the whole host", async () => {
+        // A browser's host permission has no port in it: the grant is for the
+        // host, and every port on that host comes with it. A story served from
+        // `192.168.1.10:9000` is the same site as the one on port 80.
         setNamespace(namespaceWith(["http://192.168.1.10/*"]) as never);
-        expect(await mayFetchUrl("http://192.168.1.10:9000/story")).toBeNull();
+        expect(await mayFetchUrl("http://192.168.1.10:9000/story")).not.toBeNull();
     });
 
     it("allows a local host name the user has allowed", async () => {
-        setNamespace(namespaceWith(["http://nas.local:8080/*"]) as never);
+        setNamespace(namespaceWith(["http://nas.local/*"]) as never);
         expect(await mayFetchUrl("http://nas.local:8080/story")).not.toBeNull();
     });
 

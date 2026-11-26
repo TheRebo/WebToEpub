@@ -21,12 +21,43 @@ import { validateOrigin } from "./util/sanitize";
  * The pattern is built from a validated origin, so it can only ever be a
  * scheme, a host and a path — never a wildcard of the extension's own.
  *
+ * The pattern carries no port. A browser's host permission is written as a
+ * scheme, a host and a path, and a port is not part of it: `http://localhost`
+ * and `http://localhost:8080` are the same host as far as a permission is
+ * concerned, and a pattern that named a port would never match anything. The
+ * grant therefore covers every port on the host, which is the browser's model
+ * and not a choice this extension makes.
+ *
  * @param origin The origin, such as `https://example.com`.
  * @returns The pattern, or `undefined` when the origin cannot be used.
  */
 export function hostPattern(origin: string): string | undefined {
     const validated = validateOrigin(origin);
-    return validated ? `${validated}/*` : undefined;
+    if (!validated) return undefined;
+    try {
+        const parsed = new URL(validated);
+        return `${parsed.protocol}//${parsed.hostname}/*`;
+    } catch {
+        return undefined;
+    }
+}
+
+/**
+ * The name to show for an origin.
+ *
+ * The port is kept: a site on `example.com:8080` is not the site on
+ * `example.com`, and a user who allowed one of them should be able to tell
+ * which.
+ *
+ * @param origin The origin.
+ * @returns The host name, or the origin itself when it has none.
+ */
+export function displayOrigin(origin: string): string {
+    try {
+        return new URL(origin).host.replace(/^www\./, "");
+    } catch {
+        return origin;
+    }
 }
 
 /**
@@ -157,7 +188,8 @@ export function isHostPattern(pattern: string): boolean {
  * The name to show for a granted pattern.
  *
  * A pattern is `https://example.com/*`; what the user recognises is
- * `example.com`.
+ * `example.com`. A granted pattern never carries a port — a browser's host
+ * permission has no port in it — so the name never has one either.
  *
  * @param pattern The granted pattern.
  * @returns The host name, or the pattern itself when it has none.
@@ -165,9 +197,7 @@ export function isHostPattern(pattern: string): boolean {
 export function displayHost(pattern: string): string {
     const trimmed = pattern.replace(/\/\*$/, "");
     try {
-        // `host` rather than `hostname`: the port is part of the site, and a
-        // site on `example.com:8080` is not the site on `example.com`.
-        return new URL(trimmed).host.replace(/^www\./, "");
+        return new URL(trimmed).hostname.replace(/^www\./, "");
     } catch {
         return trimmed;
     }
