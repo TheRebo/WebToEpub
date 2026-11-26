@@ -479,6 +479,68 @@ export async function run(harness) {
         await sleep(300);
     });
 
+    await check("gives the library a heading and an import control", async () => {
+        await harness.goto("options.html#library");
+        await sleep(1200);
+        const state = await harness.script(`
+            const panel = document.querySelector("#library");
+            const heading = panel?.querySelector(".options-library-title");
+            const button = panel?.querySelector('k-button[data-action="import-library"]');
+            const input = panel?.querySelector('input[data-action="import-library"]');
+            return JSON.stringify({
+                panelVisible: panel ? !panel.hidden : false,
+                heading: heading?.textContent ?? "",
+                button: button?.textContent ?? "",
+                inputType: input?.type ?? "",
+            });
+        `);
+        const data = JSON.parse(state);
+        assert(data.panelVisible, "The library panel did not open.");
+        assert(data.heading.length > 0, "The library panel has no heading.");
+        assert(data.button.length > 0, "The library panel has no import button.");
+        assertEqual(data.inputType, "file", "The import control is not a file input.");
+    });
+
+    await check("keeps the tab in the URL", async () => {
+        await harness.goto("options.html");
+        await sleep(1000);
+
+        // Choosing a tab puts it in the URL, so the page can be linked to.
+        await harness.script(`
+            const button = document.querySelector('.options-nav-link[data-group="site-access"]');
+            button.click();
+            return true;
+        `);
+        await sleep(600);
+        const after = await harness.script(`
+            return JSON.stringify({
+                hash: window.location.hash,
+                selected: document.querySelector(".options-nav-link[aria-selected='true']")?.dataset.group ?? "",
+                panelVisible: document.querySelector("#site-access") ? !document.querySelector("#site-access").hidden : false,
+            });
+        `);
+        const data = JSON.parse(after);
+        assertEqual(data.hash, "#site-access", "The tab was not written to the URL.");
+        assertEqual(data.selected, "site-access", "The URL and the tab disagree.");
+        assert(data.panelVisible, "The site-access panel did not open.");
+
+        // The back button walks back through the tabs.
+        await harness.script(`
+            window.history.back();
+            return true;
+        `);
+        await sleep(600);
+        const back = await harness.script(`
+            return JSON.stringify({
+                hash: window.location.hash,
+                selected: document.querySelector(".options-nav-link[aria-selected='true']")?.dataset.group ?? "",
+            });
+        `);
+        const backData = JSON.parse(back);
+        assertEqual(backData.selected, "appearance", "The back button did not go back a tab.");
+        assert(backData.hash !== "#site-access", "The URL did not go back a tab.");
+    });
+
     await check("applies a theme change live", async () => {
         await writeAppearance(harness, { theme: "dark" });
         await harness.goto("options.html");

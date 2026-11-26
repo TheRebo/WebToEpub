@@ -19,6 +19,7 @@ import "../../../src/ui/components/k-toast";
 
 import { DEFAULT_SETTINGS, type Settings } from "../../../src/core/storage/settings-store";
 import { OptionsController } from "../../../src/ui/pages/options/controller";
+import { createHashPort } from "../../../src/ui/pages/options/hash";
 
 /** A store that keeps the settings in memory. */
 function makeStore(settings: Settings = DEFAULT_SETTINGS) {
@@ -59,6 +60,23 @@ async function startPage(): Promise<OptionsController> {
         root,
         store: makeStore().store,
         theme,
+    });
+    await controller.start();
+    return controller;
+}
+
+/** Start an options page whose address bar is the browser's. */
+async function startPageWithHash(): Promise<OptionsController> {
+    const root = document.createElement("div");
+    document.body.appendChild(root);
+
+    const hash = createHashPort();
+    const controller = new OptionsController({
+        root,
+        store: makeStore().store,
+        theme,
+        hash,
+        target: hash.read(),
     });
     await controller.start();
     return controller;
@@ -204,5 +222,49 @@ describe("the options navigation", () => {
         expect(controller.elements.content.hidden).toBe(true);
         expect(controller.elements.library.hidden).toBe(false);
         expect(controller.elements.sections.get("appearance")?.hidden).toBe(true);
+    });
+});
+
+describe("the options address bar", () => {
+    beforeEach(() => {
+        document.body.replaceChildren();
+        window.history.replaceState(null, "", window.location.pathname);
+    });
+
+    it("puts the tab the user picks in the URL", async () => {
+        const controller = await startPageWithHash();
+
+        controller.elements.navButtons.get("site-access")?.click();
+
+        expect(window.location.hash).toBe("#site-access");
+    });
+
+    it("shows the tab the URL names when the user goes back", async () => {
+        const controller = await startPageWithHash();
+
+        controller.elements.navButtons.get("library")?.click();
+        expect(controller.active).toBe("library");
+
+        window.history.replaceState(null, "", "#appearance");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+
+        expect(controller.active).toBe("appearance");
+        expect(controller.elements.library.hidden).toBe(true);
+        expect(controller.elements.sections.get("appearance")?.hidden).toBe(false);
+    });
+
+    it("does not write the URL back when the URL is what changed", async () => {
+        const controller = await startPageWithHash();
+
+        window.history.replaceState(null, "", "#site-selectors");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+        const length = window.history.length;
+
+        // The listener fires again, with the same URL. The page must not push
+        // a new history entry for a change it did not make.
+        window.dispatchEvent(new PopStateEvent("popstate"));
+
+        expect(controller.active).toBe("site-selectors");
+        expect(window.history.length).toBe(length);
     });
 });
