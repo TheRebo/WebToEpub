@@ -15,6 +15,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import "../../../src/ui/components/k-field";
 import "../../../src/ui/components/k-list";
 import "../../../src/ui/components/k-radio-group";
+import "../../../src/ui/components/k-switch";
 
 /** The shadow root of an element. */
 function shadow(element: Element): ShadowRoot {
@@ -470,6 +471,59 @@ describe("k-radio-group", () => {
 
             group.setAttribute("legend", "Appearance");
             expect(shadow(group).querySelector("legend")?.textContent).toBe("Appearance");
+        });
+    });
+});
+
+describe("k-switch", () => {
+    beforeEach(() => {
+        document.body.replaceChildren();
+    });
+
+    describe("the accessible name", () => {
+        it("mirrors an aria-label onto the input", () => {
+            // The host is a wrapper; the input is the control a screen reader
+            // reaches. A name on the host alone would label the wrapper and
+            // leave the switch itself unnamed.
+            const toggle = document.createElement("k-switch");
+            toggle.setAttribute("aria-label", "Include author notes");
+            document.body.appendChild(toggle);
+
+            const input = shadow(toggle).querySelector("input");
+            expect(input?.getAttribute("aria-label")).toBe("Include author notes");
+        });
+
+        it("takes the name away when the label is removed", () => {
+            const toggle = document.createElement("k-switch");
+            toggle.setAttribute("aria-label", "Include author notes");
+            document.body.appendChild(toggle);
+
+            toggle.removeAttribute("aria-label");
+            expect(shadow(toggle).querySelector("input")?.hasAttribute("aria-label")).toBe(false);
+        });
+
+        it("re-renders when the label changes", () => {
+            const toggle = document.createElement("k-switch");
+            toggle.setAttribute("aria-label", "Include author notes");
+            document.body.appendChild(toggle);
+
+            toggle.setAttribute("aria-label", "Include the table of contents");
+            expect(shadow(toggle).querySelector("input")?.getAttribute("aria-label")).toBe(
+                "Include the table of contents",
+            );
+        });
+
+        it("names the switch by its own label when it has one", () => {
+            // A switch that draws its own label needs no aria-label: the label
+            // wraps the input, which is what gives the input its name.
+            const toggle = document.createElement("k-switch");
+            toggle.setAttribute("label", "Include author notes");
+            document.body.appendChild(toggle);
+
+            const input = shadow(toggle).querySelector("input");
+            const label = shadow(toggle).querySelector("label");
+            expect(label?.textContent).toContain("Include author notes");
+            expect(input?.closest("label")).toBe(label);
         });
     });
 });

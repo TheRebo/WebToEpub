@@ -411,12 +411,16 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const authorNotesRow = el("div", "option-row");
     const authorNotesLabel = el("div", "option-row__label");
     authorNotesLabel.textContent = t("workbenchIncludeAuthorNotes");
+    // The label is drawn outside the switch, so the switch needs the name
+    // separately: without it the control reaches a screen reader unnamed.
+    authorNotesSwitch.setAttribute("aria-label", t("workbenchIncludeAuthorNotes"));
     authorNotesRow.append(authorNotesLabel, authorNotesSwitch);
 
     const tocPageSwitch = document.createElement("k-switch") as KSwitch;
     const tocPageRow = el("div", "option-row");
     const tocPageLabel = el("div", "option-row__label");
     tocPageLabel.textContent = t("workbenchIncludeTocPage");
+    tocPageSwitch.setAttribute("aria-label", t("workbenchIncludeTocPage"));
     tocPageRow.append(tocPageLabel, tocPageSwitch);
 
     const moreOptions = document.createElement("button");

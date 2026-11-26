@@ -157,4 +157,20 @@ describe("the workbench's controls", () => {
         expect(root.contains(elements.rangeFrom)).toBe(true);
         expect(root.contains(elements.rangeTo)).toBe(true);
     });
+
+    it("names the option switches, whose labels are drawn outside them", () => {
+        // The switches in the options panel draw their label beside themselves
+        // rather than inside, so the control itself reached a screen reader
+        // with no name at all.
+        const { root } = build();
+
+        const switches = root.querySelectorAll("k-switch");
+        expect(switches.length).toBeGreaterThan(0);
+
+        for (const toggle of switches) {
+            const name = toggle.getAttribute("aria-label");
+            const visible = toggle.getAttribute("label");
+            expect(name ?? visible, "a switch has no name").toBeTruthy();
+        }
+    });
 });
