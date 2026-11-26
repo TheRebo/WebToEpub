@@ -171,8 +171,13 @@ export function buildPackageXml(document: EpubDocument): string {
     // The modification date is required in an EPUB 3 book, exactly once. It
     // records when the book was generated, which is what a reader's library
     // uses to decide whether an update has happened.
+    //
+    // It must not be empty. An empty element is not a valid date, and a
+    // validator rejects the book — which happens whenever a book is read
+    // from somewhere that did not carry the date, and written again.
+    const modifiedValue = metadata.modified ?? new Date().toISOString().replace(/\.\d+Z$/, "Z");
     const modified = isEpub3
-        ? `    <meta property="dcterms:modified">${escapeXml(metadata.modified ?? "")}</meta>\n`
+        ? `    <meta property="dcterms:modified">${escapeXml(modifiedValue)}</meta>\n`
         : "";
 
     // EPUB 2's package element has no `xml:lang` attribute: the language is
@@ -198,7 +203,27 @@ ${spineXml}
 
 /** The NCX document, for EPUB 2 readers. */
 export function buildNcxXml(document: EpubDocument): string {
-    const points = document.toc.map((point, index) => buildNcxPoint(point, index + 1)).join("\n");
+    // The navigation points are numbered by a counter rather than by an
+    // arithmetic rule. The rule used to be `id * 100 + index + 1` for a
+    // child, which collides as soon as the book has more than a hundred
+    // chapters: the hundred-and-first chapter's own number is the same as
+    // the first chapter's first child's number. A collision makes the
+    // document invalid, and a validator says so.
+    //
+    // The two numbers are counted separately, because they mean different
+    // things. The identifier has to be unique; the play order is the order
+    // the reader meets the content in.
+    let id = 0;
+    let playOrder = 0;
+    const points = document.toc
+        .map((point) =>
+            buildNcxPoint(
+                point,
+                () => (id += 1),
+                () => (playOrder += 1),
+            ),
+        )
+        .join("\n");
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
@@ -216,13 +241,25 @@ ${points}
 `;
 }
 
-/** One navigation point in the NCX. */
-function buildNcxPoint(point: NavigationPoint, id: number): string {
+/**
+ * One navigation point in the NCX.
+ *
+ * @param point The point to write.
+ * @param nextId A function that hands out the next unique identifier.
+ * @param nextPlayOrder A function that hands out the next play order.
+ */
+function buildNcxPoint(
+    point: NavigationPoint,
+    nextId: () => number,
+    nextPlayOrder: () => number,
+): string {
+    const id = nextId();
+    const order = nextPlayOrder();
     const children =
         point.children.length > 0
-            ? `\n${point.children.map((child, index) => buildNcxPoint(child, id * 100 + index + 1)).join("\n")}`
+            ? `\n${point.children.map((child) => buildNcxPoint(child, nextId, nextPlayOrder)).join("\n")}`
             : "";
-    return `    <navPoint id="navPoint-${id}" playOrder="${id}">
+    return `    <navPoint id="navPoint-${id}" playOrder="${order}">
       <navLabel><text>${escapeXml(point.label)}</text></navLabel>
       <content src="${escapeXmlAttribute(point.src)}"/>${children}
     </navPoint>`;

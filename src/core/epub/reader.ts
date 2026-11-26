@@ -202,6 +202,18 @@ function parseMetadata(metadataElement: Element | null, manifest: ManifestItem[]
         }
     }
 
+    // The modification date is required in an EPUB 3 book. It has to be read
+    // back, not just written: a book that is read and written again must not
+    // lose it, and an empty element is not a valid date.
+    const modified = metadataElement
+        ? findAllByLocalName(metadataElement, "meta")
+              .find((meta) => {
+                  const property = meta.getAttribute("property");
+                  return property === "dcterms:modified";
+              })
+              ?.textContent?.trim()
+        : undefined;
+
     return {
         title: textOf(metadataElement ?? document, "title") ?? "Untitled",
         creators,
@@ -210,6 +222,7 @@ function parseMetadata(metadataElement: Element | null, manifest: ManifestItem[]
         description: textOf(metadataElement ?? document, "description"),
         subjects,
         date: textOf(metadataElement ?? document, "date"),
+        modified: modified ? modified : undefined,
         identifier,
         coverId,
     };
@@ -250,28 +263,83 @@ function parseToc(
 /** Parse the EPUB 3 navigation document. */
 function parseNavDocument(xml: string): NavigationPoint[] {
     const dom = parseXml(xml, "nav.xhtml");
-    const nav = findByLocalName(dom, "nav");
-    if (!nav) return [];
 
-    const list = findByLocalName(nav, "ol");
+    // A navigation document can carry several `<nav>` elements: the table of
+    // contents, the landmarks, the page list. Only the table of contents is
+    // the chapter list, and it is the one marked `epub:type="toc"`. Taking the
+    // first `<nav>` instead would read the landmarks — often a list of three
+    // or four links — as the book's chapters.
+    const navs = findAllByLocalName(dom, "nav");
+    const toc =
+        navs.find((candidate) => candidate.getAttribute("epub:type") === "toc") ??
+        // A navigation document with no type is the table of contents by
+        // convention: the specification says the `toc` type is the default.
+        navs.find((candidate) => !candidate.hasAttribute("epub:type")) ??
+        navs[0];
+    if (!toc) return [];
+
+    const list = findByLocalName(toc, "ol");
     if (!list) return [];
 
     return parseNavList(list);
 }
 
-/** Parse an `<ol>` in a navigation document. */
+/**
+ * Parse an `<ol>` in a navigation document.
+ *
+ * Only the `<li>` elements that are direct children of the list are read at
+ * this level. A nested `<li>` belongs to the list inside it, and is read
+ * there — reading them here as well would put every chapter of every part
+ * into the table of contents twice.
+ */
 function parseNavList(list: Element): NavigationPoint[] {
     const points: NavigationPoint[] = [];
-    for (const item of findAllByLocalName(list, "li")) {
-        const anchor = findByLocalName(item, "a");
+    for (const item of directChildrenByLocalName(list, "li")) {
+        // The nested list is found first, so that the anchor belonging to the
+        // item is not mistaken for one of its children's. An `<li>` whose only
+        // anchor is inside a nested list has no label of its own.
+        const nestedList = directChildByLocalName(item, "ol");
+        const anchor = anchorOf(item, nestedList);
         if (!anchor) continue;
         const label = anchor.textContent?.trim() ?? "";
         const src = anchor.getAttribute("href") ?? "";
-        const nestedList = findByLocalName(item, "ol");
         const children = nestedList ? parseNavList(nestedList) : [];
         points.push({ label, src, children });
     }
     return points;
+}
+
+/**
+ * The anchor that labels a navigation item.
+ *
+ * @param item The `<li>` element.
+ * @param nestedList The list inside it, if it has one.
+ * @returns The anchor, or `null` when the item has no label of its own.
+ */
+function anchorOf(item: Element, nestedList: Element | null): Element | null {
+    for (const anchor of findAllByLocalName(item, "a")) {
+        // An anchor inside the nested list belongs to one of the children.
+        if (nestedList && nestedList.contains(anchor)) continue;
+        return anchor;
+    }
+    return null;
+}
+
+/** The direct children of an element with a given local name. */
+function directChildrenByLocalName(parent: Element, localName: string): Element[] {
+    const result: Element[] = [];
+    for (const child of Array.from(parent.children)) {
+        if (child.localName === localName) result.push(child);
+    }
+    return result;
+}
+
+/** The first direct child of an element with a given local name. */
+function directChildByLocalName(parent: Element, localName: string): Element | null {
+    for (const child of Array.from(parent.children)) {
+        if (child.localName === localName) return child;
+    }
+    return null;
 }
 
 /** Parse the NCX. */
