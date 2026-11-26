@@ -12,6 +12,8 @@
  * so it cannot be fooled by the content's shape.
  */
 
+import { stripIllegalXmlCharacters } from "../util/xml-characters";
+
 /** The elements that never have content. */
 const VOID_ELEMENTS = new Set([
     "area",
@@ -99,11 +101,24 @@ function serializeNode(node: Node): string {
 /**
  * Escape text for XML content.
  *
+ * The characters XML does not allow are removed rather than escaped — XML 1.0
+ * permits the tab, the line feed and the carriage return, and everything from
+ * U+0020 upwards, and nothing else below U+0020 can appear in a document at
+ * all, not even as a character reference. A chapter that carries one is a file
+ * that is not well-formed XML, and a reader that checks refuses the whole book
+ * rather than the one chapter.
+ *
+ * A site can put one of these into its own markup, so the extension cannot
+ * assume they are not there.
+ *
  * @param text The text to escape.
  * @returns The escaped text.
  */
 function escapeText(text: string): string {
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return stripIllegalXmlCharacters(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
 }
 
 /**
@@ -127,5 +142,5 @@ function escapeAttribute(value: string): string {
  * @returns The payload, made safe.
  */
 function splitCdata(text: string): string {
-    return text.replace(/]]>/g, "]]]]><![CDATA[>");
+    return stripIllegalXmlCharacters(text).replace(/]]>/g, "]]]]><![CDATA[>");
 }

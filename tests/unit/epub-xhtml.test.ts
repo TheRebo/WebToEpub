@@ -141,6 +141,29 @@ describe("a packed chapter", () => {
         expect(() => parseXml(body)).not.toThrow();
     });
 
+    it("is well-formed XML when the content has a control character", () => {
+        // XML does not allow most control characters at all — not even the
+        // ones HTML is happy with. A chapter that carries one produces a file
+        // that is not well-formed XML, and a reader that checks refuses the
+        // whole book.
+        const body = chapterBody("<p>Before\u000BAfter</p>");
+        expect(() => parseXml(body)).not.toThrow();
+        expect(body).not.toContain("\u000B");
+    });
+
+    it("is well-formed XML when a control character is in an attribute", () => {
+        const body = chapterBody('<p><a href="https://example.com/?a=\u000Bb">link</a></p>');
+        expect(() => parseXml(body)).not.toThrow();
+        expect(body).not.toContain("\u000B");
+    });
+
+    it("keeps the characters XML does allow", () => {
+        // The tab, the line feed and the carriage return are legal in XML, and
+        // a chapter that uses them for indentation must keep them.
+        const body = chapterBody("<p>One\ttwo</p>");
+        expect(body).toContain("\t");
+    });
+
     it("is well-formed XML when the author has an ampersand", () => {
         const packed = packEpub(
             [{ sourceUrl: "https://example.com/one", title: "One", contentHtml: "<p>Hello</p>" }],

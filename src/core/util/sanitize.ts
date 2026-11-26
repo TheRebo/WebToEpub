@@ -9,6 +9,7 @@
  */
 import DOMPurify from "../vendor/dompurify";
 import { parseSrcset } from "./image-references";
+import { stripIllegalXmlCharacters } from "./xml-characters";
 
 /**
  * The tags that survive sanitisation.
@@ -229,7 +230,12 @@ export function sanitizeHtml(html: string): string {
         RETURN_TRUSTED_TYPE: false,
     };
 
-    let current = html;
+    // The characters XML does not allow are removed before anything else, so
+    // that one of them never reaches the extension's own data — and never
+    // reaches the book, where it would make the whole file invalid.
+    const withoutIllegalCharacters = stripIllegalXmlCharacters(html);
+
+    let current = withoutIllegalCharacters;
     for (let pass = 0; pass < MAX_SANITISE_PASSES; ++pass) {
         const next = DOMPurify.sanitize(current, config);
         if (next === current) return next;

@@ -43,6 +43,7 @@ consequences — positive _and_ negative.
 | [0035](./ADR-0035-bounded-imports.md)                      | An import is bounded, and the limit is the reader's business                 | Accepted | A zip bomb is refused, and the user is told why                                        |
 | [0036](./ADR-0036-granted-by-name.md)                      | "The extension may read this" is not "the user allowed this host"            | Accepted | The private-host guard works again, whatever grants the extension holds                |
 | [0037](./ADR-0037-the-bytes-decide.md)                     | The bytes decide what an image is                                            | Accepted | Every image has a media type the reader understands and a matching file name           |
+| [0038](./ADR-0038-xml-forbidden-characters.md)             | The characters XML forbids never reach the book                              | Accepted | One control character no longer costs the reader the whole book                        |
 
 ---
 
