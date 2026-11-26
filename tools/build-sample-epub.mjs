@@ -6,11 +6,54 @@
  * checked against the official EPUB specification rather than against our own
  * assumptions about it.
  *
- * Usage: node tools/build-sample-epub.mjs <output.epub>
+ * Usage: node tools/build-sample-epub.mjs <output.epub> [2|3]
  */
+import { build } from "esbuild";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { Window } from "happy-dom";
-import { packEpub } from "../src/core/epub/packer.ts";
-import { buildEpubArchive } from "../src/core/epub/archiver.ts";
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+/**
+ * The packer and the archiver, as modules Node can import.
+ *
+ * Both are TypeScript, and their own imports are written without a file
+ * extension — the extensionless form is what a bundler expects, and what the
+ * extension's build uses. Node's own loader cannot resolve it, so the modules
+ * are bundled first, with the same bundler the extension is built with. That
+ * way the sample book is made from the *same* code the extension ships,
+ * rather than from a copy of it.
+ *
+ * @returns The packer and the archiver.
+ */
+async function loadCore() {
+    const directory = await mkdtemp(join(tmpdir(), "kintsugi-sample-"));
+    const outfile = join(directory, "core.mjs");
+    await build({
+        stdin: {
+            contents: `
+                export { packEpub } from ${JSON.stringify(join(ROOT, "src/core/epub/packer.ts"))};
+                export { buildEpubArchive } from ${JSON.stringify(join(ROOT, "src/core/epub/archiver.ts"))};
+            `,
+            resolveDir: ROOT,
+            loader: "js",
+        },
+        bundle: true,
+        format: "esm",
+        platform: "node",
+        target: "node20",
+        outfile,
+        logLevel: "silent",
+    });
+    const core = await import(pathToFileURL(outfile).href);
+    return { core, directory };
+}
+
+const { core, directory } = await loadCore();
+const { packEpub, buildEpubArchive } = core;
 
 /** The DOM the packer needs to turn a chapter's HTML into XHTML. */
 const window = new Window();
@@ -23,11 +66,11 @@ const chapters = [
         sourceUrl: "https://example.com/chapter-1",
         title: "Chapter 1 — The Beginning",
         contentHtml: `<h1>Chapter 1</h1>
-<p>A paragraph with an <em>emphasis</em> and an &amp; ampersand.</p>
-<p>Second paragraph.</p>
-<p><img src="https://example.com/pic.png" alt="A picture"></p>
-<p><a href="https://example.com/chapter-2">Next chapter</a></p>
-<ul><li>A list item</li><li>Another</li></ul>`,
+    <p>A paragraph with an <em>emphasis</em> and an &amp; ampersand.</p>
+    <p>Second paragraph.</p>
+    <p><img src="https://example.com/pic.png" alt="A picture"></p>
+    <p><a href="https://example.com/chapter-2">Next chapter</a></p>
+    <ul><li>A list item</li><li>Another</li></ul>`,
         images: new Map([
             [
                 "https://example.com/pic.png",
@@ -47,8 +90,8 @@ const chapters = [
         sourceUrl: "https://example.com/chapter-2",
         title: "Chapter 2 — The Middle",
         contentHtml: `<h1>Chapter 2</h1>
-<p>The second chapter.</p>
-<p>Text with a special character: &lt;not a tag&gt; &amp; more.</p>`,
+    <p>The second chapter.</p>
+    <p>Text with a special character: &lt;not a tag&gt; &amp; more.</p>`,
     },
 ];
 
@@ -79,6 +122,9 @@ const { files } = packEpub(chapters, {
 /** Write the archive. */
 const output = process.argv[2] ?? "sample.epub";
 const bytes = await buildEpubArchive(files);
-const { writeFile } = await import("node:fs/promises");
 await writeFile(output, bytes);
+
+// The bundle has served its purpose once it has been imported.
+await rm(directory, { recursive: true, force: true });
+
 console.log(`Wrote ${output} (${bytes.length} bytes, ${files.length} files).`);
