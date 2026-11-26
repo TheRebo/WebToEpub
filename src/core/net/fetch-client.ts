@@ -15,7 +15,7 @@
  * See ADR-0004.
  */
 
-import { validateFetchableUrl } from "../util/sanitize";
+import { mayFetchUrl } from "./fetch-policy";
 import { diagnosticUrl } from "../util/diagnostics";
 import { isAcceptableImageType, isAcceptablePageType, mediaTypeOf } from "./media-types";
 
@@ -550,7 +550,10 @@ export class FetchClient {
      *    through here, so this is the one place that has to refuse a URL
      *    naming the local machine or a private network. A site whose table of
      *    contents links to `http://169.254.169.254/` would otherwise use the
-     *    extension as a proxy into the user's own network.
+     *    extension as a proxy into the user's own network. A private host is
+     *    allowed when — and only when — the user has given the extension
+     *    access to it, which is what makes a story served from a home server
+     *    work without opening the door to the rest of the network.
      *  - **Redirects are followed by hand.** The browser's own redirect
      *    handling would follow a redirect to a private address without
      *    telling us, and by the time we saw the final URL the request had
@@ -564,7 +567,7 @@ export class FetchClient {
 
         let current = url;
         for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
-            const validated = validateFetchableUrl(current);
+            const validated = await mayFetchUrl(current);
             if (!validated) {
                 throw new FetchError(`Refused to fetch ${current}`, {
                     status: 0,

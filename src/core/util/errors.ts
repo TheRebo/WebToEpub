@@ -21,6 +21,7 @@ export type ErrorCode =
     | "TOO_MANY_CHAPTERS"
     | "STORAGE_FULL"
     | "PARSE_FAILED"
+    | "UNSUPPORTED"
     | "CANCELLED"
     | "PERMISSION_DENIED"
     | "UNKNOWN";

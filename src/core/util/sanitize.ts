@@ -369,9 +369,25 @@ export function isPrivateHost(hostname: string): boolean {
 }
 
 /**
+ * How a URL is judged before it is fetched.
+ */
+export interface FetchValidationOptions {
+    /**
+     * Whether a URL that names a private address may be fetched.
+     *
+     * This is never set from a URL that came out of a page. It is set by the
+     * caller that has already established that the *user* asked for that host
+     * — see {@link mayFetchUrl} in `core/net/fetch-policy.ts` for the rule that
+     * decides.
+     */
+    allowPrivate?: boolean;
+}
+
+/**
  * Validate a URL before it is fetched.
  *
- * Rejects anything that is not an absolute `http:` or `https:` URL, and
+ * Rejects anything that is not an absolute `http:` or `https:` URL, and —
+ * unless the caller has established that the user asked for that host —
  * anything that names the local machine or a private network.
  *
  * The host check is the second half of the defence. The scheme check stops
@@ -383,9 +399,13 @@ export function isPrivateHost(hostname: string): boolean {
  * into the extension and packaged into the book.
  *
  * @param url The URL to validate.
+ * @param options How to judge it.
  * @returns The parsed URL, or `null` when it must not be fetched.
  */
-export function validateFetchableUrl(url: string): URL | null {
+export function validateFetchableUrl(
+    url: string,
+    options: FetchValidationOptions = {},
+): URL | null {
     let parsed: URL;
     try {
         parsed = new URL(url);
@@ -393,7 +413,7 @@ export function validateFetchableUrl(url: string): URL | null {
         return null;
     }
     if (!ALLOWED_SCHEMES.has(parsed.protocol)) return null;
-    if (isPrivateHost(parsed.hostname)) return null;
+    if (!options.allowPrivate && isPrivateHost(parsed.hostname)) return null;
     return parsed;
 }
 

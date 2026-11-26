@@ -28,9 +28,10 @@ import { SettingsStore, SETTINGS_KEY } from "./storage/settings-store";
 import { LibraryStore } from "./storage/library-store";
 import { siteSelectors } from "./storage/site-selectors";
 import { scanDocument } from "./parsers/heuristic-scanner";
-import { toUserFacingError } from "./util/errors";
+import { toUserFacingError, type UserFacingError } from "./util/errors";
 import { diagnostic, diagnosticUrl, setDiagnosticsEnabled } from "./util/diagnostics";
-import { validateFetchableUrl, validateOrigin } from "./util/sanitize";
+import { validateOrigin } from "./util/sanitize";
+import { mayFetchUrl } from "./net/fetch-policy";
 import { DefaultParser } from "./parsers/default-parser";
 import { registerAllParsers } from "./parsers/register-all";
 import type { ParserServices } from "./parsers/parser";
@@ -403,7 +404,7 @@ class BackgroundWorker {
                     // tried out. It is validated here, so that a URL that
                     // was never a web address cannot be stored and then
                     // fetched.
-                    testUrl: validatedTestUrl(payload.testUrl),
+                    testUrl: await validatedTestUrl(payload.testUrl),
                 });
                 return { saved: true };
             },
@@ -424,7 +425,7 @@ class BackgroundWorker {
 
     /** Analyse a page. */
     async #analyse(url: string): Promise<RequestMap["page:analyze"]["response"]> {
-        const validated = validateFetchableUrl(url);
+        const validated = await mayFetchUrl(url);
         if (!validated) {
             return { supported: false, error: toUserFacingError(new Error("Unsupported URL.")) };
         }
@@ -433,7 +434,7 @@ class BackgroundWorker {
             const result = await this.#fetch.fetchHtml(url);
             const parser = this.#registry.fetch(url, result.dom);
             if (!parser) {
-                return { supported: false, error: toUserFacingError(new Error("No parser.")) };
+                return { supported: false, error: unsupportedSiteError() };
             }
             diagnosticUrl("Analysed the page with", url, parser.constructor.name);
 
@@ -456,13 +457,13 @@ class BackgroundWorker {
                 description: parser.extractDescription(result.dom)?.trim() || undefined,
             };
         } catch (error) {
-            return { supported: false, error: toUserFacingError(error) };
+            return { supported: false, error: toUserFacingError(error, { url }) };
         }
     }
 
     /** List a page's chapters. */
     async #listChapters(url: string): Promise<RequestMap["chapters:list"]["response"]> {
-        const validated = validateFetchableUrl(url);
+        const validated = await mayFetchUrl(url);
         if (!validated) {
             return { chapters: [], error: toUserFacingError(new Error("Unsupported URL.")) };
         }
@@ -474,7 +475,7 @@ class BackgroundWorker {
             await this.#refreshPreferences();
             const parser = this.#registry.fetch(url, result.dom);
             if (!parser) {
-                return { chapters: [], error: toUserFacingError(new Error("No parser.")) };
+                return { chapters: [], error: unsupportedSiteError() };
             }
 
             const chapters = await listChapterUrls(parser, result.dom);
@@ -499,7 +500,7 @@ class BackgroundWorker {
                 })),
             };
         } catch (error) {
-            return { chapters: [], error: toUserFacingError(error) };
+            return { chapters: [], error: toUserFacingError(error, { url }) };
         }
     }
 
@@ -514,15 +515,16 @@ class BackgroundWorker {
         // these URLs from its own context, where it can reach further than
         // the page that asked; a page that asked the extension to fetch a
         // `file:` URL, or a URL on the local network, would be using the
-        // extension as a proxy. The same check guards `page:analyze` and
-        // `chapters:list`.
-        if (!validateFetchableUrl(payload.url)) {
+        // extension as a proxy. A URL on a private host is allowed when the
+        // user has granted the extension access to it. The same check guards
+        // `page:analyze` and `chapters:list`.
+        if (!(await mayFetchUrl(payload.url))) {
             throw new Error("The story's URL is not a web address.");
         }
 
         const chapters: Array<{ sourceUrl: string; title: string; state: "queued" }> = [];
         for (const chapter of payload.chapters) {
-            if (!validateFetchableUrl(chapter.sourceUrl)) {
+            if (!(await mayFetchUrl(chapter.sourceUrl))) {
                 throw new Error("A chapter's URL is not a web address.");
             }
             chapters.push({
@@ -561,7 +563,7 @@ class BackgroundWorker {
         contentCss: string,
         titleCss: string,
     ): Promise<RequestMap["site-selectors:test"]["response"]> {
-        const validated = validateFetchableUrl(url);
+        const validated = await mayFetchUrl(url);
         if (!validated) {
             return { ok: false, contentChars: 0, titleText: "", error: "Unsupported URL." };
         }
@@ -592,7 +594,7 @@ class BackgroundWorker {
     async #suggestSelectors(
         url: string,
     ): Promise<RequestMap["site-selectors:suggest"]["response"]> {
-        const validated = validateFetchableUrl(url);
+        const validated = await mayFetchUrl(url);
         if (!validated) {
             return { status: "failed", contentCss: "", titleCss: "", error: "Unsupported URL." };
         }
@@ -619,18 +621,33 @@ class BackgroundWorker {
 }
 
 /**
+ * The error for a page that no parser could read.
+ *
+ * It is a different error from a page that could not be reached, and the user
+ * can do something about each: one means the site is not supported yet, the
+ * other means the network or the site let us down. Telling them apart matters,
+ * because "try again" is useless advice for a site nobody has a parser for.
+ */
+function unsupportedSiteError(): UserFacingError {
+    return {
+        message: "Kintsugi does not know this site yet.",
+        code: "UNSUPPORTED",
+    };
+}
+
+/**
  * The test URL to store with a set of selectors.
  *
  * The URL is fetched when the selectors are tried out, so a URL that is not a
- * web address — a `file:` URL, or one on the local network — is refused here
- * rather than stored and fetched later.
+ * web address — a `file:` URL, or one on the local network the user has not
+ * allowed — is refused here rather than stored and fetched later.
  *
  * @param url The URL the user typed, if any.
  * @returns The URL, or an empty string when it cannot be used.
  */
-function validatedTestUrl(url: string | undefined): string {
+async function validatedTestUrl(url: string | undefined): Promise<string> {
     if (!url) return "";
-    return validateFetchableUrl(url) ? url : "";
+    return (await mayFetchUrl(url)) ? url : "";
 }
 
 /** Query for the first element that matches, ignoring a bad selector. */
@@ -649,7 +666,7 @@ function createImageCollector() {
     return {
         images,
         async addImage(url: string): Promise<void> {
-            if (!validateFetchableUrl(url)) return;
+            if (!(await mayFetchUrl(url))) return;
             images.set(url, url);
         },
     };
