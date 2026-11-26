@@ -57,16 +57,6 @@ export interface RequestMap {
         request: Record<string, never>;
         response: { jobs: DownloadProgress[] };
     };
-    /** Read the settings. */
-    "settings:get": {
-        request: Record<string, never>;
-        response: { settings: unknown };
-    };
-    /** Write the settings. */
-    "settings:set": {
-        request: { settings: unknown };
-        response: { settings: unknown };
-    };
     /** List the library. */
     "library:list": {
         request: Record<string, never>;
@@ -76,26 +66,6 @@ export interface RequestMap {
     "library:delete": {
         request: { id: string };
         response: { deleted: boolean };
-    };
-    /** Check whether the extension has host access for a site. */
-    "permissions:check": {
-        request: { origin: string };
-        response: { hasAccess: boolean };
-    };
-    /** Request host access for a site. */
-    "permissions:request": {
-        request: { origin: string };
-        response: { granted: boolean };
-    };
-    /** The sites the extension has access to. */
-    "permissions:list": {
-        request: Record<string, never>;
-        response: { origins: string[] };
-    };
-    /** Revoke host access. */
-    "permissions:revoke": {
-        request: { origin: string };
-        response: { revoked: boolean };
     };
     /** Suggest CSS selectors for a site the rewrite has no parser for. */
     "site-selectors:suggest": {
@@ -138,6 +108,30 @@ export interface RequestMap {
 
 /** The name of a request. */
 export type RequestName = keyof RequestMap;
+
+/**
+ * The names of the requests, as a list.
+ *
+ * The type above is the truth about what a request's payload looks like; this
+ * list is what lets the code — and the tests — ask at run time what the
+ * registry holds. A message that nothing sends is dead weight: a payload rule
+ * to maintain and a handler to keep correct.
+ */
+export const REQUEST_NAMES = [
+    "page:analyze",
+    "chapters:list",
+    "download:start",
+    "download:cancel",
+    "download:progress",
+    "download:list",
+    "library:list",
+    "library:delete",
+    "site-selectors:suggest",
+    "site-selectors:test",
+    "site-selectors:save",
+    "site-selectors:list",
+    "site-selectors:remove",
+] as const satisfies readonly RequestName[];
 
 /**
  * The handlers a worker registers.
@@ -434,14 +428,8 @@ const PAYLOAD_RULES: {
     "download:cancel": (payload) => hasString(payload, "jobId"),
     "download:progress": (payload) => hasString(payload, "jobId"),
     "download:list": () => true,
-    "settings:get": () => true,
-    "settings:set": (payload) => hasProperty(payload, "settings"),
     "library:list": () => true,
     "library:delete": (payload) => hasString(payload, "id"),
-    "permissions:check": (payload) => hasString(payload, "origin"),
-    "permissions:request": (payload) => hasString(payload, "origin"),
-    "permissions:list": () => true,
-    "permissions:revoke": (payload) => hasString(payload, "origin"),
     "site-selectors:suggest": (payload) => hasString(payload, "url"),
     "site-selectors:test": (payload) =>
         hasString(payload, "url") &&

@@ -932,7 +932,7 @@ export class Harness {
         const answered = await this.asyncScript(`
             const api = globalThis.browser ?? globalThis.chrome;
             const response = await api.runtime.sendMessage({
-                type: "settings:get",
+                type: "download:list",
                 payload: {},
                 id: "harness-check",
             });

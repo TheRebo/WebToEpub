@@ -30,7 +30,6 @@ import { siteSelectors } from "./storage/site-selectors";
 import { scanDocument } from "./parsers/heuristic-scanner";
 import { toUserFacingError, type UserFacingError } from "./util/errors";
 import { diagnostic, diagnosticUrl, setDiagnosticsEnabled } from "./util/diagnostics";
-import { validateOrigin } from "./util/sanitize";
 import { mayFetchUrl } from "./net/fetch-policy";
 import { DefaultParser } from "./parsers/default-parser";
 import { registerAllParsers } from "./parsers/register-all";
@@ -260,17 +259,6 @@ class BackgroundWorker {
         }
     }
 
-    /**
-     * Turn the diagnostics on or off, as the settings have them.
-     *
-     * The switch is read from the settings the worker already holds, so this
-     * is a cheap call.
-     */
-    #applyDiagnostics(): void {
-        const settings = this.#settings.cached();
-        if (settings) setDiagnosticsEnabled(settings.advanced.diagnostics);
-    }
-
     /** Start the worker. */
     async start(): Promise<void> {
         // The listener is registered before the worker has finished starting.
@@ -353,15 +341,6 @@ class BackgroundWorker {
                 return progress;
             },
             "download:list": () => ({ jobs: this.#downloads.list() }),
-            "settings:get": async () => ({ settings: await this.#settings.get() }),
-            "settings:set": async (payload) => {
-                await this.#settings.set(payload.settings as never);
-                // The diagnostics switch is read here as well as in the
-                // store, so that turning it on takes effect without
-                // restarting the worker.
-                this.#applyDiagnostics();
-                return { settings: await this.#settings.get() };
-            },
             "library:list": async () => {
                 // The cover's bytes are not sent. The library's grid draws
                 // a placeholder cover, and a cover can be a hundred
@@ -387,38 +366,6 @@ class BackgroundWorker {
                 if (!entry) return { deleted: false };
                 await this.#library.delete(payload.id);
                 return { deleted: true };
-            },
-            "permissions:check": async (payload) => ({
-                hasAccess: await this.#hasAccess(payload.origin),
-            }),
-            "permissions:request": async (payload) => {
-                const api = getNamespace();
-                if (!api) return { granted: false };
-                // The origin is turned into a permission pattern, so it has
-                // to be a plain host: an origin carrying a path or a
-                // wildcard would grant more than the user was shown.
-                const origin = validateOrigin(payload.origin);
-                if (!origin) return { granted: false };
-                const granted = await api.permissions.request({
-                    origins: [`${origin}/*`],
-                });
-                return { granted };
-            },
-            "permissions:list": async () => {
-                const api = getNamespace();
-                if (!api) return { origins: [] };
-                const all = await api.permissions.getAll();
-                return { origins: all.origins ?? [] };
-            },
-            "permissions:revoke": async (payload) => {
-                const api = getNamespace();
-                if (!api) return { revoked: false };
-                const origin = validateOrigin(payload.origin);
-                if (!origin) return { revoked: false };
-                const revoked = await api.permissions.remove({
-                    origins: [`${origin}/*`],
-                });
-                return { revoked };
             },
             "site-selectors:suggest": async (payload) => this.#suggestSelectors(payload.url),
             "site-selectors:test": async (payload) =>
@@ -568,15 +515,6 @@ class BackgroundWorker {
         });
         diagnostic("Started a download job", jobId, chapters.length, "chapters");
         return { jobId };
-    }
-
-    /** Whether the extension has host access to an origin. */
-    async #hasAccess(origin: string): Promise<boolean> {
-        const api = getNamespace();
-        if (!api) return false;
-        const validated = validateOrigin(origin);
-        if (!validated) return false;
-        return api.permissions.contains({ origins: [`${validated}/*`] });
     }
 
     /**

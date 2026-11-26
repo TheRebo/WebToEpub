@@ -239,15 +239,17 @@ export async function activeTab(): Promise<
 /**
  * The address of the page the user is looking at.
  *
- * The `activeTab` permission only lets the extension see the address of the tab
- * the user invoked it from, and only while that tab stays where it is. When the
- * extension is opened from somewhere else — the options page, a bookmark — the
- * active tab is the extension's own page, and its address says nothing about
- * the story.
+ * Firefox does not tell an extension the addresses of tabs it has no business
+ * knowing about. Without the `tabs` permission — which this extension does not
+ * ask for — a tab comes back without its address unless the extension has
+ * host access to that site, or the `activeTab` permission has been granted for
+ * it. So the active tab is used when it is a web page, and otherwise the most
+ * recently used web page *the extension can already reach* is used.
  *
- * So the active tab is used when it is a web page, and otherwise the most
- * recently used web page in the window is used: that is the page the user was
- * on a moment ago, which is the page they mean.
+ * That is a weaker promise than it looks: the page the user was on a moment
+ * ago is only found if the extension has access to it, which it does for the
+ * sites the user has already granted. It is a best effort, and the caller
+ * has to cope with `undefined`.
  *
  * @returns The address, or `undefined` when there is no page to speak of.
  */

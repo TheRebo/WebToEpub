@@ -4,15 +4,49 @@
  * The bus is the boundary between the extension's own pages and the worker.
  * A message that arrives with the wrong shape must be answered with a clear
  * error, not handed to a handler that assumes the shape.
+ *
+ * The registry is also checked against what the interface actually sends. A
+ * message nothing sends is dead weight — a payload rule to maintain, and a
+ * handler to keep correct — and six of them had piled up that way.
  */
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
     handleRequests,
     isValidPayload,
+    REQUEST_NAMES,
     sendRequest,
     type MessagingListenerApi,
     type RequestName,
 } from "../../src/core/message/bus";
+
+/**
+ * The message names the interface sends.
+ *
+ * The pages send a message by name — `sendRequest(transport, "page:analyze",
+ * …)` — so the names are read out of the sources rather than tracked by hand.
+ */
+function sentMessageNames(): Set<string> {
+    const root = join(process.cwd(), "src", "ui");
+    const names = new Set<string>();
+    const visit = (directory: string): void => {
+        for (const entry of readdirSync(directory, { withFileTypes: true })) {
+            const path = join(directory, entry.name);
+            if (entry.isDirectory()) {
+                visit(path);
+                continue;
+            }
+            if (!entry.name.endsWith(".ts")) continue;
+            const source = readFileSync(path, "utf8");
+            for (const match of source.matchAll(/"([a-z-]+:[a-z-]+)"/g)) {
+                if (match[1]) names.add(match[1]);
+            }
+        }
+    };
+    visit(root);
+    return names;
+}
 
 /**
  * Build a listener API that captures the handler, so a test can send it a
@@ -48,11 +82,7 @@ const VALID_PAYLOADS: Partial<Record<RequestName, unknown>> = {
     },
     "download:cancel": { jobId: "job-1" },
     "download:progress": { jobId: "job-1" },
-    "settings:set": { settings: { appearance: { theme: "dark" } } },
     "library:delete": { id: "entry-1" },
-    "permissions:check": { origin: "https://example.com" },
-    "permissions:request": { origin: "https://example.com" },
-    "permissions:revoke": { origin: "https://example.com" },
     "site-selectors:suggest": { url: "https://example.com/story" },
     "site-selectors:test": {
         url: "https://example.com/story",
@@ -78,9 +108,7 @@ describe("isValidPayload", () => {
 
     it("accepts an empty payload for a request that takes none", () => {
         expect(isValidPayload("download:list", {})).toBe(true);
-        expect(isValidPayload("settings:get", {})).toBe(true);
         expect(isValidPayload("library:list", {})).toBe(true);
-        expect(isValidPayload("permissions:list", {})).toBe(true);
         expect(isValidPayload("site-selectors:list", {})).toBe(true);
     });
 
@@ -95,7 +123,7 @@ describe("isValidPayload", () => {
         expect(isValidPayload("page:analyze", {})).toBe(false);
         expect(isValidPayload("download:cancel", {})).toBe(false);
         expect(isValidPayload("library:delete", {})).toBe(false);
-        expect(isValidPayload("permissions:check", {})).toBe(false);
+        expect(isValidPayload("site-selectors:remove", {})).toBe(false);
     });
 
     it("rejects a field of the wrong type", () => {
@@ -320,5 +348,29 @@ describe("sendRequest", () => {
         await expect(
             sendRequest(api, "page:analyze", { url: "https://example.com/story" }),
         ).rejects.toThrow("Mismatched response");
+    });
+});
+
+describe("the message registry", () => {
+    it("declares a message only when the interface sends one", () => {
+        // Six messages were declared, had a handler, and were never sent.
+        const sent = sentMessageNames();
+        for (const name of REQUEST_NAMES) {
+            expect(sent.has(name), `"${name}" is declared but never sent`).toBe(true);
+        }
+    });
+
+    it("declares every message the interface sends", () => {
+        const sent = sentMessageNames();
+        for (const name of sent) {
+            expect(
+                (REQUEST_NAMES as readonly string[]).includes(name),
+                `"${name}" is sent but not declared`,
+            ).toBe(true);
+        }
+    });
+
+    it("names every request once", () => {
+        expect(new Set(REQUEST_NAMES).size).toBe(REQUEST_NAMES.length);
     });
 });
