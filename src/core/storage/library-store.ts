@@ -207,10 +207,49 @@ export class LibraryStore {
      *
      * Without this a story that is downloaded twice appears twice in the
      * library, and the user has to clean up the duplicates by hand.
+     *
+     * The read and the write happen in **one** transaction. In two, two saves
+     * that arrived at the same time would both read "nothing there", and both
+     * would write their own entry — so the story would appear twice, which is
+     * the one thing this method exists to prevent.
      */
     async save(entry: LibraryEntry): Promise<void> {
-        const existing = await this.findBySourceUrl(entry.sourceUrl);
-        await this.put(mergeLibraryEntry(existing, entry));
+        const db = await this.#database();
+
+        await new Promise<void>((resolve, reject) => {
+            const transaction = db.transaction(LIBRARY_STORE, "readwrite");
+            const store = transaction.objectStore(LIBRARY_STORE);
+            const request = store.index("sourceUrl").getAll(entry.sourceUrl);
+
+            let failed = false;
+
+            request.onsuccess = () => {
+                const matches = (request.result as LibraryEntry[]).filter(
+                    (candidate) => candidate.sourceUrl === entry.sourceUrl,
+                );
+                // The write is part of the same transaction, so it cannot
+                // interleave with another save's read.
+                store.put(mergeLibraryEntry(matches[0] ?? null, entry));
+            };
+
+            request.onerror = () => {
+                failed = true;
+                reject(request.error ?? new Error("The library request failed."));
+            };
+
+            transaction.oncomplete = () => {
+                if (failed) return;
+                resolve();
+            };
+            transaction.onabort = () => {
+                failed = true;
+                reject(transaction.error ?? new Error("The library transaction was aborted."));
+            };
+            transaction.onerror = () => {
+                failed = true;
+                reject(transaction.error ?? new Error("The library transaction failed."));
+            };
+        });
     }
 
     /** Remove an entry. */
