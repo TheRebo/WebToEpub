@@ -33,6 +33,8 @@ import { hasHostAccess, originOf, requestHostAccess } from "../../../core/host-a
 import { normaliseStoryUrl } from "../../../core/util/url";
 import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
 import { caughtErrorMessage, errorMessage } from "../../error-messages";
+import { runGuarded } from "../../guarded";
+import { LatestOnly } from "../../latest-only";
 import { pollUntilDone } from "../../poll";
 import { themeController } from "../../styles/theme-controller";
 import { t, tDynamic } from "../../i18n";
@@ -77,8 +79,14 @@ function initialState(): WorkbenchState {
     };
 }
 
-/** The workbench controller. */
-class WorkbenchController {
+/**
+ * The workbench controller.
+ *
+ * Exported so that the page's behaviour can be tested without a browser: the
+ * controller is where the story is loaded, and loading a story is where the
+ * interesting failures live.
+ */
+export class WorkbenchController {
     #store = new WorkbenchStore(initialState());
     #elements: WorkbenchElements;
     #settings: SettingsStore = new SettingsStore(localStorageAdapter);
@@ -93,14 +101,44 @@ class WorkbenchController {
      */
     #jobChapterIndexes: number[] = [];
     #pollTimer: ReturnType<typeof setTimeout> | undefined;
-    /** Stops the poll for a running download. */
+    /**Stops the poll for a running download. */
     #stopPoll: (() => void) | undefined;
     #renderQueued = false;
+    /**
+     * The story that is currently being loaded.
+     *
+     * Loading a story takes two round trips to the worker — one to read the
+     * metadata and one to read the chapter list — and either of them can take
+     * a while. The user does not wait: they can type another address while the
+     * first one is still being read, and the first load then finishes *after*
+     * the second one and overwrites it. The story on screen is then the one
+     * the user moved away from.
+     *
+     * The guard numbers the loads and says which of them is still wanted, so
+     * a late answer is discarded.
+     */
+    #loads = new LatestOnly();
 
     constructor(root: HTMLElement) {
         this.#elements = buildWorkbench(root);
         this.#store.subscribe(() => this.#scheduleRender());
         this.#wire();
+    }
+
+    /**
+     * The state the page is showing.
+     *
+     * Exposed so that the page's behaviour can be checked without reading the
+     * DOM: the state is what the user sees, and it is the thing a bug is most
+     * likely to get wrong.
+     */
+    get state(): WorkbenchState {
+        return this.#store.state;
+    }
+
+    /** The page's elements, for tests. */
+    get elements(): WorkbenchElements {
+        return this.#elements;
     }
 
     /** Start the page. */
@@ -132,6 +170,25 @@ class WorkbenchController {
     }
 
     /**
+     * Run work that the user started, without waiting for it.
+     *
+     * The event handlers cannot be `async` — the browser's event system does
+     * not wait for them, and a handler that returns a promise leaves the
+     * rejection unhandled. A rejected promise is not a small problem here: the
+     * browser logs it, the user is told nothing, and the thing they asked for
+     * silently does not happen.
+     *
+     * So the work is started through {@link runGuarded}, and its failure is
+     * caught and shown.
+     *
+     * @param work The work to do.
+     * @param report How to report a failure.
+     */
+    #run(work: () => Promise<void>, report: (error: unknown) => void): void {
+        runGuarded(work, report);
+    }
+
+    /**
      * Load a story.
      *
      * The extension has no host permissions of its own, so it has to be
@@ -142,22 +199,31 @@ class WorkbenchController {
      * @param url The story's URL.
      */
     async #loadStory(url: string): Promise<void> {
+        // This load is the newest one, so anything older that comes back
+        // later is discarded.
+        const loadNumber = this.#loads.begin();
+
         this.#store.setError(undefined);
         this.#elements.urlField.value = url;
 
         const origin = originOf(url);
         if (origin && !(await hasHostAccess(origin))) {
+            // The answer can arrive after the user has moved on to another
+            // story, in which case the prompt belongs to a story they are no
+            // longer looking at.
+            if (!this.#loads.isCurrent(loadNumber)) return;
             this.#store.setAccessOrigin(origin);
             this.#render();
             return;
         }
 
         this.#store.setAccessOrigin(undefined);
-        await this.#analyse(url);
+        await this.#analyse(url, loadNumber);
+        if (!this.#loads.isCurrent(loadNumber)) return;
         // An analysis that failed has nothing to offer, and the chapter list
         // would only add a second error on top of the first.
         if (this.#store.state.error) return;
-        await this.#loadChapters(url);
+        await this.#loadChapters(url, loadNumber);
     }
 
     /**
@@ -214,14 +280,23 @@ class WorkbenchController {
         this.#elements.tocPageSwitch.checked = switches.includeTocPage;
     }
 
-    /** Analyse the page, to fill in the metadata. */
-    async #analyse(url: string): Promise<void> {
+    /**
+     * Analyse the page, to fill in the metadata.
+     *
+     * @param url The story's URL.
+     * @param loadNumber The number of the load this belongs to.
+     */
+    async #analyse(url: string, loadNumber: number): Promise<void> {
         try {
             const analysis = await sendRequest(
                 { sendMessage: (message) => sendMessageToWorker(message) },
                 "page:analyze",
                 { url },
             );
+            // A newer load has taken over: this answer is about a story the
+            // user has moved away from, and applying it would put that story
+            // on screen.
+            if (!this.#loads.isCurrent(loadNumber)) return;
             if (!analysis.supported) {
                 this.#store.setError(t("errorNoParser"));
                 return;
@@ -243,6 +318,7 @@ class WorkbenchController {
             });
             this.#store.setUsedDefaultParser(analysis.usedDefaultParser === true);
         } catch (error) {
+            if (!this.#loads.isCurrent(loadNumber)) return;
             this.#store.setError(caughtErrorMessage(error));
         }
     }
@@ -261,8 +337,13 @@ class WorkbenchController {
         };
     }
 
-    /** Load the chapter list. */
-    async #loadChapters(url: string): Promise<void> {
+    /**
+     * Load the chapter list.
+     *
+     * @param url The story's URL.
+     * @param loadNumber The number of the load this belongs to.
+     */
+    async #loadChapters(url: string, loadNumber: number): Promise<void> {
         this.#store.setLoading(true);
         this.#render();
         try {
@@ -271,6 +352,9 @@ class WorkbenchController {
                 "chapters:list",
                 { url },
             );
+            // The story on screen is a newer one: this list belongs to a
+            // story the user has moved away from.
+            if (!this.#loads.isCurrent(loadNumber)) return;
             if (result.error) {
                 this.#store.setError(errorMessage(result.error));
                 this.#store.setLoading(false);
@@ -287,6 +371,7 @@ class WorkbenchController {
             }));
             this.#store.setChapters(chapters);
         } catch (error) {
+            if (!this.#loads.isCurrent(loadNumber)) return;
             this.#store.setError(caughtErrorMessage(error));
             this.#store.setLoading(false);
         }
@@ -302,17 +387,26 @@ class WorkbenchController {
         // field is what makes that case usable: paste an address, and the
         // workbench reads it.
         elements.urlLoadButton.addEventListener("k-click", () => {
-            void this.#loadFromField();
+            this.#run(
+                () => this.#loadFromField(),
+                (error) => this.#store.setError(caughtErrorMessage(error)),
+            );
         });
         elements.urlField.addEventListener("keydown", (event) => {
             if ((event as KeyboardEvent).key !== "Enter") return;
             event.preventDefault();
-            void this.#loadFromField();
+            this.#run(
+                () => this.#loadFromField(),
+                (error) => this.#store.setError(caughtErrorMessage(error)),
+            );
         });
 
         // --- The site access prompt ---
         elements.accessGrantButton.addEventListener("k-click", () => {
-            void this.#grantAccess();
+            this.#run(
+                () => this.#grantAccess(),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
         });
 
         // --- Metadata fields ---
@@ -365,21 +459,33 @@ class WorkbenchController {
         // --- Options ---
         elements.authorNotesSwitch.addEventListener("k-change", (event) => {
             const detail = (event as CustomEvent<{ checked: boolean }>).detail;
-            void this.#saveStoryOption("removeAuthorNotes", !detail.checked);
+            this.#run(
+                () => this.#saveStoryOption("removeAuthorNotes", !detail.checked),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
         });
         elements.tocPageSwitch.addEventListener("k-change", (event) => {
             const detail = (event as CustomEvent<{ checked: boolean }>).detail;
-            void this.#saveStoryOption("includeTocPage", detail.checked);
+            this.#run(
+                () => this.#saveStoryOption("includeTocPage", detail.checked),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
         });
 
         // --- Save ---
         elements.saveButton.addEventListener("k-click", () => {
-            void this.#save();
+            this.#run(
+                () => this.#save(),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
         });
 
         // --- Pack ---
         elements.packButton.addEventListener("k-click", () => {
-            void this.#pack();
+            this.#run(
+                () => this.#pack(),
+                (error) => this.#store.setError(caughtErrorMessage(error)),
+            );
         });
 
         // --- Chapter list ---
@@ -448,26 +554,44 @@ class WorkbenchController {
 
         // --- The site-selector dialog ---
         elements.selectorBannerButton.addEventListener("k-click", () => {
-            void this.#openSelectorDialog();
+            this.#run(
+                () => this.#openSelectorDialog(),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
         });
         elements.selectorSuggest.addEventListener("k-click", () => {
-            void this.#suggestSelectors();
+            this.#run(
+                () => this.#suggestSelectors(),
+                (error) => this.#setSelectorStatus(caughtErrorMessage(error), "error"),
+            );
         });
         elements.selectorTest.addEventListener("k-click", () => {
-            void this.#testSelectors();
+            this.#run(
+                () => this.#testSelectors(),
+                (error) => this.#setSelectorStatus(caughtErrorMessage(error), "error"),
+            );
         });
         elements.selectorSave.addEventListener("k-click", () => {
-            void this.#saveSelectors();
+            this.#run(
+                () => this.#saveSelectors(),
+                (error) => this.#setSelectorStatus(caughtErrorMessage(error), "error"),
+            );
         });
         elements.selectorForget.addEventListener("k-click", () => {
-            void this.#forgetSelectors();
+            this.#run(
+                () => this.#forgetSelectors(),
+                (error) => this.#setSelectorStatus(caughtErrorMessage(error), "error"),
+            );
         });
 
         // The Cancel button lives in the status bar and is rebuilt each time
         // the bar is rendered, so it never carries stale state.
         elements.statusActions.addEventListener("k-click", (event) => {
             if ((event.target as HTMLElement)?.closest?.("k-button")) {
-                void this.#cancel();
+                this.#run(
+                    () => this.#cancel(),
+                    (error) => this.#toast(caughtErrorMessage(error), "error"),
+                );
             }
         });
     }
@@ -789,8 +913,13 @@ class WorkbenchController {
 
         // The saved selectors change what the extension sees on this site, so
         // the page is analysed again and the chapter list is rebuilt from it.
-        await this.#analyse(this.#store.state.story.sourceUrl);
-        await this.#loadChapters(this.#store.state.story.sourceUrl);
+        //
+        // This is a new load: it takes a new number, so any load still in
+        // flight is discarded rather than landing on top of this one.
+        const loadNumber = this.#loads.begin();
+        await this.#analyse(this.#store.state.story.sourceUrl, loadNumber);
+        if (!this.#loads.isCurrent(loadNumber)) return;
+        await this.#loadChapters(this.#store.state.story.sourceUrl, loadNumber);
     }
 
     /** Forget the selectors for the host name. */
@@ -837,35 +966,26 @@ class WorkbenchController {
         key: "removeAuthorNotes" | "includeTocPage",
         value: boolean,
     ): Promise<void> {
-        const current = await this.#settings.get();
-        const next = await this.#settings.update({
-            story: { ...current.story, [key]: value },
-        });
-        // The snapshot has to be kept in step with the write. `#save` writes
-        // the whole story group from the snapshot, so a stale one would undo
-        // the option the user had just toggled: they turned the switch on,
-        // pressed Save to save the metadata, and the switch silently went
-        // back off.
+        // Only the option that was toggled is written. Writing the whole group
+        // from a snapshot would carry the old value of every other option,
+        // and the snapshot is exactly what goes stale when the user changes
+        // two things in a row.
+        const next = await this.#settings.update({ story: { [key]: value } });
+        // The snapshot has to be kept in step with the write: `#save` reads
+        // the filename template from it.
         this.#settingsValue = next;
     }
 
     /** Save the metadata. */
     async #save(): Promise<void> {
         const state = this.#store.state;
-        // The settings are already held from the start of the page; reading
-        // them again would risk saving a value the user has changed
-        // elsewhere since.
-        const settings = this.#settingsValue ?? (await this.#settings.get());
-        await this.#settings.update({
-            story: {
-                ...settings.story,
-                defaultLanguage: state.story.language,
-            },
+        // Only the language is written. The rest of the story settings belong
+        // to the options page, and writing them from this page's snapshot
+        // would undo any change made there in the meantime.
+        const next = await this.#settings.update({
+            story: { defaultLanguage: state.story.language },
         });
-        this.#settingsValue = {
-            ...settings,
-            story: { ...settings.story, defaultLanguage: state.story.language },
-        };
+        this.#settingsValue = next;
         this.#store.markDirty(false);
     }
 
