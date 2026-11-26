@@ -243,6 +243,10 @@ export default {
         "$1 buku diimpor.",
         "Konfirmasi setelah mengimpor pustaka yang berisi satu buku.",
     ],
+    optionsLibraryTooLarge: [
+        "Berkas itu terlalu besar untuk diimpor. Pustaka terbesar yang dapat dibaca Kintsugi adalah $SIZE$.",
+        "Ditampilkan ketika pengguna memilih ekspor pustaka yang lebih besar dari yang dapat dibaca Kintsugi.",
+    ],
     libraryRemove: ["Hapus", "Menghapus buku dari pustaka."],
     libraryRemoved: ["Dihapus dari pustaka.", "Konfirmasi setelah menghapus buku."],
 

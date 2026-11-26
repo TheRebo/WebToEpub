@@ -3,6 +3,11 @@ import { buildEpubArchive } from "../../src/core/epub/archiver";
 import { packEpub, type ChapterToPack } from "../../src/core/epub/packer";
 import { encodePng } from "../../src/core/epub/png";
 import { decodeDataUrl, parseLibraryExport } from "../../src/core/storage/library-import";
+import {
+    DEFAULT_IMPORT_LIMITS,
+    ImportLimitError,
+    type ImportLimits,
+} from "../../src/core/storage/import-limits";
 
 /**
  * The parts of `zip.js` the fixture is built with.
@@ -44,6 +49,50 @@ async function buildZip(files: Record<string, string | Uint8Array>): Promise<Uin
 }
 
 /**
+ * Rewrite an archive so that it claims an entry is smaller than it is.
+ *
+ * The size in the header is the archive's own claim about the entry. A
+ * crafted archive can lie about it, so the reader must not take the claim at
+ * face value — this is how a test makes it lie.
+ *
+ * @param bytes The archive's bytes.
+ * @param name The entry to lie about.
+ * @param claimed The size to claim, in bytes.
+ * @returns The archive's bytes, with the claim rewritten.
+ */
+function claimSize(bytes: Uint8Array, name: string, claimed: number): Uint8Array {
+    const patched = new Uint8Array(bytes);
+    const view = new DataView(patched.buffer);
+    const decoder = new TextDecoder();
+    const nameBytes = new TextEncoder().encode(name);
+
+    // The local file header: the size fields sit after the CRC.
+    for (let index = 0; index < patched.length - 4; ++index) {
+        if (view.getUint32(index, true) !== 0x04034b50) continue;
+        const nameLength = view.getUint16(index + 26, true);
+        const start = index + 30;
+        const entryName = decoder.decode(patched.subarray(start, start + nameLength));
+        if (entryName === name) {
+            view.setUint32(index + 22, claimed, true);
+        }
+    }
+
+    // The central directory: the same claim, written a second time.
+    for (let index = 0; index < patched.length - 4; ++index) {
+        if (view.getUint32(index, true) !== 0x02014b50) continue;
+        const nameLength = view.getUint16(index + 28, true);
+        const start = index + 46;
+        const entryName = decoder.decode(patched.subarray(start, start + nameLength));
+        if (entryName === name) {
+            view.setUint32(index + 24, claimed, true);
+        }
+    }
+
+    expect(nameBytes.length).toBeGreaterThan(0);
+    return patched;
+}
+
+/**
  * Encode bytes as a base64 data URL.
  *
  * @param bytes The bytes.
@@ -81,6 +130,7 @@ async function buildBook(title: string, author: string, chapters: number): Promi
  * Build an export archive.
  *
  * @param books The books, by index.
+ * @param version The export's version.
  * @returns The archive's bytes.
  */
 async function buildExport(
@@ -106,6 +156,14 @@ async function buildExport(
     });
     return buildZip(files);
 }
+
+/** Limits that are small enough to be reached by a test fixture. */
+const TIGHT: ImportLimits = {
+    maxArchiveBytes: 1024 * 1024,
+    maxEntryBytes: 4096,
+    maxTotalBytes: 8192,
+    maxEntries: 10,
+};
 
 describe("parseLibraryExport", () => {
     it("reads a book out of the export", async () => {
@@ -197,6 +255,99 @@ describe("parseLibraryExport", () => {
         const bytes = await buildZip({ "something.txt": "else" });
         const books = await parseLibraryExport(bytes);
         expect(books).toHaveLength(0);
+    });
+});
+
+describe("parseLibraryExport limits", () => {
+    it("refuses an archive that is larger than the limit", async () => {
+        const bytes = await buildZip({ "LibraryVersion.txt": "2" });
+
+        await expect(
+            parseLibraryExport(bytes, { ...TIGHT, maxArchiveBytes: 16 }),
+        ).rejects.toBeInstanceOf(ImportLimitError);
+    });
+
+    it("refuses an archive with too many entries", async () => {
+        const files: Record<string, string> = { "LibraryVersion.txt": "2" };
+        for (let index = 0; index < 12; ++index) files[`file-${index}`] = "x";
+        const bytes = await buildZip(files);
+
+        await expect(parseLibraryExport(bytes, TIGHT)).rejects.toBeInstanceOf(ImportLimitError);
+    });
+
+    it("refuses an entry that is larger than the limit", async () => {
+        // The entry is large, and the archive says so: the size is checked
+        // before the entry is decompressed, so the memory is never spent.
+        const bytes = await buildZip({
+            "LibraryVersion.txt": "2",
+            "Library/0/LibEpub": "x".repeat(64 * 1024),
+            "Library/0/LibFilename": "big",
+            "Library/0/LibStoryURL": "https://example.com/big",
+        });
+
+        await expect(parseLibraryExport(bytes, TIGHT)).rejects.toBeInstanceOf(ImportLimitError);
+    });
+
+    it("refuses an entry that lies about its size", async () => {
+        // The archive's own claim is that the entry is small; the entry is
+        // not. The bytes are counted as they come out, so the lie is caught.
+        const bytes = claimSize(
+            await buildZip({
+                "LibraryVersion.txt": "2",
+                "Library/0/LibEpub": "y".repeat(64 * 1024),
+                "Library/0/LibFilename": "liar",
+                "Library/0/LibStoryURL": "https://example.com/liar",
+            }),
+            "Library/0/LibEpub",
+            16,
+        );
+
+        const limits: ImportLimits = {
+            ...TIGHT,
+            // The claim is believed; the bytes are not.
+            maxEntryBytes: 4096,
+            maxTotalBytes: 1024 * 1024,
+        };
+
+        await expect(parseLibraryExport(bytes, limits)).rejects.toBeInstanceOf(ImportLimitError);
+    });
+
+    it("refuses an import that decompresses to more than the total limit", async () => {
+        const epub = await buildBook("A Story", "An Author", 1);
+        const bytes = await buildExport([
+            { epub, filename: "a-story", storyUrl: "https://example.com/story" },
+        ]);
+
+        const limits: ImportLimits = {
+            ...TIGHT,
+            maxEntryBytes: 1024 * 1024,
+            maxTotalBytes: 128,
+        };
+
+        await expect(parseLibraryExport(bytes, limits)).rejects.toBeInstanceOf(ImportLimitError);
+    });
+
+    it("reports a limit as a limit, not as a corrupt file", async () => {
+        const bytes = await buildZip({ "LibraryVersion.txt": "2" });
+
+        const error = await parseLibraryExport(bytes, {
+            ...TIGHT,
+            maxArchiveBytes: 16,
+        }).catch((thrown: unknown) => thrown);
+
+        expect(error).toBeInstanceOf(ImportLimitError);
+        // The error has to survive the trip across the message bus, or the
+        // page would show "Could not reach the site" for a file that is
+        // simply too big.
+        expect((error as ImportLimitError).code).toBe("UNSUPPORTED");
+    });
+
+    it("uses limits that are generous enough for a real library", () => {
+        expect(DEFAULT_IMPORT_LIMITS.maxArchiveBytes).toBeGreaterThan(64 * 1024 * 1024);
+        expect(DEFAULT_IMPORT_LIMITS.maxEntryBytes).toBeGreaterThan(8 * 1024 * 1024);
+        expect(DEFAULT_IMPORT_LIMITS.maxTotalBytes).toBeGreaterThan(
+            DEFAULT_IMPORT_LIMITS.maxEntryBytes,
+        );
     });
 });
 

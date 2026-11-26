@@ -573,6 +573,16 @@
     "message": "$1 buku diimpor.",
     "description": "Konfirmasi setelah mengimpor pustaka yang berisi satu buku."
   },
+  "optionsLibraryTooLarge": {
+    "message": "Berkas itu terlalu besar untuk diimpor. Pustaka terbesar yang dapat dibaca Kintsugi adalah $SIZE$.",
+    "description": "Ditampilkan ketika pengguna memilih ekspor pustaka yang lebih besar dari yang dapat dibaca Kintsugi.",
+    "placeholders": {
+      "size": {
+        "content": "$1",
+        "example": "1.2 MB"
+      }
+    }
+  },
   "libraryRemove": {
     "message": "Hapus",
     "description": "Menghapus buku dari pustaka."

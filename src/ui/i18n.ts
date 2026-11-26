@@ -160,6 +160,7 @@ export const MESSAGES = {
     optionsLibraryImport: "optionsLibraryImport",
     optionsLibraryImported: "optionsLibraryImported",
     optionsLibraryImportedOne: "optionsLibraryImportedOne",
+    optionsLibraryTooLarge: "optionsLibraryTooLarge",
     libraryRemove: "libraryRemove",
     libraryRemoved: "libraryRemoved",
 

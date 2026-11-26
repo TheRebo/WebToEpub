@@ -573,6 +573,16 @@
     "message": "$1 livre importé.",
     "description": "Confirmation après l'import d'une bibliothèque d'un seul livre."
   },
+  "optionsLibraryTooLarge": {
+    "message": "Ce fichier est trop volumineux pour être importé. La plus grande bibliothèque que Kintsugi peut lire fait $SIZE$.",
+    "description": "Affiché quand l'utilisateur choisit une export de bibliothèque plus grand que ce que Kintsugi lit.",
+    "placeholders": {
+      "size": {
+        "content": "$1",
+        "example": "1.2 MB"
+      }
+    }
+  },
   "libraryRemove": {
     "message": "Retirer",
     "description": "Retire un livre de la bibliothèque."

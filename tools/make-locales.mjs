@@ -262,6 +262,10 @@ const SOURCE = {
         "Imported $1 book.",
         "Confirmation after importing a library, when it held one book.",
     ],
+    optionsLibraryTooLarge: [
+        "That file is too large to import. The largest library Kintsugi can read is $SIZE$.",
+        "Shown when the user picks a library export that is larger than Kintsugi will read.",
+    ],
     libraryRemove: ["Remove", "Removes a book from the library."],
     libraryRemoved: ["Removed from the library.", "Confirmation after removing a book."],
 

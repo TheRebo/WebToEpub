@@ -246,6 +246,10 @@ export default {
         "$1 Buch importiert.",
         "Bestätigung nach dem Import einer Bibliothek mit einem Buch.",
     ],
+    optionsLibraryTooLarge: [
+        "Diese Datei ist zu groß zum Importieren. Die größte Bibliothek, die Kintsugi lesen kann, ist $SIZE$.",
+        "Wird gezeigt, wenn der Benutzer einen Bibliotheksexport auswählt, der größer ist als Kintsugi liest.",
+    ],
     libraryRemove: ["Entfernen", "Entfernt ein Buch aus der Bibliothek."],
     libraryRemoved: ["Aus der Bibliothek entfernt.", "Bestätigung nach dem Entfernen eines Buchs."],
     settingReduceMotion: [

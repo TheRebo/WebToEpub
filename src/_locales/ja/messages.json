@@ -573,6 +573,16 @@
     "message": "$1 冊を取り込みました。",
     "description": "ライブラリを取り込んだ後の確認（一冊の場合）。"
   },
+  "optionsLibraryTooLarge": {
+    "message": "このファイルは大きすぎて取り込めません。Kintsugi が読み込める最大のライブラリは $SIZE$ です。",
+    "description": "Kintsugi が読み込めるサイズより大きなライブラリ書き出しが選ばれたときに表示されます。",
+    "placeholders": {
+      "size": {
+        "content": "$1",
+        "example": "1.2 MB"
+      }
+    }
+  },
   "libraryRemove": {
     "message": "削除",
     "description": "ライブラリから本を削除します。"

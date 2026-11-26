@@ -573,6 +573,16 @@
     "message": "Imported $1 book.",
     "description": "Confirmation after importing a library, when it held one book."
   },
+  "optionsLibraryTooLarge": {
+    "message": "That file is too large to import. The largest library Kintsugi can read is $SIZE$.",
+    "description": "Shown when the user picks a library export that is larger than Kintsugi will read.",
+    "placeholders": {
+      "size": {
+        "content": "$1",
+        "example": "1.2 MB"
+      }
+    }
+  },
   "libraryRemove": {
     "message": "Remove",
     "description": "Removes a book from the library."

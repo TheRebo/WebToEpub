@@ -19,10 +19,12 @@ import {
     SETTINGS_FILE_NAME,
 } from "../../../core/storage/settings-file";
 import { getNamespace } from "../../../core/browser-api";
+import { DEFAULT_IMPORT_LIMITS } from "../../../core/storage/import-limits";
 import {
     applyValues,
     buildOptions,
     firstMatchingGroup,
+    formatBytes,
     renderGroups,
     renderLibrary,
     renderLibraryError,
@@ -734,10 +736,23 @@ export class OptionsController {
      * The user exports from the old extension and imports the file here.
      * The file is read into memory and handed to the worker, which does the
      * reading: the page has no business knowing what a book looks like.
+     *
+     * The file's size is checked before it is read, so that a file nobody
+     * could have exported by accident is refused without first being pulled
+     * into memory. The worker checks it again — this is the friendly half of
+     * a limit that is also enforced where the bytes are actually read.
      */
     async #importLibrary(file: File): Promise<void> {
         if (!this.#background?.importLibrary) {
             this.#toast(t("errorGeneric"), "error");
+            return;
+        }
+
+        if (file.size > DEFAULT_IMPORT_LIMITS.maxArchiveBytes) {
+            this.#toast(
+                t("optionsLibraryTooLarge", [formatBytes(DEFAULT_IMPORT_LIMITS.maxArchiveBytes)]),
+                "error",
+            );
             return;
         }
 
