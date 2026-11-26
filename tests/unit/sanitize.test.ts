@@ -284,6 +284,45 @@ describe("isPrivateHost", () => {
         expect(isPrivateHost("[::ffff:127.0.0.1]")).toBe(true);
     });
 
+    it("names an IPv6 address that carries a private IPv4 address", () => {
+        // The URL parser rewrites the embedded IPv4 address into hexadecimal,
+        // so `::ffff:127.0.0.1` arrives as `::ffff:7f00:1`. A check written
+        // against the dotted-quad spelling never sees the address the code
+        // is actually given, and the extension ends up as a proxy into the
+        // user's own network.
+        expect(isPrivateHost("[::ffff:7f00:1]")).toBe(true);
+        expect(isPrivateHost("[::ffff:a9fe:a9fe]")).toBe(true);
+        expect(isPrivateHost("[::7f00:1]")).toBe(true);
+        expect(isPrivateHost("[::a9fe:a9fe]")).toBe(true);
+    });
+
+    it("names a private IPv6 address as the URL parser hands it over", () => {
+        // The same addresses, but through the parser, which is how the code
+        // really receives them.
+        for (const url of [
+            "http://[::ffff:127.0.0.1]/",
+            "http://[::ffff:169.254.169.254]/",
+            "http://[::127.0.0.1]/",
+            "http://[fc00::1]/",
+            "http://[fe80::1]/",
+            "http://[::1]/",
+        ]) {
+            const hostname = new URL(url).hostname;
+            expect(isPrivateHost(hostname), `${url} was not recognised`).toBe(true);
+        }
+    });
+
+    it("does not name a public IPv6 address", () => {
+        for (const url of [
+            "http://[::ffff:8.8.8.8]/",
+            "http://[2001:db8::1]/",
+            "http://[2606:4700:4700::1111]/",
+        ]) {
+            const hostname = new URL(url).hostname;
+            expect(isPrivateHost(hostname), `${url} was wrongly named`).toBe(false);
+        }
+    });
+
     it("names the local network suffix", () => {
         expect(isPrivateHost("printer.local")).toBe(true);
     });

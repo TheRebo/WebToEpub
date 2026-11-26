@@ -321,6 +321,61 @@ function isPrivateIpv4(octets: number[]): boolean {
 }
 
 /**
+ * Expand an IPv6 address into its eight 16-bit groups.
+ *
+ * The address arrives from the URL parser in its canonical, compressed form:
+ * `::ffff:7f00:1` rather than `::ffff:127.0.0.1`. The embedded IPv4 address is
+ * therefore in *hexadecimal*, and a test written against the dotted-quad
+ * spelling would never match — which is exactly the sort of thing that turns
+ * into an SSRF hole.
+ *
+ * @param address The address, without its brackets.
+ * @returns The eight groups, or `null` if the address is not an IPv6 address.
+ */
+function expandIpv6(address: string): number[] | null {
+    let text = address.toLowerCase();
+
+    // The IPv4 tail, if the address has one. It is two groups, and it is
+    // rewritten into hexadecimal so that the rest of the address can be read
+    // one group at a time.
+    const dotted = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(text);
+    if (dotted) {
+        const octets = (dotted[1] as string).split(".").map(Number);
+        if (octets.some((octet) => octet > 255)) return null;
+        const high = ((octets[0] as number) << 8) + (octets[1] as number);
+        const low = ((octets[2] as number) << 8) + (octets[3] as number);
+        text = `${text.slice(0, dotted.index)}${high.toString(16)}:${low.toString(16)}`;
+    }
+
+    const halves = text.split("::");
+    if (halves.length > 2) return null;
+
+    const parse = (part: string): number[] | null => {
+        if (part === "") return [];
+        const groups: number[] = [];
+        for (const group of part.split(":")) {
+            if (!/^[0-9a-f]{1,4}$/.test(group)) return null;
+            groups.push(parseInt(group, 16));
+        }
+        return groups;
+    };
+
+    const head = parse(halves[0] as string);
+    const rear = halves.length === 2 ? parse(halves[1] as string) : [];
+    if (!head || !rear) return null;
+
+    // The address has no `::`, so it must already have all eight groups.
+    if (halves.length === 1) return head.length === 8 ? head : null;
+
+    // The `::` stands for however many groups are missing, and they go in the
+    // middle — between the groups before it and the groups after it.
+    const missing = 8 - head.length - rear.length;
+    if (missing < 1) return null;
+
+    return [...head, ...new Array<number>(missing).fill(0), ...rear];
+}
+
+/**
  * Whether an IPv6 address is loopback, unique-local or link-local.
  *
  * @param address The address, without its brackets.
@@ -332,22 +387,36 @@ function isPrivateIpv6(address: string): boolean {
     // `::1` — the loopback address.
     if (normalised === "::1") return true;
 
-    // `::ffff:0:0/96` — IPv4-mapped addresses. The embedded IPv4 address is
-    // checked separately, so `::ffff:127.0.0.1` is caught.
-    const mapped = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(normalised);
-    if (mapped) {
-        const octets = (mapped[1] as string).split(".").map(Number);
+    // The unspecified address, `::`.
+    if (normalised === "::") return true;
+
+    const groups = expandIpv6(normalised);
+    if (!groups) return false;
+
+    // `::ffff:0:0/96` — IPv4-mapped addresses, and `::/96` — IPv4-compatible
+    // addresses. Both carry a whole IPv4 address in their last four bytes, and
+    // the URL parser has already rewritten it into hexadecimal, so it is read
+    // back out of the groups rather than out of the text.
+    const isMapped = groups.slice(0, 5).every((group) => group === 0) && groups[5] === 0xffff;
+    const isCompatible = groups.slice(0, 6).every((group) => group === 0) && groups[6] !== 0;
+    if (isMapped || isCompatible) {
+        const octets = [
+            (groups[6] as number) >> 8,
+            (groups[6] as number) & 0xff,
+            (groups[7] as number) >> 8,
+            (groups[7] as number) & 0xff,
+        ];
         return isPrivateIpv4(octets);
     }
 
     // `fc00::/7` — unique local addresses.
-    if (/^f[cd][0-9a-f]{2}:/.test(normalised)) return true;
+    if (((groups[0] as number) & 0xfe00) === 0xfc00) return true;
 
     // `fe80::/10` — link-local addresses.
-    if (/^fe[89ab][0-9a-f]:/.test(normalised)) return true;
+    if (((groups[0] as number) & 0xffc0) === 0xfe80) return true;
 
-    // The unspecified address, `::`.
-    if (normalised === "::") return true;
+    // `ff00::/8` — multicast.
+    if (((groups[0] as number) & 0xff00) === 0xff00) return true;
 
     return false;
 }
