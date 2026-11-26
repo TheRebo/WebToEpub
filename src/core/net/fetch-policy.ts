@@ -16,7 +16,7 @@
  *
  * See ADR-0032.
  */
-import { hasHostAccess } from "../host-access";
+import { hasSpecificHostAccess } from "../host-access";
 import { isPrivateHost, validateFetchableUrl } from "../util/sanitize";
 
 /**
@@ -35,9 +35,14 @@ export async function mayFetchUrl(url: string): Promise<URL | null> {
     if (!isPrivateHost(parsed.hostname)) return parsed;
 
     // A private host is fetched only when the user has given the extension
-    // access to it. The grant is per host, so a table of contents cannot use
-    // one allowed site to reach a machine the user never allowed.
-    if (await hasHostAccess(parsed.origin)) return parsed;
+    // access to it *by name*. The grant is per host, so a table of contents
+    // cannot use one allowed site to reach a machine the user never allowed.
+    //
+    // The check is for a named grant and not for "any grant that covers this
+    // host": the extension's own optional permission covers every http and
+    // https host on the web, and reading that as a grant to the user's local
+    // network would leave the machine open to any page that links to it.
+    if (await hasSpecificHostAccess(parsed.origin)) return parsed;
 
     return null;
 }

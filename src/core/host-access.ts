@@ -77,7 +77,13 @@ export function originOf(url: string): string | undefined {
 }
 
 /**
- * Whether the extension may read an origin.
+ * Whether the extension has been given access to an origin.
+ *
+ * This asks the browser, and the browser's answer is about the *whole* set of
+ * grants — including the extension's own optional permission, which covers
+ * every `http` and `https` host. Use this to decide whether the extension may
+ * read a page; use {@link hasSpecificHostAccess} to decide whether the user
+ * has allowed a host *in particular*.
  *
  * @param origin The origin.
  * @returns Whether access has been granted.
@@ -92,6 +98,37 @@ export async function hasHostAccess(origin: string): Promise<boolean> {
     } catch {
         return false;
     }
+}
+
+/**
+ * Whether the user has allowed this host in particular.
+ *
+ * The extension's own optional permission — every `http` and `https` host on
+ * the web — is not a grant to a site, and it is not a grant to the user's own
+ * network either. A private host may only be reached when the user allowed
+ * *that* host, so the check looks for a granted pattern that names the host
+ * rather than asking whether the browser has any grant that would cover it.
+ *
+ * The browser's own answer cannot be used for this: `permissions.contains()`
+ * says yes for a wildcard grant, and "the extension may read every site" is
+ * not the same thing as "the user allowed this machine on the local network".
+ *
+ * @param origin The origin.
+ * @returns Whether the host was granted on its own.
+ */
+export async function hasSpecificHostAccess(origin: string): Promise<boolean> {
+    const pattern = hostPattern(origin);
+    if (!pattern) return false;
+    const api = getNamespace();
+    if (!api) return false;
+    let granted: string[] = [];
+    try {
+        const all = await api.permissions.getAll();
+        granted = all.origins ?? [];
+    } catch {
+        return false;
+    }
+    return granted.some((origin_) => isHostPattern(origin_) && origin_ === pattern);
 }
 
 /**

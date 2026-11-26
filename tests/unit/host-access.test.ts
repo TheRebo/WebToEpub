@@ -12,6 +12,7 @@ import {
     displayHost,
     displayOrigin,
     hasHostAccess,
+    hasSpecificHostAccess,
     hostPattern,
     isHostPattern,
     listHostAccess,
@@ -112,6 +113,40 @@ describe("hasHostAccess", () => {
     it("is false when there is no browser at all", async () => {
         setNamespace(undefined);
         expect(await hasHostAccess("https://example.com")).toBe(false);
+    });
+});
+
+describe("hasSpecificHostAccess", () => {
+    it("is true when the host has been granted by name", async () => {
+        const { api } = permissionsNamespace(["https://example.com/*"]);
+        setNamespace(api as never);
+        expect(await hasSpecificHostAccess("https://example.com")).toBe(true);
+    });
+
+    it("is false when only the whole web has been granted", async () => {
+        // The browser says yes for a wildcard grant, but the wildcard is the
+        // extension's own optional permission and not a grant to this host.
+        const { api } = permissionsNamespace(["http://*/*", "https://*/*"]);
+        setNamespace(api as never);
+        expect(await hasSpecificHostAccess("https://example.com")).toBe(false);
+        expect(await hasSpecificHostAccess("http://127.0.0.1")).toBe(false);
+    });
+
+    it("is false when a different host has been granted", async () => {
+        const { api } = permissionsNamespace(["https://novels.test/*"]);
+        setNamespace(api as never);
+        expect(await hasSpecificHostAccess("https://example.com")).toBe(false);
+    });
+
+    it("is true when the host has been granted alongside the whole web", async () => {
+        const { api } = permissionsNamespace(["https://*/*", "http://192.168.1.10/*"]);
+        setNamespace(api as never);
+        expect(await hasSpecificHostAccess("http://192.168.1.10")).toBe(true);
+    });
+
+    it("is false when there is no browser at all", async () => {
+        setNamespace(undefined);
+        expect(await hasSpecificHostAccess("https://example.com")).toBe(false);
     });
 });
 

@@ -41,6 +41,7 @@ consequences — positive _and_ negative.
 | [0033](./ADR-0033-read-the-page-the-user-is-looking-at.md) | Read the page the user is looking at, and fall back to fetching it           | Accepted | Sites that build their chapter list in the browser work, without a parser each         |
 | [0034](./ADR-0034-library-import.md)                       | Let the library be carried over from the original extension                  | Accepted | A library exported from the original extension opens in the new one                    |
 | [0035](./ADR-0035-bounded-imports.md)                      | An import is bounded, and the limit is the reader's business                 | Accepted | A zip bomb is refused, and the user is told why                                        |
+| [0036](./ADR-0036-granted-by-name.md)                      | "The extension may read this" is not "the user allowed this host"            | Accepted | The private-host guard works again, whatever grants the extension holds                |
 
 ---
 

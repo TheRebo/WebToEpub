@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-11-26
 - **Deciders:** The Kintsugi revamp
-- **Relates to:** [ADR-0004](./ADR-0004-fetch-layer.md), [ADR-0007](./ADR-0007-permissions.md), [ADR-0023](./ADR-0023-url-redaction.md), [ADR-0030](./ADR-0030-host-access-one-site-at-a-time.md)
+- **Relates to:** [ADR-0004](./ADR-0004-fetch-layer.md), [ADR-0007](./ADR-0007-permissions.md), [ADR-0023](./ADR-0023-url-redaction.md), [ADR-0030](./ADR-0030-host-access-one-site-at-a-time.md), [ADR-0036](./ADR-0036-granted-by-name.md)
 
 ## Context
 
@@ -48,7 +48,9 @@ We will check every URL before it is fetched, in one place.
   an attack. The difference is the user's own grant.
 - The grant is checked **per host**. A table of contents on a site the user
   allowed cannot use that allowance to reach a machine the user never
-  allowed.
+  allowed. The check is for a grant that _names_ the host: the extension's own
+  optional "every site" permission is not a grant to the user's network. See
+  [ADR-0036](./ADR-0036-granted-by-name.md).
 - The check is done in the fetch layer, so no caller can skip it.
 
 `mayFetchUrl` is the single function that answers the question, and it returns
