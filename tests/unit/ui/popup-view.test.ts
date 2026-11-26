@@ -63,6 +63,7 @@ function makeState(change: Partial<PopupViewState> = {}): PopupViewState {
         coverUrl: "",
         chapterCount: 0,
         hostName: "",
+        accessHost: "",
         error: "",
         phase: "",
         done: 0,
@@ -170,6 +171,32 @@ describe("the popup's view", () => {
         expect(elements.empty.hidden).toBe(false);
         expect(elements.empty.textContent).toContain("example.com");
         expect(primary(elements).dataset["action"]).toBe("primary");
+    });
+
+    it("asks for access when the extension may not read the site", () => {
+        const { elements } = render({ state: "access", accessHost: "example.com" });
+
+        expect(elements.access.hidden).toBe(false);
+        expect(elements.accessHost.textContent).toBe("example.com");
+    });
+
+    it("offers one button in the access state, and hides the primary one", () => {
+        // The primary button would be a second way of doing the same thing,
+        // and a screen reader should not be offered a button that does nothing.
+        const { elements } = render({ state: "access", accessHost: "example.com" });
+
+        const grant = elements.access.querySelector<HTMLElement>('[data-action="grant-access"]');
+        expect(grant).not.toBeNull();
+        expect(grant?.textContent?.trim().length).toBeGreaterThan(0);
+        expect(primary(elements).hidden).toBe(true);
+    });
+
+    it("hides the access state in every other state", () => {
+        const { elements } = render({ state: "story" });
+        expect(elements.access.hidden).toBe(true);
+
+        renderPopup(elements, makeState({ state: "error", error: "Boom" }));
+        expect(elements.access.hidden).toBe(true);
     });
 
     it("shows the progress while a download runs", () => {
