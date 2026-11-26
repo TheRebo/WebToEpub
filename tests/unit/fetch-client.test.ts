@@ -574,6 +574,49 @@ describe("the fetch client's content-type checks", () => {
         expect(result.mediaType).toBe("image/png");
     });
 
+    it("takes the media type from the bytes when the server declares none", async () => {
+        // A server that declares nothing would leave the file's media type
+        // empty, and a manifest entry with no media type is one every reader
+        // rejects.
+        const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+        const fetchMock = vi.fn(async () => new Response(png, { status: 200, headers: {} }));
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        const result = await client.fetchBinary("https://example.com/cover");
+        expect(result.mediaType).toBe("image/png");
+    });
+
+    it("takes the media type from the bytes when the server declares the wrong one", async () => {
+        // The bytes are the authority: a PNG served as a JPEG would be written
+        // into the book under a name the reader cannot show.
+        const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+        const fetchMock = vi.fn(
+            async () =>
+                new Response(png, {
+                    status: 200,
+                    headers: { "content-type": "image/jpeg" },
+                }),
+        );
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        const result = await client.fetchBinary("https://example.com/cover.png");
+        expect(result.mediaType).toBe("image/png");
+    });
+
+    it("refuses bytes that are not a picture at all", async () => {
+        // Nothing about the file says what it is, and the server claims
+        // nothing. A picture that cannot be recognised cannot be written into
+        // a book.
+        const fetchMock = vi.fn(
+            async () => new Response(new Uint8Array([1, 2, 3]), { status: 200, headers: {} }),
+        );
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await expect(
+            client.fetchBinary("https://example.com/cover", { retry: { maxAttempts: 1 } }),
+        ).rejects.toThrow(/not in a known format/);
+    });
+
     it("does not retry an image that is not an image", async () => {
         const fetchMock = vi.fn(
             async () =>

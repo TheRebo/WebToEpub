@@ -18,6 +18,7 @@
 import { mayFetchUrl } from "./fetch-policy";
 import { diagnosticUrl } from "../util/diagnostics";
 import { isAcceptableImageType, isAcceptablePageType, mediaTypeOf } from "./media-types";
+import { imageFormatOf } from "../epub/image-format";
 import type { CopiedCookie } from "./cookie-bridge";
 import type { ErrorCode } from "../util/errors";
 
@@ -507,14 +508,29 @@ export class FetchClient {
                         throw error;
                     }
                     const data = await this.#readBody(response, MAX_RESPONSE_BYTES, options.signal);
-                    const mediaType = mediaTypeOf(response.headers.get("content-type"));
+                    const declared = response.headers.get("content-type");
+                    const mediaType = mediaTypeOf(declared);
                     // An image that is not an image would be written into the
                     // EPUB with the media type the server declared, which
                     // every e-reader rejects. A server that declares no type
-                    // is allowed through; the bytes are checked by what the
-                    // caller does with them.
-                    if (!isAcceptableImageType(response.headers.get("content-type"))) {
+                    // is allowed through: the bytes are what say what the
+                    // picture is.
+                    if (!isAcceptableImageType(declared)) {
                         throw new FetchError(`Expected an image from ${url} but got ${mediaType}`, {
+                            url,
+                            attempts: attempt,
+                            code: "UNSUPPORTED_CONTENT",
+                            mediaType,
+                        });
+                    }
+                    // The bytes decide the media type, with the server's word
+                    // as the tie-breaker. A server that declares nothing, or
+                    // declares the wrong thing, would otherwise put a file
+                    // into the book whose manifest entry names a media type
+                    // the file is not — and a reader shows nothing for it.
+                    const format = imageFormatOf(data, mediaType);
+                    if (!format) {
+                        throw new FetchError(`The picture from ${url} was not in a known format`, {
                             url,
                             attempts: attempt,
                             code: "UNSUPPORTED_CONTENT",
@@ -524,7 +540,7 @@ export class FetchClient {
                     return {
                         response,
                         data,
-                        mediaType,
+                        mediaType: format.mediaType,
                         url: response.url || url,
                     };
                 } catch (error) {

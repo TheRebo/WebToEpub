@@ -134,6 +134,15 @@ export const WEBP_MEDIA_TYPE = "image/webp";
 /** The media type of an SVG image. */
 export const SVG_MEDIA_TYPE = "image/svg+xml";
 
+/** The media type of an AVIF image. */
+export const AVIF_MEDIA_TYPE = "image/avif";
+
+/** The media type of a BMP image. */
+export const BMP_MEDIA_TYPE = "image/bmp";
+
+/** The media type of an ICO image. */
+export const ICO_MEDIA_TYPE = "image/x-icon";
+
 /** The media type of the NCX document. */
 export const NCX_MEDIA_TYPE = "application/x-dtbncx+xml";
 
@@ -190,6 +199,12 @@ export function mediaTypeForPath(path: string): string {
             return WEBP_MEDIA_TYPE;
         case "svg":
             return SVG_MEDIA_TYPE;
+        case "avif":
+            return AVIF_MEDIA_TYPE;
+        case "bmp":
+            return BMP_MEDIA_TYPE;
+        case "ico":
+            return ICO_MEDIA_TYPE;
         case "ncx":
             return NCX_MEDIA_TYPE;
         case "opf":

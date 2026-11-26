@@ -257,16 +257,17 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
     // The cover.
     let coverPath: string | undefined;
     if (metadata.cover && metadata.cover.data.length > 0) {
-        coverPath = `OEBPS/images/cover.${extensionFor(metadata.cover.mediaType)}`;
+        const mediaType = metadata.cover.mediaType || "application/octet-stream";
+        coverPath = `OEBPS/images/cover.${extensionFor(mediaType)}`;
         files.set(coverPath, {
             path: coverPath,
             content: metadata.cover.data,
-            mediaType: metadata.cover.mediaType,
+            mediaType,
         });
         manifest.push({
             id: nextId(coverPath),
             href: coverPath.replace(/^OEBPS\//, ""),
-            mediaType: metadata.cover.mediaType,
+            mediaType,
             properties: "cover-image",
         });
     }
@@ -428,15 +429,19 @@ function packageChapterImages(
 
         const path = imagePath(canonical, image.mediaType);
         if (!files.has(path)) {
+            // A media type is never left empty. The manifest has to name one
+            // for every file it lists, and an entry with no media type is one
+            // every reader rejects.
+            const mediaType = image.mediaType || "application/octet-stream";
             files.set(path, {
                 path,
                 content: image.data,
-                mediaType: image.mediaType,
+                mediaType,
             });
             manifest.push({
                 id: nextId(path),
                 href: path.replace(/^OEBPS\//, ""),
-                mediaType: image.mediaType,
+                mediaType,
             });
         }
     }
@@ -551,12 +556,23 @@ export function buildPlaceholderChapter(url: string, reason: string): ChapterToP
  */
 export { buildPlaceholderImage } from "./placeholder";
 
-/** The file extension for a media type. */
+/**
+ * The file extension for a media type.
+ *
+ * Every media type the extension accepts has an extension here. A media type
+ * with no extension of its own would be written into the book as a `.bin`
+ * file, and a reader that is handed `image/avif` under the name `picture.bin`
+ * shows nothing at all.
+ *
+ * @param mediaType The media type.
+ * @returns The extension, without a dot.
+ */
 export function extensionFor(mediaType: string): string {
     switch (mediaType) {
         case "image/png":
             return "png";
         case "image/jpeg":
+        case "image/jpg":
             return "jpg";
         case "image/gif":
             return "gif";
@@ -564,6 +580,13 @@ export function extensionFor(mediaType: string): string {
             return "webp";
         case "image/svg+xml":
             return "svg";
+        case "image/avif":
+            return "avif";
+        case "image/bmp":
+            return "bmp";
+        case "image/x-icon":
+        case "image/vnd.microsoft.icon":
+            return "ico";
         default:
             return "bin";
     }
