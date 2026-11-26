@@ -12,11 +12,10 @@
  * Usage:
  *   node tools/package.mjs            package the current build
  */
-import { createReadStream } from "node:fs";
 import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Uint8ArrayWriter, ZipWriter, configure } from "@zip.js/zip.js";
+import { Uint8ArrayWriter, Uint8ArrayReader, ZipWriter, configure } from "@zip.js/zip.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = join(ROOT, "dist");
@@ -68,12 +67,24 @@ async function walk(dir, base = dir) {
  * `manifest.json` is added first, because that is the convention the store
  * and the Firefox installer both expect, and a reader that streams the
  * archive can then find the manifest without reading the whole file.
+ *
+ * The entries are written from memory, with `bufferedWrite` on, so that the
+ * compressed size and CRC of every entry are known when its local header is
+ * written.
+ *
+ * This matters more than it looks. Handed a stream, `zip.js` cannot know an
+ * entry's size up front, so it defers the size to a data descriptor after the
+ * data and leaves the size field in the local header as zero. Firefox reads
+ * the local header, not the central directory, so it finds a zero-sized
+ * `manifest.json` and refuses the whole archive with `NS_ERROR_FILE_CORRUPTED`.
+ * A sized reader plus buffered writes keeps the local headers self-contained,
+ * which is the form Firefox — and every other ZIP reader — expects.
  */
 async function packageExtension(files, outPath) {
     // `Uint8ArrayWriter` rather than `BlobWriter`: the archive has to end up
     // as bytes on disk, and a `Uint8Array` is exactly that.
     const sink = new Uint8ArrayWriter();
-    const writer = new ZipWriter(sink);
+    const writer = new ZipWriter(sink, { bufferedWrite: true });
 
     const manifest = files.find((file) => file === "manifest.json");
     const ordered = manifest ? [manifest, ...files.filter((file) => file !== manifest)] : files;
@@ -83,10 +94,11 @@ async function packageExtension(files, outPath) {
     const lastModDate = entryTimestamp();
 
     for (const file of ordered) {
-        // `zip.js` wants a web stream, and Node's file stream is not one.
-        // `Response` is the bridge that needs no extra dependency.
-        const body = new Response(createReadStream(join(DIST, file))).body;
-        await writer.add(file, body, { level: 9, lastModDate });
+        // The file is read into memory and handed over as a sized reader, so
+        // that `zip.js` can write the entry's real size and CRC into its local
+        // header instead of deferring them to a data descriptor.
+        const data = await readFile(join(DIST, file));
+        await writer.add(file, new Uint8ArrayReader(data), { level: 9, lastModDate });
     }
 
     await writer.close();
