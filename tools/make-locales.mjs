@@ -250,6 +250,18 @@ const SOURCE = {
         "$CHAPTERS$ chapter · $SIZE$",
         "The library card's metadata line, when the book has one chapter.",
     ],
+    optionsLibraryImport: [
+        "Import from WebToEpub",
+        "The button that imports a library exported by WebToEpub 1.x.",
+    ],
+    optionsLibraryImported: [
+        "Imported $1 book.",
+        "Confirmation after importing a library, when it held several books.",
+    ],
+    optionsLibraryImportedOne: [
+        "Imported $1 book.",
+        "Confirmation after importing a library, when it held one book.",
+    ],
     libraryRemove: ["Remove", "Removes a book from the library."],
     libraryRemoved: ["Removed from the library.", "Confirmation after removing a book."],
 

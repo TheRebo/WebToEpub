@@ -561,6 +561,18 @@
       }
     }
   },
+  "optionsLibraryImport": {
+    "message": "Aus WebToEpub importieren",
+    "description": "Die Schaltfläche, die eine von WebToEpub 1.x exportierte Bibliothek importiert."
+  },
+  "optionsLibraryImported": {
+    "message": "$1 Buch importiert.",
+    "description": "Bestätigung nach dem Import einer Bibliothek mit mehreren Büchern."
+  },
+  "optionsLibraryImportedOne": {
+    "message": "$1 Buch importiert.",
+    "description": "Bestätigung nach dem Import einer Bibliothek mit einem Buch."
+  },
   "libraryRemove": {
     "message": "Entfernen",
     "description": "Entfernt ein Buch aus der Bibliothek."

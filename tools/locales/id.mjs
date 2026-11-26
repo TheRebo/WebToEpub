@@ -231,6 +231,18 @@ export default {
         "$CHAPTERS$ bab · $SIZE$",
         "Baris metadata pada kartu pustaka, ketika buku hanya memiliki satu bab.",
     ],
+    optionsLibraryImport: [
+        "Impor dari WebToEpub",
+        "Tombol untuk mengimpor pustaka yang diekspor oleh WebToEpub 1.x.",
+    ],
+    optionsLibraryImported: [
+        "$1 buku diimpor.",
+        "Konfirmasi setelah mengimpor pustaka yang berisi beberapa buku.",
+    ],
+    optionsLibraryImportedOne: [
+        "$1 buku diimpor.",
+        "Konfirmasi setelah mengimpor pustaka yang berisi satu buku.",
+    ],
     libraryRemove: ["Hapus", "Menghapus buku dari pustaka."],
     libraryRemoved: ["Dihapus dari pustaka.", "Konfirmasi setelah menghapus buku."],
 

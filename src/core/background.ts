@@ -25,7 +25,8 @@ import { buildParserUtilities } from "./util/parser-utilities";
 import { handleRequests, type RequestHandlers, type RequestMap } from "./message/bus";
 import { localStorageAdapter, onMessage, onStorageChanged, getNamespace } from "./browser-api";
 import { SettingsStore, SETTINGS_KEY } from "./storage/settings-store";
-import { LibraryStore } from "./storage/library-store";
+import { LibraryStore, mergeLibraryEntry, type LibraryEntry } from "./storage/library-store";
+import { parseLibraryExport } from "./storage/library-import";
 import { siteSelectors } from "./storage/site-selectors";
 import { scanDocument } from "./parsers/heuristic-scanner";
 import { toUserFacingError, type UserFacingError } from "./util/errors";
@@ -317,6 +318,54 @@ class BackgroundWorker {
         });
     }
 
+    /**
+     * Import a library that WebToEpub 1.x exported.
+     *
+     * The original kept its library in its own `storage.local`, which is
+     * scoped to the original's extension ID. Kintsugi cannot read that, so
+     * the user exports from the old extension and imports the file here.
+     *
+     * A book that is already in the library is updated rather than duplicated:
+     * the same story is one book, however many times it was made.
+     *
+     * @param bytes The export archive's bytes.
+     * @returns How many books were imported.
+     */
+    async #importLibrary(bytes: Uint8Array): Promise<number> {
+        const books = await parseLibraryExport(bytes);
+        let imported = 0;
+
+        for (const book of books) {
+            // A book with no address cannot be told apart from another one, so
+            // it is not added: the library would fill with indistinguishable
+            // entries that the user could only remove by hand.
+            if (!book.sourceUrl) continue;
+
+            const existing = await this.#library.findBySourceUrl(book.sourceUrl);
+            const now = Date.now();
+            const entry: LibraryEntry = {
+                id: existing?.id ?? `import-${now}-${imported}`,
+                title: book.title,
+                author: book.author,
+                sourceUrl: book.sourceUrl,
+                chapterCount: book.chapterCount,
+                size: book.size,
+                addedAt: existing?.addedAt ?? now,
+                updatedAt: now,
+                cover: book.cover,
+                coverMediaType: book.coverMediaType,
+                // The original did not record the chapters' addresses in the
+                // export, so an imported book cannot be updated chapter by
+                // chapter. The book itself is on the user's disk.
+                chapterUrls: existing?.chapterUrls ?? [],
+            };
+            await this.#library.save(mergeLibraryEntry(existing, entry));
+            imported += 1;
+        }
+
+        return imported;
+    }
+
     /** The message handlers the worker registers. */
     #handlers(): RequestHandlers {
         return {
@@ -367,6 +416,9 @@ class BackgroundWorker {
                 await this.#library.delete(payload.id);
                 return { deleted: true };
             },
+            "library:import": async (payload) => ({
+                imported: await this.#importLibrary(new Uint8Array(payload.data)),
+            }),
             "site-selectors:suggest": async (payload) => this.#suggestSelectors(payload.url),
             "site-selectors:test": async (payload) =>
                 this.#testSelectors(payload.url, payload.contentCss, payload.titleCss),

@@ -234,6 +234,18 @@ export default {
         "$CHAPTERS$ Kapitel · $SIZE$",
         "Die Metadatenzeile der Bibliothekskarte, wenn das Buch nur ein Kapitel hat.",
     ],
+    optionsLibraryImport: [
+        "Aus WebToEpub importieren",
+        "Die Schaltfläche, die eine von WebToEpub 1.x exportierte Bibliothek importiert.",
+    ],
+    optionsLibraryImported: [
+        "$1 Buch importiert.",
+        "Bestätigung nach dem Import einer Bibliothek mit mehreren Büchern.",
+    ],
+    optionsLibraryImportedOne: [
+        "$1 Buch importiert.",
+        "Bestätigung nach dem Import einer Bibliothek mit einem Buch.",
+    ],
     libraryRemove: ["Entfernen", "Entfernt ein Buch aus der Bibliothek."],
     libraryRemoved: ["Aus der Bibliothek entfernt.", "Bestätigung nach dem Entfernen eines Buchs."],
     settingReduceMotion: [

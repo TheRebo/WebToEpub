@@ -196,6 +196,18 @@ export default {
         "$CHAPTERS$ 章 · $SIZE$",
         "ライブラリカードのメタ情報行（章が一つだけの場合）。",
     ],
+    optionsLibraryImport: [
+        "WebToEpub から取り込む",
+        "WebToEpub 1.x が書き出したライブラリを読み込むボタン。",
+    ],
+    optionsLibraryImported: [
+        "$1 冊を取り込みました。",
+        "ライブラリを取り込んだ後の確認（複数冊の場合）。",
+    ],
+    optionsLibraryImportedOne: [
+        "$1 冊を取り込みました。",
+        "ライブラリを取り込んだ後の確認（一冊の場合）。",
+    ],
     libraryRemove: ["削除", "ライブラリから本を削除します。"],
     libraryRemoved: ["ライブラリから削除しました。", "本を削除した後の確認。"],
 

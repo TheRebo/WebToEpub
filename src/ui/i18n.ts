@@ -157,6 +157,9 @@ export const MESSAGES = {
     optionsNavLabel: "optionsNavLabel",
     optionsLibraryMeta: "optionsLibraryMeta",
     optionsLibraryMetaOne: "optionsLibraryMetaOne",
+    optionsLibraryImport: "optionsLibraryImport",
+    optionsLibraryImported: "optionsLibraryImported",
+    optionsLibraryImportedOne: "optionsLibraryImportedOne",
     libraryRemove: "libraryRemove",
     libraryRemoved: "libraryRemoved",
 
@@ -379,6 +382,7 @@ export const COUNTED = {
     popupChapterCount: "popupChapterCountOne",
     workbenchRangeCount: "workbenchRangeCountOne",
     optionsLibraryMeta: "optionsLibraryMetaOne",
+    optionsLibraryImported: "optionsLibraryImportedOne",
 } as const;
 
 /** The name of a message that can be counted. */

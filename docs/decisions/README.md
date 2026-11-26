@@ -39,6 +39,7 @@ consequences — positive _and_ negative.
 | [0031](./ADR-0031-epub-specification-conformance.md)       | Conform to the EPUB specification, and check it with the reference validator | Accepted | Both EPUB versions validate with zero errors and zero warnings                         |
 | [0032](./ADR-0032-what-the-extension-may-fetch.md)         | Decide what the extension may fetch, in one place                            | Accepted | A page cannot use the extension to reach the user's own network                        |
 | [0033](./ADR-0033-read-the-page-the-user-is-looking-at.md) | Read the page the user is looking at, and fall back to fetching it           | Accepted | Sites that build their chapter list in the browser work, without a parser each         |
+| [0034](./ADR-0034-library-import.md)                       | Let the library be carried over from the original extension                  | Accepted | A library exported from the original extension opens in the new one                    |
 
 ---
 

@@ -561,6 +561,18 @@
       }
     }
   },
+  "optionsLibraryImport": {
+    "message": "WebToEpub から取り込む",
+    "description": "WebToEpub 1.x が書き出したライブラリを読み込むボタン。"
+  },
+  "optionsLibraryImported": {
+    "message": "$1 冊を取り込みました。",
+    "description": "ライブラリを取り込んだ後の確認（複数冊の場合）。"
+  },
+  "optionsLibraryImportedOne": {
+    "message": "$1 冊を取り込みました。",
+    "description": "ライブラリを取り込んだ後の確認（一冊の場合）。"
+  },
   "libraryRemove": {
     "message": "削除",
     "description": "ライブラリから本を削除します。"

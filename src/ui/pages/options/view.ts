@@ -203,6 +203,10 @@ export function buildOptions(root: HTMLElement): OptionsElements {
     layout.appendChild(content);
 
     // --- The library ---
+    //
+    // The file inputs the page owns, by the action that opens them.
+    const files = new Map<string, HTMLInputElement>();
+
     const library = document.createElement("section");
     library.className = "options-library";
     library.id = "library";
@@ -220,8 +224,28 @@ export function buildOptions(root: HTMLElement): OptionsElements {
     const libraryActions = document.createElement("div");
     libraryActions.className = "options-library-actions";
 
+    // The import control. A hidden file input and a button that opens it: the
+    // button is what the user sees and clicks, and the input is only ever
+    // touched by the browser.
+    const importInput = document.createElement("input");
+    importInput.type = "file";
+    importInput.accept = ".zip,application/zip";
+    importInput.className = "options-library-import-input";
+    importInput.hidden = true;
+    importInput.dataset["action"] = "import-library";
+    importInput.setAttribute("aria-label", t("optionsLibraryImport"));
+
+    const importButton = document.createElement("k-button");
+    importButton.setAttribute("variant", "ghost");
+    importButton.setAttribute("size", "sm");
+    importButton.textContent = t("optionsLibraryImport");
+    importButton.dataset["action"] = "import-library";
+
+    libraryActions.append(importButton, importInput);
+    files.set("import-library", importInput);
+
+    libraryBar.append(libraryTitle, libraryActions);
     library.appendChild(libraryBar);
-    library.appendChild(libraryActions);
 
     // --- The site selectors ---
     //
@@ -336,7 +360,7 @@ export function buildOptions(root: HTMLElement): OptionsElements {
         valueHosts: new Map(),
         specs: new Map(),
         actions: new Map(),
-        files: new Map(),
+        files,
         resetDialog,
         resetConfirm,
         resetCancel,

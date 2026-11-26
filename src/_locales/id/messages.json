@@ -561,6 +561,18 @@
       }
     }
   },
+  "optionsLibraryImport": {
+    "message": "Impor dari WebToEpub",
+    "description": "Tombol untuk mengimpor pustaka yang diekspor oleh WebToEpub 1.x."
+  },
+  "optionsLibraryImported": {
+    "message": "$1 buku diimpor.",
+    "description": "Konfirmasi setelah mengimpor pustaka yang berisi beberapa buku."
+  },
+  "optionsLibraryImportedOne": {
+    "message": "$1 buku diimpor.",
+    "description": "Konfirmasi setelah mengimpor pustaka yang berisi satu buku."
+  },
   "libraryRemove": {
     "message": "Hapus",
     "description": "Menghapus buku dari pustaka."

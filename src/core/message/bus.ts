@@ -67,6 +67,11 @@ export interface RequestMap {
         request: { id: string };
         response: { deleted: boolean };
     };
+    /** Import a library exported by WebToEpub 1.x. */
+    "library:import": {
+        request: { data: ArrayBuffer };
+        response: { imported: number };
+    };
     /** Suggest CSS selectors for a site the rewrite has no parser for. */
     "site-selectors:suggest": {
         request: { url: string };
@@ -126,6 +131,7 @@ export const REQUEST_NAMES = [
     "download:list",
     "library:list",
     "library:delete",
+    "library:import",
     "site-selectors:suggest",
     "site-selectors:test",
     "site-selectors:save",
@@ -430,6 +436,7 @@ const PAYLOAD_RULES: {
     "download:list": () => true,
     "library:list": () => true,
     "library:delete": (payload) => hasString(payload, "id"),
+    "library:import": (payload) => hasArrayBuffer(payload, "data"),
     "site-selectors:suggest": (payload) => hasString(payload, "url"),
     "site-selectors:test": (payload) =>
         hasString(payload, "url") &&
@@ -470,6 +477,18 @@ function hasArray(value: unknown, key: string): boolean {
 function hasProperty(value: unknown, key: string): boolean {
     if (typeof value !== "object" || value === null) return false;
     return key in (value as Record<string, unknown>);
+}
+
+/**
+ * Whether a payload has an array buffer property.
+ *
+ * The library import carries the export archive's bytes. An array buffer is
+ * sent as one, rather than as a string of base64: it is a third smaller, and
+ * it is not a thing a page can forge into something else on the way.
+ */
+function hasArrayBuffer(value: unknown, key: string): boolean {
+    if (typeof value !== "object" || value === null) return false;
+    return (value as Record<string, unknown>)[key] instanceof ArrayBuffer;
 }
 
 /**

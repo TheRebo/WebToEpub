@@ -10,7 +10,7 @@
  * dependencies as arguments, so that it can be exercised without a browser
  * extension runtime.
  */
-import { t } from "../../i18n";
+import { t, tCount } from "../../i18n";
 import { runGuarded } from "../../guarded";
 import type { Settings, SettingsPatch } from "../../../core/storage/settings-store";
 import {
@@ -41,6 +41,7 @@ import {
     type NavTarget,
     type OptionsElements,
 } from "./view";
+import type { HashPort } from "./hash";
 
 /**
  * The settings groups, in the order they are shown.
@@ -239,6 +240,8 @@ export interface BackgroundPort {
     library(): Promise<Array<Record<string, unknown>>>;
     /** Remove one book from the library. */
     removeFromLibrary?(id: string): Promise<void>;
+    /** Import a library exported by WebToEpub 1.x. */
+    importLibrary?(data: ArrayBuffer): Promise<number>;
     /** List the saved site selectors. */
     siteSelectors(): Promise<
         Array<{
@@ -282,6 +285,8 @@ export interface OptionsControllerOptions {
     hostAccess?: HostAccessPort;
     /** The navigation target to open on. */
     target?: NavTarget;
+    /** The address bar, so the tab the user is on is part of the URL. */
+    hash?: HashPort;
 }
 
 /** The options page's controller. */
@@ -292,6 +297,7 @@ export class OptionsController {
     #background: BackgroundPort | undefined;
     #hostAccess: HostAccessPort | undefined;
     #settings: Settings | undefined;
+    #hash: HashPort | undefined;
     #active: NavTarget = "appearance";
     #query = "";
     #libraryLoaded = false;
@@ -304,6 +310,7 @@ export class OptionsController {
         this.#theme = options.theme;
         this.#background = options.background;
         this.#hostAccess = options.hostAccess;
+        this.#hash = options.hash;
         if (options.target) this.#active = options.target;
         this.#wire();
     }
@@ -348,6 +355,16 @@ export class OptionsController {
 
         if (this.#active === "library") await this.#loadLibrary();
         if (this.#active === "site-selectors") await this.#loadSiteSelectors();
+
+        // The address bar. The tab the user is on is part of the URL, so the
+        // back button walks back through the tabs, and a link to a tab opens
+        // that tab. This is subscribed to only once the page is ready, so a
+        // change that arrives mid-load cannot show a tab on an empty page.
+        this.#hash?.subscribe(() => {
+            const next = this.#hash?.read();
+            if (!next || next === this.#active) return;
+            this.#show(next, { writeHash: false });
+        });
     }
 
     /** Read the settings, and render them. */
@@ -384,24 +401,7 @@ export class OptionsController {
             const group = target?.dataset["group"];
             if (!group) return;
 
-            const next = group as NavTarget;
-            if (next === this.#active) return;
-
-            this.#active = next;
-
-            // Choosing a group explicitly clears the search. The search
-            // narrows *within* a group, so leaving it in place would show an
-            // empty group the moment the user picked a different one.
-            if (this.#query !== "") {
-                this.#query = "";
-                this.#elements.search.value = "";
-            }
-
-            this.#render();
-
-            if (this.#active === "library") this.#run(() => this.#loadLibrary());
-            if (this.#active === "site-selectors") this.#run(() => this.#loadSiteSelectors());
-            if (this.#active === "site-access") this.#run(() => this.#loadSiteAccess());
+            this.#show(group as NavTarget);
         });
 
         // The search box. It is outside the content column, so it keeps its
@@ -458,6 +458,12 @@ export class OptionsController {
                 this.#elements.files.get("import")?.click();
                 return;
             }
+            if (action === "import-library") {
+                // The same arrangement for the library import: the button opens
+                // the picker, and the input is what the browser fills in.
+                this.#elements.files.get("import-library")?.click();
+                return;
+            }
             if (action === "reset") {
                 this.#elements.resetDialog.setAttribute("open", "");
                 return;
@@ -496,17 +502,22 @@ export class OptionsController {
             if (libraryId) this.#run(() => this.#removeFromLibrary(libraryId));
         });
 
-        // The file input behind the import button.
+        // The file inputs behind the import buttons.
         this.#elements.root.addEventListener("change", (event) => {
             const target = event.target as HTMLInputElement | null;
             if (!(target instanceof HTMLInputElement)) return;
-            if (target.dataset["action"] !== "import") return;
+            const action = target.dataset["action"];
+            if (action !== "import" && action !== "import-library") return;
 
             const file = target.files?.[0];
             // The input is emptied, so that choosing the same file twice in a
             // row fires the change event again.
             target.value = "";
             if (!file) return;
+            if (action === "import-library") {
+                this.#run(() => this.#importLibrary(file));
+                return;
+            }
             this.#run(() => this.#importSettings(file));
         });
 
@@ -718,6 +729,40 @@ export class OptionsController {
     }
 
     /**
+     * Import a library that WebToEpub 1.x exported.
+     *
+     * The user exports from the old extension and imports the file here.
+     * The file is read into memory and handed to the worker, which does the
+     * reading: the page has no business knowing what a book looks like.
+     */
+    async #importLibrary(file: File): Promise<void> {
+        if (!this.#background?.importLibrary) {
+            this.#toast(t("errorGeneric"), "error");
+            return;
+        }
+
+        let data: ArrayBuffer;
+        try {
+            data = await file.arrayBuffer();
+        } catch {
+            this.#toast(t("errorGeneric"), "error");
+            return;
+        }
+
+        let imported: number;
+        try {
+            imported = await this.#background.importLibrary(data);
+        } catch (error) {
+            this.#toast(messageOf(error) || t("errorGeneric"), "error");
+            return;
+        }
+
+        this.#libraryLoaded = false;
+        await this.#loadLibrary();
+        this.#toast(tCount("optionsLibraryImported", imported), "info");
+    }
+
+    /**
      * Write the settings out to a file.
      *
      * The file is a small JSON document with a marker in it, so that a file
@@ -829,6 +874,35 @@ export class OptionsController {
         toast.setAttribute("variant", variant);
         toast.setAttribute("duration", "4000");
         this.#elements.toastHost.appendChild(toast);
+    }
+
+    /**
+     * Show a tab.
+     *
+     * Choosing a group explicitly clears the search. The search narrows
+     * *within* a group, so leaving it in place would show an empty group the
+     * moment the user picked a different one.
+     *
+     * @param next The tab to show.
+     * @param options Whether the address bar should be written.
+     */
+    #show(next: NavTarget, options: { writeHash?: boolean } = {}): void {
+        if (next === this.#active) return;
+
+        this.#active = next;
+
+        if (this.#query !== "") {
+            this.#query = "";
+            this.#elements.search.value = "";
+        }
+
+        this.#render();
+
+        if (options.writeHash !== false) this.#hash?.write(next);
+
+        if (this.#active === "library") this.#run(() => this.#loadLibrary());
+        if (this.#active === "site-selectors") this.#run(() => this.#loadSiteSelectors());
+        if (this.#active === "site-access") this.#run(() => this.#loadSiteAccess());
     }
 
     /**

@@ -29,6 +29,7 @@ import { themeController } from "../../styles/theme-controller";
 import { sendRequest } from "../../../core/message/bus";
 import { installI18n } from "../../i18n-bootstrap";
 import { OptionsController, type BackgroundPort, type HostAccessPort } from "./controller";
+import { createHashPort } from "./hash";
 import type { NavTarget } from "./view";
 
 /** The messaging API the background port uses. */
@@ -43,6 +44,10 @@ const background: BackgroundPort = {
     async removeFromLibrary(id: string) {
         await sendRequest(api, "library:delete", { id });
     },
+    async importLibrary(data: ArrayBuffer) {
+        const { imported } = await sendRequest(api, "library:import", { data });
+        return imported;
+    },
     async siteSelectors() {
         const { entries } = await sendRequest(api, "site-selectors:list", {});
         return entries;
@@ -53,12 +58,8 @@ const background: BackgroundPort = {
 };
 
 /** The navigation target the page opens on. */
-function initialTarget(): NavTarget {
-    const hash = window.location.hash.replace("#", "");
-    if (hash === "library") return "library";
-    if (hash === "site-selectors") return "site-selectors";
-    if (hash === "site-access") return "site-access";
-    return "appearance";
+function initialTarget(hash: { read(): NavTarget }): NavTarget {
+    return hash.read();
 }
 
 /**
@@ -89,6 +90,7 @@ async function main(): Promise<void> {
     installI18n();
 
     const store = new SettingsStore(localStorageAdapter);
+    const hash = createHashPort();
     const controller = new OptionsController({
         root: document.body,
         store: {
@@ -103,7 +105,8 @@ async function main(): Promise<void> {
         theme: themeController,
         background,
         hostAccess,
-        target: initialTarget(),
+        hash,
+        target: initialTarget(hash),
     });
 
     await controller.start();
