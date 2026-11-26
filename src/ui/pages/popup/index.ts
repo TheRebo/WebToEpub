@@ -35,6 +35,7 @@ import { SettingsStore } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
 import { t, tDynamic } from "../../i18n";
 import { caughtErrorMessage } from "../../error-messages";
+import { runGuarded } from "../../guarded";
 import type { UserFacingError } from "../../../core/util/errors";
 import { pollUntilDone } from "../../poll";
 import { installI18n } from "../../i18n-bootstrap";
@@ -307,7 +308,13 @@ class PopupController {
             const target = (event.target as HTMLElement)?.closest<HTMLElement>("[data-action]");
             const action = target?.dataset["action"];
             if (!action) return;
-            void this.#handle(action);
+            runGuarded(
+                () => this.#handle(action),
+                // A failure inside an action is the user's problem to know
+                // about: the popup shows it rather than the browser logging
+                // an unhandled rejection to a console nobody is watching.
+                (error) => this.#toast(caughtErrorMessage(error), "danger"),
+            );
         });
     }
 
