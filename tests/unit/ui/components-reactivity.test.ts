@@ -86,6 +86,28 @@ describe("k-dialog", () => {
         expect(selectors.some((selector) => selector.includes('[size="lg"]'))).toBe(true);
     });
 
+    it("gives every size it documents a rule of its own", () => {
+        // "md" used to be the default width rather than a size, so a caller
+        // who asked for it got the default by accident rather than by design.
+        const dialog = document.createElement("k-dialog");
+        document.body.appendChild(dialog);
+
+        const selectors: string[] = [];
+        for (const sheet of shadow(dialog).adoptedStyleSheets) {
+            for (const rule of Array.from(sheet.cssRules)) {
+                const style = rule as CSSStyleRule;
+                if (typeof style.selectorText === "string") selectors.push(style.selectorText);
+            }
+        }
+
+        for (const size of ["sm", "md", "lg", "full"]) {
+            expect(
+                selectors.some((selector) => selector.includes(`[size="${size}"]`)),
+                `the "${size}" size has no rule`,
+            ).toBe(true);
+        }
+    });
+
     it("closes when it is removed from the document while open", () => {
         const dialog = document.createElement("k-dialog");
         document.body.appendChild(dialog);

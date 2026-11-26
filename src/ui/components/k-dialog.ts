@@ -4,6 +4,11 @@
  * A modal dialog built on the native `<dialog>` element, so focus trapping,
  * `Escape` handling, and the top layer all come for free — with the
  * background correctly inert.
+ *
+ * The design system's contract:
+ *  - sizes: sm (360px), md (480px, the default), lg (720px), full (960px)
+ *  - the dialog is named by its heading, so a screen reader announces
+ *    "Filter, dialog" rather than "dialog"
  */
 import { KComponent, defineComponent, translate } from "./base";
 import { createIcon } from "./icons";
@@ -12,7 +17,7 @@ const STYLES = `
 :host { display: contents; }
 
 dialog {
-    width: min(480px, calc(100vw - 32px));
+    width: var(--_dialog-width, min(480px, calc(100vw - 32px)));
     max-height: calc(100vh - 64px);
     padding: 0;
     border: 1px solid var(--border);
@@ -29,11 +34,16 @@ dialog {
  * The attribute is what the callers use, so it has to do something: a
  * size that was set but ignored meant the site's selector dialog and the
  * filter dialog were both the default width, whatever the design asked for.
+ *
+ * Every size has its own rule, including the default one. A size that
+ * was only implied — "md" meaning whatever the dialog happened to be —
+ * was a size the design system did not really have.
  */
-:host([size="sm"]) dialog { width: min(360px, calc(100vw - 32px)); }
-:host([size="lg"]) dialog { width: min(720px, calc(100vw - 32px)); }
-:host([size="full"]) dialog {
-    width: min(960px, calc(100vw - 32px));
+:host([size="sm"]) { --_dialog-width: min(360px, calc(100vw - 32px)); }
+:host([size="md"]) { --_dialog-width: min(480px, calc(100vw - 32px)); }
+:host([size="lg"]) { --_dialog-width: min(720px, calc(100vw - 32px)); }
+:host([size="full"]) {
+    --_dialog-width: min(960px, calc(100vw - 32px));
     height: min(720px, calc(100vh - 64px));
 }
 
