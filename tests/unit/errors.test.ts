@@ -100,6 +100,48 @@ describe("toUserFacingError", () => {
         });
         expect(error.code).toBe("CHALLENGE");
     });
+
+    it("reads the status off the failure itself", () => {
+        // The network layer knows the status the server answered with and
+        // puts it on the error it throws. Nothing passes it in the context, so
+        // without this the user would be told the site could not be reached
+        // when the site answered with a 404.
+        const failure = Object.assign(new Error("HTTP 404 for https://example.com/chapter"), {
+            status: 404,
+            attempts: 2,
+        });
+        const error = toUserFacingError(failure, { url: "https://example.com/chapter" });
+
+        expect(error.code).toBe("HTTP_STATUS");
+        expect(error.message).toContain("404");
+        expect(error.message).toContain("example.com");
+    });
+
+    it("reads a challenge off the failure itself", () => {
+        const failure = Object.assign(new Error("boom"), { status: 403, isChallenge: true });
+        const error = toUserFacingError(failure, { url: "https://example.com/chapter" });
+
+        expect(error.code).toBe("CHALLENGE");
+    });
+
+    it("treats a status of zero as a transport failure", () => {
+        // A status of zero means the request never reached a server, so it
+        // is not an answer from one.
+        const failure = Object.assign(new Error("boom"), { status: 0 });
+        const error = toUserFacingError(failure, { url: "https://example.com/chapter" });
+
+        expect(error.code).toBe("NETWORK");
+    });
+
+    it("lets the caller's own status win", () => {
+        const failure = Object.assign(new Error("boom"), { status: 404 });
+        const error = toUserFacingError(failure, {
+            url: "https://example.com/chapter",
+            status: 429,
+        });
+
+        expect(error.code).toBe("RATE_LIMITED");
+    });
 });
 
 describe("emptyContentError", () => {

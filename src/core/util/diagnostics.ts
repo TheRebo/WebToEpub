@@ -22,6 +22,7 @@
  *
  * See ADR-0029 (the diagnostics logger) and ADR-0023 (URL redaction).
  */
+import { redactUrl } from "./url";
 
 /** Whether the logger is currently enabled. */
 let enabled = false;
@@ -44,21 +45,18 @@ export function diagnosticsEnabled(): boolean {
  * The parts of a URL that are safe to log.
  *
  * A URL's query string often carries a session token, a signed path, or the
- * user's own search terms. Only the origin and the path are kept, and the
- * path's last segment is kept because it is what identifies the chapter.
+ * user's own search terms. Only the origin and the path are kept.
+ *
+ * The rule lives in `util/url.ts`, because it has to be the same everywhere a
+ * URL is shown — in a log, in an error, and in an exported book. This is the
+ * logging shape of it: a URL that cannot be read is replaced rather than
+ * dropped, so a log line never ends up empty.
  *
  * @param url The URL.
  * @returns The URL, with the query and the fragment removed.
  */
-export function redactUrl(url: string): string {
-    try {
-        const parsed = new URL(url);
-        return `${parsed.origin}${parsed.pathname}`;
-    } catch {
-        // A URL that cannot be parsed is not worth logging at all, and
-        // logging it raw could leak whatever it holds.
-        return "<unparsable url>";
-    }
+function safeUrlForLog(url: string): string {
+    return redactUrl(url) ?? "<unparsable url>";
 }
 
 /**
@@ -92,5 +90,5 @@ export function diagnostic(message: string, ...details: unknown[]): void {
  */
 export function diagnosticUrl(message: string, url: string, ...details: unknown[]): void {
     if (!enabled) return;
-    diagnostic(message, redactUrl(url), ...details);
+    diagnostic(message, safeUrlForLog(url), ...details);
 }

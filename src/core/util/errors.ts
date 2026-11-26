@@ -10,6 +10,7 @@
  * pure function, so it is exhaustively testable and the UI never has to
  * interpret an exception.
  */
+import { redactUrl } from "./url";
 
 /** The machine-readable causes. */
 export type ErrorCode =
@@ -77,28 +78,11 @@ function hostOf(url: string | undefined): string | null {
 /**
  * A URL with its query string and fragment removed.
  *
- * A URL that reaches the UI travels over the message bus, and a site's query
- * string can carry a session token, a signature, or an identifier for the
- * account that is signed in. None of that helps the user read the error, and
- * all of it is a secret that has no business being written into a log or
- * copied out of the error panel.
- *
- * The path is kept: it is what tells the user which page failed.
+ * The implementation lives in `util/url.ts`, because the rule — a query string
+ * is a secret — has to be the same everywhere a URL is shown: in an error, in
+ * a log, and in an exported book.
  */
-export function redactUrl(url: string | undefined): string | undefined {
-    if (!url) return undefined;
-    try {
-        const parsed = new URL(url);
-        parsed.search = "";
-        parsed.hash = "";
-        return parsed.toString();
-    } catch {
-        // A URL that will not parse is not worth showing, and passing it
-        // through unchanged risks leaking a query string that a parser would
-        // have stripped.
-        return undefined;
-    }
-}
+export { redactUrl } from "./url";
 
 /** A sentence describing the failure, with the site named where possible. */
 function describe(context: ErrorContext): {
@@ -168,6 +152,40 @@ function describe(context: ErrorContext): {
 }
 
 /**
+ * The facts a failure carries about itself.
+ *
+ * The network layer knows the status the server answered with, how many
+ * attempts were made, and whether the site asked the user to prove they were
+ * human. It puts all three on the error it throws. Without reading them here,
+ * every server failure would be reported as "could not reach the site" — which
+ * is wrong advice for a rate limit, a missing chapter, or a challenge.
+ *
+ * The error is read by shape rather than by type, so that this layer does not
+ * have to know about the network layer — the rule is about what an error
+ * *may* carry, not about where it came from.
+ */
+function failureFacts(error: unknown): {
+    status?: number;
+    attempts?: number;
+    challenge?: boolean;
+} {
+    if (!error || typeof error !== "object") return {};
+    const candidate = error as { status?: unknown; attempts?: unknown; isChallenge?: unknown };
+    const facts: { status?: number; attempts?: number; challenge?: boolean } = {};
+
+    // A status of zero means the request never reached a server, so it is a
+    // transport failure rather than an answer from one.
+    if (typeof candidate.status === "number" && candidate.status > 0) {
+        facts.status = candidate.status;
+    }
+    if (typeof candidate.attempts === "number" && candidate.attempts > 0) {
+        facts.attempts = candidate.attempts;
+    }
+    if (candidate.isChallenge === true) facts.challenge = true;
+    return facts;
+}
+
+/**
  * Turn any thrown value into a `UserFacingError`.
  *
  * This is the only place in the extension that inspects an exception, which
@@ -191,7 +209,16 @@ export function toUserFacingError(error: unknown, context: ErrorContext = {}): U
         };
     }
 
-    const described = describe(context);
+    // What the failure knows about itself fills in what the caller did not
+    // say. The caller always wins: it is the one that knows which URL the
+    // user was actually trying to reach.
+    const facts = failureFacts(error);
+    const described = describe({
+        ...context,
+        status: context.status ?? facts.status,
+        attempts: context.attempts ?? facts.attempts,
+        challenge: context.challenge ?? facts.challenge,
+    });
     const result: UserFacingError = {
         message: described.message,
         code: described.code,

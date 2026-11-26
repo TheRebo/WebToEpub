@@ -6,7 +6,7 @@
  * network error much later, so the rules are worth pinning down.
  */
 import { describe, expect, it } from "vitest";
-import { hostNameOf, normaliseStoryUrl } from "../../src/core/util/url";
+import { hostNameOf, normaliseStoryUrl, redactUrl } from "../../src/core/util/url";
 
 describe("normaliseStoryUrl", () => {
     it("keeps an address that is already one", () => {
@@ -53,5 +53,27 @@ describe("hostNameOf", () => {
 
     it("gives an empty name for something that is not an address", () => {
         expect(hostNameOf("not a url")).toBe("");
+    });
+});
+
+describe("redactUrl", () => {
+    it("removes the query string and the fragment", () => {
+        expect(redactUrl("https://example.com/chapter/1?token=secret&id=42#part")).toBe(
+            "https://example.com/chapter/1",
+        );
+    });
+
+    it("keeps the path", () => {
+        expect(redactUrl("https://example.com/novel/chapter-3")).toBe(
+            "https://example.com/novel/chapter-3",
+        );
+    });
+
+    it("returns nothing for a URL that will not parse", () => {
+        expect(redactUrl("not a url ?token=secret")).toBeUndefined();
+    });
+
+    it("returns nothing when there is no URL", () => {
+        expect(redactUrl(undefined)).toBeUndefined();
     });
 });

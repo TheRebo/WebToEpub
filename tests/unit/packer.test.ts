@@ -173,6 +173,18 @@ describe("buildPlaceholderChapter", () => {
         const placeholder = buildPlaceholderChapter("https://example.com/c/1", "<b>bad</b>");
         expect(placeholder.contentHtml).not.toContain("<b>bad</b>");
     });
+
+    it("keeps the chapter's secrets out of the book", () => {
+        // A book's query string can carry a session token, and a book is a
+        // file the user passes to other people.
+        const placeholder = buildPlaceholderChapter(
+            "https://example.com/c/1?token=secret&session=abc",
+            "The site refused the request.",
+        );
+        expect(placeholder.contentHtml).not.toContain("secret");
+        expect(placeholder.contentHtml).not.toContain("session");
+        expect(placeholder.contentHtml).toContain("https://example.com/c/1");
+    });
 });
 
 describe("buildPlaceholderImage", () => {
@@ -182,6 +194,12 @@ describe("buildPlaceholderImage", () => {
         expect(image.mediaType).toBe("image/svg+xml");
         const text = new TextDecoder().decode(image.data);
         expect(text).toContain("<svg");
+    });
+
+    it("keeps the image's secrets out of the book", () => {
+        const image = buildPlaceholderImage("https://example.com/a.png?token=secret");
+        const text = new TextDecoder().decode(image.data);
+        expect(text).not.toContain("secret");
     });
 });
 

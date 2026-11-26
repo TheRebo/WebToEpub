@@ -789,12 +789,15 @@ export class DownloadManager {
                     return;
                 }
                 if (!behaviour.skipFailedChapters) {
+                    // The reason is written into the book, so it has to be a
+                    // sentence for the reader — and it must not carry the
+                    // address the chapter was fetched from. A site's query
+                    // string can hold a session token, and a book is a file
+                    // people pass around.
                     packed.push(
                         buildPlaceholderChapter(
                             chapter.sourceUrl,
-                            error instanceof Error
-                                ? error.message
-                                : "The chapter could not be fetched.",
+                            toUserFacingError(error, { url: chapter.sourceUrl }).message,
                         ),
                     );
                 }

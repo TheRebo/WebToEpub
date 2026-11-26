@@ -45,3 +45,31 @@ export function hostNameOf(url: string): string {
         return "";
     }
 }
+
+/**
+ * A URL with its query string and fragment removed.
+ *
+ * A URL's query string often carries a session token, a signature, or an
+ * identifier for the account that is signed in. None of that helps anybody
+ * read a message, and all of it is a secret that has no business being
+ * written into an error, a log, or an exported book.
+ *
+ * The path is kept: it is what tells the reader which page or chapter the
+ * URL was about.
+ *
+ * @param url The URL.
+ * @returns The safe URL, or `undefined` when the URL cannot be read.
+ */
+export function redactUrl(url: string | undefined): string | undefined {
+    if (!url) return undefined;
+    try {
+        const parsed = new URL(url);
+        parsed.search = "";
+        parsed.hash = "";
+        return parsed.toString();
+    } catch {
+        // A URL that will not parse is not worth showing, and passing it
+        // through unchanged risks leaking whatever it holds.
+        return undefined;
+    }
+}

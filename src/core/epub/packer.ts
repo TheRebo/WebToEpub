@@ -22,6 +22,7 @@ import {
 import { buildXhtml, collectFiles, makeItemId } from "./writer";
 import { serializeAsXml } from "./xhtml";
 import { rewriteImageElements } from "../util/image-references";
+import { redactUrl } from "../util/url";
 
 /**
  * Rewrite a chapter's image references to the packaged copies.
@@ -509,11 +510,18 @@ function buildInfoPage(metadata: PackMetadata): string {
  *
  * The baseline packed an empty chapter with no explanation; the reader saw a
  * blank page. A placeholder says what happened.
+ *
+ * The chapter's address is written into the book without its query string.
+ * A site's query string can carry a session token or a signed parameter, and
+ * a book is a file the user sends to other people — a secret that travels
+ * with it is a secret that leaks. The path is enough to say which chapter it
+ * was.
  */
 export function buildPlaceholderChapter(url: string, reason: string): ChapterToPack {
+    const safeUrl = redactUrl(url) ?? url;
     const body = `    <h1>Chapter unavailable</h1>
     <p class="placeholder">${escapeText(reason)}</p>
-    <p class="placeholder"><a href="${escapeText(url)}">${escapeText(url)}</a></p>`;
+    <p class="placeholder"><a href="${escapeText(safeUrl)}">${escapeText(safeUrl)}</a></p>`;
     return {
         sourceUrl: url,
         title: "Chapter unavailable",
@@ -528,14 +536,18 @@ export function buildPlaceholderChapter(url: string, reason: string): ChapterToP
  * The baseline packed a zero-byte file, which corrupts the EPUB. This is a
  * visible placeholder image instead: a small SVG that says the image is
  * missing. The EPUB stays valid, and the reader can see what happened.
+ *
+ * The address is written without its query string, for the same reason the
+ * placeholder chapter does not carry one.
  */
 export function buildPlaceholderImage(url: string): ImageData {
+    const safeUrl = redactUrl(url) ?? url;
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300" role="img" aria-label="Image unavailable">
   <rect width="400" height="300" fill="#f2efe8" stroke="#cfc8b9" stroke-width="2"/>
   <path d="M120 190 L170 130 L210 175 L250 125 L290 190 Z" fill="#e5e0d5" stroke="#a69e8d" stroke-width="2" stroke-linejoin="round"/>
   <circle cx="145" cy="105" r="14" fill="none" stroke="#a69e8d" stroke-width="2"/>
   <text x="200" y="225" font-family="sans-serif" font-size="14" fill="#7c7466" text-anchor="middle">Image unavailable</text>
-  <text x="200" y="248" font-family="sans-serif" font-size="11" fill="#a69e8d" text-anchor="middle">${escapeText(url.slice(0, 60))}</text>
+  <text x="200" y="248" font-family="sans-serif" font-size="11" fill="#a69e8d" text-anchor="middle">${escapeText(safeUrl.slice(0, 60))}</text>
 </svg>`;
     return {
         data: new TextEncoder().encode(svg),

@@ -33,6 +33,7 @@ function emptyState(): WorkbenchState {
         filter: { query: "", useRegex: false, include: [], exclude: [] },
         dirty: false,
         usedDefaultParser: false,
+        accessOrigin: undefined,
         progress: undefined,
         error: undefined,
     };

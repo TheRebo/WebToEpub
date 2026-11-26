@@ -15,7 +15,6 @@ import {
     diagnostic,
     diagnosticUrl,
     diagnosticsEnabled,
-    redactUrl,
     setDiagnosticsEnabled,
 } from "../../src/core/util/diagnostics";
 
@@ -48,22 +47,16 @@ describe("the diagnostics", () => {
         expect(String(info.mock.calls[0]?.[0])).toContain("A message");
     });
 
-    it("keep the query string out of the log", () => {
-        // A signed URL carries its token in the query string. A diagnostic log
-        // is the one place a careless `console.log(url)` would leak it.
-        expect(redactUrl("https://example.com/chapter/1?token=secret&session=abc")).toBe(
-            "https://example.com/chapter/1",
-        );
-    });
-
-    it("keep the fragment out of the log", () => {
-        expect(redactUrl("https://example.com/chapter#section")).toBe(
-            "https://example.com/chapter",
-        );
-    });
-
     it("do not log a URL they cannot parse", () => {
-        expect(redactUrl("not a url")).toBe("<unparsable url>");
+        const info = vi.spyOn(console, "info").mockImplementation(() => undefined);
+
+        setDiagnosticsEnabled(true);
+        diagnosticUrl("Fetching", "not a url");
+
+        // A URL that cannot be read is replaced rather than logged raw: it
+        // might hold anything, and a log line is the last place that should
+        // happen.
+        expect(info.mock.calls[0]?.[1]).toBe("<unparsable url>");
     });
 
     it("log a redacted URL", () => {
