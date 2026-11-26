@@ -203,6 +203,42 @@
     "message": "Muat ulang halaman",
     "description": "Memuat ulang tab."
   },
+  "workbenchFieldUrl": {
+    "message": "Alamat cerita",
+    "description": "Kolom yang berisi alamat halaman cerita."
+  },
+  "workbenchFieldUrlHint": {
+    "message": "Tempelkan alamat daftar bab.",
+    "description": "Petunjuk di bawah kolom alamat."
+  },
+  "workbenchLoadStory": {
+    "message": "Muat",
+    "description": "Tombol untuk memuat cerita dari alamat tersebut."
+  },
+  "workbenchUrlInvalid": {
+    "message": "Itu bukan alamat web.",
+    "description": "Ditampilkan ketika alamat tidak dapat dipakai."
+  },
+  "accessTitle": {
+    "message": "Izinkan akses ke situs ini",
+    "description": "Judul permintaan akses."
+  },
+  "accessText": {
+    "message": "Kintsugi hanya dapat membaca situs yang Anda izinkan. Halaman dibaca di mesin Anda, dan tidak ada yang dikirim ke mana pun.",
+    "description": "Penjelasan di bawah permintaan akses."
+  },
+  "accessGrant": {
+    "message": "Izinkan akses",
+    "description": "Tombol yang meminta akses dari peramban."
+  },
+  "accessDenied": {
+    "message": "Akses tidak diizinkan, jadi cerita tidak dapat dibaca.",
+    "description": "Ditampilkan ketika permintaan peramban ditolak."
+  },
+  "accessAlreadyGranted": {
+    "message": "Akses ke situs ini sudah diizinkan.",
+    "description": "Ditampilkan ketika situs sudah boleh dibaca."
+  },
   "chapterStateQueued": {
     "message": "Antre",
     "description": "Bab yang menunggu diambil."
@@ -400,6 +436,22 @@
   "optionsRevokeAll": {
     "message": "Cabut semua",
     "description": "Menghapus akses ke semua situs."
+  },
+  "optionsSiteAccessEmpty": {
+    "message": "Belum ada situs. Kintsugi bertanya saat Anda membuka cerita.",
+    "description": "Keadaan kosong daftar akses."
+  },
+  "optionsSiteAccessHint": {
+    "message": "Kintsugi hanya dapat membaca situs yang tercantum di sini.",
+    "description": "Petunjuk di bawah judul akses."
+  },
+  "optionsRevoked": {
+    "message": "Akses ke situs tersebut dicabut.",
+    "description": "Ditampilkan setelah akses dicabut."
+  },
+  "optionsRevokedAll": {
+    "message": "Akses ke semua situs dicabut.",
+    "description": "Ditampilkan setelah semua akses dicabut."
   },
   "optionsExportSettings": {
     "message": "Ekspor pengaturan",

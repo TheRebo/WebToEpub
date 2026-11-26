@@ -72,6 +72,27 @@ export default {
     ],
     workbenchUseSelectorBuilder: ["Buat selector", "Membuka pembuat selector."],
     workbenchReloadPage: ["Muat ulang halaman", "Memuat ulang tab."],
+    workbenchFieldUrl: ["Alamat cerita", "Kolom yang berisi alamat halaman cerita."],
+    workbenchFieldUrlHint: ["Tempelkan alamat daftar bab.", "Petunjuk di bawah kolom alamat."],
+    workbenchLoadStory: ["Muat", "Tombol untuk memuat cerita dari alamat tersebut."],
+    workbenchUrlInvalid: [
+        "Itu bukan alamat web.",
+        "Ditampilkan ketika alamat tidak dapat dipakai.",
+    ],
+    accessTitle: ["Izinkan akses ke situs ini", "Judul permintaan akses."],
+    accessText: [
+        "Kintsugi hanya dapat membaca situs yang Anda izinkan. Halaman dibaca di mesin Anda, dan tidak ada yang dikirim ke mana pun.",
+        "Penjelasan di bawah permintaan akses.",
+    ],
+    accessGrant: ["Izinkan akses", "Tombol yang meminta akses dari peramban."],
+    accessDenied: [
+        "Akses tidak diizinkan, jadi cerita tidak dapat dibaca.",
+        "Ditampilkan ketika permintaan peramban ditolak.",
+    ],
+    accessAlreadyGranted: [
+        "Akses ke situs ini sudah diizinkan.",
+        "Ditampilkan ketika situs sudah boleh dibaca.",
+    ],
 
     // --- Chapter states ---
     chapterStateQueued: ["Antre", "Bab yang menunggu diambil."],
@@ -140,6 +161,19 @@ export default {
     optionsSiteAccess: ["Akses situs", "Daftar situs yang boleh dibaca ekstensi."],
     optionsRevoke: ["Cabut", "Menghapus akses ke sebuah situs."],
     optionsRevokeAll: ["Cabut semua", "Menghapus akses ke semua situs."],
+    optionsSiteAccessEmpty: [
+        "Belum ada situs. Kintsugi bertanya saat Anda membuka cerita.",
+        "Keadaan kosong daftar akses.",
+    ],
+    optionsSiteAccessHint: [
+        "Kintsugi hanya dapat membaca situs yang tercantum di sini.",
+        "Petunjuk di bawah judul akses.",
+    ],
+    optionsRevoked: ["Akses ke situs tersebut dicabut.", "Ditampilkan setelah akses dicabut."],
+    optionsRevokedAll: [
+        "Akses ke semua situs dicabut.",
+        "Ditampilkan setelah semua akses dicabut.",
+    ],
     optionsExportSettings: ["Ekspor pengaturan", "Menyimpan pengaturan ke berkas."],
     optionsImportSettings: ["Impor pengaturan", "Memuat pengaturan dari berkas."],
     optionsResetAll: [

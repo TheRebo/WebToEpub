@@ -203,6 +203,42 @@
     "message": "Seite neu laden",
     "description": "Lädt den Tab neu."
   },
+  "workbenchFieldUrl": {
+    "message": "Story-Adresse",
+    "description": "Das Feld mit der Adresse der Story-Seite."
+  },
+  "workbenchFieldUrlHint": {
+    "message": "Füge die Adresse der Kapitelliste ein.",
+    "description": "Der Hinweis unter dem Adressfeld."
+  },
+  "workbenchLoadStory": {
+    "message": "Laden",
+    "description": "Die Schaltfläche, die die Story lädt."
+  },
+  "workbenchUrlInvalid": {
+    "message": "Das ist keine Webadresse.",
+    "description": "Wenn die Adresse nicht verwendet werden kann."
+  },
+  "accessTitle": {
+    "message": "Zugriff auf diese Seite erlauben",
+    "description": "Die Überschrift der Zugriffsfrage."
+  },
+  "accessText": {
+    "message": "Kintsugi kann nur eine Seite lesen, die du erlaubt hast. Die Seiten werden auf deinem Rechner gelesen, und nichts wird verschickt.",
+    "description": "Der Text unter der Zugriffsfrage."
+  },
+  "accessGrant": {
+    "message": "Zugriff erlauben",
+    "description": "Die Schaltfläche, die den Browser um Zugriff bittet."
+  },
+  "accessDenied": {
+    "message": "Der Zugriff wurde nicht erlaubt, die Story kann nicht gelesen werden.",
+    "description": "Wenn der Browserdialog abgelehnt wird."
+  },
+  "accessAlreadyGranted": {
+    "message": "Der Zugriff auf diese Seite ist bereits erlaubt.",
+    "description": "Wenn die Seite bereits gelesen werden darf."
+  },
   "chapterStateQueued": {
     "message": "In Warteschlange",
     "description": "Ein Kapitel, das auf den Abruf wartet."
@@ -400,6 +436,22 @@
   "optionsRevokeAll": {
     "message": "Alle widerrufen",
     "description": "Entfernt den Zugriff auf jede Seite."
+  },
+  "optionsSiteAccessEmpty": {
+    "message": "Noch keine Seiten. Kintsugi fragt, wenn du eine Story öffnest.",
+    "description": "Der leere Zustand der Zugriffsliste."
+  },
+  "optionsSiteAccessHint": {
+    "message": "Kintsugi kann nur die hier aufgeführten Seiten lesen.",
+    "description": "Der Hinweis unter der Zugriffsüberschrift."
+  },
+  "optionsRevoked": {
+    "message": "Der Zugriff auf die Seite wurde zurückgenommen.",
+    "description": "Wird nach dem Widerruf gezeigt."
+  },
+  "optionsRevokedAll": {
+    "message": "Der Zugriff auf jede Seite wurde zurückgenommen.",
+    "description": "Wird nach dem Widerruf aller Seiten gezeigt."
   },
   "optionsExportSettings": {
     "message": "Einstellungen exportieren",

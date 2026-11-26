@@ -70,6 +70,33 @@ export default {
     ],
     workbenchUseSelectorBuilder: ["Créer un sélecteur", "Ouvre le créateur de sélecteurs."],
     workbenchReloadPage: ["Recharger la page", "Recharge l'onglet."],
+    workbenchFieldUrl: [
+        "Adresse de l'histoire",
+        "Le champ qui contient l'adresse de la page de l'histoire.",
+    ],
+    workbenchFieldUrlHint: [
+        "Collez l'adresse de la liste des chapitres.",
+        "L'indication sous le champ d'adresse.",
+    ],
+    workbenchLoadStory: ["Charger", "Le bouton qui charge l'histoire à cette adresse."],
+    workbenchUrlInvalid: [
+        "Cette adresse n'est pas une adresse web.",
+        "Affiché quand l'adresse ne peut pas être utilisée.",
+    ],
+    accessTitle: ["Autoriser l'accès à ce site", "Le titre de la demande d'accès."],
+    accessText: [
+        "Kintsugi ne peut lire que les sites que vous avez autorisés. Les pages sont lues sur votre machine, et rien n'est envoyé ailleurs.",
+        "L'explication sous la demande d'accès.",
+    ],
+    accessGrant: ["Autoriser l'accès", "Le bouton qui demande l'accès au navigateur."],
+    accessDenied: [
+        "L'accès n'a pas été autorisé, l'histoire ne peut pas être lue.",
+        "Affiché quand la boîte de dialogue du navigateur est refusée.",
+    ],
+    accessAlreadyGranted: [
+        "L'accès à ce site est déjà autorisé.",
+        "Affiché quand le site peut déjà être lu.",
+    ],
     chapterStateQueued: ["En attente", "Un chapitre qui attend d'être récupéré."],
     chapterStateFetching: ["Récupération", "Un chapitre en cours de récupération."],
     chapterStateLoaded: ["Chargé", "Un chapitre qui a été lu."],
@@ -133,6 +160,19 @@ export default {
     optionsSiteAccess: ["Accès aux sites", "La liste des sites que l'extension peut lire."],
     optionsRevoke: ["Révoquer", "Retire l'accès à un site."],
     optionsRevokeAll: ["Tout révoquer", "Retire l'accès à tous les sites."],
+    optionsSiteAccessEmpty: [
+        "Aucun site pour l'instant. Kintsugi demande quand vous ouvrez une histoire.",
+        "L'état vide de la liste des accès.",
+    ],
+    optionsSiteAccessHint: [
+        "Kintsugi ne peut lire que les sites listés ici.",
+        "L'indication sous le titre des accès.",
+    ],
+    optionsRevoked: ["L'accès au site a été retiré.", "Affiché après le retrait d'un accès."],
+    optionsRevokedAll: [
+        "L'accès à tous les sites a été retiré.",
+        "Affiché après le retrait de tous les accès.",
+    ],
     optionsExportSettings: [
         "Exporter les paramètres",
         "Enregistre les paramètres dans un fichier.",

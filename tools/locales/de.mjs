@@ -76,6 +76,30 @@ export default {
     ],
     workbenchUseSelectorBuilder: ["Selektor erstellen", "Öffnet den Selektor-Editor."],
     workbenchReloadPage: ["Seite neu laden", "Lädt den Tab neu."],
+    workbenchFieldUrl: ["Story-Adresse", "Das Feld mit der Adresse der Story-Seite."],
+    workbenchFieldUrlHint: [
+        "Füge die Adresse der Kapitelliste ein.",
+        "Der Hinweis unter dem Adressfeld.",
+    ],
+    workbenchLoadStory: ["Laden", "Die Schaltfläche, die die Story lädt."],
+    workbenchUrlInvalid: [
+        "Das ist keine Webadresse.",
+        "Wenn die Adresse nicht verwendet werden kann.",
+    ],
+    accessTitle: ["Zugriff auf diese Seite erlauben", "Die Überschrift der Zugriffsfrage."],
+    accessText: [
+        "Kintsugi kann nur eine Seite lesen, die du erlaubt hast. Die Seiten werden auf deinem Rechner gelesen, und nichts wird verschickt.",
+        "Der Text unter der Zugriffsfrage.",
+    ],
+    accessGrant: ["Zugriff erlauben", "Die Schaltfläche, die den Browser um Zugriff bittet."],
+    accessDenied: [
+        "Der Zugriff wurde nicht erlaubt, die Story kann nicht gelesen werden.",
+        "Wenn der Browserdialog abgelehnt wird.",
+    ],
+    accessAlreadyGranted: [
+        "Der Zugriff auf diese Seite ist bereits erlaubt.",
+        "Wenn die Seite bereits gelesen werden darf.",
+    ],
     chapterStateQueued: ["In Warteschlange", "Ein Kapitel, das auf den Abruf wartet."],
     chapterStateFetching: ["Wird abgerufen", "Ein Kapitel, das gerade abgerufen wird."],
     chapterStateLoaded: ["Gelesen", "Ein Kapitel, das gelesen wurde."],
@@ -133,6 +157,22 @@ export default {
     optionsSiteAccess: ["Seitenzugriff", "Die Liste der Seiten, die die Erweiterung lesen darf."],
     optionsRevoke: ["Widerrufen", "Entfernt den Zugriff auf eine Seite."],
     optionsRevokeAll: ["Alle widerrufen", "Entfernt den Zugriff auf jede Seite."],
+    optionsSiteAccessEmpty: [
+        "Noch keine Seiten. Kintsugi fragt, wenn du eine Story öffnest.",
+        "Der leere Zustand der Zugriffsliste.",
+    ],
+    optionsSiteAccessHint: [
+        "Kintsugi kann nur die hier aufgeführten Seiten lesen.",
+        "Der Hinweis unter der Zugriffsüberschrift.",
+    ],
+    optionsRevoked: [
+        "Der Zugriff auf die Seite wurde zurückgenommen.",
+        "Wird nach dem Widerruf gezeigt.",
+    ],
+    optionsRevokedAll: [
+        "Der Zugriff auf jede Seite wurde zurückgenommen.",
+        "Wird nach dem Widerruf aller Seiten gezeigt.",
+    ],
     optionsExportSettings: [
         "Einstellungen exportieren",
         "Speichert die Einstellungen in einer Datei.",

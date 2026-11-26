@@ -60,6 +60,17 @@ export const MESSAGES = {
     workbenchUnsupportedSite: "workbenchUnsupportedSite",
     workbenchUseSelectorBuilder: "workbenchUseSelectorBuilder",
     workbenchReloadPage: "workbenchReloadPage",
+    workbenchFieldUrl: "workbenchFieldUrl",
+    workbenchFieldUrlHint: "workbenchFieldUrlHint",
+    workbenchLoadStory: "workbenchLoadStory",
+    workbenchUrlInvalid: "workbenchUrlInvalid",
+
+    // Site access
+    accessTitle: "accessTitle",
+    accessText: "accessText",
+    accessGrant: "accessGrant",
+    accessDenied: "accessDenied",
+    accessAlreadyGranted: "accessAlreadyGranted",
 
     // Chapter states
     chapterStateQueued: "chapterStateQueued",
@@ -121,6 +132,10 @@ export const MESSAGES = {
     optionsSiteAccess: "optionsSiteAccess",
     optionsRevoke: "optionsRevoke",
     optionsRevokeAll: "optionsRevokeAll",
+    optionsSiteAccessEmpty: "optionsSiteAccessEmpty",
+    optionsSiteAccessHint: "optionsSiteAccessHint",
+    optionsRevoked: "optionsRevoked",
+    optionsRevokedAll: "optionsRevokedAll",
     optionsExportSettings: "optionsExportSettings",
     optionsImportSettings: "optionsImportSettings",
     optionsResetAll: "optionsResetAll",

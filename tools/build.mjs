@@ -74,9 +74,27 @@ async function buildManifest() {
             128: "assets/icons/icon-128.png",
         },
 
-        permissions: ["downloads", "scripting", "storage", "declarativeNetRequest", "cookies"],
+        // `activeTab` lets the extension see the address of the tab the user
+        // is on, when the user has just clicked the toolbar button. It is the
+        // least-privilege way to do that: it grants no access to any other
+        // tab, and no access at all to any other site.
+        //
+        // `scripting` is needed by the site parsers that have to run code in
+        // the page itself; `cookies` by the parsers that read a site's own
+        // cookies; `declarativeNetRequest` by the origin-stripping rule that
+        // keeps the extension's own origin out of the sites' referrers.
+        permissions: [
+            "activeTab",
+            "downloads",
+            "scripting",
+            "storage",
+            "declarativeNetRequest",
+            "cookies",
+        ],
+        // No host permission is granted up front. The extension asks for one
+        // site at a time, at the moment the user opens a story there.
         host_permissions: [],
-        optional_host_permissions: ["*://*/*"],
+        optional_host_permissions: ["http://*/*", "https://*/*"],
 
         action: {
             default_title: "Kintsugi",

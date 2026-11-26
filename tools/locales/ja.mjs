@@ -58,6 +58,24 @@ export default {
     ],
     workbenchUseSelectorBuilder: ["セレクターを作成", "セレクタービルダーを開くボタン。"],
     workbenchReloadPage: ["ページを再読み込み", "タブを再読み込みします。"],
+    workbenchFieldUrl: ["物語のURL", "物語のページURLを入れる欄。"],
+    workbenchFieldUrlHint: ["章一覧のURLを貼り付けてください。", "URL欄の下の説明。"],
+    workbenchLoadStory: ["読み込む", "指定したURLの物語を読み込むボタン。"],
+    workbenchUrlInvalid: ["これはURLではありません。", "URLが使えないときに表示。"],
+    accessTitle: ["このサイトへのアクセスを許可", "アクセス許可の表示見出し。"],
+    accessText: [
+        "Kintsugiは許可したサイトだけを読めます。ページはお使いの端末で読み込まれ、どこにも送信されません。",
+        "アクセス許可の説明。",
+    ],
+    accessGrant: ["アクセスを許可", "ブラウザーにアクセスを求めるボタン。"],
+    accessDenied: [
+        "アクセスが許可されなかったため、物語を読み込めません。",
+        "ブラウザーのダイアログを拒否したときに表示。",
+    ],
+    accessAlreadyGranted: [
+        "このサイトへのアクセスはすでに許可されています。",
+        "すでに読めるiedade表示。",
+    ],
 
     // --- Chapter states ---
     chapterStateQueued: ["待機中", "取得待ちの章。"],
@@ -120,6 +138,22 @@ export default {
     optionsSiteAccess: ["サイトへのアクセス", "拡張機能が読み取れるサイトの一覧。"],
     optionsRevoke: ["取り消す", "サイトへのアクセスを削除します。"],
     optionsRevokeAll: ["すべて取り消す", "すべてのサイトへのアクセスを削除します。"],
+    optionsSiteAccessEmpty: [
+        "まだサイトがありません。物語を開いたときに Kintsugi が尋ねます。",
+        "アクセス一覧の空の状態。",
+    ],
+    optionsSiteAccessHint: [
+        "Kintsugiはここに記載されたサイトだけを読めます。",
+        "アクセスの見出しの下の説明。",
+    ],
+    optionsRevoked: [
+        "そのサイトへのアクセスを取り消しました。",
+        "アクセス取り消し後に表示されます。",
+    ],
+    optionsRevokedAll: [
+        "すべてのサイトへのアクセスを取り消しました。",
+        "すべてのアクセスを取り消した後に表示されます。",
+    ],
     optionsExportSettings: ["設定を書き出す", "設定をファイルに保存します。"],
     optionsImportSettings: ["設定を読み込む", "設定ファイルを読み込みます。"],
     optionsResetAll: ["すべての設定をリセット", "すべての設定を既定値に戻します。"],

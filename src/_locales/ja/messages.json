@@ -203,6 +203,42 @@
     "message": "ページを再読み込み",
     "description": "タブを再読み込みします。"
   },
+  "workbenchFieldUrl": {
+    "message": "物語のURL",
+    "description": "物語のページURLを入れる欄。"
+  },
+  "workbenchFieldUrlHint": {
+    "message": "章一覧のURLを貼り付けてください。",
+    "description": "URL欄の下の説明。"
+  },
+  "workbenchLoadStory": {
+    "message": "読み込む",
+    "description": "指定したURLの物語を読み込むボタン。"
+  },
+  "workbenchUrlInvalid": {
+    "message": "これはURLではありません。",
+    "description": "URLが使えないときに表示。"
+  },
+  "accessTitle": {
+    "message": "このサイトへのアクセスを許可",
+    "description": "アクセス許可の表示見出し。"
+  },
+  "accessText": {
+    "message": "Kintsugiは許可したサイトだけを読めます。ページはお使いの端末で読み込まれ、どこにも送信されません。",
+    "description": "アクセス許可の説明。"
+  },
+  "accessGrant": {
+    "message": "アクセスを許可",
+    "description": "ブラウザーにアクセスを求めるボタン。"
+  },
+  "accessDenied": {
+    "message": "アクセスが許可されなかったため、物語を読み込めません。",
+    "description": "ブラウザーのダイアログを拒否したときに表示。"
+  },
+  "accessAlreadyGranted": {
+    "message": "このサイトへのアクセスはすでに許可されています。",
+    "description": "すでに読めるiedade表示。"
+  },
   "chapterStateQueued": {
     "message": "待機中",
     "description": "取得待ちの章。"
@@ -400,6 +436,22 @@
   "optionsRevokeAll": {
     "message": "すべて取り消す",
     "description": "すべてのサイトへのアクセスを削除します。"
+  },
+  "optionsSiteAccessEmpty": {
+    "message": "まだサイトがありません。物語を開いたときに Kintsugi が尋ねます。",
+    "description": "アクセス一覧の空の状態。"
+  },
+  "optionsSiteAccessHint": {
+    "message": "Kintsugiはここに記載されたサイトだけを読めます。",
+    "description": "アクセスの見出しの下の説明。"
+  },
+  "optionsRevoked": {
+    "message": "そのサイトへのアクセスを取り消しました。",
+    "description": "アクセス取り消し後に表示されます。"
+  },
+  "optionsRevokedAll": {
+    "message": "すべてのサイトへのアクセスを取り消しました。",
+    "description": "すべてのアクセスを取り消した後に表示されます。"
   },
   "optionsExportSettings": {
     "message": "設定を書き出す",

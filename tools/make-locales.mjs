@@ -92,6 +92,32 @@ const SOURCE = {
     workbenchUnsupportedSite: ["This site is not supported yet", "Shown when no parser matched."],
     workbenchUseSelectorBuilder: ["Build a selector", "Opens the selector builder."],
     workbenchReloadPage: ["Reload the page", "Reloads the tab."],
+    workbenchFieldUrl: ["Story address", "The field holding the address of the story's page."],
+    workbenchFieldUrlHint: [
+        "Paste the address of the story's chapter list.",
+        "The hint under the story address field.",
+    ],
+    workbenchLoadStory: ["Load", "The button that loads the story at the given address."],
+    workbenchUrlInvalid: [
+        "That is not a web address.",
+        "Shown when the address in the story field cannot be used.",
+    ],
+
+    // --- Site access ---
+    accessTitle: ["Allow access to this site", "The heading of the site access prompt."],
+    accessText: [
+        "Kintsugi can only read a site you have allowed. The pages are read on your machine, and nothing is sent anywhere.",
+        "The explanation under the site access prompt.",
+    ],
+    accessGrant: ["Allow access", "The button that asks the browser for access."],
+    accessDenied: [
+        "Access was not allowed, so the story cannot be read.",
+        "Shown when the user declines the browser's permission prompt.",
+    ],
+    accessAlreadyGranted: [
+        "Access to this site has already been allowed.",
+        "Shown when the site is already readable.",
+    ],
 
     // --- Chapter states ---
     chapterStateQueued: ["Queued", "A chapter that is waiting to be fetched."],
@@ -154,6 +180,22 @@ const SOURCE = {
     optionsSiteAccess: ["Site access", "The list of sites the extension may read."],
     optionsRevoke: ["Revoke", "Removes access to a site."],
     optionsRevokeAll: ["Revoke all", "Removes access to every site."],
+    optionsSiteAccessEmpty: [
+        "No sites yet. Kintsugi asks when you open a story.",
+        "The empty state of the site access list.",
+    ],
+    optionsSiteAccessHint: [
+        "Kintsugi can only read the sites listed here.",
+        "The hint under the site access heading.",
+    ],
+    optionsRevoked: [
+        "The site's access was taken back.",
+        "Shown after a site's access is revoked.",
+    ],
+    optionsRevokedAll: [
+        "Access to every site was taken back.",
+        "Shown after access to every site is revoked.",
+    ],
     optionsExportSettings: ["Export settings", "Saves the settings to a file."],
     optionsImportSettings: ["Import settings", "Loads the settings from a file."],
     optionsResetAll: ["Reset all settings", "Restores every setting to its default."],

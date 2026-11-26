@@ -203,6 +203,42 @@
     "message": "Recharger la page",
     "description": "Recharge l'onglet."
   },
+  "workbenchFieldUrl": {
+    "message": "Adresse de l'histoire",
+    "description": "Le champ qui contient l'adresse de la page de l'histoire."
+  },
+  "workbenchFieldUrlHint": {
+    "message": "Collez l'adresse de la liste des chapitres.",
+    "description": "L'indication sous le champ d'adresse."
+  },
+  "workbenchLoadStory": {
+    "message": "Charger",
+    "description": "Le bouton qui charge l'histoire à cette adresse."
+  },
+  "workbenchUrlInvalid": {
+    "message": "Cette adresse n'est pas une adresse web.",
+    "description": "Affiché quand l'adresse ne peut pas être utilisée."
+  },
+  "accessTitle": {
+    "message": "Autoriser l'accès à ce site",
+    "description": "Le titre de la demande d'accès."
+  },
+  "accessText": {
+    "message": "Kintsugi ne peut lire que les sites que vous avez autorisés. Les pages sont lues sur votre machine, et rien n'est envoyé ailleurs.",
+    "description": "L'explication sous la demande d'accès."
+  },
+  "accessGrant": {
+    "message": "Autoriser l'accès",
+    "description": "Le bouton qui demande l'accès au navigateur."
+  },
+  "accessDenied": {
+    "message": "L'accès n'a pas été autorisé, l'histoire ne peut pas être lue.",
+    "description": "Affiché quand la boîte de dialogue du navigateur est refusée."
+  },
+  "accessAlreadyGranted": {
+    "message": "L'accès à ce site est déjà autorisé.",
+    "description": "Affiché quand le site peut déjà être lu."
+  },
   "chapterStateQueued": {
     "message": "En attente",
     "description": "Un chapitre qui attend d'être récupéré."
@@ -400,6 +436,22 @@
   "optionsRevokeAll": {
     "message": "Tout révoquer",
     "description": "Retire l'accès à tous les sites."
+  },
+  "optionsSiteAccessEmpty": {
+    "message": "Aucun site pour l'instant. Kintsugi demande quand vous ouvrez une histoire.",
+    "description": "L'état vide de la liste des accès."
+  },
+  "optionsSiteAccessHint": {
+    "message": "Kintsugi ne peut lire que les sites listés ici.",
+    "description": "L'indication sous le titre des accès."
+  },
+  "optionsRevoked": {
+    "message": "L'accès au site a été retiré.",
+    "description": "Affiché après le retrait d'un accès."
+  },
+  "optionsRevokedAll": {
+    "message": "L'accès à tous les sites a été retiré.",
+    "description": "Affiché après le retrait de tous les accès."
   },
   "optionsExportSettings": {
     "message": "Exporter les paramètres",
