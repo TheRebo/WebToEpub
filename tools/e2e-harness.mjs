@@ -660,23 +660,39 @@ export class Harness {
         const payload = "Kintsugi wrote this file.";
         const path = join(DOWNLOAD_DIR, name);
 
-        await this.asyncScript(`
+        const downloadId = await this.asyncScript(`
             const api = globalThis.browser ?? globalThis.chrome;
             const blob = new Blob([${JSON.stringify(payload)}], { type: "text/plain" });
             const url = URL.createObjectURL(blob);
-            await api.downloads.download({
-                url,
-                filename: ${JSON.stringify(name)},
-                conflictAction: "overwrite",
-            });
-            return true;
+            try {
+                const id = await api.downloads.download({
+                    url,
+                    filename: ${JSON.stringify(name)},
+                    conflictAction: "overwrite",
+                });
+                return id;
+            } finally {
+                URL.revokeObjectURL(url);
+            }
         `);
 
+        // The file appears on disk before the browser has finished writing it,
+        // so the file's existence is not enough — the download has to reach
+        // its `complete` state first. Reading the file as soon as it exists
+        // finds an empty file, and the check would fail for the wrong reason.
         const deadline = Date.now() + 15_000;
         for (;;) {
-            if (existsSync(path)) break;
+            const state = await this.asyncScript(`
+                const api = globalThis.browser ?? globalThis.chrome;
+                const [download] = await api.downloads.search({ id: ${JSON.stringify(downloadId)} });
+                return download?.state ?? "missing";
+            `);
+            if (state === "complete") break;
+            if (state === "interrupted") {
+                throw new Error("The browser interrupted the download.");
+            }
             if (Date.now() >= deadline) {
-                throw new Error(`The extension did not write "${name}" to the download directory.`);
+                throw new Error(`The download never finished (its last state was "${state}").`);
             }
             await sleep(100);
         }

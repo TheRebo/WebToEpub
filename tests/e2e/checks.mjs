@@ -105,6 +105,28 @@ async function writeAppearance(harness, appearance) {
 }
 
 /**
+ * Mark the onboarding as finished.
+ *
+ * A fresh install greets the user with the welcome state, and every check
+ * after this one is about what a *returning* user sees. Without this, the
+ * popup would answer every check with the welcome card — which is right, and
+ * useless for testing anything else.
+ *
+ * @param {import("../../tools/e2e-harness.mjs").Harness} harness The harness.
+ * @param {boolean} complete Whether the onboarding is finished.
+ */
+async function setOnboardingComplete(harness, complete) {
+    await harness.asyncScript(`
+        const api = globalThis.browser ?? globalThis.chrome;
+        const stored = await api.storage.local.get("kintsugi.settings");
+        const settings = stored["kintsugi.settings"] ?? {};
+        settings.onboardingComplete = ${complete ? "true" : "false"};
+        await api.storage.local.set({ "kintsugi.settings": settings });
+        return true;
+    `);
+}
+
+/**
  * Run the checks.
  *
  * @param {import("../../tools/e2e-harness.mjs").Harness} harness The harness.
@@ -119,6 +141,27 @@ export async function run(harness) {
     console.log("The popup");
 
     await harness.setViewport(400, 580);
+
+    // The first run: the popup greets the user before it does anything else.
+    await harness.goto("popup.html");
+    await sleep(1200);
+
+    await check("welcomes a first-time user", async () => {
+        const result = await harness.script(`
+            return JSON.stringify({
+                state: document.body.dataset.state,
+                text: document.querySelector(".popup-empty-text")?.textContent ?? "",
+                button: document.querySelector(".popup-primary")?.textContent ?? "",
+            });
+        `);
+        const data = JSON.parse(result);
+        assertEqual(data.state, "welcome", "The popup should greet a first-time user.");
+        assert(data.text.length > 0, "The welcome state has no explanation.");
+        assert(data.button.length > 0, "The welcome state offers no way in.");
+    });
+
+    // Everything after this is about the returning user.
+    await setOnboardingComplete(harness, true);
     await harness.goto("popup.html");
     await sleep(1500);
 
@@ -134,7 +177,7 @@ export async function run(harness) {
         assertEqual(data.wordmark, "Kintsugi", "The wordmark is missing.");
         assert(data.hasSettings, "The settings button is missing.");
         assert(
-            ["loading", "story", "no-story", "unsupported", "running", "error"].includes(
+            ["loading", "story", "no-story", "unsupported", "access", "running", "error"].includes(
                 data.state,
             ),
             `The popup reports an unknown state ("${data.state}").`,
