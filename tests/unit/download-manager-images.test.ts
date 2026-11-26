@@ -172,4 +172,87 @@ describe("the download manager's chapter images", () => {
         expect(thirdReference).toContain("../images/");
         expect(firstReference).not.toBe(thirdReference);
     });
+
+    it("resolves a relative image against the address the page was served from", async () => {
+        // A site that redirects a chapter from `/1` to `/story/1` moves the
+        // page's relative image URLs with it. Resolving them against the
+        // address that was *asked for* points every one of them at a place
+        // that does not exist.
+        const fetched: string[] = [];
+        const fetchHtml = async (url: string) => {
+            fetched.push(url);
+            const html =
+                url === "https://example.com/story"
+                    ? "<html><body><h1>The Story</h1></body></html>"
+                    : "<html><body><p>Prose.</p><img src='picture.png'></body></html>";
+            // The chapter is served from a different address than the one that
+            // was asked for.
+            const served = url === "https://example.com/1" ? "https://example.com/story/1" : url;
+            const dom = new DOMParser().parseFromString(html, "text/html");
+            const base = dom.createElement("base");
+            base.href = served;
+            dom.head?.prepend(base);
+            return { dom, url: served };
+        };
+
+        const parser = {
+            getRateLimit: () => 0,
+            fetchChapter: (url: string) => fetchHtml(url).then((result) => result.dom),
+            extractAuthor: () => "An Author",
+            extractTitleImpl: () => "The Story",
+            extractLanguage: () => "en",
+            extractSubject: () => null,
+            extractDescription: () => null,
+            extractPublisher: () => null,
+            extractDatePublished: () => null,
+            extractChapterContent: (dom: Document) => {
+                // The element is built inside the chapter's own document, the
+                // way a real parser's is, so that it inherits the document's
+                // base address.
+                const element = dom.createElement("div");
+                const image = dom.createElement("img");
+                // A relative address, exactly as the page carried it.
+                image.setAttribute("src", "picture.png");
+                element.appendChild(image);
+                return element;
+            },
+            findCoverImageUrl: () => null,
+        } as unknown as Parser;
+
+        let saved: Uint8Array = new Uint8Array();
+        const manager = new DownloadManager({
+            fetchHtml,
+            fetchBytes: async (url) => {
+                fetched.push(url);
+                return {
+                    data: new TextEncoder().encode(url),
+                    mediaType: "image/png",
+                };
+            },
+            saveFile: async (_fileName, bytes) => {
+                saved = bytes;
+                return { fileName: "story.epub", fileSize: bytes.length };
+            },
+            parserFor: () => parser,
+            throttle: async () => undefined,
+            behaviour: async () => ({ ...DEFAULT_BEHAVIOUR, skipFailedChapters: true }),
+        });
+
+        const jobId = manager.start("https://example.com/story", "The Story", [
+            { sourceUrl: "https://example.com/1", title: "One" },
+        ]);
+        const progress = await settle(manager, jobId);
+        expect(progress.phase, progress.error?.message).toBe("complete");
+
+        const epub = await readEpub(saved);
+        const chapterPath = [...epub.files.keys()].find((path) =>
+            path.startsWith("OEBPS/text/chapter-"),
+        );
+        const chapter = textOf(epub.files.get(chapterPath!)!);
+
+        // The image was fetched from the place the page was served from.
+        expect(fetched).toContain("https://example.com/story/picture.png");
+        expect(fetched).not.toContain("https://example.com/picture.png");
+        expect(chapter).toContain("../images/");
+    });
 });

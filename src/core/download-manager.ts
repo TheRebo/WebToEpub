@@ -682,6 +682,15 @@ export class DownloadManager {
          * media type, which is only known then.
          */
         const chapterImages = new Map<string, Map<string, ImageData>>();
+        /**
+         * The address each chapter's page was finally served from.
+         *
+         * A site may redirect a chapter from one address to another, and a
+         * relative image URL on the page belongs to the address the page was
+         * *served* from. The chapter's own URL is not that address, so the
+         * one the page actually had is kept.
+         */
+        const chapterBases = new Map<string, string>();
 
         for (const [chapterIndex, chapter] of job.chapters.entries()) {
             if (signal.aborted) {
@@ -759,9 +768,16 @@ export class DownloadManager {
                         // tags still pointing at the site's servers shows a
                         // broken image in the reader, and worse, tries to
                         // reach the site every time the page is opened.
+                        // The base is the page's own address, not the address
+                        // that was asked for. A site that redirects a chapter
+                        // from `/chapter/1` to `/story/chapter-1` moves the
+                        // page's relative image URLs with it, and resolving
+                        // them against the address that was asked for would
+                        // point every one of them at the wrong place.
+                        const base = dom.baseURI || chapter.sourceUrl;
                         const referenced = imageSettings.skipImages
                             ? new Set<string>()
-                            : collectImageUrls(content, chapter.sourceUrl, {
+                            : collectImageUrls(content, base, {
                                   preferHighestResolution: imageSettings.preferHighestResolution,
                               });
                         const chapterImageMap = new Map<string, ImageData>();
@@ -781,6 +797,7 @@ export class DownloadManager {
                         // share their positions, and a positional key would
                         // hand a chapter the wrong images.
                         chapterImages.set(chapter.sourceUrl, chapterImageMap);
+                        chapterBases.set(chapter.sourceUrl, base);
 
                         if (imageSettings.skipImages) removeImageReferences(content);
 
@@ -918,7 +935,7 @@ export class DownloadManager {
             chapter.contentHtml = rewriteImageReferences(
                 chapter.contentHtml,
                 resolved,
-                chapter.sourceUrl,
+                chapterBases.get(chapter.sourceUrl) ?? chapter.sourceUrl,
             );
         }
 

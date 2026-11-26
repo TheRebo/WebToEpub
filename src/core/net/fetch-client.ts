@@ -911,7 +911,13 @@ export function parseHtml(html: string, url: string): Document {
         // would send every relative link on the page to the wrong place.
         if (!dom.querySelector("base[href]")) {
             const base = dom.createElement("base");
-            base.href = url;
+            // The *attribute* is set, not the property. The property is a
+            // reflected URL, so the browser parses its value against the
+            // document's own base — which, for a document made by
+            // `DOMParser`, is the page that created it. An absolute address
+            // survives that, but a relative one would be resolved against
+            // the extension's own pages instead of against the site.
+            base.setAttribute("href", url);
             dom.head?.prepend(base);
         }
     } catch {
