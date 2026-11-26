@@ -72,6 +72,30 @@ export function openLibraryDatabase(factory: IDBFactory = indexedDB): Promise<ID
 }
 
 /**
+ * Merge a new entry into an existing one for the same story.
+ *
+ * A story that is downloaded twice is one book, not two. The second run
+ * updates the entry that is already there: it keeps the entry's ID and the
+ * date it was first added, so that a re-download does not make an old book
+ * look new, and it takes the new title, author, cover and chapter list.
+ *
+ * @param existing The entry that is already there, or `null` for a new story.
+ * @param entry The entry that has just been produced.
+ * @returns The entry to store.
+ */
+export function mergeLibraryEntry(
+    existing: LibraryEntry | null,
+    entry: LibraryEntry,
+): LibraryEntry {
+    if (!existing) return entry;
+    return {
+        ...entry,
+        id: existing.id,
+        addedAt: existing.addedAt,
+    };
+}
+
+/**
  * The library store.
  */
 export class LibraryStore {
@@ -160,6 +184,17 @@ export class LibraryStore {
     /** Add or replace an entry. */
     async put(entry: LibraryEntry): Promise<void> {
         await this.#withStore("readwrite", (store) => store.put(entry));
+    }
+
+    /**
+     * Save a book, replacing the entry for the same story if there is one.
+     *
+     * Without this a story that is downloaded twice appears twice in the
+     * library, and the user has to clean up the duplicates by hand.
+     */
+    async save(entry: LibraryEntry): Promise<void> {
+        const existing = await this.findBySourceUrl(entry.sourceUrl);
+        await this.put(mergeLibraryEntry(existing, entry));
     }
 
     /** Remove an entry. */

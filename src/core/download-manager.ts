@@ -958,7 +958,24 @@ export class DownloadManager {
         // not fail the download: the file is already on the disk, and losing
         // the download over a bookkeeping error would be worse than a missing
         // library entry.
-        await this.#saveToLibrary(job, metadata);
+        //
+        // The count is the number of chapters that are *in the book*, not the
+        // number that were asked for: a chapter that failed and was skipped
+        // is not in the book, and a library that claims otherwise tells the
+        // user the wrong thing about their own book.
+        await this.#saveToLibrary(job, metadata, packed);
+
+        // The cancel is checked again after the save, because the browser's
+        // download cannot be called back: once the file has been written, the
+        // job has produced its book. The job is reported as cancelled rather
+        // than complete, because the user asked for it to stop — but the
+        // library entry is kept, so the book the user now has on their disk
+        // can still be found.
+        if (signal.aborted) {
+            job.phase = "cancelled";
+            this.#report(job);
+            return;
+        }
 
         job.phase = "complete";
         this.#report(job);
@@ -1006,6 +1023,7 @@ export class DownloadManager {
             author?: string;
             cover?: ImageData;
         },
+        packed: ChapterToPack[],
     ): Promise<void> {
         const saveToLibrary = this.#dependencies.saveToLibrary;
         if (!saveToLibrary) return;
@@ -1016,7 +1034,10 @@ export class DownloadManager {
             title: metadata.title || job.title || "Untitled",
             author: metadata.author,
             sourceUrl: job.sourceUrl,
-            chapterCount: job.chapters.length,
+            // The chapters that are in the book, which is not the same as the
+            // chapters that were asked for: a chapter that failed and was
+            // skipped is not in the book.
+            chapterCount: packed.length,
             size: job.fileSize ?? 0,
             addedAt: now,
             updatedAt: now,
@@ -1025,7 +1046,7 @@ export class DownloadManager {
             cover: metadata.cover?.data,
             coverMediaType: metadata.cover?.mediaType,
             // The chapter URLs, so a later run can tell which chapters are new.
-            chapterUrls: job.chapters.map((chapter) => chapter.sourceUrl),
+            chapterUrls: packed.map((chapter) => chapter.sourceUrl),
         };
 
         try {

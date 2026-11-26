@@ -173,7 +173,15 @@ class BackgroundWorker {
             // this the library is always empty, because the download
             // manager is the only thing that ever produces a book.
             saveToLibrary: async (entry) => {
-                await this.#library.put(entry);
+                // Re-downloading the same story updates the entry that is
+                // already there, rather than adding a second one. The library
+                // is a list of the user's books, and a book that was fetched
+                // twice is one book with two entries — which is a list the
+                // user has to clean up by hand.
+                //
+                // The existing entry keeps its ID and its "added" date, so
+                // that updating a book does not make it look new.
+                await this.#library.save(entry);
             },
         });
 
