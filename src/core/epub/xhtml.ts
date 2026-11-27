@@ -14,6 +14,15 @@
 
 import { stripIllegalXmlCharacters } from "../util/xml-characters";
 
+/**
+ * The namespace the chapter's own root declares.
+ *
+ * A chapter's content is written inside an XHTML document, whose root
+ * declares this namespace. An element inside the content that declares it
+ * again is saying nothing new, so the declaration is left out.
+ */
+const XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
+
 /** The elements that never have content. */
 const VOID_ELEMENTS = new Set([
     "area",
@@ -79,9 +88,18 @@ function serializeNode(node: Node): string {
     let output = `<${tag}`;
 
     for (const attribute of Array.from(element.attributes)) {
-        // The namespace declarations are written by the document's own root
-        // element; copying them here would repeat them.
-        if (attribute.name === "xmlns" || attribute.name.startsWith("xmlns:")) continue;
+        // A namespace declaration is kept, except for the one the chapter's
+        // own root already declares.
+        //
+        // Dropping them all is the obvious thing to do, and it is wrong. An
+        // `<svg>` inside a chapter carries `xmlns="http://www.w3.org/2000/svg"`,
+        // and without it the element is in the XHTML namespace, where it means
+        // nothing — the reader shows a blank space where the picture was. The
+        // same goes for `xmlns:xlink`, which an SVG's `<use>` needs.
+        //
+        // The XHTML declaration is the exception: the root writes it, so
+        // repeating it would say nothing new.
+        if (attribute.name === "xmlns" && attribute.value === XHTML_NAMESPACE) continue;
         output += ` ${attribute.name}="${escapeAttribute(attribute.value)}"`;
     }
 

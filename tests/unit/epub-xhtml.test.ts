@@ -116,6 +116,45 @@ describe("serializeAsXml", () => {
 
         expect(xml).toBe("<![CDATA[just text]]>");
     });
+
+    it("keeps a namespace declaration that the chapter's root does not have", () => {
+        // An `<svg>` inside a chapter carries the namespace that says what it
+        // is. Without it, the element is in the XHTML namespace, where it
+        // means nothing, and the reader shows a blank space where the
+        // picture was.
+        const document = new DOMParser().parseFromString(
+            "<svg xmlns='http://www.w3.org/2000/svg'><path d='M0 0'/></svg>",
+            "text/html",
+        );
+        const xml = serializeAsXml(document.body);
+
+        expect(xml).toContain('xmlns="http://www.w3.org/2000/svg"');
+        parseXml(`<root>${xml}</root>`);
+    });
+
+    it("keeps a prefixed namespace declaration", () => {
+        // An SVG's `<use>` points at another file with `xlink:href`, and the
+        // prefix has to be declared for the document to be well formed.
+        const document = new DOMParser().parseFromString(
+            "<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>" +
+                "<use xlink:href='#shape'/></svg>",
+            "text/html",
+        );
+        const xml = serializeAsXml(document.body);
+
+        expect(xml).toContain('xmlns:xlink="http://www.w3.org/1999/xlink"');
+        parseXml(`<root>${xml}</root>`);
+    });
+
+    it("does not repeat the namespace the chapter's root already declares", () => {
+        const document = new DOMParser().parseFromString(
+            "<div xmlns='http://www.w3.org/1999/xhtml'><p>Hello</p></div>",
+            "text/html",
+        );
+        const xml = serializeAsXml(document.body);
+
+        expect(xml).not.toContain("xmlns=");
+    });
 });
 
 describe("a packed chapter", () => {
