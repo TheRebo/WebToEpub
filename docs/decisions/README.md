@@ -45,6 +45,9 @@ consequences — positive _and_ negative.
 | [0037](./ADR-0037-the-bytes-decide.md)                     | The bytes decide what an image is                                            | Accepted | Every image has a media type the reader understands and a matching file name           |
 | [0038](./ADR-0038-xml-forbidden-characters.md)             | The characters XML forbids never reach the book                              | Accepted | One control character no longer costs the reader the whole book                        |
 | [0039](./ADR-0039-the-page-the-image-belonged-to.md)       | A relative image belongs to the page it was served from                      | Accepted | A redirected chapter's images are fetched from the right address                       |
+| [0040](./ADR-0040-the-selectors-belong-to-the-story.md)    | The saved selectors belong to the story, not to the first chapter            | Accepted | The user's own selectors are found on sites that serve their chapters elsewhere        |
+| [0041](./ADR-0041-an-empty-chapter-is-a-failure.md)        | A chapter with nothing in it is a failure, not a chapter                     | Accepted | A book never holds a blank chapter where the story should be                           |
+| [0042](./ADR-0042-the-page-names-its-own-cover.md)         | The page's own word about its cover comes first                              | Accepted | A book's cover is the picture the site chose, not the first picture on the page        |
 
 ---
 

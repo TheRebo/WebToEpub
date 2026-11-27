@@ -15,6 +15,22 @@
  */
 import { resolveUrl, type ChapterLink } from "../util/dom";
 
+/**
+ * The selectors that name the page's cover image, in order of confidence.
+ *
+ * These are the conventions sites use to point at their own cover: the Open
+ * Graph image, the Twitter card image, and the `link` element some sites
+ * still use. The content element's first image is the fallback, and it is not
+ * in this list, because it is a guess rather than a statement.
+ */
+const COVER_IMAGE_SELECTORS = [
+    'meta[property="og:image"]',
+    'meta[name="og:image"]',
+    'meta[name="twitter:image"]',
+    'meta[property="twitter:image"]',
+    'link[rel="image_src"]',
+];
+
 /** The chapter object a parser produces. */
 export interface WebPage {
     /** The absolute URL of the chapter. */
@@ -172,6 +188,19 @@ export abstract class Parser {
     /** The signal that aborts an in-flight download. */
     signal?: AbortSignal;
 
+    /**
+     * The URL of the story the parser was chosen for.
+     *
+     * A parser is chosen once, for the story's own page, and then used for
+     * every chapter of that story. The chapters are not always served from
+     * the same host as the story — a site may serve them from a mirror, a
+     * subdomain or a CDN — so the story's address is kept here, for the
+     * parsers that need to know where the book came from.
+     *
+     * The registry sets it when it builds the parser.
+     */
+    storyUrl?: string;
+
     constructor(services: ParserServices) {
         this.services = services;
     }
@@ -273,10 +302,28 @@ export abstract class Parser {
     /**
      * The cover image URL.
      *
+     * The page's own statement of what its cover is comes first: the Open
+     * Graph image, then the Twitter card image, then a `link` that names the
+     * page's image. Those are put on the page by whoever made the page, and
+     * they are right far more often than a guess.
+     *
+     * The guess comes after: the first image in the content element. That is
+     * the original's rule, and it is a good one for the sites that put the
+     * cover at the top of the chapter — but it is a guess, and a page whose
+     * content opens with an advert would give the advert.
+     *
      * The URL is resolved against the page's base, because a relative `src` is
      * useless to the downloader: it has no idea what the page's address was.
      */
     findCoverImageUrl(dom: Document): string | null {
+        for (const selector of COVER_IMAGE_SELECTORS) {
+            const element = dom.querySelector(selector);
+            const source = element?.getAttribute("content") ?? element?.getAttribute("href");
+            if (!source) continue;
+            const resolved = resolveUrl(source, dom.baseURI);
+            if (resolved) return resolved;
+        }
+
         const content = this.findContent(dom);
         const image = content?.querySelector("img");
         const source = image?.getAttribute("src");

@@ -134,10 +134,10 @@ export class ParserRegistry {
     fetchByUrl(url: string): Parser | null {
         const hostName = hostNameForParserSelection(url);
         const constructor = this.#parsers.get(hostName);
-        if (constructor) return this.#construct(constructor);
+        if (constructor) return this.#construct(constructor, url);
 
         for (const rule of this.#urlRules) {
-            if (rule.test(url)) return this.#construct(rule.constructor);
+            if (rule.test(url)) return this.#construct(rule.constructor, url);
         }
         return null;
     }
@@ -160,9 +160,9 @@ export class ParserRegistry {
                 best = rule.constructor;
             }
         }
-        if (best && maxConfidence > 0) return this.#construct(best);
+        if (best && maxConfidence > 0) return this.#construct(best, url);
 
-        return this.#defaultConstructor ? this.#construct(this.#defaultConstructor) : null;
+        return this.#defaultConstructor ? this.#construct(this.#defaultConstructor, url) : null;
     }
 
     /** The parser the user selected by name. */
@@ -171,11 +171,20 @@ export class ParserRegistry {
         return entry ? this.#construct(entry.constructor) : null;
     }
 
-    /** Instantiate a parser. */
-    #construct(constructor: ParserConstructor): Parser {
+    /**
+     * Instantiate a parser.
+     *
+     * @param constructor The parser to build.
+     * @param url The URL the parser was chosen for, when there is one. The
+     *   parser keeps it, so that it knows which story it is reading even when
+     *   the chapters come from another host.
+     */
+    #construct(constructor: ParserConstructor, url?: string): Parser {
         // The constructor signature takes services; the registry injects
         // them at call time through the active context.
-        return constructor(getParserServices());
+        const parser = constructor(getParserServices());
+        if (url !== undefined) parser.storyUrl = url;
+        return parser;
     }
 }
 

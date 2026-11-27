@@ -802,12 +802,39 @@ export class DownloadManager {
                         if (imageSettings.skipImages) removeImageReferences(content);
 
                         const html = sanitizeContent(content);
-                        chapter.state = "loaded";
-                        packed.push({
-                            sourceUrl: chapter.sourceUrl,
-                            title: chapter.title,
-                            contentHtml: html,
-                        });
+
+                        // A chapter with no prose in it is a chapter that did
+                        // not arrive. The page was served — the request
+                        // succeeded — but what came back was empty: a shell
+                        // whose content is filled in by a script, a session
+                        // that had not settled, a paywall that returned a
+                        // blank page.
+                        //
+                        // Packing it as though it were a chapter would put an
+                        // empty page in the book and count it as a success.
+                        // The reader would find a blank chapter where the
+                        // story should be, and the progress would say
+                        // everything went well. It is a failure, and it is
+                        // reported as one.
+                        if (!hasVisibleText(content)) {
+                            if (!behaviour.skipFailedChapters) {
+                                packed.push(
+                                    buildPlaceholderChapter(
+                                        chapter.sourceUrl,
+                                        "The chapter could not be read.",
+                                    ),
+                                );
+                            }
+                            job.failed += 1;
+                            chapter.state = "failed";
+                        } else {
+                            chapter.state = "loaded";
+                            packed.push({
+                                sourceUrl: chapter.sourceUrl,
+                                title: chapter.title,
+                                contentHtml: html,
+                            });
+                        }
                     }
                 }
             } catch (error) {
@@ -1494,6 +1521,19 @@ function isEmptyDocument(dom: Document): boolean {
     if (!body) return true;
     const text = body.textContent?.replace(/\s+/g, " ").trim() ?? "";
     return text.length === 0;
+}
+
+/**
+ * Whether an element holds anything a reader would see.
+ *
+ * An element with no text of its own may still hold a picture, so the text
+ * alone does not decide it — a chapter that is only an illustration is a
+ * real chapter.
+ */
+function hasVisibleText(element: Element): boolean {
+    if (element.querySelector("img, svg, image, video, audio, embed, object")) return true;
+    const text = element.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    return text.length > 0;
 }
 
 /**

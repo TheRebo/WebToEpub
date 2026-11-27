@@ -75,6 +75,81 @@ describe("the parser's table-of-contents helpers", () => {
     });
 });
 
+describe("the parser's cover image", () => {
+    /** A parser that finds the content in `<div id="content">`. */
+    class CoverParser extends Parser {
+        getChapterUrls(): never[] {
+            return [];
+        }
+
+        findContent(dom: Document): Element | null {
+            return dom.querySelector("#content");
+        }
+    }
+
+    /**
+     * Build a document served from an address.
+     *
+     * The base address matters: it is what a relative image URL is resolved
+     * against.
+     */
+    function documentServedFrom(url: string, html: string): Document {
+        const dom = new DOMParser().parseFromString(html, "text/html");
+        const base = dom.createElement("base");
+        base.setAttribute("href", url);
+        dom.head?.prepend(base);
+        return dom;
+    }
+
+    it("is the image the page names for itself", () => {
+        // The page says what its cover is. That statement is better than a
+        // guess, and it is what a reader would call the cover.
+        const dom = documentServedFrom(
+            "https://example.com/story",
+            `<html><head>
+                <meta property="og:image" content="https://example.com/cover.jpg">
+            </head><body>
+                <div id="content"><img src="advert.png"></div>
+            </body></html>`,
+        );
+
+        expect(new CoverParser(servicesFor({})).findCoverImageUrl(dom)).toBe(
+            "https://example.com/cover.jpg",
+        );
+    });
+
+    it("falls back to the first image in the content", () => {
+        const dom = documentServedFrom(
+            "https://example.com/story",
+            "<html><body><div id='content'><img src='cover.png'></div></body></html>",
+        );
+
+        expect(new CoverParser(servicesFor({})).findCoverImageUrl(dom)).toBe(
+            "https://example.com/cover.png",
+        );
+    });
+
+    it("resolves a relative cover against the page's own address", () => {
+        const dom = documentServedFrom(
+            "https://example.com/story/1",
+            "<html><body><div id='content'><img src='cover.png'></div></body></html>",
+        );
+
+        expect(new CoverParser(servicesFor({})).findCoverImageUrl(dom)).toBe(
+            "https://example.com/story/cover.png",
+        );
+    });
+
+    it("is nothing when the page has no image at all", () => {
+        const dom = documentServedFrom(
+            "https://example.com/story",
+            "<html><body><div id='content'><p>Prose.</p></div></body></html>",
+        );
+
+        expect(new CoverParser(servicesFor({})).findCoverImageUrl(dom)).toBeNull();
+    });
+});
+
 describe("the parser's multi-page chapter helper", () => {
     it("returns the first page with every page's content merged into it", async () => {
         const services = servicesFor({
