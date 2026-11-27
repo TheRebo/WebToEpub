@@ -52,7 +52,12 @@ class BackgroundWorker {
     #fetch: FetchClient;
     #downloads: DownloadManager;
     #settings = new SettingsStore(localStorageAdapter);
-    #library = new LibraryStore();
+    #library = new LibraryStore(undefined, () => {
+        // The library is blocked by another tab. The open is not a failure —
+        // it waits for the other tab to let go — but the wait can be long
+        // enough that the user thinks the extension has hung.
+        diagnostic("The library is waiting for another tab to let go of it");
+    });
     /**
      * The user's preferences, in the shape the legacy parsers read them.
      *

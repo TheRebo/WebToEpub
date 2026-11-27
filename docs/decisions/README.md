@@ -48,6 +48,7 @@ consequences — positive _and_ negative.
 | [0040](./ADR-0040-the-selectors-belong-to-the-story.md)    | The saved selectors belong to the story, not to the first chapter            | Accepted | The user's own selectors are found on sites that serve their chapters elsewhere        |
 | [0041](./ADR-0041-an-empty-chapter-is-a-failure.md)        | A chapter with nothing in it is a failure, not a chapter                     | Accepted | A book never holds a blank chapter where the story should be                           |
 | [0042](./ADR-0042-the-page-names-its-own-cover.md)         | The page's own word about its cover comes first                              | Accepted | A book's cover is the picture the site chose, not the first picture on the page        |
+| [0043](./ADR-0043-a-blocked-database-is-a-wait.md)         | A blocked database is a wait, not a failure                                  | Accepted | Two tabs of the extension no longer break each other's library                         |
 
 ---
 

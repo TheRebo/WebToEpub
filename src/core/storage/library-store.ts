@@ -49,8 +49,21 @@ export const LIBRARY_STORE = "books";
 
 /**
  * Open the library database, creating the schema if needed.
+ *
+ * A blocked open — another tab holding the database — is not a failure. The
+ * request waits until the other tab lets go, and then succeeds. It is
+ * reported through the `onblocked` callback, so that the caller can tell the
+ * user why the extension is waiting, but the promise is only rejected if the
+ * request itself fails.
+ *
+ * @param factory The database factory to open with.
+ * @param onBlocked Called when the open is blocked by another connection.
+ * @returns The open database.
  */
-export function openLibraryDatabase(factory: IDBFactory = indexedDB): Promise<IDBDatabase> {
+export function openLibraryDatabase(
+    factory: IDBFactory = indexedDB,
+    onBlocked?: () => void,
+): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
         const request = factory.open(LIBRARY_DB_NAME, LIBRARY_DB_VERSION);
 
@@ -66,8 +79,10 @@ export function openLibraryDatabase(factory: IDBFactory = indexedDB): Promise<ID
         request.onsuccess = () => resolve(request.result);
         request.onerror = () =>
             reject(request.error ?? new Error("Could not open the library database."));
-        request.onblocked = () =>
-            reject(new Error("The library database is blocked by another open tab."));
+        // The request stays pending while it is blocked. It is not an error,
+        // and rejecting here would abandon a request that would have
+        // succeeded — and leave its database handle open for ever.
+        request.onblocked = () => onBlocked?.();
     });
 }
 
@@ -111,16 +126,30 @@ export class LibraryStore {
      */
     #opening: Promise<IDBDatabase> | undefined;
 
-    constructor(private readonly factory: IDBFactory = indexedDB) {}
+    /**
+     * Build a store.
+     *
+     * @param factory The database factory to open with.
+     * @param onBlocked Called when another connection holds the database and
+     *   the open has to wait for it. A blocked open is not a failure — the
+     *   request succeeds as soon as the other connection lets go — but the
+     *   wait can be long enough that the user wonders what is happening.
+     */
+    constructor(
+        private readonly factory: IDBFactory = indexedDB,
+        private readonly onBlocked?: () => void,
+    ) {}
 
     /** The open database, opening it if necessary. */
     async #database(): Promise<IDBDatabase> {
         if (!this.#opening) {
-            this.#opening = openLibraryDatabase(this.factory).catch((error: unknown) => {
-                // A failed open is not remembered: the next call tries again.
-                this.#opening = undefined;
-                throw error;
-            });
+            this.#opening = openLibraryDatabase(this.factory, this.onBlocked).catch(
+                (error: unknown) => {
+                    // A failed open is not remembered: the next call tries again.
+                    this.#opening = undefined;
+                    throw error;
+                },
+            );
         }
         return this.#opening;
     }
@@ -273,9 +302,18 @@ export class LibraryStore {
         return entries.reduce((sum, entry) => sum + entry.size, 0);
     }
 
-    /** Close the database. */
+    /**
+     * Close the database.
+     *
+     * The close waits for the open to finish, because a database that is
+     * still opening cannot be closed. A failed open is not an error here:
+     * there is no database to close, and the failure has already been
+     * reported to whoever asked for the data.
+     */
     close(): void {
-        void this.#opening?.then((db) => db.close());
+        const opening = this.#opening;
         this.#opening = undefined;
+        if (!opening) return;
+        void opening.then((db) => db.close()).catch(() => undefined);
     }
 }
