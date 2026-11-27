@@ -38,6 +38,7 @@ import { caughtErrorMessage } from "../../error-messages";
 import { runGuarded } from "../../guarded";
 import type { UserFacingError } from "../../../core/util/errors";
 import { pollUntilDone } from "../../poll";
+import { LatestOnly } from "../../latest-only";
 import { installI18n } from "../../i18n-bootstrap";
 import { buildPopup, renderPopup, type PopupElements, type PopupViewState } from "./view";
 
@@ -60,10 +61,18 @@ class PopupController {
     };
     /** The URL the popup is looking at. */
     #url: string | undefined;
-    #pollTimer: ReturnType<typeof setTimeout> | undefined;
     /** Stops the poll for a running download. */
     #stopPoll: (() => void) | undefined;
     #jobId: string | undefined;
+    /**
+     * The analyses that are in flight.
+     *
+     * Every analysis takes a number, and only the newest one is allowed to
+     * change the popup. Without the guard, a "Try again" pressed while the
+     * first attempt is still running lets the older answer land last, and the
+     * popup shows a story the user has already moved away from.
+     */
+    #analyses = new LatestOnly();
 
     constructor(root: HTMLElement) {
         this.#elements = buildPopup(root);
@@ -96,8 +105,10 @@ class PopupController {
         }
 
         // A running download is the most valuable thing the popup can show,
-        // so it is checked first: it needs no network at all.
-        await this.#checkRunningJob();
+        // so it is checked first: it needs no network at all. When one is
+        // running the popup follows it instead of analysing the page — a
+        // second analysis would replace the progress with a story card.
+        if (await this.#checkRunningJob()) return;
 
         // The popup normally looks at the tab the user is on. A URL on the
         // query string overrides that, which is what makes the popup
@@ -116,12 +127,18 @@ class PopupController {
 
     /** Ask the worker what is on the page. */
     async #analyse(url: string): Promise<void> {
+        // This analysis is the newest one, so any older answer that arrives
+        // later is discarded.
+        const analysisNumber = this.#analyses.begin();
+        const isCurrent = (): boolean => this.#analyses.isCurrent(analysisNumber);
+
         try {
             const analysis = await sendRequest(
                 { sendMessage: (message) => sendMessage(message) },
                 "page:analyze",
                 { url },
             );
+            if (!isCurrent()) return;
 
             // The worker reports a failure as an error rather than as an
             // exception, so the error is read first: a page that could not be
@@ -154,11 +171,14 @@ class PopupController {
                     "chapters:list",
                     { url },
                 );
+                if (!isCurrent()) return;
                 this.#set({ chapterCount: chapters.chapters.length });
             } catch {
+                if (!isCurrent()) return;
                 this.#set({ chapterCount: 0 });
             }
         } catch (error) {
+            if (!isCurrent()) return;
             this.#set({
                 state: "error",
                 error: caughtErrorMessage(error),
@@ -219,8 +239,15 @@ class PopupController {
         await this.#analyse(url);
     }
 
-    /** Check whether a download is running, and follow it if so. */
-    async #checkRunningJob(): Promise<void> {
+    /**
+     * Check whether a download is running, and follow it if so.
+     *
+     * @returns `true` when a running download was found and is now being
+     *   followed. The caller uses this to decide not to analyse the page: the
+     *   progress is more useful than a story card, and the two fight over the
+     *   same screen.
+     */
+    async #checkRunningJob(): Promise<boolean> {
         try {
             const { jobs } = await sendRequest(
                 { sendMessage: (message) => sendMessage(message) },
@@ -231,7 +258,7 @@ class PopupController {
                 (job) =>
                     job.phase !== "complete" && job.phase !== "failed" && job.phase !== "cancelled",
             );
-            if (!running) return;
+            if (!running) return false;
 
             this.#jobId = running.jobId;
             this.#set({
@@ -242,8 +269,10 @@ class PopupController {
                 percent: running.percent,
             });
             this.#startPolling();
+            return true;
         } catch {
             // The worker may be asleep. The popup still works without this.
+            return false;
         }
     }
 
@@ -298,8 +327,6 @@ class PopupController {
     #stopPolling(): void {
         this.#stopPoll?.();
         this.#stopPoll = undefined;
-        if (this.#pollTimer) clearTimeout(this.#pollTimer);
-        this.#pollTimer = undefined;
     }
 
     /** Wire the events. */

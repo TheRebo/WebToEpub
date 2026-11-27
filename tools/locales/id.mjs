@@ -136,6 +136,10 @@ export default {
     ],
     popupSaved: ["Buku Anda sudah siap.", "Ditampilkan saat unduhan selesai."],
     popupTryAgain: ["Coba lagi", "Tombol coba lagi pada popup."],
+    popupChecking: [
+        "Sedang melihat halaman ini…",
+        "Ditampilkan saat popup menunggu pekerja latar belakang.",
+    ],
     popupUnsupportedHost: [
         "$HOST$ belum didukung.",
         "Ditampilkan saat tidak ada parser yang cocok dengan situs saat ini.",

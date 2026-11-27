@@ -185,6 +185,37 @@ describe("the popup's view", () => {
         expect(primary(elements).textContent?.trim().length).toBeGreaterThan(0);
     });
 
+    it("shows the error message when something failed", () => {
+        // The error was written to the state and never read, so the user saw a
+        // "Try again" button and no explanation of what had failed.
+        const { elements } = render({ state: "error", error: "The site could not be reached." });
+
+        expect(elements.error.hidden).toBe(false);
+        expect(elements.errorText.textContent).toBe("The site could not be reached.");
+    });
+
+    it("hides the error box in every other state", () => {
+        const { elements } = render({ state: "story" });
+        expect(elements.error.hidden).toBe(true);
+
+        renderPopup(elements, makeState({ state: "error", error: "Boom" }));
+        expect(elements.error.hidden).toBe(false);
+    });
+
+    it("says what it is waiting for while loading", () => {
+        // The loading state used to be blank: a rectangle with nothing in it,
+        // which reads as a broken window rather than a busy one.
+        const { elements } = render({ state: "loading" });
+
+        expect(elements.loading.hidden).toBe(false);
+        expect(elements.loading.textContent?.trim().length).toBeGreaterThan(0);
+    });
+
+    it("hides the loading state in every other state", () => {
+        const { elements } = render({ state: "story" });
+        expect(elements.loading.hidden).toBe(true);
+    });
+
     it("offers a way in when the host is not supported", () => {
         const { elements } = render({ state: "unsupported", hostName: "example.com" });
 
@@ -253,5 +284,26 @@ describe("the popup's view", () => {
 
         renderPopup(elements, makeState({ state: "story" }));
         expect(primary(elements).dataset["action"]).toBe("primary");
+    });
+
+    it("never leaves a stale action on the primary button in the access state", () => {
+        // The access state hides the primary button, but its action still has
+        // to be replaced: a hidden button that still says "retry" would fire
+        // if it ever became visible again.
+        const { elements } = render({ state: "error" });
+        expect(primary(elements).dataset["action"]).toBe("retry");
+
+        renderPopup(elements, makeState({ state: "access", accessHost: "example.com" }));
+        expect(primary(elements).dataset["action"]).toBe("grant-access");
+    });
+
+    it("takes the wordmark from the catalogue, not from English", () => {
+        // The popup hard-coded "Kintsugi" while every other surface used the
+        // catalogue, so a translation could not name the product.
+        stubI18n({ appName: "Kintsugi" });
+
+        const { elements } = render({ state: "welcome" });
+        const wordmark = elements.header.querySelector(".popup-wordmark");
+        expect(wordmark?.textContent).toBe("Kintsugi");
     });
 });

@@ -339,6 +339,10 @@
     "message": "Try again",
     "description": "The popup's retry button."
   },
+  "popupChecking": {
+    "message": "Looking at this page…",
+    "description": "Shown while the popup waits for the worker."
+  },
   "popupUnsupportedHost": {
     "message": "$HOST$ is not supported yet.",
     "description": "Shown when no parser matched the current site.",

@@ -339,6 +339,10 @@
     "message": "Réessayer",
     "description": "Le bouton de réessai du popup."
   },
+  "popupChecking": {
+    "message": "Analyse de cette page…",
+    "description": "Affiché pendant que le popup attend le processus d'arrière-plan."
+  },
   "popupUnsupportedHost": {
     "message": "$HOST$ n'est pas encore pris en charge.",
     "description": "Affiché quand aucun analyseur ne correspond au site actuel.",

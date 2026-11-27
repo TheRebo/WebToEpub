@@ -155,6 +155,7 @@ const SOURCE = {
     popupUnsupported: ["This site is not supported yet.", "Shown when no parser matched."],
     popupSaved: ["Your book is ready.", "Shown when a download finishes."],
     popupTryAgain: ["Try again", "The popup's retry button."],
+    popupChecking: ["Looking at this page…", "Shown while the popup waits for the worker."],
     popupUnsupportedHost: [
         "$HOST$ is not supported yet.",
         "Shown when no parser matched the current site.",

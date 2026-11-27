@@ -75,6 +75,8 @@ export interface PopupElements {
     access: HTMLElement;
     /** The host in the access state. */
     accessHost: HTMLElement;
+    /** The state shown while the worker is answering. */
+    loading: HTMLElement;
     /** The live progress strip. */
     progress: HTMLElement;
     /** The progress label. */
@@ -87,6 +89,10 @@ export interface PopupElements {
     primary: HTMLElement;
     /** The secondary actions. */
     actions: HTMLElement;
+    /** The error message, shown in the error state. */
+    error: HTMLElement;
+    /** The error message's text. */
+    errorText: HTMLElement;
 }
 
 /**
@@ -110,7 +116,7 @@ export function buildPopup(root: HTMLElement): PopupElements {
 
     const wordmark = document.createElement("span");
     wordmark.className = "popup-wordmark";
-    wordmark.textContent = "Kintsugi";
+    wordmark.textContent = t("appName");
 
     const settings = document.createElement("k-button");
     settings.className = "popup-settings";
@@ -203,6 +209,44 @@ export function buildPopup(root: HTMLElement): PopupElements {
     access.appendChild(accessHostNode);
     access.appendChild(accessButton);
 
+    // --- The loading state ---
+    //
+    // The popup opens while the worker is still answering. It used to show
+    // nothing at all during that time, which reads as a broken window: a
+    // blank rectangle with no text and no spinner. The state says what it is
+    // waiting for instead.
+    const loading = document.createElement("div");
+    loading.className = "popup-loading";
+
+    const loadingSpinner = document.createElement("span");
+    loadingSpinner.className = "popup-loading-spinner";
+    loadingSpinner.setAttribute("aria-hidden", "true");
+    loadingSpinner.appendChild(createIcon("spinner", 18));
+
+    const loadingText = document.createElement("p");
+    loadingText.className = "popup-loading-text";
+    loadingText.textContent = t("popupChecking");
+
+    loading.append(loadingSpinner, loadingText);
+
+    // --- The error state ---
+    //
+    // An error the user is never shown is an error they cannot act on. The
+    // message is the worker's own wording, so it says what actually failed.
+    const error = document.createElement("div");
+    error.className = "popup-error";
+    error.setAttribute("role", "alert");
+
+    const errorIcon = document.createElement("span");
+    errorIcon.className = "popup-error-icon";
+    errorIcon.setAttribute("aria-hidden", "true");
+    errorIcon.appendChild(createIcon("alert-triangle", 18));
+
+    const errorText = document.createElement("p");
+    errorText.className = "popup-error-text";
+
+    error.append(errorIcon, errorText);
+
     // --- The live progress strip ---
     const progress = document.createElement("div");
     progress.className = "popup-progress";
@@ -263,6 +307,8 @@ export function buildPopup(root: HTMLElement): PopupElements {
     body.appendChild(card);
     body.appendChild(empty);
     body.appendChild(access);
+    body.appendChild(loading);
+    body.appendChild(error);
     body.appendChild(progress);
     body.appendChild(primary);
     body.appendChild(actions);
@@ -281,12 +327,15 @@ export function buildPopup(root: HTMLElement): PopupElements {
         empty,
         access,
         accessHost: accessHostNode,
+        loading,
         progress,
         progressLabel,
         progressBar,
         progressCount,
         primary,
         actions,
+        error,
+        errorText,
     };
 }
 
@@ -340,6 +389,18 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
     elements.access.hidden = !showAccess;
     elements.accessHost.textContent = state.accessHost;
 
+    // --- The loading state ---
+    elements.loading.hidden = state.state !== "loading";
+
+    // --- The error state ---
+    //
+    // The message is the worker's own wording. The state is not hidden when
+    // there is no message, because an empty red box is worse than a red box
+    // with a sentence in it — but the box is only shown in the error state, so
+    // it never appears with nothing in it by accident.
+    elements.error.hidden = state.state !== "error";
+    elements.errorText.textContent = state.error;
+
     // --- The progress strip ---
     const showProgress = state.state === "running";
     elements.progress.hidden = !showProgress;
@@ -371,7 +432,9 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
         // The access state has its own button, so the primary action would be
         // a second way of doing the same thing. It is hidden rather than
         // disabled, so a screen reader is not offered a button that does
-        // nothing.
+        // nothing. The action is still set, so that a stale "retry" from a
+        // previous state cannot survive into this one.
+        elements.primary.dataset["action"] = "grant-access";
         elements.primary.hidden = true;
     } else {
         elements.primary.setAttribute("variant", "primary");

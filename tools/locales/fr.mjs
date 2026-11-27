@@ -134,6 +134,10 @@ export default {
     ],
     popupSaved: ["Votre livre est prêt.", "Affiché quand un téléchargement se termine."],
     popupTryAgain: ["Réessayer", "Le bouton de réessai du popup."],
+    popupChecking: [
+        "Analyse de cette page…",
+        "Affiché pendant que le popup attend le processus d'arrière-plan.",
+    ],
     popupUnsupportedHost: [
         "$HOST$ n'est pas encore pris en charge.",
         "Affiché quand aucun analyseur ne correspond au site actuel.",

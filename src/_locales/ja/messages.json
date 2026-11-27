@@ -339,6 +339,10 @@
     "message": "再試行",
     "description": "ポップアップの再試行ボタン。"
   },
+  "popupChecking": {
+    "message": "このページを確認しています…",
+    "description": "ポップアップがバックグラウンド処理の応答を待っている間に表示されます。"
+  },
   "popupUnsupportedHost": {
     "message": "$HOST$ はまだ対応していません。",
     "description": "現在のサイトに一致するパーサーがなかったときに表示。",

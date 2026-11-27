@@ -339,6 +339,10 @@
     "message": "Erneut versuchen",
     "description": "Die Wiederholen-Schaltfläche des Popups."
   },
+  "popupChecking": {
+    "message": "Diese Seite wird gelesen…",
+    "description": "Wird angezeigt, während das Popup auf den Hintergrundprozess wartet."
+  },
   "popupUnsupportedHost": {
     "message": "$HOST$ wird noch nicht unterstützt.",
     "description": "Wird angezeigt, wenn kein Parser zur aktuellen Seite passt.",

@@ -134,6 +134,10 @@ export default {
     popupUnsupported: ["Diese Seite wird noch nicht unterstützt.", "Wenn kein Parser passt."],
     popupSaved: ["Ihr Buch ist fertig.", "Wird angezeigt, wenn ein Download endet."],
     popupTryAgain: ["Erneut versuchen", "Die Wiederholen-Schaltfläche des Popups."],
+    popupChecking: [
+        "Diese Seite wird gelesen…",
+        "Wird angezeigt, während das Popup auf den Hintergrundprozess wartet.",
+    ],
     popupUnsupportedHost: [
         "$HOST$ wird noch nicht unterstützt.",
         "Wird angezeigt, wenn kein Parser zur aktuellen Seite passt.",

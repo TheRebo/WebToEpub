@@ -102,6 +102,7 @@ export const MESSAGES = {
     popupUnsupported: "popupUnsupported",
     popupSaved: "popupSaved",
     popupTryAgain: "popupTryAgain",
+    popupChecking: "popupChecking",
     popupUnsupportedHost: "popupUnsupportedHost",
     popupChapterCount: "popupChapterCount",
     popupChapterCountOne: "popupChapterCountOne",
