@@ -153,16 +153,22 @@ export class LegacyParser extends Parser {
      * The baseline's base class deliberately did *not* define this, and
      * checked for its presence before adding an information page. It is
      * declared optional here for the same reason.
+     *
+     * It is a `declare`, not a field. The build targets ES2022, where a class
+     * field is a real property: a plain `name?: type` would put `undefined`
+     * on every instance, hiding the method a migrated parser defines on its
+     * own prototype (ADR-0048).
      */
-    getInformationEpubItemChildNodes?: (dom: Document) => Node[];
+    declare getInformationEpubItemChildNodes?: (dom: Document) => Node[];
 
     /**
      * The parent node of a chapter link that should be removed.
      *
      * A parser overrides this when the "next chapter" link is wrapped in
-     * elements that should be removed with it.
+     * elements that should be removed with it. A `declare`, for the reason
+     * given above.
      */
-    findParentNodeOfChapterLinkToRemoveAt?: (link: Element) => Element;
+    declare findParentNodeOfChapterLinkToRemoveAt?: (link: Element) => Element;
 
     /**
      * Build a parser.
@@ -289,7 +295,7 @@ export class LegacyParser extends Parser {
         if (this.getInformationEpubItemChildNodes !== undefined) {
             this.populateInfoDiv(infoDiv, dom);
         }
-        return infoDiv.textContent ?? "";
+        return blockText(infoDiv);
     }
 
     /** The story's publisher. */
@@ -871,9 +877,18 @@ export class LegacyParser extends Parser {
     populateInfoDiv(infoDiv: Element, dom: Document): void {
         const childNodes = this.getInformationEpubItemChildNodes;
         if (childNodes === undefined) return;
-        for (const node of childNodes(dom).filter((n) => n !== null && n !== undefined)) {
-            const clone = util.sanitizeNode(node);
-            if (clone) this.cleanInformationNode(clone);
+        // Called on the parser: a parser's method may read `this`.
+        const nodes = childNodes.call(this, dom);
+        for (const node of nodes.filter((n) => n !== null && n !== undefined)) {
+            // The parser cleans a copy of the page's own markup, and the result
+            // is sanitised after. The sanitiser drops every class and unwraps
+            // elements such as <nav> and <section>, so a parser that cleaned
+            // the sanitised copy (as the original order had it) matched
+            // nothing: its "remove nav.links" removed nothing (ADR-0048). The
+            // copy is detached and inert, so nothing in it runs.
+            const raw = node.cloneNode(true);
+            if (raw.nodeType === Node.ELEMENT_NODE) this.cleanInformationNode(raw as Element);
+            const clone = util.sanitizeNode(raw);
             if (clone !== null) infoDiv.appendChild(clone);
         }
         // The information page does not go through the image collector.
@@ -1301,3 +1316,34 @@ export { VariableSizeImageCollector };
 
 /** The chapter shape the legacy contract uses. */
 export type { ChapterLink };
+
+/**
+ * An element's text, one line per block.
+ *
+ * `textContent` runs the paragraphs of a synopsis together ("…the end.The
+ * next…") and keeps the page's indentation. A line break is put after every
+ * block and `<br>`, the spaces in each line are collapsed, and the empty
+ * lines are dropped, so the description reads as the page showed it.
+ */
+export function blockText(element: Element): string {
+    const BLOCKS =
+        "address, article, aside, blockquote, dd, div, dl, dt, figcaption, footer, h1, h2, h3, h4, h5, h6, header, li, nav, ol, p, pre, section, table, tr, ul";
+    const copy = element.cloneNode(true) as Element;
+    const doc = copy.ownerDocument;
+    // A line break in the page's source is only a space; the breaks that
+    // count are the ones the markup makes, added below.
+    const walker = doc.createTreeWalker(copy, NodeFilter.SHOW_TEXT);
+    for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+        text.nodeValue = (text.nodeValue ?? "").replace(/\s+/g, " ");
+    }
+    for (const br of copy.querySelectorAll("br")) br.replaceWith(doc.createTextNode("\n"));
+    for (const block of copy.querySelectorAll(BLOCKS)) {
+        block.before(doc.createTextNode("\n"));
+        block.after(doc.createTextNode("\n"));
+    }
+    return (copy.textContent ?? "")
+        .split("\n")
+        .map((line) => line.replace(/\s+/g, " ").trim())
+        .filter((line) => line.length > 0)
+        .join("\n");
+}

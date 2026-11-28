@@ -550,8 +550,9 @@ function buildInfoPage(metadata: PackMetadata): string {
             `    <p><strong>Source:</strong> <a href="${escapeText(source)}">${escapeText(source)}</a></p>`,
         );
     }
-    if (metadata.description) {
-        parts.push(`    <p>${escapeText(metadata.description)}</p>`);
+    // A description keeps its paragraphs: each line is one.
+    for (const line of (metadata.description ?? "").split("\n")) {
+        if (line.trim()) parts.push(`    <p>${escapeText(line.trim())}</p>`);
     }
     return parts.join("\n");
 }
