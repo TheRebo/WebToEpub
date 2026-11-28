@@ -37,6 +37,8 @@ export interface CookieApi {
     }): Promise<CookieRecord[]>;
     set(details: {
         url: string;
+        /** The cookie's domain, for a domain cookie. */
+        domain?: string;
         name: string;
         value: string;
         path?: string;
@@ -134,9 +136,13 @@ export class CookieBridge {
 
             const path = cookie.path || "/";
             const host = cookie.domain.replace(/^\./, "");
+            // The user's own unpartitioned cookie of the same name is never
+            // overwritten, or the clean-up afterwards would delete it.
+            if (await this.#hasUnpartitioned(host, path, cookie.name)) continue;
             try {
                 await this.#api.set({
                     url: `https://${host}${path}`,
+                    ...(cookie.domain.startsWith(".") ? { domain: cookie.domain } : {}),
                     name: cookie.name,
                     value: cookie.value,
                     path,
@@ -156,6 +162,19 @@ export class CookieBridge {
 
         for (const copy of copied) this.#retain(copy);
         return copied;
+    }
+
+    /** Whether an unpartitioned cookie with this name and path already exists. */
+    async #hasUnpartitioned(host: string, path: string, name: string): Promise<boolean> {
+        if (this.#copied.has(copyKey({ name, path, domain: host }))) return false;
+        try {
+            const existing = await this.#api.getAll({ url: `https://${host}${path}` });
+            return existing.some(
+                (cookie) => !cookie.partitionKey && cookie.name === name && cookie.path === path,
+            );
+        } catch {
+            return false;
+        }
     }
 
     /**

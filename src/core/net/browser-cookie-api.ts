@@ -44,7 +44,12 @@ interface BrowserPartitionKey {
  * The cookie API the browser exposes, narrowed to what the bridge needs.
  */
 export interface BrowserCookieApi {
-    getAll(details: { url: string; name?: string }): Promise<BrowserCookie[]>;
+    getAll(details: {
+        url?: string;
+        domain?: string;
+        name?: string;
+        partitionKey?: Record<string, unknown>;
+    }): Promise<BrowserCookie[]>;
     set(details: Record<string, unknown>): Promise<void>;
     remove(details: { url: string; name: string; partitionKey?: unknown }): Promise<void>;
 }
@@ -88,7 +93,13 @@ export function createCookieApi(api: BrowserCookieApi | undefined): CookieApi | 
             const url = details.url ?? (details.domain ? urlForDomain(details.domain) : null);
             if (!url) return [];
 
-            const cookies = await api.getAll({ url });
+            // Asked by domain, the bridge wants the partitioned cookies, and the
+            // browser only reports those when asked for every partition: a
+            // query without a partition key returns unpartitioned cookies only.
+            // Asked by URL, it wants the unpartitioned ones the request will send.
+            const cookies = details.domain
+                ? await api.getAll({ domain: hostOf(url), partitionKey: {} })
+                : await api.getAll({ url });
 
             return cookies.map((cookie) => {
                 const partitionKey = partitionKeyOf(cookie.partitionKey);
@@ -111,6 +122,9 @@ export function createCookieApi(api: BrowserCookieApi | undefined): CookieApi | 
         async set(details): Promise<void> {
             const target: Record<string, unknown> = {
                 url: details.url,
+                // A domain cookie (".example.com") stays a domain cookie, so
+                // the copy is sent to "www.example.com" as the original was.
+                ...(details.domain ? { domain: details.domain } : {}),
                 name: details.name,
                 value: details.value,
                 path: details.path ?? "/",
