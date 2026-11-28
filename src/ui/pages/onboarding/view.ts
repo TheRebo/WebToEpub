@@ -162,7 +162,14 @@ export function renderStep(
     // --- The actions ---
     elements.back.hidden = step === 0;
     elements.back.textContent = t("onboardingBack");
-    elements.next.textContent = step === 2 ? t("onboardingFinish") : t("onboardingGetStarted");
+    // Each step's button says where it leads, so the three are not the same
+    // two words over and over.
+    elements.next.textContent =
+        step === 0
+            ? t("onboardingNextSites")
+            : step === 1
+              ? t("onboardingNextLook")
+              : t("onboardingFinish");
     elements.skip.hidden = step === 2;
     elements.skip.textContent = t("onboardingSkip");
 }

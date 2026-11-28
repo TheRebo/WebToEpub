@@ -805,9 +805,13 @@
     "message": "Überspringen",
     "description": "Die Schaltfläche, die die Einführung überspringt."
   },
-  "onboardingGetStarted": {
-    "message": "Loslegen",
-    "description": "Die Schaltfläche, die die Einführung beendet."
+  "onboardingNextSites": {
+    "message": "Weiter: welche Seiten gehen",
+    "description": "Vom Willkommensschritt zum Seitenschritt."
+  },
+  "onboardingNextLook": {
+    "message": "Weiter: Aussehen wählen",
+    "description": "Vom Seitenschritt zum Aussehensschritt."
   },
   "onboardingWelcomeText": {
     "message": "Verwandeln Sie jeden Webroman in ein Buch, das sich lohnt. Richten Sie Kintsugi auf eine Kapitelliste, und es erstellt ein sauberes EPUB – mit Cover, Inhaltsverzeichnis und allem Drum und Dran.",

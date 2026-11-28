@@ -414,7 +414,11 @@ export default {
     onboardingBack: ["Zurück", "Die Schaltfläche für den vorherigen Schritt."],
     onboardingFinish: ["Fertig", "Die Schaltfläche, die die Einführung beendet."],
     onboardingSkip: ["Überspringen", "Die Schaltfläche, die die Einführung überspringt."],
-    onboardingGetStarted: ["Loslegen", "Die Schaltfläche, die die Einführung beendet."],
+    onboardingNextSites: [
+        "Weiter: welche Seiten gehen",
+        "Vom Willkommensschritt zum Seitenschritt.",
+    ],
+    onboardingNextLook: ["Weiter: Aussehen wählen", "Vom Seitenschritt zum Aussehensschritt."],
     onboardingWelcomeText: [
         "Verwandeln Sie jeden Webroman in ein Buch, das sich lohnt. Richten Sie Kintsugi auf eine Kapitelliste, und es erstellt ein sauberes EPUB – mit Cover, Inhaltsverzeichnis und allem Drum und Dran.",
         "Die Erklärung des ersten Einführungsschritts.",

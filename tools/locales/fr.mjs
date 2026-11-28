@@ -411,7 +411,11 @@ export default {
     onboardingBack: ["Retour", "Le bouton qui revient à l'étape précédente."],
     onboardingFinish: ["Terminer", "Le bouton qui termine l'introduction."],
     onboardingSkip: ["Passer", "Le bouton qui passe l'introduction."],
-    onboardingGetStarted: ["Commencer", "Le bouton qui quitte l'introduction."],
+    onboardingNextSites: [
+        "Suivant : les sites pris en charge",
+        "De l’accueil à l’étape des sites.",
+    ],
+    onboardingNextLook: ["Suivant : choisir l’apparence", "De l’étape des sites à l’apparence."],
     onboardingWelcomeText: [
         "Transformez n'importe quel roman en ligne en un livre à garder. Pointez-le sur une liste de chapitres, et il crée un EPUB soigné — couverture, sommaire et tout le reste.",
         "L'explication de la première étape d'introduction.",

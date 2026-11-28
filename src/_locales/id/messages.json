@@ -805,9 +805,13 @@
     "message": "Lewati",
     "description": "Tombol untuk melewati orientasi."
   },
-  "onboardingGetStarted": {
-    "message": "Mulai",
-    "description": "Tombol untuk keluar dari orientasi."
+  "onboardingNextSites": {
+    "message": "Berikutnya: situs yang didukung",
+    "description": "Dari langkah sambutan ke langkah situs."
+  },
+  "onboardingNextLook": {
+    "message": "Berikutnya: pilih tampilan",
+    "description": "Dari langkah situs ke langkah tampilan."
   },
   "onboardingWelcomeText": {
     "message": "Ubah novel web mana pun menjadi buku yang layak disimpan. Arahkan ke daftar bab, dan Kintsugi akan menyusun EPUB yang rapi — lengkap dengan sampul dan daftar isi.",

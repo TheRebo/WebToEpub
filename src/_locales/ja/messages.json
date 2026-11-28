@@ -805,9 +805,13 @@
     "message": "スキップ",
     "description": "導入をスキップするボタン。"
   },
-  "onboardingGetStarted": {
-    "message": "はじめる",
-    "description": "導入を抜けるボタン。"
+  "onboardingNextSites": {
+    "message": "次へ：対応サイト",
+    "description": "ようこそから対応サイトの手順へ。"
+  },
+  "onboardingNextLook": {
+    "message": "次へ：見た目を選ぶ",
+    "description": "対応サイトから見た目の手順へ。"
   },
   "onboardingWelcomeText": {
     "message": "どんなウェブ小説も、永く残したい一冊の本に変えます。章リストを指定するだけで、表紙と目次を備えた整整った EPUB が完成します。",

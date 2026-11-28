@@ -321,7 +321,8 @@ export default {
     onboardingBack: ["戻る", "前のステップへ戻るボタン。"],
     onboardingFinish: ["完了", "導入を終了するボタン。"],
     onboardingSkip: ["スキップ", "導入をスキップするボタン。"],
-    onboardingGetStarted: ["はじめる", "導入を抜けるボタン。"],
+    onboardingNextSites: ["次へ：対応サイト", "ようこそから対応サイトの手順へ。"],
+    onboardingNextLook: ["次へ：見た目を選ぶ", "対応サイトから見た目の手順へ。"],
     onboardingWelcomeText: [
         "どんなウェブ小説も、永く残したい一冊の本に変えます。章リストを指定するだけで、表紙と目次を備えた整整った EPUB が完成します。",
         "最初のステップの説明。",

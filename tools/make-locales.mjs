@@ -389,7 +389,14 @@ const SOURCE = {
     onboardingBack: ["Back", "The button that moves to the previous step."],
     onboardingFinish: ["Finish", "The button that completes the onboarding."],
     onboardingSkip: ["Skip", "The button that skips the onboarding."],
-    onboardingGetStarted: ["Get started", "The button that leaves the onboarding."],
+    onboardingNextSites: [
+        "Next: which sites work",
+        "Moves from the welcome step to the sites step.",
+    ],
+    onboardingNextLook: [
+        "Next: choose a look",
+        "Moves from the sites step to the appearance step.",
+    ],
     onboardingWelcomeText: [
         "Turn any web novel into a book worth keeping. Point it at a chapter list, and it builds a clean EPUB — cover, table of contents, and all.",
         "The first onboarding step's explanation.",

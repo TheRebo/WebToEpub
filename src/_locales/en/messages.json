@@ -805,9 +805,13 @@
     "message": "Skip",
     "description": "The button that skips the onboarding."
   },
-  "onboardingGetStarted": {
-    "message": "Get started",
-    "description": "The button that leaves the onboarding."
+  "onboardingNextSites": {
+    "message": "Next: which sites work",
+    "description": "Moves from the welcome step to the sites step."
+  },
+  "onboardingNextLook": {
+    "message": "Next: choose a look",
+    "description": "Moves from the sites step to the appearance step."
   },
   "onboardingWelcomeText": {
     "message": "Turn any web novel into a book worth keeping. Point it at a chapter list, and it builds a clean EPUB — cover, table of contents, and all.",

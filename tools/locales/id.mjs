@@ -376,7 +376,11 @@ export default {
     onboardingBack: ["Kembali", "Tombol untuk ke langkah sebelumnya."],
     onboardingFinish: ["Selesai", "Tombol untuk menyelesaikan orientasi."],
     onboardingSkip: ["Lewati", "Tombol untuk melewati orientasi."],
-    onboardingGetStarted: ["Mulai", "Tombol untuk keluar dari orientasi."],
+    onboardingNextSites: [
+        "Berikutnya: situs yang didukung",
+        "Dari langkah sambutan ke langkah situs.",
+    ],
+    onboardingNextLook: ["Berikutnya: pilih tampilan", "Dari langkah situs ke langkah tampilan."],
     onboardingWelcomeText: [
         "Ubah novel web mana pun menjadi buku yang layak disimpan. Arahkan ke daftar bab, dan Kintsugi akan menyusun EPUB yang rapi — lengkap dengan sampul dan daftar isi.",
         "Penjelasan langkah pertama orientasi.",
