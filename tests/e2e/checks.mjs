@@ -306,6 +306,43 @@ export async function run(harness) {
         );
     });
 
+    // The worker's selector tester fetches a page through the same fetch
+    // layer as a download, so it shows what a chapter fetch would see.
+    const testSelectors = async (path, contentCss, titleCss) =>
+        JSON.parse(
+            await harness.asyncScript(`
+                const api = globalThis.browser ?? globalThis.chrome;
+                const response = await api.runtime.sendMessage({
+                    type: "site-selectors:test",
+                    payload: {
+                        url: ${JSON.stringify(harness.fixtureOrigin)} + ${JSON.stringify(path)},
+                        contentCss: ${JSON.stringify(contentCss)},
+                        titleCss: ${JSON.stringify(titleCss)},
+                        removeCss: "",
+                    },
+                    id: "e2e-selectors-" + Math.random(),
+                });
+                return JSON.stringify(response?.result ?? response);
+            `),
+        );
+
+    await check("follows a chapter that has moved to a new address", async () => {
+        // A manual redirect is opaque to an extension; the browser has to
+        // follow it, and the private-network rule has to let a host the user
+        // allowed through (ADR-0045).
+        const result = await testSelectors("/moved/3", ".chapter-content", ".chapter-title");
+        assert(result.ok === true, `The moved chapter was not read (${JSON.stringify(result)}).`);
+        assert(
+            result.titleText.includes("3rd Seal"),
+            `The moved chapter's title is wrong (got "${result.titleText}").`,
+        );
+    });
+
+    await check("reads a page in the encoding it declares", async () => {
+        const result = await testSelectors("/gbk", "p", "title");
+        assertEqual(result.titleText, "中文", "The GBK page was not decoded as GBK.");
+    });
+
     await check("selects, clears and inverts the selection", async () => {
         const selectedCount = async () =>
             Number(
