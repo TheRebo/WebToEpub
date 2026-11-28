@@ -36,12 +36,16 @@ import { listHostAccess } from "./host-access";
 import { isPrivateHost } from "./util/sanitize";
 import { DefaultParser } from "./parsers/default-parser";
 import { registerAllParsers } from "./parsers/register-all";
-import type { ParserServices } from "./parsers/parser";
+import type { Parser, ParserServices } from "./parsers/parser";
 import { listChapterUrls } from "./parsers/parser";
 import { removeChapterNumber } from "./util/chapter-title";
 import { readLivePageDom } from "./live-page";
+import { LegacyParser, type LegacyChapter } from "./parsers/compat/legacy-parser";
 
 /** The worker. */
+/** How many listed stories the worker keeps for their downloads. */
+const REMEMBERED_STORIES = 4;
+
 class BackgroundWorker {
     /**
      * The registry.
@@ -61,12 +65,28 @@ class BackgroundWorker {
         diagnostic("The library is waiting for another tab to let go of it");
     });
     /**
+     * Keep the page and the parser a chapter list was built from, so the
+     * download reuses them. Only the last few stories are kept.
+     */
+    #rememberStory(url: string, dom: Document, parser: Parser): void {
+        this.#stories.delete(url);
+        this.#stories.set(url, { dom, parser });
+        while (this.#stories.size > REMEMBERED_STORIES) {
+            const oldest = this.#stories.keys().next().value;
+            if (oldest === undefined) break;
+            this.#stories.delete(oldest);
+        }
+    }
+
+    /**
      * The user's preferences, in the shape the legacy parsers read them.
      *
      * The preferences are a snapshot: a parser is built for one run, and
      * that run uses the settings the user had when they started it.
      */
     #preferences = defaultLegacyUserPreferences();
+    /** The page and parser each recent chapter list came from, by story URL. */
+    #stories = new Map<string, { dom: Document; parser: Parser }>();
 
     /**
      * The startup promise.
@@ -128,6 +148,14 @@ class BackgroundWorker {
                 }
             },
             parserFor: (url, dom) => this.#registry.fetch(url, dom),
+            storyFor: (url) => this.#stories.get(url),
+            parserForHost: (url, storyParser) => {
+                const parser = this.#registry.fetchByUrl(url);
+                if (parser instanceof LegacyParser && storyParser instanceof LegacyParser) {
+                    parser.copyState(storyParser);
+                }
+                return parser;
+            },
             throttle: async (ms, signal) => {
                 await sleep(ms, signal);
             },
@@ -564,7 +592,16 @@ class BackgroundWorker {
                 return { chapters: [], error: unsupportedSiteError() };
             }
 
+            // The original pipeline told the parser which page the list came
+            // from before asking for it, and nine parsers read that back.
+            const legacy = parser instanceof LegacyParser ? parser : undefined;
+            if (legacy) {
+                legacy.state.chapterListUrl = url;
+                legacy.state.firstPageDom = dom;
+            }
             const chapters = await listChapterUrls(parser, dom);
+            legacy?.setPagesToFetch(chapters as LegacyChapter[]);
+            this.#rememberStory(url, dom, parser);
             diagnosticUrl("Found chapters with", url, parser.constructor.name, chapters.length);
 
             // The chapter numbers are stripped here rather than in the

@@ -353,6 +353,22 @@ export interface DownloadManagerDependencies {
     saveFile(fileName: string, bytes: Uint8Array): Promise<{ fileName: string; fileSize: number }>;
     /** The parser for a URL. */
     parserFor(url: string, dom: Document): Parser | null;
+    /**
+     * The page and the parser the chapter list was built from, when the
+     * worker still has them.
+     *
+     * A parser keeps state while it lists chapters (an API id, a slug, a map
+     * of page URLs), and a table of contents built by script is only in the
+     * live tab. Reusing both means the download reads the story the user saw.
+     */
+    storyFor?(url: string): { dom: Document; parser: Parser | null } | undefined;
+    /**
+     * The parser registered for a chapter's own host, or `null`.
+     *
+     * A table of contents on one site can link to chapters on another, and
+     * the original gave each host its own parser.
+     */
+    parserForHost?(url: string, storyParser: Parser | null): Parser | null;
     /** Wait between requests, honouring the abort signal. */
     throttle(ms: number, signal: AbortSignal): Promise<void>;
     /**
@@ -638,9 +654,10 @@ export class DownloadManager {
         // parser, no cover and no metadata, and every chapter would become a
         // placeholder. Failing loudly is better than saving a book that
         // looks complete but is empty.
+        const listed = this.#dependencies.storyFor?.(job.sourceUrl);
         let storyDom: Document;
         try {
-            storyDom = await this.#fetchStoryDom(job.sourceUrl, signal);
+            storyDom = listed?.dom ?? (await this.#fetchStoryDom(job.sourceUrl, signal));
         } catch (error) {
             if (signal.aborted) {
                 job.phase = "cancelled";
@@ -652,7 +669,7 @@ export class DownloadManager {
             this.#report(job);
             return;
         }
-        const parser = parserFor(job.sourceUrl, storyDom);
+        const parser = listed ? listed.parser : parserFor(job.sourceUrl, storyDom);
 
         // The parser owns the politeness budget. Some sites need seconds
         // between requests, and the baseline's parsers said so. The user's
@@ -692,6 +709,18 @@ export class DownloadManager {
          */
         const chapterBases = new Map<string, string>();
 
+        // One parser per chapter host, chosen once.
+        const storyHost = hostOf(job.sourceUrl);
+        const hostParsers = new Map<string, Parser | null>();
+        const chapterParserFor = (url: string): Parser | null => {
+            const host = hostOf(url);
+            if (host === storyHost || !this.#dependencies.parserForHost) return parser;
+            if (!hostParsers.has(host)) {
+                hostParsers.set(host, this.#dependencies.parserForHost(url, parser) ?? parser);
+            }
+            return hostParsers.get(host) ?? parser;
+        };
+
         for (const [chapterIndex, chapter] of job.chapters.entries()) {
             if (signal.aborted) {
                 job.phase = "cancelled";
@@ -706,9 +735,10 @@ export class DownloadManager {
             job.current = { index: chapterIndex, state: "fetching" };
             this.#report(job);
 
+            const chapterParser = chapterParserFor(chapter.sourceUrl);
             try {
                 const dom = await this.#fetchChapterWithRetry(
-                    parser,
+                    chapterParser,
                     chapter.sourceUrl,
                     signal,
                     behaviour,
@@ -737,8 +767,8 @@ export class DownloadManager {
                     // that a parser can remove the links to the previous and
                     // the next chapter — the setting that asks for it would
                     // otherwise have nothing to compare the links against.
-                    const content = parser
-                        ? parser.extractChapterContent(dom, {
+                    const content = chapterParser
+                        ? chapterParser.extractChapterContent(dom, {
                               sourceUrl: chapter.sourceUrl,
                               title: chapter.title,
                               nextPrevChapters: neighbourUrls(job.chapters, chapterIndex),
@@ -774,7 +804,12 @@ export class DownloadManager {
                         // page's relative image URLs with it, and resolving
                         // them against the address that was asked for would
                         // point every one of them at the wrong place.
-                        const base = dom.baseURI || chapter.sourceUrl;
+                        // A document a parser built itself has the
+                        // extension's own address as its base, which no image
+                        // on the site is relative to.
+                        const base = /^https?:/i.test(dom.baseURI)
+                            ? dom.baseURI
+                            : chapter.sourceUrl;
                         const referenced = imageSettings.skipImages
                             ? new Set<string>()
                             : collectImageUrls(content, base, {
@@ -1549,4 +1584,13 @@ function tooManyChaptersError(count: number, limit: number): UserFacingError {
         code: "TOO_MANY_CHAPTERS",
         actions: [{ id: "raise-limit", label: "Raise the limit" }],
     };
+}
+
+/** A URL's host without a leading `www.`, or the URL itself when it does not parse. */
+function hostOf(url: string): string {
+    try {
+        return new URL(url).hostname.replace(/^www\./, "");
+    } catch {
+        return url;
+    }
 }
