@@ -54,6 +54,9 @@ export const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504, 520, 522, 52
  */
 export const REQUEST_TIMEOUT_MS = 30_000;
 
+/** How long a response's body may take to arrive once the headers have. */
+export const BODY_TIMEOUT_MS = 120_000;
+
 /**
  * The largest response body the extension will read, in bytes.
  *
@@ -718,11 +721,16 @@ export class FetchClient {
         method: string,
         body: BodyInit | null,
     ): Promise<Response> {
-        const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
-        const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+        // The deadline covers the wait for the headers. The body then gets a
+        // longer one of its own, so a large image on a slow link can finish.
+        const deadline = new AbortController();
+        let timer = setTimeout(() => deadline.abort(), REQUEST_TIMEOUT_MS);
+        const signal = options.signal
+            ? AbortSignal.any([options.signal, deadline.signal])
+            : deadline.signal;
 
         try {
-            return await this.#environment.fetch(url, {
+            const response = await this.#environment.fetch(url, {
                 method,
                 headers,
                 body,
@@ -730,15 +738,17 @@ export class FetchClient {
                 credentials: options.credentials ?? "include",
                 redirect: "follow",
             });
+            clearTimeout(timer);
+            timer = setTimeout(() => deadline.abort(), BODY_TIMEOUT_MS);
+            return response;
         } catch (error) {
-            // A timeout is reported as a timeout rather than as a transport
-            // failure, so the user is told what actually happened.
-            if (timeout.aborted && !options.signal?.aborted) {
-                throw new FetchError(`The request to ${url} timed out.`, {
-                    status: 0,
-                    url,
-                    attempts: 1,
-                });
+            clearTimeout(timer);
+            // A timeout is a transport failure like any other, so it is
+            // retried; its name says what happened.
+            if (deadline.signal.aborted && !options.signal?.aborted) {
+                const timedOut = new Error(`The request to ${url} timed out.`);
+                timedOut.name = "TimeoutError";
+                throw timedOut;
             }
             throw error;
         }
