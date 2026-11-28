@@ -19,7 +19,9 @@
  * handling, which is a property of the parser rather than of the document.
  */
 import { beforeAll, describe, expect, it } from "vitest";
-import { registerAllParsers, registrationCount } from "../../../src/core/parsers/register-all";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { registerAllParsers } from "../../../src/core/parsers/register-all";
 import { legacyRegistry } from "../../../src/core/parsers/compat/legacy-factory";
 import { setParserServices } from "../../../src/core/parsers/services-context";
 import { LegacyParser } from "../../../src/core/parsers/compat/legacy-parser";
@@ -65,11 +67,25 @@ function isTocProgressFailure(error: unknown): boolean {
 describe("the migrated parsers", () => {
     beforeAll(async () => {
         setParserServices(services);
-        await registerAllParsers(legacyRegistry);
+        await registerAllParsers();
     });
 
-    it("registers every parser that was migrated", () => {
-        expect(registrationCount()).toBe(434);
+    it("loads every parser file there is", () => {
+        // A file on disk that the generated module does not import is a
+        // site that silently stopped working.
+        const sites = join(__dirname, "../../../src/core/parsers/legacy/sites");
+        const files = readdirSync(sites).filter((name) => name.endsWith(".js"));
+        const imports = readFileSync(
+            join(__dirname, "../../../src/core/parsers/legacy-parsers.ts"),
+            "utf8",
+        );
+        const missing = files.filter((name) => !imports.includes(`/sites/${name}"`));
+        expect(missing).toEqual([]);
+    });
+
+    it("registers every host in lower case, as lookups expect", () => {
+        const upper = legacyRegistry.registeredHosts.filter((host) => host !== host.toLowerCase());
+        expect(upper).toEqual([]);
     });
 
     it("registers a parser for every site, without a duplicate", () => {

@@ -13,23 +13,18 @@
  */
 import "./legacy-parsers.js";
 import type { ParserRegistry } from "./registry";
+import { legacyRegistry } from "./compat/legacy-factory";
 
 /**
- * Register every parser with the registry.
+ * Make sure every parser has registered itself.
  *
- * The parsers register themselves as their modules are evaluated, so this is
- * a matter of making sure the modules have been loaded. The import above does
- * that, and it happens before this function is called.
+ * The parsers register with the legacy factory's registry as their modules
+ * are evaluated, which the import above does. The function stays
+ * asynchronous so a caller can wait for registration the same way whether
+ * the parsers are bundled or, one day, loaded lazily.
  *
- * The function still exists, and is still asynchronous, because the baseline
- * loaded the parsers lazily and a caller must be able to wait for the
- * registration to be complete.
+ * @returns The registry the parsers registered with.
  */
-export async function registerAllParsers(_registry?: ParserRegistry): Promise<void> {
-    // The parsers are loaded by the module-level import above.
-}
-
-/** The number of parsers that were migrated. */
-export function registrationCount(): number {
-    return 434;
+export async function registerAllParsers(): Promise<ParserRegistry> {
+    return legacyRegistry;
 }

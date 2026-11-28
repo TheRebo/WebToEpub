@@ -351,7 +351,7 @@ class BackgroundWorker {
      */
     async #prepare(): Promise<void> {
         try {
-            await registerAllParsers(this.#registry);
+            await registerAllParsers();
         } catch (error) {
             console.error("[kintsugi] The parsers could not be registered:", error);
         }

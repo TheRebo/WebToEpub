@@ -65,7 +65,8 @@ export class ParserRegistry {
 
     /** Register a parser for an exact host. */
     register(hostName: string, constructor: ParserConstructor): void {
-        const key = stripLeadingWww(hostName);
+        // Lookups lower-case the host, so registrations must too.
+        const key = stripLeadingWww(hostName.toLowerCase());
         if (this.#parsers.has(key)) {
             throw new Error(`Duplicate parser registered for host name ${hostName}`);
         }
