@@ -105,6 +105,14 @@ input:focus-visible + .box {
     white-space: nowrap;
 }
 
+/*
+ * The in-app "Reduce motion" setting.
+ *
+ * The document's own rule cannot pierce the shadow boundary, so the base
+ * class mirrors the preference onto the host.
+ */
+:host([data-reduced-motion]) .box svg { transition: none; transform: none; }
+
 @media (prefers-reduced-motion: reduce) {
     .box svg { transition: none; transform: none; }
 }
@@ -131,6 +139,10 @@ export class KCheckbox extends KComponent {
         input.checked = this.hasAttribute("checked");
         input.indeterminate = this.hasAttribute("indeterminate");
         input.disabled = this.hasAttribute("disabled");
+
+        // The label attribute is the checkbox's text, so it has to be rendered.
+        const text = this.root.querySelector(".text");
+        if (text) text.textContent = this.getAttribute("label") ?? "";
     }
 
     /** Build the component's structure. */

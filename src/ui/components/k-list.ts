@@ -1,15 +1,18 @@
 /**
- * `<k-list>` and `<k-list-item>`.
+ * `<k-list>`.
  *
  * The chapter list.
  *
  * The list is **virtualised**: only the visible rows are in the DOM, so five
- * thousand chapters cost about thirty nodes rather than five thousand. It
- * also uses a **roving tabindex**: exactly one item is tabbable at a time,
- * and the arrow keys move within the list. This turns five thousand chapters
- * from ten thousand tab stops into one.
+ * thousand chapters cost about thirty nodes rather than five thousand.
+ *
+ * The list is a **single tab stop**: the viewport is the only element in the
+ * tab order, and the rows are focused programmatically as the user arrows
+ * through them. A roving tabindex over the rows would lose the tab stop
+ * entirely whenever the focused row fell outside the rendered window, which
+ * is exactly what a virtualised list does all the time.
  */
-import { KComponent, defineComponent } from "./base";
+import { KComponent, defineComponent, translate } from "./base";
 import { createIcon, type IconName } from "./icons";
 
 /** A chapter row's data. */
@@ -22,6 +25,8 @@ export interface ListItemData {
     selected?: boolean;
     /** The row's state icon. */
     icon?: IconName;
+    /** The row's state, which drives the row's colour. */
+    state?: ListItemState;
     /** The row's secondary text, right-aligned. */
     meta?: string;
     /** Whether the row's checkbox is in the indeterminate state. */
@@ -43,15 +48,61 @@ const STATE_ICONS: Record<ListItemState, IconName> = {
     failed: "alert-triangle",
 };
 
-/** The state labels, for the accessible name. */
-const STATE_LABELS: Record<ListItemState, string> = {
-    idle: "not started",
-    queued: "queued",
-    fetching: "fetching",
-    loaded: "loaded",
-    downloaded: "already downloaded",
-    failed: "failed",
-};
+/**
+ * The state a state icon stands for.
+ *
+ * A page that sets only the icon still gets the right row colour, so the
+ * state does not have to be threaded through twice.
+ */
+const ICON_STATES = new Map<IconName, ListItemState>(
+    (Object.entries(STATE_ICONS) as [ListItemState, IconName][]).map(([state, icon]) => [
+        icon,
+        state,
+    ]),
+);
+
+/**
+ * The state labels, for the accessible name.
+ *
+ * The labels come from the locale files, which already have a key for every
+ * state. The English text is only a fallback for the case where the message
+ * is missing.
+ *
+ * The labels are looked up when they are needed rather than when the module is
+ * loaded, because the i18n API is installed after the modules are imported.
+ *
+ * @param state The state to label.
+ * @returns The label.
+ */
+export function stateLabel(state: ListItemState): string {
+    switch (state) {
+        case "queued":
+            return translate("chapterStateQueued", "Queued");
+        case "fetching":
+            return translate("chapterStateFetching", "Fetching");
+        case "loaded":
+            return translate("chapterStateLoaded", "Loaded");
+        case "downloaded":
+            return translate("chapterStateDownloaded", "Downloaded");
+        case "failed":
+            return translate("chapterStateFailed", "Failed");
+        case "idle":
+        default:
+            return translate("chapterStateNotStarted", "Not started");
+    }
+}
+
+/**
+ * The spacer's vertical margin, in pixels.
+ *
+ * The stylesheet gives the spacer a margin so the first and last row have
+ * some breathing room. The virtualiser has to know how much, because the
+ * margin is not part of the spacer's height — the scroll range is the rows'
+ * height *plus* the margin on each side.
+ *
+ * The value must match `--space-2` in the design tokens.
+ */
+const SPACER_MARGIN = 8;
 
 const LIST_STYLES = `
 :host {
@@ -79,6 +130,14 @@ const LIST_STYLES = `
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: contain;
+    border-radius: var(--radius-sm);
+}
+
+/* The viewport is the list's tab stop; the document's focus rule does not
+   reach into the shadow root, so the ring is drawn here. */
+.viewport:focus-visible {
+    outline: 2px solid transparent;
+    box-shadow: inset 0 0 0 var(--focus-ring-width) var(--focus-ring);
 }
 
 .spacer {
@@ -100,23 +159,6 @@ const LIST_STYLES = `
     right: 0;
 }
 
-.empty-slot {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-8);
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-}
-`;
-
-const ITEM_STYLES = `
-:host {
-    display: block;
-}
-
-:host([hidden]) { display: none; }
-
 .row {
     display: grid;
     grid-template-columns: 28px 20px minmax(0, 1fr) 56px;
@@ -125,14 +167,14 @@ const ITEM_STYLES = `
     height: var(--row-height);
     padding: 0 var(--space-3);
     border-bottom: 1px solid var(--border-subtle);
-    cursor: default;
+    cursor: pointer;
     user-select: none;
     transition: background-color var(--dur-instant) var(--ease-out);
 }
 
-.row:hover { background: var(--surface-sunken); }
-.row[data-selected="true"] { background: var(--accent-subtle); }
-.row[data-selected="true"]:hover { background: var(--accent-subtle); filter: brightness(0.98); }
+/* A ticked row is shown by its checkbox. Tinting the whole row as well turned
+   a fully selected book (the usual case) into one block of accent colour. */
+.row:hover { background: var(--control-hover); }
 
 /*
  * The checkbox is drawn with borders and a background rather than with a
@@ -214,13 +256,24 @@ const ITEM_STYLES = `
 }
 
 .row:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--ring);
     border-radius: var(--radius-xs);
 }
 
+/*
+ * The in-app "Reduce motion" setting.
+ *
+ * The document's own "[data-reduce-motion="true"] *" rule cannot pierce the
+ * shadow boundary, so the component mirrors the preference onto its host
+ * and stops the spinner itself.
+ */
+:host([data-reduced-motion]) .state svg[data-spin="true"] { animation: none; }
+:host([data-reduced-motion]) .row { transition: none; }
+
 @media (prefers-reduced-motion: reduce) {
     .state svg[data-spin="true"] { animation: none; }
+    .row { transition: none; }
 }
 `;
 
@@ -230,6 +283,15 @@ export class KList extends KComponent {
 
     /** The items. */
     #items: ListItemData[] = [];
+    /**
+     * The items, indexed by their identifier.
+     *
+     * A book's chapter list can hold five thousand entries. Looking one up
+     * with `Array.find` on every state change and every click is a linear
+     * scan, and the download updates the state of every chapter as it goes
+     * — five thousand scans of five thousand entries.
+     */
+    #byId = new Map<string, ListItemData>();
     /** The index of the focused row. */
     #focusIndex = 0;
     /** The index of the first visible row. */
@@ -249,14 +311,28 @@ export class KList extends KComponent {
 
             this.viewport = document.createElement("div");
             this.viewport.className = "viewport";
-            this.viewport.setAttribute("role", "list");
+            // A list the user picks rows from is a listbox: each row then
+            // says whether it is selected, which a plain list cannot.
+            this.viewport.setAttribute("role", "listbox");
+            this.viewport.setAttribute("aria-multiselectable", "true");
+            // The viewport is the list's one and only tab stop. The rows are
+            // focused programmatically as the user arrows through them, so
+            // they are never in the tab order themselves — a roving
+            // tabindex over a virtualised window would lose the tab stop
+            // whenever the focused row was scrolled out of the window.
             this.viewport.tabIndex = 0;
 
             this.spacer = document.createElement("div");
             this.spacer.className = "spacer";
+            // The spacer and the rows container are layout scaffolding, not
+            // part of the list. Without this, a screen reader would find
+            // `listitem` elements that are not children of the `list`, and
+            // the list would own nothing.
+            this.spacer.setAttribute("role", "presentation");
 
             this.rows = document.createElement("div");
             this.rows.className = "rows";
+            this.rows.setAttribute("role", "presentation");
 
             this.spacer.appendChild(this.rows);
             this.viewport.appendChild(this.spacer);
@@ -266,14 +342,55 @@ export class KList extends KComponent {
             this.viewport.addEventListener("keydown", this.#onKeyDown);
         }
 
-        this.#rowHeight = Number(this.getAttribute("row-height") ?? 32);
+        // The rows are drawn at the density's --row-height, so they are
+        // placed at it too; an explicit attribute still wins.
+        const attribute = this.getAttribute("row-height");
+        const themed = Number.parseFloat(getComputedStyle(this).getPropertyValue("--row-height"));
+        this.#rowHeight = attribute
+            ? Number(attribute)
+            : Number.isFinite(themed) && themed > 0
+              ? themed
+              : 32;
         this.#overscan = Number(this.getAttribute("overscan") ?? 6);
+
+        // The label has to reach the element that carries `role="list"`, or
+        // the list is unnamed and a screen reader announces a bare list with
+        // no context.
+        const label = this.getAttribute("aria-label");
+        if (label) this.viewport.setAttribute("aria-label", label);
+        else this.viewport.removeAttribute("aria-label");
+
+        // The row height may have changed, which moves every row and changes
+        // the scroll range. The rows are laid out again.
+        if (this.rows) this.#renderRows();
     }
 
     /** Set the items and re-render. */
     setItems(items: ListItemData[]): void {
+        // The list is re-set on every state change — a chapter's icon changes,
+        // a row is ticked — and the scroll position is part of what the user
+        // is looking at. Resetting it on every change yanked the list back to
+        // the top as soon as the user ticked anything, which made the list
+        // feel like it was fighting them.
+        const continues = continuesRows(this.#items, items);
+
         this.#items = items;
+        this.#byId = new Map(items.map((item) => [item.id, item]));
         this.#focusIndex = Math.min(this.#focusIndex, Math.max(0, items.length - 1));
+
+        if (!continues) {
+            // The list itself changed — a different book, or a filter that
+            // shows different chapters. The scroll window is reset: the list
+            // may have been scrolled a long way down — the user had read to
+            // chapter four thousand — and the new list may be three chapters
+            // long. Without the reset the virtualiser would look for rows
+            // from index three thousand nine hundred and render nothing at
+            // all: an empty list, with no error and no way for the user to
+            // tell what had happened.
+            this.#startIndex = 0;
+            if (this.viewport) this.viewport.scrollTop = 0;
+        }
+
         this.#renderRows();
     }
 
@@ -284,16 +401,17 @@ export class KList extends KComponent {
 
     /** The state of a row, for the accessible name. */
     setState(id: string, state: ListItemState): void {
-        const item = this.#items.find((entry) => entry.id === id);
+        const item = this.#byId.get(id);
         if (!item) return;
         item.icon = STATE_ICONS[state];
-        item.accessibleName = `${item.title}, ${STATE_LABELS[state]}`;
+        item.state = state;
+        item.accessibleName = `${item.title}, ${stateLabel(state)}`;
         this.#renderRows();
     }
 
     /** Toggle an item's selection. */
     toggleSelection(id: string): void {
-        const item = this.#items.find((entry) => entry.id === id);
+        const item = this.#byId.get(id);
         if (!item) return;
         item.selected = !item.selected;
         this.#renderRows();
@@ -317,34 +435,76 @@ export class KList extends KComponent {
         if (!this.rows || !this.spacer || !this.viewport) return;
 
         const total = this.#items.length;
-        this.spacer.style.height = `${total * this.#rowHeight}px`;
+        // The start index is clamped to the list, so that a list which has
+        // shrunk cannot leave the virtualiser looking for rows that are not
+        // there.
+        this.#startIndex = Math.min(this.#startIndex, Math.max(0, total - 1));
+
+        // The spacer carries a margin, so the scroll range is the rows'
+        // height *plus* the margin. The comment in the stylesheet says the
+        // virtualiser adds the same offset; this is where it does it.
+        this.spacer.style.height = `${total * this.#rowHeight + SPACER_MARGIN * 2}px`;
 
         const viewportHeight = this.viewport.clientHeight || 400;
         const visible = Math.ceil(viewportHeight / this.#rowHeight);
         const start = Math.max(0, this.#startIndex - this.#overscan);
         const end = Math.min(total, this.#startIndex + visible + this.#overscan);
 
+        // The rows are rebuilt from scratch, which destroys the focused row.
+        // The focus is put back afterwards, or it would fall to the document
+        // and the list would lose its single tab stop.
+        const focused = this.#focusedIndex();
+
         const fragment = document.createDocumentFragment();
         for (let index = start; index < end; index += 1) {
             fragment.appendChild(this.#createRow(this.#items[index] as ListItemData, index));
         }
         this.rows.replaceChildren(fragment);
+
+        if (focused !== undefined) this.#focusRow(focused);
+    }
+
+    /**
+     * The index of the row that holds the focus.
+     *
+     * The rows live in the shadow root, so the focused row is the shadow
+     * root's `activeElement` — the document's `activeElement` is the host
+     * element itself.
+     *
+     * @returns The index, or `undefined` when the focus is not on a row.
+     */
+    #focusedIndex(): number | undefined {
+        if (!this.rows) return undefined;
+        const active = this.root.activeElement;
+        if (!(active instanceof HTMLElement)) return undefined;
+        if (!this.rows.contains(active)) return undefined;
+        const index = Number(active.dataset["index"]);
+        return Number.isInteger(index) ? index : undefined;
     }
 
     /** Create one row. */
     #createRow(item: ListItemData, index: number): HTMLElement {
         const row = document.createElement("div");
         row.className = "row";
-        row.setAttribute("role", "listitem");
+        row.setAttribute("role", "option");
+        row.setAttribute("aria-selected", String(item.selected ?? false));
+        // The list is virtualised, so the rows in the DOM are only a window
+        // of the whole. `aria-setsize` and `aria-posinset` tell the screen
+        // reader how big the list really is and where this row sits in it,
+        // so "item 4 of 5,000" does not read as "item 4 of 20".
+        row.setAttribute("aria-setsize", String(this.#items.length));
+        row.setAttribute("aria-posinset", String(index + 1));
         row.dataset.selected = String(item.selected ?? false);
-        row.dataset.state = "idle";
+        row.dataset.state =
+            item.state ?? (item.icon ? ICON_STATES.get(item.icon) : undefined) ?? "idle";
         row.dataset.index = String(index);
         row.style.position = "absolute";
         row.style.top = `${index * this.#rowHeight}px`;
         row.style.left = "0";
         row.style.right = "0";
-        // The roving tabindex: exactly one row is tabbable.
-        row.tabIndex = index === this.#focusIndex ? 0 : -1;
+        // The rows are not tab stops: the viewport is. They are still
+        // focusable, so that the arrow keys can move the focus onto them.
+        row.tabIndex = -1;
 
         const checkbox = document.createElement("span");
         checkbox.className = "check";
@@ -378,11 +538,11 @@ export class KList extends KComponent {
         row.addEventListener("click", () => {
             this.#focusIndex = index;
             this.toggleSelection(item.id);
-            this.#updateTabIndex();
+            this.#clampFocusIndex();
         });
         row.addEventListener("focus", () => {
             this.#focusIndex = index;
-            this.#updateTabIndex();
+            this.#clampFocusIndex();
         });
         row.addEventListener("dblclick", () => {
             this.emit("k-edit", { id: item.id, index });
@@ -391,13 +551,15 @@ export class KList extends KComponent {
         return row;
     }
 
-    /** Update the roving tabindex. */
-    #updateTabIndex(): void {
-        if (!this.rows) return;
-        for (const row of Array.from(this.rows.children)) {
-            const index = Number((row as HTMLElement).dataset.index);
-            (row as HTMLElement).tabIndex = index === this.#focusIndex ? 0 : -1;
-        }
+    /**
+     * Keep the tracked focus index within the list.
+     *
+     * The rows are not in the tab order, so there is no roving tabindex to
+     * update; the viewport is the list's one and only tab stop. The method
+     * only keeps the tracked index in step with the list.
+     */
+    #clampFocusIndex(): void {
+        this.#focusIndex = Math.min(this.#focusIndex, Math.max(0, this.#items.length - 1));
     }
 
     /** Handle the keyboard. */
@@ -450,11 +612,35 @@ export class KList extends KComponent {
         else if (bottom > viewBottom) this.viewport.scrollTop = bottom - this.viewport.clientHeight;
     }
 
-    /** Move DOM focus to a row. */
+    /**
+     * Move DOM focus to a row.
+     *
+     * The rows are a virtualised window, so the row for an index is not
+     * necessarily in the DOM: the window is found by the index the row
+     * carries, not by the row's position among its siblings. If the row is
+     * outside the window, the window is moved to it first — otherwise the
+     * focus would land on whatever row happened to be at that position, or on
+     * nothing at all.
+     */
     #focusRow(index: number): void {
-        if (!this.rows) return;
-        const row = this.rows.children[index] as HTMLElement | undefined;
+        if (!this.rows || !this.viewport) return;
+
+        let row = this.#rowAt(index);
+        if (!row) {
+            // The row is outside the rendered window. Scroll to it and
+            // render the window around it.
+            this.#scrollToIndex(index);
+            this.#startIndex = index;
+            this.#renderRows();
+            row = this.#rowAt(index);
+        }
         row?.focus();
+    }
+
+    /** The rendered row for an index, if it is in the DOM. */
+    #rowAt(index: number): HTMLElement | undefined {
+        if (!this.rows) return undefined;
+        return this.rows.querySelector<HTMLElement>(`[data-index="${index}"]`) ?? undefined;
     }
 
     /** Handle scrolling. */
@@ -463,26 +649,47 @@ export class KList extends KComponent {
         const start = Math.floor(this.viewport.scrollTop / this.#rowHeight);
         if (start !== this.#startIndex) {
             this.#startIndex = start;
+            // The focused index follows the scroll. Without this, arrowing
+            // down after scrolling with the mouse jumped back to wherever
+            // the focus had last been — which could be far off screen.
+            this.#focusIndex = start;
             this.#renderRows();
         }
     };
 }
 
-defineComponent("k-list", KList);
-
-export class KListItem extends KComponent {
-    static override styles = ITEM_STYLES;
-
-    protected override render(): void {
-        // The item is rendered by the list, which owns the virtualisation.
+/**
+ * Whether the new list continues the old one.
+ *
+ * A list that continues is the old list with the same rows in the same order,
+ * with more rows added at the end at most. That is what happens when a
+ * chapter's state changes, when a row is ticked, or when more chapters are
+ * loaded — and in those cases the scroll position is part of what the user is
+ * looking at, so it must not move.
+ *
+ * A list that does not continue is a *different* list: another book, or
+ * another filter. There the scroll position means nothing, and it is reset.
+ *
+ * The comparison is by identifier and by position, so a list that has been
+ * reordered or filtered counts as different even when it holds the same
+ * rows.
+ *
+ * @param previous The items that were shown.
+ * @param next The items that are about to be shown.
+ * @returns True when the new list continues the old one.
+ */
+function continuesRows(previous: readonly ListItemData[], next: readonly ListItemData[]): boolean {
+    if (next.length < previous.length) return false;
+    for (let index = 0; index < previous.length; index += 1) {
+        if (previous[index]?.id !== next[index]?.id) return false;
     }
+    return true;
 }
 
-defineComponent("k-list-item", KListItem);
+defineComponent("k-list", KList);
 
 declare global {
     interface HTMLElementTagNameMap {
         "k-list": KList;
-        "k-list-item": KListItem;
     }
 }

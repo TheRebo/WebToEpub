@@ -9,6 +9,7 @@
  */
 import { KComponent, defineComponent } from "./base";
 import { createIcon, type IconName } from "./icons";
+import "./k-button";
 
 const STYLES = `
 :host {
@@ -36,6 +37,7 @@ const STYLES = `
 }
 
 .heading {
+    margin: 0;
     font-size: var(--text-md);
     font-weight: var(--weight-semibold);
     color: var(--text);
@@ -75,7 +77,9 @@ export class KEmpty extends KComponent {
         graphic.setAttribute("aria-hidden", "true");
         graphic.appendChild(createIcon(illustration as IconName, 96));
 
-        const heading = document.createElement("p");
+        // The title is a heading, so that the empty state has a structure a
+        // screen reader can navigate.
+        const heading = document.createElement("h3");
         heading.className = "heading";
         heading.textContent = this.getAttribute("heading") ?? "";
 

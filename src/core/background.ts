@@ -4,30 +4,54 @@
  * Owns the parser registry, the network layer, and the download manager. The
  * extension pages never fetch anything themselves; they ask the worker.
  *
- * This is the only place that holds the 437 parsers, which is what keeps the
+ * This is the only place that holds the 434 parsers, which is what keeps the
  * popup small: the popup ships no parser code at all.
  *
  * See ADR-0005.
  */
-import { DownloadManager } from "./download-manager";
+import { cleanAuthor, DownloadManager } from "./download-manager";
 import { FetchClient } from "./net/fetch-client";
+import { CookieBridge } from "./net/cookie-bridge";
+import { createCookieApi } from "./net/browser-cookie-api";
+import { installOriginStripRule, installPrivateNetworkRules } from "./net/dnr-rules";
 import { legacyRegistry } from "./parsers/compat/legacy-factory";
 import { installFetchClient } from "./parsers/compat/legacy-http-client";
 import { setParserServices } from "./parsers/services-context";
+import {
+    defaultLegacyUserPreferences,
+    toLegacyUserPreferences,
+} from "./parsers/compat/legacy-preferences";
 import { buildParserUtilities } from "./util/parser-utilities";
-import { handleRequests, type RequestMap } from "./message/bus";
-import { localStorageAdapter, onMessage, getNamespace } from "./browser-api";
-import { SettingsStore } from "./storage/settings-store";
-import { LibraryStore } from "./storage/library-store";
+import { handleRequests, type RequestHandlers, type RequestMap } from "./message/bus";
+import { localStorageAdapter, onMessage, onStorageChanged, getNamespace } from "./browser-api";
+import { SettingsStore, SETTINGS_KEY } from "./storage/settings-store";
+import { LibraryStore, mergeLibraryEntry, type LibraryEntry } from "./storage/library-store";
+import { parseLibraryExport } from "./storage/library-import";
 import { siteSelectors } from "./storage/site-selectors";
 import { scanDocument } from "./parsers/heuristic-scanner";
-import { toUserFacingError } from "./util/errors";
-import { validateFetchableUrl } from "./util/sanitize";
+import {
+    redactUrlsIn,
+    toUserFacingError,
+    UserFacingErrorError,
+    type UserFacingError,
+} from "./util/errors";
+import { diagnostic, diagnosticUrl, setDiagnosticsEnabled } from "./util/diagnostics";
+import { mayFetchUrl } from "./net/fetch-policy";
+import { listHostAccess } from "./host-access";
+import { isPrivateHost } from "./util/sanitize";
 import { DefaultParser } from "./parsers/default-parser";
 import { registerAllParsers } from "./parsers/register-all";
-import type { ParserServices } from "./parsers/parser";
+import type { Parser, ParserServices } from "./parsers/parser";
+import { listChapterUrls } from "./parsers/parser";
+import { removeChapterNumber } from "./util/chapter-title";
+import { readLivePageDom } from "./live-page";
+import { LegacyParser, type LegacyChapter } from "./parsers/compat/legacy-parser";
+import { syncLegacyControls } from "./parsers/compat/legacy-controls";
 
 /** The worker. */
+/** How many listed stories the worker keeps for their downloads. */
+const REMEMBERED_STORIES = 4;
+
 class BackgroundWorker {
     /**
      * The registry.
@@ -36,12 +60,65 @@ class BackgroundWorker {
      * writes into this registry.
      */
     #registry = legacyRegistry;
-    #fetch = new FetchClient();
+    #cookies: CookieBridge | undefined;
+    #fetch: FetchClient;
     #downloads: DownloadManager;
     #settings = new SettingsStore(localStorageAdapter);
-    #library = new LibraryStore();
+    #library = new LibraryStore(undefined, () => {
+        // The library is blocked by another tab. The open is not a failure —
+        // it waits for the other tab to let go — but the wait can be long
+        // enough that the user thinks the extension has hung.
+        diagnostic("The library is waiting for another tab to let go of it");
+    });
+    /**
+     * Keep the page and the parser a chapter list was built from, so the
+     * download reuses them. Only the last few stories are kept.
+     */
+    #rememberStory(url: string, dom: Document, parser: Parser): void {
+        this.#stories.delete(url);
+        this.#stories.set(url, { dom, parser });
+        while (this.#stories.size > REMEMBERED_STORIES) {
+            const oldest = this.#stories.keys().next().value;
+            if (oldest === undefined) break;
+            this.#stories.delete(oldest);
+        }
+    }
+
+    /**
+     * The user's preferences, in the shape the legacy parsers read them.
+     *
+     * The preferences are a snapshot: a parser is built for one run, and
+     * that run uses the settings the user had when they started it.
+     */
+    #preferences = defaultLegacyUserPreferences();
+    /** The page and parser each recent chapter list came from, by story URL. */
+    #stories = new Map<string, { dom: Document; parser: Parser }>();
+
+    /**
+     * The startup promise.
+     *
+     * The message listener is registered before the worker has finished
+     * starting, so a message that arrives during the startup is answered rather
+     * than lost. The handlers that need the parser registry wait for this.
+     */
+    #ready: Promise<void> = Promise.resolve();
 
     constructor() {
+        // The cookie bridge copies the site's partitioned cookies into
+        // unpartitioned ones for the duration of a request. Without it, a
+        // site that authenticates with a partitioned cookie answers the
+        // extension's request with a login page instead of the chapter.
+        const cookieApi = createCookieApi(getNamespace()?.cookies);
+        if (cookieApi) {
+            this.#cookies = new CookieBridge(cookieApi);
+        }
+
+        this.#fetch = new FetchClient({
+            fetch: globalThis.fetch.bind(globalThis),
+            sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+            cookies: this.#cookies,
+        });
+
         // The legacy HTTP facade needs the rewrite's fetch client, so that
         // every request — whether it comes from the new pipeline or from a
         // migrated parser — goes through the same cookie handling, retry
@@ -63,11 +140,23 @@ class BackgroundWorker {
                 const url = URL.createObjectURL(blob);
                 try {
                     if (api) {
-                        await api.downloads.download({
-                            url,
-                            filename: fileName,
-                            conflictAction: "uniquify",
-                        });
+                        try {
+                            await api.downloads.download({
+                                url,
+                                filename: fileName,
+                                conflictAction: "uniquify",
+                            });
+                        } catch (error) {
+                            // Closing the "Save as" dialog rejects the download.
+                            // That is the user's choice, not a network failure.
+                            if (/cancel/i.test(String(error))) {
+                                throw new UserFacingErrorError(
+                                    "The book was not saved, because the save dialog was closed.",
+                                    "CANCELLED",
+                                );
+                            }
+                            throw error;
+                        }
                     }
                     return { fileName, fileSize: bytes.length };
                 } finally {
@@ -77,11 +166,75 @@ class BackgroundWorker {
                 }
             },
             parserFor: (url, dom) => this.#registry.fetch(url, dom),
-            util: {
-                safeForFileName: (title, maxLength) => safeFileName(title, maxLength),
+            storyFor: (url) => this.#stories.get(url),
+            parserForHost: (url, storyParser) => {
+                const parser = this.#registry.fetchByUrl(url);
+                if (parser instanceof LegacyParser && storyParser instanceof LegacyParser) {
+                    parser.copyState(storyParser);
+                }
+                return parser;
             },
             throttle: async (ms, signal) => {
                 await sleep(ms, signal);
+            },
+            // The behaviour settings are read when a job starts, so a change
+            // in the options applies to the next download and not to one that
+            // is already running.
+            behaviour: async () => {
+                const settings = await this.#settings.get();
+                return settings.behaviour;
+            },
+            // The image settings are read at the same moment, for the same
+            // reason.
+            images: async () => {
+                const settings = await this.#settings.get();
+                return settings.images;
+            },
+            // The filename template is read at the same moment, for the same
+            // reason. It is applied when the book is saved, because that is
+            // the only point at which the author's name is known.
+            filenameTemplate: async () => {
+                const settings = await this.#settings.get();
+                return settings.story.filenameTemplate;
+            },
+            // The book settings are read at the same moment, for the same
+            // reason.
+            book: async () => {
+                const settings = await this.#settings.get();
+                return {
+                    version: settings.epub.version === 2 ? 2 : 3,
+                    addInfoPage: settings.epub.addInfoPage,
+                    defaultLanguage: settings.story.defaultLanguage,
+                };
+            },
+            // The user's preferences are refreshed before the job's parser is
+            // built, so the parser sees the settings the user has right now.
+            prepare: async () => {
+                await this.#refreshPreferences();
+            },
+            // When a job ends — whether it completed, failed or was cancelled
+            // — the copied partitioned cookies are removed. Without this a
+            // long session would leave copies of the user's session cookies
+            // behind, and they would be sent with every later request.
+            onFinished: () => {
+                void this.#cookies?.removeAll().catch(() => {
+                    // Cleanup failure must never break the job's result.
+                });
+            },
+            // A finished book is recorded in the library, so the options
+            // page's library shows what the user has actually made. Without
+            // this the library is always empty, because the download
+            // manager is the only thing that ever produces a book.
+            saveToLibrary: async (entry) => {
+                // Re-downloading the same story updates the entry that is
+                // already there, rather than adding a second one. The library
+                // is a list of the user's books, and a book that was fetched
+                // twice is one book with two entries — which is a list the
+                // user has to clean up by hand.
+                //
+                // The existing entry keeps its ID and its "added" date, so
+                // that updating a book does not make it look new.
+                await this.#library.save(entry);
             },
         });
 
@@ -96,173 +249,409 @@ class BackgroundWorker {
 
     /** Build the services injected into parsers. */
     #buildServices(): ParserServices {
+        // The preferences are read through a closure rather than captured, so
+        // a parser built for a run always sees the settings the user had when
+        // they pressed the button — not the ones that were current when the
+        // worker started.
+        const preferences = (): unknown => this.#preferences;
         return {
-            fetchHtml: async (url, options) => {
-                const result = await this.#fetch.fetchHtml(url, options);
-                return { dom: result.dom, url: result.url };
-            },
-            fetchJson: async (url, options) => this.#fetch.fetchJson(url, options),
+            fetchHtml: (url, options) => this.#fetchHtml(url, options),
+            fetchJson: (url, options) => this.#fetch.fetchJson(url, options),
             util: buildParserUtilities(),
             imageCollector: createImageCollector(),
+            // The user's preferences travel with the services, so a migrated
+            // parser is never built without them.
+            get preferences(): unknown {
+                return preferences();
+            },
         };
+    }
+
+    /** Fetch a page for a parser. */
+    async #fetchHtml(
+        url: string,
+        options?: { signal?: AbortSignal },
+    ): Promise<{ dom: Document; url: string }> {
+        const result = await this.#fetch.fetchHtml(url, options);
+        return { dom: result.dom, url: result.url };
+    }
+
+    /**
+     * The page the user asked about, as the user sees it.
+     *
+     * Many novel sites build their table of contents in the browser. The
+     * markup that arrives over the wire is an empty shell, so fetching it
+     * tells the parser nothing and the user is told the site is not supported
+     * while looking at a perfectly good list of chapters.
+     *
+     * So the live tab is asked for its DOM first, and the network is only
+     * used when there is no tab to ask. See ADR-0033.
+     */
+    async #storyPageDom(url: string): Promise<Document> {
+        const live = await readLivePageDom(url);
+        if (live) return live;
+
+        const result = await this.#fetch.fetchHtml(url);
+        return result.dom;
+    }
+
+    /**
+     * The user's preferences, in the shape the legacy parsers read them.
+     *
+     * The settings are read once at startup and refreshed whenever a run
+     * starts, so a parser is never built with a stale snapshot.
+     */
+    async #refreshPreferences(): Promise<void> {
+        try {
+            const settings = await this.#settings.get();
+            this.#preferences = toLegacyUserPreferences(settings);
+            syncLegacyControls(globalThis.document, {
+                removeChapterNumbers: settings.story.removeChapterNumbers,
+            });
+            setDiagnosticsEnabled(settings.advanced.diagnostics);
+        } catch {
+            // A failure to read the settings must not stop the worker: the
+            // defaults are safe, and the download can still run.
+            this.#preferences = defaultLegacyUserPreferences();
+        }
     }
 
     /** Start the worker. */
     async start(): Promise<void> {
-        // The parsers are registered before any request is handled. If this
-        // were not awaited, a request that arrived during the registration
-        // would find an empty registry and fall back to the default parser for
-        // a site that does have a dedicated one.
-        await registerAllParsers(this.#registry);
+        // The listener is registered before the worker has finished starting.
+        // A message that arrives during the startup — the popup is opened by
+        // the user, and the worker may still be registering its parsers — is
+        // then answered rather than lost, which would show the user an error
+        // that had nothing to do with what they did.
+        this.#ready = this.#prepare().catch((error) => {
+            // The promise is awaited by every handler, so it must never be a
+            // rejected promise: a rejection would fail every request for the
+            // life of the worker, with no way back. The worker starts with
+            // whatever it managed to prepare.
+            console.error("[kintsugi] The worker could not start:", error);
+        });
+        handleRequests({ onMessage }, this.#handlers());
+        await this.#ready;
+    }
+
+    /**
+     * Prepare the worker.
+     *
+     * The parsers are registered before any request is handled. If this were
+     * not awaited, a request that arrived during the registration would find
+     * an empty registry and fall back to the default parser for a site that
+     * does have a dedicated one.
+     *
+     * Every step is allowed to fail. The promise this returns is awaited by
+     * every handler, so a rejection here would leave the promise permanently
+     * rejected and *every* request would fail for the life of the worker —
+     * one unavailable storage area would take the whole extension down. A
+     * step that fails leaves the extension in the state it would have been in
+     * before that step ran, which is a state it already knows how to work in.
+     */
+    async #prepare(): Promise<void> {
+        try {
+            await registerAllParsers();
+        } catch (error) {
+            console.error("[kintsugi] The parsers could not be registered:", error);
+        }
 
         // The saved site selectors have to be in the cache before the first
         // chapter is fetched, or a site the user has already taught would be
-        // parsed by the fallback parser one more time.
-        await siteSelectors.hydrate();
+        // parsed by the fallback parser one more time. Without the cache the
+        // parsers simply fall back to their own selectors, which is what
+        // happens on a first run anyway.
+        try {
+            await siteSelectors.hydrate();
+        } catch (error) {
+            console.error("[kintsugi] The site selectors could not be read:", error);
+        }
 
-        handleRequests(
-            { onMessage },
-            {
-                "page:analyze": (payload) => this.#analyse(payload.url),
-                "chapters:list": (payload) => this.#listChapters(payload.url),
-                "download:start": (payload) => this.#startDownload(payload),
-                "download:cancel": (payload) => ({
-                    cancelled: this.#downloads.cancel(payload.jobId),
-                }),
-                "download:progress": (payload) => {
-                    const progress = this.#downloads.progress(payload.jobId);
-                    if (!progress) throw new Error("No such job.");
-                    return progress;
-                },
-                "download:list": () => ({ jobs: this.#downloads.list() }),
-                "settings:get": async () => ({ settings: await this.#settings.get() }),
-                "settings:set": async (payload) => {
-                    await this.#settings.set(payload.settings as never);
-                    return { settings: await this.#settings.get() };
-                },
-                "library:list": async () => ({ entries: await this.#library.list() }),
-                "library:delete": async (payload) => {
-                    const entry = await this.#library.get(payload.id);
-                    if (!entry) return { deleted: false };
-                    await this.#library.delete(payload.id);
-                    return { deleted: true };
-                },
-                "permissions:check": async (payload) => ({
-                    hasAccess: await this.#hasAccess(payload.origin),
-                }),
-                "permissions:request": async (payload) => {
-                    const api = getNamespace();
-                    if (!api) return { granted: false };
-                    const granted = await api.permissions.request({
-                        origins: [`${payload.origin}/*`],
-                    });
-                    return { granted };
-                },
-                "permissions:list": async () => {
-                    const api = getNamespace();
-                    if (!api) return { origins: [] };
-                    const all = await api.permissions.getAll();
-                    return { origins: all.origins ?? [] };
-                },
-                "permissions:revoke": async (payload) => {
-                    const api = getNamespace();
-                    if (!api) return { revoked: false };
-                    const revoked = await api.permissions.remove({
-                        origins: [`${payload.origin}/*`],
-                    });
-                    return { revoked };
-                },
-                "site-selectors:suggest": async (payload) => this.#suggestSelectors(payload.url),
-                "site-selectors:test": async (payload) =>
-                    this.#testSelectors(payload.url, payload.contentCss, payload.titleCss),
-                "site-selectors:save": async (payload) => {
-                    await siteSelectors.setForHost(payload.hostname, {
-                        contentCss: payload.contentCss,
-                        titleCss: payload.titleCss,
-                        removeCss: payload.removeCss,
-                        testUrl: payload.testUrl ?? "",
-                    });
-                    return { saved: true };
-                },
-                "site-selectors:list": async () => {
-                    const all = await siteSelectors.list();
-                    const entries = [...all.entries()].map(([hostname, config]) => ({
-                        hostname,
-                        ...config,
-                    }));
-                    return { entries };
-                },
-                "site-selectors:remove": async (payload) => {
-                    await siteSelectors.removeForHost(payload.hostname);
-                    return { removed: true };
-                },
+        // The user's preferences are read before the first parser is built, so
+        // the very first run already honours them.
+        await this.#refreshPreferences();
+
+        // The origin-stripping rule replaces the baseline's `webRequest`
+        // listener. It is reinstalled on every worker start, because a
+        // dynamic rule does not survive the worker being torn down.
+        await installOriginStripRule(getNamespace()?.declarativeNetRequest);
+        await this.#refreshPrivateNetworkRules();
+        this.#watchHostGrants();
+
+        this.#watchSettings();
+    }
+
+    /**
+     * Rebuild the rules that keep redirects out of the user's network, so a
+     * private host the user granted by name stays reachable (ADR-0045).
+     */
+    async #refreshPrivateNetworkRules(): Promise<void> {
+        const granted = (await listHostAccess()).filter((pattern) => {
+            const host = /^[^:]+:\/\/([^/]+)\//.exec(pattern)?.[1];
+            return host !== undefined && isPrivateHost(host);
+        });
+        await installPrivateNetworkRules(getNamespace()?.declarativeNetRequest, granted);
+    }
+
+    /** Rebuild the private-network rules whenever a host grant changes. */
+    #watchHostGrants(): void {
+        const permissions = getNamespace()?.permissions as
+            | {
+                  onAdded?: { addListener(listener: () => void): void };
+                  onRemoved?: { addListener(listener: () => void): void };
+              }
+            | undefined;
+        const refresh = (): void => {
+            void this.#refreshPrivateNetworkRules();
+        };
+        permissions?.onAdded?.addListener(refresh);
+        permissions?.onRemoved?.addListener(refresh);
+    }
+
+    /**
+     * Watch the settings for changes.
+     *
+     * The settings are cached in the store, and the options page writes to
+     * storage directly rather than through the bus. Without this listener the
+     * worker would keep using the settings it read when it started, and a
+     * change made in the options page would only take effect the next time the
+     * worker was restarted — which, for an event page, can be days.
+     */
+    #watchSettings(): void {
+        onStorageChanged((changes, areaName) => {
+            if (areaName !== "local") return;
+            if (!(SETTINGS_KEY in changes)) return;
+            this.#settings.invalidate();
+            void this.#refreshPreferences();
+        });
+    }
+
+    /**
+     * Import a library that WebToEpub 1.x exported.
+     *
+     * The original kept its library in its own `storage.local`, which is
+     * scoped to the original's extension ID. Kintsugi cannot read that, so
+     * the user exports from the old extension and imports the file here.
+     *
+     * A book that is already in the library is updated rather than duplicated:
+     * the same story is one book, however many times it was made.
+     *
+     * @param bytes The export archive's bytes.
+     * @returns How many books were imported.
+     */
+    async #importLibrary(bytes: Uint8Array): Promise<number> {
+        const books = await parseLibraryExport(bytes);
+        let imported = 0;
+
+        for (const book of books) {
+            // A book with no address cannot be told apart from another one, so
+            // it is not added: the library would fill with indistinguishable
+            // entries that the user could only remove by hand.
+            if (!book.sourceUrl) continue;
+
+            const existing = await this.#library.findBySourceUrl(book.sourceUrl);
+            const now = Date.now();
+            const entry: LibraryEntry = {
+                id: existing?.id ?? `import-${now}-${imported}`,
+                title: book.title,
+                author: book.author,
+                sourceUrl: book.sourceUrl,
+                chapterCount: book.chapterCount,
+                size: book.size,
+                addedAt: existing?.addedAt ?? now,
+                updatedAt: now,
+                cover: book.cover,
+                coverMediaType: book.coverMediaType,
+                // The original did not record the chapters' addresses in the
+                // export, so an imported book cannot be updated chapter by
+                // chapter. The book itself is on the user's disk.
+                chapterUrls: existing?.chapterUrls ?? [],
+            };
+            await this.#library.save(mergeLibraryEntry(existing, entry));
+            imported += 1;
+        }
+
+        return imported;
+    }
+
+    /** The message handlers the worker registers. */
+    #handlers(): RequestHandlers {
+        return {
+            "page:analyze": async (payload) => {
+                await this.#ready;
+                return this.#analyse(payload.url);
             },
-        );
+            "chapters:list": async (payload) => {
+                await this.#ready;
+                return this.#listChapters(payload.url);
+            },
+            "download:start": async (payload) => {
+                await this.#ready;
+                return this.#startDownload(payload);
+            },
+            "download:cancel": (payload) => ({
+                cancelled: this.#downloads.cancel(payload.jobId),
+            }),
+            "download:progress": (payload) => {
+                const progress = this.#downloads.progress(payload.jobId);
+                if (!progress) throw new Error("No such job.");
+                return progress;
+            },
+            "download:list": () => ({ jobs: this.#downloads.list() }),
+            "library:list": async () => {
+                // The cover's bytes are not sent. The library's grid draws
+                // a placeholder cover, and a cover can be a hundred
+                // kilobytes: sending one per book, on every visit to the
+                // options page, would be a lot of copying for nothing.
+                const all = await this.#library.list();
+                return {
+                    entries: all.map((entry) => ({
+                        id: entry.id,
+                        title: entry.title,
+                        author: entry.author,
+                        sourceUrl: entry.sourceUrl,
+                        chapterCount: entry.chapterCount,
+                        size: entry.size,
+                        addedAt: entry.addedAt,
+                        updatedAt: entry.updatedAt,
+                        hasCover: entry.cover !== undefined && entry.cover.length > 0,
+                    })),
+                };
+            },
+            "library:delete": async (payload) => {
+                const entry = await this.#library.get(payload.id);
+                if (!entry) return { deleted: false };
+                await this.#library.delete(payload.id);
+                return { deleted: true };
+            },
+            "library:import": async (payload) => ({
+                imported: await this.#importLibrary(new Uint8Array(payload.data)),
+            }),
+            "site-selectors:suggest": async (payload) => this.#suggestSelectors(payload.url),
+            "site-selectors:test": async (payload) =>
+                this.#testSelectors(payload.url, payload.contentCss, payload.titleCss),
+            "site-selectors:save": async (payload) => {
+                await siteSelectors.setForHost(payload.hostname, {
+                    contentCss: payload.contentCss,
+                    titleCss: payload.titleCss,
+                    removeCss: payload.removeCss,
+                    // The test URL is fetched later, when the selectors are
+                    // tried out. It is validated here, so that a URL that
+                    // was never a web address cannot be stored and then
+                    // fetched.
+                    testUrl: await validatedTestUrl(payload.testUrl),
+                });
+                return { saved: true };
+            },
+            "site-selectors:list": async () => {
+                const all = await siteSelectors.list();
+                const entries = [...all.entries()].map(([hostname, config]) => ({
+                    hostname,
+                    ...config,
+                }));
+                return { entries };
+            },
+            "site-selectors:remove": async (payload) => {
+                await siteSelectors.removeForHost(payload.hostname);
+                return { removed: true };
+            },
+        };
     }
 
     /** Analyse a page. */
     async #analyse(url: string): Promise<RequestMap["page:analyze"]["response"]> {
-        const validated = validateFetchableUrl(url);
+        const validated = await mayFetchUrl(url);
         if (!validated) {
             return { supported: false, error: toUserFacingError(new Error("Unsupported URL.")) };
         }
 
         try {
-            const result = await this.#fetch.fetchHtml(url);
-            const parser = this.#registry.fetch(url, result.dom);
+            const dom = await this.#storyPageDom(url);
+            const parser = this.#registry.fetch(url, dom);
             if (!parser) {
-                return { supported: false, error: toUserFacingError(new Error("No parser.")) };
+                return { supported: false, error: unsupportedSiteError() };
             }
+            const disabled = disabledMessage(parser);
+            if (disabled) return { supported: false, error: disabledSiteError(disabled) };
+            await loadMetadata(parser, dom);
+            diagnosticUrl("Analysed the page with", url, parser.constructor.name);
 
-            const title = parser.extractTitleImpl(result.dom);
-            const titleText =
-                typeof title === "string"
-                    ? title
-                    : title && "textContent" in title
-                      ? (title.textContent ?? "")
-                      : "";
+            // One parser that throws on a page it did not expect must not
+            // turn the whole analysis into "unsupported".
+            const title = safely(() => {
+                if (parser instanceof LegacyParser) return parser.extractTitle(dom);
+                const found = parser.extractTitleImpl(dom);
+                return typeof found === "string" ? found : (found?.textContent ?? "");
+            });
 
             return {
                 supported: true,
                 parserName: parser.constructor.name,
                 usedDefaultParser: parser instanceof DefaultParser,
-                title: titleText.trim() || undefined,
-                author: parser.extractAuthor(result.dom)?.trim() || undefined,
-                language: parser.extractLanguage(result.dom)?.trim() || undefined,
-                coverUrl: parser.findCoverImageUrl(result.dom) ?? undefined,
-                description: parser.extractDescription(result.dom)?.trim() || undefined,
+                title: title?.trim() || undefined,
+                author: cleanAuthor(safely(() => parser.extractAuthor(dom))),
+                language: safely(() => parser.extractLanguage(dom))?.trim() || undefined,
+                coverUrl: safely(() => parser.findCoverImageUrl(dom)) ?? undefined,
+                description: safely(() => parser.extractDescription(dom))?.trim() || undefined,
             };
         } catch (error) {
-            return { supported: false, error: toUserFacingError(error) };
+            return { supported: false, error: toUserFacingError(error, { url }) };
         }
     }
 
     /** List a page's chapters. */
     async #listChapters(url: string): Promise<RequestMap["chapters:list"]["response"]> {
-        const validated = validateFetchableUrl(url);
+        const validated = await mayFetchUrl(url);
         if (!validated) {
             return { chapters: [], error: toUserFacingError(new Error("Unsupported URL.")) };
         }
 
         try {
-            const result = await this.#fetch.fetchHtml(url);
-            const parser = this.#registry.fetch(url, result.dom);
+            const dom = await this.#storyPageDom(url);
+            // The preferences are refreshed before the parser is built, so the
+            // parser sees the settings the user has right now.
+            await this.#refreshPreferences();
+            const parser = this.#registry.fetch(url, dom);
             if (!parser) {
-                return { chapters: [], error: toUserFacingError(new Error("No parser.")) };
+                return { chapters: [], error: unsupportedSiteError() };
             }
+            const disabled = disabledMessage(parser);
+            if (disabled) return { chapters: [], error: disabledSiteError(disabled) };
+            syncLegacyControls(globalThis.document, { storyUrl: url });
+            await loadMetadata(parser, dom);
 
-            const chapters = await parser.getChapterUrls(result.dom);
+            // The original pipeline told the parser which page the list came
+            // from before asking for it, and nine parsers read that back.
+            const legacy = parser instanceof LegacyParser ? parser : undefined;
+            if (legacy) {
+                legacy.state.chapterListUrl = url;
+                legacy.state.firstPageDom = dom;
+            }
+            const chapters = await listChapterUrls(parser, dom);
+            legacy?.setPagesToFetch(chapters as LegacyChapter[]);
+            this.#rememberStory(url, dom, parser);
+            diagnosticUrl("Found chapters with", url, parser.constructor.name, chapters.length);
+
+            // The chapter numbers are stripped here rather than in the
+            // download pipeline, so that the list the user looks at is the
+            // list the book will have.
+            const settings = await this.#settings.get();
+            const stripNumbers = settings.story.removeChapterNumbers;
+
             return {
                 chapters: chapters.map((chapter) => ({
                     sourceUrl: chapter.sourceUrl,
-                    title: chapter.title,
+                    title:
+                        stripNumbers && chapter.title
+                            ? removeChapterNumber(chapter.title)
+                            : chapter.title,
                     // A chapter the parser marks as not includeable starts
                     // unchecked in the UI.
                     isIncludeable: chapter.isIncludeable ?? true,
                 })),
             };
         } catch (error) {
-            return { chapters: [], error: toUserFacingError(error) };
+            return { chapters: [], error: toUserFacingError(error, { url }) };
         }
     }
 
@@ -272,19 +661,39 @@ class BackgroundWorker {
     ): Promise<RequestMap["download:start"]["response"]> {
         // The titles come from the chapter list the user picked from. Without
         // them the book's table of contents would be a list of URLs.
-        const chapters = payload.chapters.map((chapter) => ({
-            sourceUrl: chapter.sourceUrl,
-            title: chapter.title || chapter.sourceUrl,
-        }));
-        const jobId = this.#downloads.start(payload.url, payload.title, chapters);
-        return { jobId };
-    }
+        //
+        // Every URL is validated before the job starts. The extension fetches
+        // these URLs from its own context, where it can reach further than
+        // the page that asked; a page that asked the extension to fetch a
+        // `file:` URL, or a URL on the local network, would be using the
+        // extension as a proxy. A URL on a private host is allowed when the
+        // user has granted the extension access to it. The same check guards
+        // `page:analyze` and `chapters:list`.
+        if (!(await mayFetchUrl(payload.url))) {
+            throw new Error("The story's URL is not a web address.");
+        }
 
-    /** Whether the extension has host access to an origin. */
-    async #hasAccess(origin: string): Promise<boolean> {
-        const api = getNamespace();
-        if (!api) return false;
-        return api.permissions.contains({ origins: [`${origin}/*`] });
+        const chapters: Array<{ sourceUrl: string; title: string; state: "queued" }> = [];
+        for (const chapter of payload.chapters) {
+            if (!(await mayFetchUrl(chapter.sourceUrl))) {
+                throw new Error("A chapter's URL is not a web address.");
+            }
+            chapters.push({
+                sourceUrl: chapter.sourceUrl,
+                title: chapter.title || chapter.sourceUrl,
+                // Every chapter starts out waiting. The job moves it on.
+                state: "queued",
+            });
+        }
+
+        const jobId = this.#downloads.start(payload.url, payload.title, chapters, {
+            fileName: payload.fileName,
+            author: payload.author,
+            language: payload.language,
+            coverUrl: payload.coverUrl,
+        });
+        diagnostic("Started a download job", jobId, chapters.length, "chapters");
+        return { jobId };
     }
 
     /**
@@ -299,7 +708,7 @@ class BackgroundWorker {
         contentCss: string,
         titleCss: string,
     ): Promise<RequestMap["site-selectors:test"]["response"]> {
-        const validated = validateFetchableUrl(url);
+        const validated = await mayFetchUrl(url);
         if (!validated) {
             return { ok: false, contentChars: 0, titleText: "", error: "Unsupported URL." };
         }
@@ -315,7 +724,7 @@ class BackgroundWorker {
                 ok: false,
                 contentChars: 0,
                 titleText: "",
-                error: error instanceof Error ? error.message : String(error),
+                error: redactUrlsIn(error instanceof Error ? error.message : String(error)),
             };
         }
     }
@@ -330,7 +739,7 @@ class BackgroundWorker {
     async #suggestSelectors(
         url: string,
     ): Promise<RequestMap["site-selectors:suggest"]["response"]> {
-        const validated = validateFetchableUrl(url);
+        const validated = await mayFetchUrl(url);
         if (!validated) {
             return { status: "failed", contentCss: "", titleCss: "", error: "Unsupported URL." };
         }
@@ -350,10 +759,78 @@ class BackgroundWorker {
                 status: "failed",
                 contentCss: "",
                 titleCss: "",
-                error: error instanceof Error ? error.message : String(error),
+                error: redactUrlsIn(error instanceof Error ? error.message : String(error)),
             };
         }
     }
+}
+
+/**
+ * The error for a page that no parser could read.
+ *
+ * It is a different error from a page that could not be reached, and the user
+ * can do something about each: one means the site is not supported yet, the
+ * other means the network or the site let us down. Telling them apart matters,
+ * because "try again" is useless advice for a site nobody has a parser for.
+ */
+/**
+ * The message a parser gives when its site asked not to be scraped, or
+ * `null`. The original refused such a site, and so does the worker.
+ */
+function disabledMessage(parser: Parser): string | null {
+    if (!(parser instanceof LegacyParser)) return null;
+    const message = safely(() => parser.disabled() as unknown);
+    if (typeof message === "function") return String((message as () => unknown)());
+    return typeof message === "string" && message ? message : null;
+}
+
+/** The error for a site whose parser is disabled. */
+function disabledSiteError(message: string): UserFacingError {
+    return { message, code: "UNSUPPORTED" };
+}
+
+/**
+ * Let a parser fetch the metadata that needs a request of its own (a cover
+ * from an API, an author from another page). A failure keeps what the page has.
+ */
+async function loadMetadata(parser: Parser, dom: Document): Promise<void> {
+    if (!(parser instanceof LegacyParser)) return;
+    try {
+        await parser.loadEpubMetaInfo(dom);
+    } catch (error) {
+        diagnostic("A parser could not load its metadata:", String(error));
+    }
+}
+
+/** Call a parser's extractor, treating a throw as "nothing found". */
+function safely<T>(read: () => T): T | undefined {
+    try {
+        return read();
+    } catch {
+        return undefined;
+    }
+}
+
+function unsupportedSiteError(): UserFacingError {
+    return {
+        message: "Kintsugi does not know this site yet.",
+        code: "UNSUPPORTED",
+    };
+}
+
+/**
+ * The test URL to store with a set of selectors.
+ *
+ * The URL is fetched when the selectors are tried out, so a URL that is not a
+ * web address — a `file:` URL, or one on the local network the user has not
+ * allowed — is refused here rather than stored and fetched later.
+ *
+ * @param url The URL the user typed, if any.
+ * @returns The URL, or an empty string when it cannot be used.
+ */
+async function validatedTestUrl(url: string | undefined): Promise<string> {
+    if (!url) return "";
+    return (await mayFetchUrl(url)) ? url : "";
 }
 
 /** Query for the first element that matches, ignoring a bad selector. */
@@ -372,15 +849,22 @@ function createImageCollector() {
     return {
         images,
         async addImage(url: string): Promise<void> {
-            if (!validateFetchableUrl(url)) return;
+            if (!(await mayFetchUrl(url))) return;
             images.set(url, url);
         },
     };
 }
 
-/** Sleep, but stop early when the signal aborts. */
+/**
+ * Sleep, but stop early when the signal aborts.
+ *
+ * The rejection is an `AbortError` in name as well as in kind: the error
+ * model tells a cancelled download from a failed one by the name, and an
+ * error called "Aborted" that is not an `AbortError` is reported to the user
+ * as a network failure.
+ */
 async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-    if (signal?.aborted) throw new Error("Aborted");
+    if (signal?.aborted) throw abortError();
     await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(() => {
             signal?.removeEventListener("abort", onAbort);
@@ -388,33 +872,25 @@ async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
         }, ms);
         const onAbort = (): void => {
             clearTimeout(timer);
-            reject(new Error("Aborted"));
+            reject(abortError());
         };
         signal?.addEventListener("abort", onAbort, { once: true });
     });
 }
 
-/** A safe file name. */
-function safeFileName(title: string, maxLength = 120): string {
-    return sanitizeFileName(title, maxLength);
-}
-
-/** A safe file name, without pulling in the whole utilities module. */
-function sanitizeFileName(title: string, maxLength: number): string {
-    let safe = title
-        .replace(/[\\/:*?"<>|]/g, "-")
-        .replace(/^[\s.]+|[\s.]+$/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-    safe = [...safe]
-        .filter((character) => {
-            const code = character.charCodeAt(0);
-            return code > 0x1f && !(code >= 0x7f && code <= 0x9f);
-        })
-        .join("");
-    if (!safe) safe = "untitled";
-    if (safe.length > maxLength) safe = safe.slice(0, maxLength).trim();
-    return safe;
+/**
+ * An error that says it is an abort.
+ *
+ * A `DOMException` would do, but the worker cannot rely on one existing in
+ * every context it runs in, and an error that is an `Error` as well as an
+ * abort is understood everywhere.
+ *
+ * @returns The error.
+ */
+function abortError(): Error {
+    const error = new Error("The operation was aborted.");
+    error.name = "AbortError";
+    return error;
 }
 
 /** Start the worker. */

@@ -88,8 +88,12 @@ Kintsugi never:
 - observes your browsing history,
 - tracks you across sites.
 
-The content script it injects is a **reader**: it extracts the DOM and sends
-it back. It does not modify anything.
+The extension declares **no content script**: it injects nothing into the pages
+you visit, and it does not modify a page it reads. When it needs the story
+page as it appears on your screen — some sites build their chapter list in the
+browser — it reads that one tab's DOM through the browser's own scripting API,
+and takes the markup only. See
+[ADR-0033](./docs/decisions/ADR-0033-read-the-page-the-user-is-looking-at.md).
 
 ---
 

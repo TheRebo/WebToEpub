@@ -16,8 +16,8 @@ graph TB
         popup["Popup<br/>(launcher + progress)"]
         workbench["Workbench<br/>(tab)"]
         options["Options<br/>(tab)"]
-        worker["Background service worker"]
-        content["Content script<br/>(injected)"]
+        worker["Background event page"]
+        content["Story tab<br/>(read once, by scripting)"]
     end
 
     toolbar --> popup
@@ -99,12 +99,11 @@ anything.
 
 | Module                            | Responsibility                                                                                                                          |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `background.ts`                   | The service worker entry point: message routing, download orchestration, and the parser registry's lifetime.                            |
+| `background.ts`                   | The background event page's entry point: message routing, download orchestration, and the parser registry's lifetime.                   |
 | `browser-api.ts`                  | The single place that touches `browser.*`. Every other module goes through it, so the extension's API surface is auditable in one file. |
-| `content-script.ts`               | The injected script: extracts the page's DOM and hands it to the worker.                                                                |
+| `live-page.ts`                    | Reads the DOM of the tab showing the story, as the user sees it — and falls back to fetching the page.                                  |
 | `download-manager.ts`             | Owns the running downloads, their progress, and their cancellation.                                                                     |
 | `epub/document.ts`                | The typed EPUB document model.                                                                                                          |
-| `epub/reader.ts`                  | Parse a container into the model.                                                                                                       |
 | `epub/writer.ts`                  | Serialise the model, canonically.                                                                                                       |
 | `epub/packer.ts`                  | Assemble the model into a container.                                                                                                    |
 | `message/bus.ts`                  | The typed request/response and event channels between the pages and the worker.                                                         |
@@ -162,12 +161,24 @@ being bundled from `node_modules` at build time:
 
 Both are MIT-licensed. Their licences are reproduced in `LICENSE.md`.
 
+### 3.5 `tests/support/` — the test tree's own helpers
+
+Helpers that exist only to prove the code works live here, not in `src/`:
+
+| Helper           | What it is for                                                                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `epub-reader.ts` | Parses a written EPUB back into the document model, so the round trip — write, read, compare — can be asserted (see `tests/unit/epub-round-trip.test.ts`). |
+
+Kintsugi writes EPUBs; it never reads them. The reader exists so the tests can
+show that what was written is what comes back, and it is deliberately kept out
+of the shipped tree so nothing dead rides along in the bundle.
+
 ---
 
 ## 4. The download pipeline
 
 This is the sequence that produces an EPUB. It runs **in the background
-service worker**.
+event page** (the manifest's `background.scripts`, in Firefox).
 
 ```mermaid
 sequenceDiagram

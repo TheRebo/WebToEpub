@@ -1,7 +1,7 @@
 /**
  * The legacy parser base class.
  *
- * The 437 site parsers are the product's core asset, and every one of them
+ * The 434 site parsers are the product's core asset, and every one of them
  * was written against the baseline's `Parser` class. This module is that
  * class, reimplemented.
  *
@@ -38,7 +38,8 @@
 "use strict";
 
 import { Parser } from "../parser";
-import type { ParserServices, TocProgress, WebPage } from "../parser";
+import type { ParserServices, ParserUtilities, TocProgress, WebPage } from "../parser";
+import { NULL_TOC_PROGRESS, listChapterUrls } from "../parser";
 import type { ChapterLink } from "../../util/dom";
 import { util } from "./legacy-util";
 import { HttpClient } from "./legacy-http-client";
@@ -181,6 +182,37 @@ export class LegacyParser extends Parser {
         this.imageCollector = isServices
             ? new ImageCollector()
             : ((servicesOrImageCollector as ImageCollector | undefined) ?? new ImageCollector());
+
+        // The user's preferences are part of the services, so a parser is
+        // never built without them. A parser that was built with the defaults
+        // would remove the author notes or not, add the information page or
+        // not, according to nothing the user had asked for.
+        const preferences = this.services.preferences;
+        if (isLegacyUserPreferences(preferences)) {
+            this.onUserPreferencesUpdate(preferences);
+        }
+
+        this.#guardTocProgress();
+    }
+
+    /**
+     * Make sure the progress reporter is never missing inside a parser.
+     *
+     * A migrated parser overrides `getChapterUrls` and dereferences the
+     * reporter it is given, without a guard — the baseline always passed one.
+     * The runtime asks for the chapter list through `listChapterUrls`, which
+     * supplies one, but the method is public: a parser that calls itself, or
+     * any other caller, would still hand it `undefined`.
+     *
+     * Wrapping the instance's own method is what closes that hole. The
+     * wrapper is installed in the base constructor, which runs after the
+     * subclass's prototype is in place, so it wraps the subclass's override
+     * rather than the base's.
+     */
+    #guardTocProgress(): void {
+        const original = this.getChapterUrls.bind(this);
+        this.getChapterUrls = (dom, chapterUrlsUI) =>
+            original(dom, chapterUrlsUI ?? NULL_TOC_PROGRESS);
     }
 
     /* ------------------------------------------------------------------
@@ -582,13 +614,13 @@ export class LegacyParser extends Parser {
         chapterUrlsUI?: TocProgress,
     ): Promise<LegacyChapter[]> {
         let chapters = chaptersFromDom(dom);
-        chapterUrlsUI?.showTocProgress(chapters as never);
+        chapterUrlsUI?.showTocProgress(chapters);
         let url = nextTocPageUrl(dom, chapters, chapters);
         while (url !== null) {
             await this.rateLimitDelay();
             const nextDom = (await HttpClient.wrapFetch(url)).responseXML;
             const partialList = chaptersFromDom(nextDom);
-            chapterUrlsUI?.showTocProgress(partialList as never);
+            chapterUrlsUI?.showTocProgress(partialList);
             chapters = chapters.concat(partialList);
             url = nextTocPageUrl(nextDom, chapters, partialList);
         }
@@ -606,14 +638,14 @@ export class LegacyParser extends Parser {
         wrapOptions?: unknown,
     ): Promise<LegacyChapter[]> {
         if (chapters.length > 0) {
-            chapterUrlsUI?.showTocProgress(chapters as never);
+            chapterUrlsUI?.showTocProgress(chapters);
         }
         for (const url of urlsOfTocPages) {
             await this.rateLimitDelay();
             const newDom = (await HttpClient.wrapFetch(url, wrapOptions as LegacyWrapOptions))
                 .responseXML;
             const partialList = extractPartialChapterList(newDom);
-            chapterUrlsUI?.showTocProgress(partialList as never);
+            chapterUrlsUI?.showTocProgress(partialList);
             chapters = chapters.concat(partialList);
         }
         return chapters;
@@ -802,8 +834,8 @@ export class LegacyParser extends Parser {
     makePlaceholderEpubItem(webPage: LegacyChapter, epubItemIndex: number): EpubItem[] {
         const temp = LegacyParser.makeEmptyDocForContent(webPage.sourceUrl);
         temp.content.textContent = UIText.Default.chapterPlaceholderMessage(
-            webPage.title,
             webPage.sourceUrl,
+            webPage.error?.message ?? "",
         );
         util.convertPreTagToPTags(temp.dom, temp.content);
         return [new ChapterEpubItem(webPage, temp.content, epubItemIndex)];
@@ -832,7 +864,7 @@ export class LegacyParser extends Parser {
             title: titleText,
             newArc: null,
         };
-        return new ChapterEpubItem(chapter, { childNodes: [title, div, infoDiv] } as never, 0);
+        return new ChapterEpubItem(chapter, { childNodes: [title, div, infoDiv] }, 0);
     }
 
     /** Fill the information page's container. */
@@ -865,7 +897,12 @@ export class LegacyParser extends Parser {
         for (const webPage of webPages.filter((c) => this.isWebPagePackable(c))) {
             const newItems =
                 webPage.error === null || webPage.error === undefined
-                    ? this.webPageToEpubItems(webPage, index)
+                    ? // The chapter's own parser builds the items, not this
+                      // one. A chapter can be fetched by a different parser
+                      // from the one that listed it — the chapter list can
+                      // link to a site with its own parser — and that parser
+                      // may split the chapter into several EPUB items.
+                      (webPage.parser ?? this).webPageToEpubItems(webPage, index)
                     : this.makePlaceholderEpubItem(webPage, index);
             epubItems.push(...newItems);
             index += newItems.length;
@@ -988,7 +1025,7 @@ export class LegacyParser extends Parser {
         this.userPreferences.readingList.setReadingListCheckbox(url);
 
         try {
-            let chapters = await this.getChapterUrls(firstPageDom);
+            let chapters = await listChapterUrls<LegacyChapter>(this, firstPageDom);
             if (this.userPreferences.chaptersPageInChapterList.value) {
                 chapters = this.addFirstPageUrlToWebPages(url, firstPageDom, chapters);
             }
@@ -1054,6 +1091,10 @@ export class LegacyParser extends Parser {
             }
         } catch (error) {
             ErrorLog.log(error);
+            // The error is re-thrown after being logged, so a caller awaiting
+            // the fetch can tell that it failed. Swallowing it here made a
+            // failed run look like a successful one.
+            throw error;
         }
     }
 
@@ -1202,6 +1243,32 @@ export class LegacyParser extends Parser {
 }
 
 /**
+ * Whether a value is a set of legacy preferences.
+ *
+ * The preferences reach the parsers through the services, which are typed
+ * loosely because the rewrite's `Parser` does not know about the legacy
+ * shape. This check keeps the type honest without a cast.
+ *
+ * @param value The value to check.
+ * @returns Whether it looks like the legacy preferences.
+ */
+function isLegacyUserPreferences(value: unknown): value is LegacyUserPreferences {
+    if (typeof value !== "object" || value === null) return false;
+    const candidate = value as Partial<LegacyUserPreferences>;
+    // A handful of the flags is enough to tell the preferences apart from any
+    // other object that might have been put in the services.
+    const markers = [
+        candidate.removeAuthorNotes,
+        candidate.skipImages,
+        candidate.useSvgForImages,
+        candidate.addInformationPage,
+    ];
+    return markers.every(
+        (marker) => typeof marker === "object" && marker !== null && "value" in marker,
+    );
+}
+
+/**
  * The services to use when none were injected.
  *
  * A parser constructed outside the worker — in a test, or by a tool that
@@ -1217,7 +1284,11 @@ function makeFallbackServices(): ParserServices {
     return {
         fetchHtml: async () => fail(),
         fetchJson: async () => fail(),
-        util: util as never,
+        // The legacy `util` is a superset of the parser utilities: it has the
+        // same functions, with a couple of extra optional parameters and the
+        // legacy chapter shape. Every call the parser interface makes is
+        // satisfied by it, so the cast is safe.
+        util: util as unknown as ParserUtilities,
         imageCollector: {
             images: new Map<string, unknown>(),
             addImage: async () => undefined,

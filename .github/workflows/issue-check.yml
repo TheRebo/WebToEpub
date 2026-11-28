@@ -4,22 +4,9 @@ on:
   issues:
     types: [opened]
 
-# ──────────────────────────────────────────────────────────────
-# TESTING CONFIG
-# Set these to test on a fork while searching upstream data.
-# When running on the upstream repo itself, these are not needed
-# since context.repo already points to the right place.
-#
-# To test:
-#   1. Push this workflow to your fork
-#   2. Open an issue on your fork (e.g. "Please add site https://wuxiaworld.com")
-#   3. The bot will search dteviot/WebToEpub for data, but comment on YOUR fork's issue
-#
-# Before PR to upstream: set both to '' (empty) or remove the env block entirely
-# ──────────────────────────────────────────────────────────────
-env:
-  UPSTREAM_OWNER: "dteviot"
-  UPSTREAM_REPO: "WebToEpub"
+# The bot searches this repository's own issues, pull requests and releases.
+# To try it on a fork against another repository's data, set UPSTREAM_OWNER
+# and UPSTREAM_REPO in an `env:` block here; left unset, it uses context.repo.
 
 permissions:
   issues: write

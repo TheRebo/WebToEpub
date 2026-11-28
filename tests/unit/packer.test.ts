@@ -4,10 +4,20 @@ import {
     buildPlaceholderImage,
     extensionFor,
     packEpub,
+    stylesheetHref,
     type ChapterToPack,
 } from "../../src/core/epub/packer";
 import { buildContainerXml, buildXhtml, makeItemId } from "../../src/core/epub/writer";
-import { CONTAINER_PATH, NCX_PATH, OPF_PATH, NAV_PATH } from "../../src/core/epub/document";
+import { rewriteImageReferences } from "../../src/core/download-manager";
+import {
+    CONTAINER_PATH,
+    MIMETYPE_CONTENT,
+    MIMETYPE_PATH,
+    NCX_PATH,
+    OPF_PATH,
+    NAV_PATH,
+    CSS_PATH,
+} from "../../src/core/epub/document";
 
 /** A chapter with a little content. */
 function chapter(title: string, body = "<p>Hello.</p>"): ChapterToPack {
@@ -40,6 +50,12 @@ describe("packEpub", () => {
         expect(paths).toContain(OPF_PATH);
         expect(paths).toContain(NAV_PATH);
         expect(paths).toContain(NCX_PATH);
+    });
+
+    it("writes the OCF mimetype file first", () => {
+        const result = packEpub([chapter("One")], { title: "A Story" });
+        expect(result.files[0]?.path).toBe(MIMETYPE_PATH);
+        expect(result.files[0]?.content).toBe(MIMETYPE_CONTENT);
     });
 
     it("writes well-formed XML for every document it generates", () => {
@@ -157,15 +173,40 @@ describe("buildPlaceholderChapter", () => {
         const placeholder = buildPlaceholderChapter("https://example.com/c/1", "<b>bad</b>");
         expect(placeholder.contentHtml).not.toContain("<b>bad</b>");
     });
+
+    it("keeps the chapter's secrets out of the book", () => {
+        // A book's query string can carry a session token, and a book is a
+        // file the user passes to other people.
+        const placeholder = buildPlaceholderChapter(
+            "https://example.com/c/1?token=secret&session=abc",
+            "The site refused the request.",
+        );
+        expect(placeholder.contentHtml).not.toContain("secret");
+        expect(placeholder.contentHtml).not.toContain("session");
+        expect(placeholder.contentHtml).toContain("https://example.com/c/1");
+    });
 });
 
 describe("buildPlaceholderImage", () => {
-    it("is a real SVG with bytes, not an empty file", () => {
-        const image = buildPlaceholderImage("https://example.com/a.png");
+    it("is a real PNG with bytes, not an empty file", () => {
+        const image = buildPlaceholderImage();
         expect(image.data.length).toBeGreaterThan(0);
-        expect(image.mediaType).toBe("image/svg+xml");
-        const text = new TextDecoder().decode(image.data);
-        expect(text).toContain("<svg");
+        expect(image.mediaType).toBe("image/png");
+        // The PNG signature.
+        expect([...image.data.subarray(0, 8)]).toEqual([
+            0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+        ]);
+    });
+
+    it("is not an SVG, because a reader may not be able to show one", () => {
+        // The extension has a setting that says SVG images are not wanted.
+        // A placeholder that was itself an SVG would defeat it.
+        const image = buildPlaceholderImage();
+        expect(image.mediaType).not.toBe("image/svg+xml");
+    });
+
+    it("is the same mark every time, so a book carries one copy of it", () => {
+        expect(buildPlaceholderImage().url).toBe(buildPlaceholderImage().url);
     });
 });
 
@@ -215,5 +256,116 @@ describe("collectFiles", () => {
         const result = packEpub([chapter("One")], { title: "A Story" });
         const paths = result.files.map((file) => file.path);
         expect(new Set(paths).size).toBe(paths.length);
+    });
+});
+
+describe("the stylesheet reference", () => {
+    /**
+     * Resolve a relative reference against the path of the file that holds it.
+     *
+     * This is what a reader does when it follows the link, so it is what the
+     * test uses to check that the link points at a file that is really there.
+     */
+    function resolve(fromFile: string, reference: string): string {
+        const parts = fromFile.split("/").slice(0, -1);
+        for (const part of reference.split("/")) {
+            if (part === "" || part === ".") continue;
+            if (part === "..") parts.pop();
+            else parts.push(part);
+        }
+        return parts.join("/");
+    }
+
+    it("links the stylesheet from a file in a subdirectory", () => {
+        expect(stylesheetHref("OEBPS/text/chapter-0001.xhtml")).toBe("../styles.css");
+        expect(stylesheetHref("OEBPS/text/info.xhtml")).toBe("../styles.css");
+    });
+
+    it("links the stylesheet from a file in the same directory", () => {
+        expect(stylesheetHref("OEBPS/nav.xhtml")).toBe("styles.css");
+    });
+
+    it("puts the stylesheet where the reference points", () => {
+        const result = packEpub([chapter("One")], { title: "A Story" });
+        expect(result.files.map((file) => file.path)).toContain(CSS_PATH);
+    });
+
+    it("points every chapter's stylesheet link at a file that is in the book", () => {
+        const result = packEpub([chapter("One"), chapter("Two")], {
+            title: "A Story",
+            includeInfoPage: true,
+        });
+        const paths = result.files.map((file) => file.path);
+
+        const linking = result.files.filter(
+            (file) => file.path.endsWith(".xhtml") && typeof file.content === "string",
+        );
+        expect(linking.length).toBeGreaterThan(0);
+
+        for (const file of linking) {
+            const html = file.content as string;
+            const match = /<link[^>]+href="([^"]+)"/.exec(html);
+            if (!match?.[1]) continue;
+            const target = resolve(file.path, match[1]);
+            expect(paths).toContain(target);
+        }
+    });
+
+    it("points every chapter's image link at a file that is in the book", () => {
+        const imageUrl = "https://example.com/img/a.png";
+        const image = {
+            data: new Uint8Array([1, 2, 3]),
+            mediaType: "image/png",
+            url: imageUrl,
+        };
+
+        // The download manager rewrites the references once the image has been
+        // downloaded; the packer packages what it is given.
+        const rewritten = rewriteImageReferences(
+            `<p>Hello.</p><img src="${imageUrl}">`,
+            new Map([[imageUrl, image]]),
+            "https://example.com/c/1",
+        );
+
+        const result = packEpub(
+            [
+                {
+                    sourceUrl: "https://example.com/c/1",
+                    title: "One",
+                    contentHtml: rewritten,
+                    images: new Map([[imageUrl, image]]),
+                },
+            ],
+            { title: "A Story" },
+        );
+        const paths = result.files.map((file) => file.path);
+
+        const chapter = result.files.find((file) => file.path.includes("chapter-0001"));
+        const html = chapter?.content as string;
+        const match = /<img[^>]+src="([^"]+)"/.exec(html);
+        expect(match?.[1]).toBeDefined();
+        const target = resolve("OEBPS/text/chapter-0001.xhtml", match?.[1] ?? "");
+        expect(paths).toContain(target);
+    });
+});
+
+describe("a chapter's ids", () => {
+    it("are made valid, unique XML names, and links follow them", async () => {
+        const { repairIds } = await import("../../src/core/epub/packer");
+        const doc = new DOMParser().parseFromString(
+            '<p id="1">a</p><p id="1">b</p><p id="note">c</p><a href="#1">to one</a>',
+            "text/html",
+        );
+        repairIds(doc.body);
+        const ids = Array.from(doc.body.querySelectorAll("[id]")).map((el) => el.id);
+        expect(ids).toEqual(["id-1", "note"]);
+        expect(doc.querySelector("a")?.getAttribute("href")).toBe("#id-1");
+    });
+});
+
+describe("text written into the book's XML", () => {
+    it("loses the characters XML forbids", async () => {
+        const { escapeXml } = await import("../../src/core/epub/document");
+        expect(escapeXml("A\u0008 title￾ & more")).toBe("A title &amp; more");
     });
 });

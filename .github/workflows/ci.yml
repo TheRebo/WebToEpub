@@ -11,10 +11,11 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, ExperimentalTabMode]
     tags: ["v*"]
+  # Every pull request is checked, whatever branch it targets: work lands on
+  # the integration branch first, and a filter on `main` alone skipped it.
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 # A new push to the same branch cancels the previous run: the newer commit is
@@ -49,6 +50,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Check the text files
+        run: npm run check:text
+
       - name: Unit and integration tests
         run: npm run test
 
@@ -69,6 +73,9 @@ jobs:
 
       - name: Package
         run: npm run package
+
+      - name: Check the package
+        run: npm run package:verify
 
       - name: Upload the package
         uses: actions/upload-artifact@v4

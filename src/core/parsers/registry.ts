@@ -9,7 +9,7 @@
  *     highest confidence.
  *  4. The default parser.
  *
- * The registry is the one place that knows about all 437 parsers, so the
+ * The registry is the one place that knows about all 434 parsers, so the
  * popup and the options page never need to load parser code at all.
  *
  * See ADR-0002.
@@ -65,7 +65,8 @@ export class ParserRegistry {
 
     /** Register a parser for an exact host. */
     register(hostName: string, constructor: ParserConstructor): void {
-        const key = stripLeadingWww(hostName);
+        // Lookups lower-case the host, so registrations must too.
+        const key = stripLeadingWww(hostName.toLowerCase());
         if (this.#parsers.has(key)) {
             throw new Error(`Duplicate parser registered for host name ${hostName}`);
         }
@@ -134,10 +135,10 @@ export class ParserRegistry {
     fetchByUrl(url: string): Parser | null {
         const hostName = hostNameForParserSelection(url);
         const constructor = this.#parsers.get(hostName);
-        if (constructor) return this.#construct(constructor);
+        if (constructor) return this.#construct(constructor, url);
 
         for (const rule of this.#urlRules) {
-            if (rule.test(url)) return this.#construct(rule.constructor);
+            if (rule.test(url)) return this.#construct(rule.constructor, url);
         }
         return null;
     }
@@ -160,9 +161,9 @@ export class ParserRegistry {
                 best = rule.constructor;
             }
         }
-        if (best && maxConfidence > 0) return this.#construct(best);
+        if (best && maxConfidence > 0) return this.#construct(best, url);
 
-        return this.#defaultConstructor ? this.#construct(this.#defaultConstructor) : null;
+        return this.#defaultConstructor ? this.#construct(this.#defaultConstructor, url) : null;
     }
 
     /** The parser the user selected by name. */
@@ -171,11 +172,20 @@ export class ParserRegistry {
         return entry ? this.#construct(entry.constructor) : null;
     }
 
-    /** Instantiate a parser. */
-    #construct(constructor: ParserConstructor): Parser {
+    /**
+     * Instantiate a parser.
+     *
+     * @param constructor The parser to build.
+     * @param url The URL the parser was chosen for, when there is one. The
+     *   parser keeps it, so that it knows which story it is reading even when
+     *   the chapters come from another host.
+     */
+    #construct(constructor: ParserConstructor, url?: string): Parser {
         // The constructor signature takes services; the registry injects
         // them at call time through the active context.
-        return constructor(getParserServices());
+        const parser = constructor(getParserServices());
+        if (url !== undefined) parser.storyUrl = url;
+        return parser;
     }
 }
 

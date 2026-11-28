@@ -27,16 +27,6 @@
     "message": "Chapitres",
     "description": "Le titre de la liste des chapitres."
   },
-  "workbenchChaptersFound": {
-    "message": "$COUNT$ chapitres trouvés",
-    "description": "Combien de chapitres ont été trouvés.",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
-  },
   "workbenchChapterCount": {
     "message": "$VISIBLE$ sur $TOTAL$",
     "description": "Combien de chapitres sont visibles, sur combien ont été trouvés.",
@@ -55,13 +45,31 @@
     "message": "Créer l'EPUB",
     "description": "Le bouton qui crée le livre."
   },
-  "workbenchSave": {
-    "message": "Enregistrer",
-    "description": "Le bouton qui enregistre les métadonnées."
-  },
   "workbenchCancel": {
     "message": "Annuler",
     "description": "Le bouton qui arrête un téléchargement."
+  },
+  "workbenchRetry": {
+    "message": "Réessayer",
+    "description": "Relance un téléchargement échoué ou annulé."
+  },
+  "workbenchDismiss": {
+    "message": "Masquer",
+    "description": "Masque l’état d’un téléchargement terminé."
+  },
+  "workbenchSavedAs": {
+    "message": "Enregistré sous $FILE$ ($SIZE$)",
+    "description": "Affiché quand le livre a été enregistré.",
+    "placeholders": {
+      "file": {
+        "content": "$1",
+        "example": "1"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
   },
   "workbenchSelectAll": {
     "message": "Tout sélectionner",
@@ -79,6 +87,56 @@
     "message": "Plages",
     "description": "Le bouton qui choisit une plage de chapitres."
   },
+  "workbenchRangeTitle": {
+    "message": "Sélectionner une plage",
+    "description": "Le titre de la boîte de dialogue."
+  },
+  "workbenchRangeFrom": {
+    "message": "Premier chapitre",
+    "description": "Le premier chapitre de la plage."
+  },
+  "workbenchRangeTo": {
+    "message": "Dernier chapitre",
+    "description": "Le dernier chapitre de la plage."
+  },
+  "workbenchRangeCount": {
+    "message": "$COUNT$ chapitres",
+    "description": "Combien de chapitres la plage contient.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeCountOne": {
+    "message": "$COUNT$ chapitre",
+    "description": "Combien de chapitres la plage contient, quand il n'y en a qu'un.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeSelect": {
+    "message": "Sélectionner la plage",
+    "description": "Sélectionne les chapitres de la plage."
+  },
+  "workbenchRangeDeselect": {
+    "message": "Désélectionner la plage",
+    "description": "Désélectionne les chapitres de la plage."
+  },
+  "workbenchRangeInvalid": {
+    "message": "Saisissez un numéro de chapitre entre 1 et $COUNT$.",
+    "description": "Affiché quand la plage est inutilisable.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
   "workbenchFilter": {
     "message": "Filtrer",
     "description": "Le bouton qui ouvre le filtre."
@@ -87,13 +145,13 @@
     "message": "Aucun chapitre sélectionné",
     "description": "Affiché quand rien n'est coché."
   },
+  "workbenchBusy": {
+    "message": "Un livre est en cours de création",
+    "description": "Pourquoi Créer est indisponible pendant un téléchargement."
+  },
   "workbenchWaitingForChapters": {
     "message": "Recherche des chapitres…",
     "description": "Affiché pendant le chargement."
-  },
-  "workbenchDetected": {
-    "message": "Détecté",
-    "description": "Affiché quand un analyseur a reconnu le site."
   },
   "workbenchFieldTitle": {
     "message": "Titre",
@@ -115,10 +173,6 @@
     "message": "Réinitialiser",
     "description": "Restaure le nom de fichier par défaut."
   },
-  "workbenchChooseFromPage": {
-    "message": "Choisir depuis la page",
-    "description": "Choisit l'image de couverture depuis la page."
-  },
   "workbenchRemoveCover": {
     "message": "Retirer la couverture",
     "description": "Retire l'image de couverture."
@@ -128,16 +182,16 @@
     "description": "Conserve les notes à la fin d'un chapitre."
   },
   "workbenchIncludeTocPage": {
-    "message": "Inclure le sommaire",
+    "message": "Inclure le sommaire comme chapitre",
     "description": "Ajoute le sommaire comme chapitre."
   },
   "workbenchMoreOptions": {
     "message": "Plus d'options",
     "description": "Ouvre la page complète des paramètres."
   },
-  "workbenchNoCover": {
-    "message": "Aucune couverture",
-    "description": "Affiché quand il n'y a pas d'image de couverture."
+  "workbenchOptionsHint": {
+    "message": "Cela s’applique à chaque livre que vous créez.",
+    "description": "Explique que ces interrupteurs modifient les réglages."
   },
   "workbenchCoverUrl": {
     "message": "Adresse de l'image de couverture",
@@ -147,21 +201,45 @@
     "message": "Aucune histoire trouvée sur cette page",
     "description": "Quand la page n'est pas une histoire."
   },
-  "workbenchTryAnyway": {
-    "message": "Essayer quand même",
-    "description": "Ouvre l'atelier malgré tout."
+  "workbenchNoStoryHint": {
+    "message": "Vérifiez qu’il s’agit bien de la liste des chapitres, ou montrez à Kintsugi où se trouvent les chapitres.",
+    "description": "Sous la liste de chapitres vide."
   },
-  "workbenchUnsupportedSite": {
-    "message": "Ce site n'est pas encore pris en charge",
-    "description": "Quand aucun analyseur ne correspond."
+  "workbenchFieldUrl": {
+    "message": "Adresse de l'histoire",
+    "description": "Le champ qui contient l'adresse de la page de l'histoire."
   },
-  "workbenchUseSelectorBuilder": {
-    "message": "Créer un sélecteur",
-    "description": "Ouvre le créateur de sélecteurs."
+  "workbenchFieldUrlHint": {
+    "message": "Collez l'adresse de la liste des chapitres.",
+    "description": "L'indication sous le champ d'adresse."
   },
-  "workbenchReloadPage": {
-    "message": "Recharger la page",
-    "description": "Recharge l'onglet."
+  "workbenchLoadStory": {
+    "message": "Charger",
+    "description": "Le bouton qui charge l'histoire à cette adresse."
+  },
+  "workbenchUrlInvalid": {
+    "message": "Cette adresse n'est pas une adresse web.",
+    "description": "Affiché quand l'adresse ne peut pas être utilisée."
+  },
+  "accessTitle": {
+    "message": "Autoriser l'accès à ce site",
+    "description": "Le titre de la demande d'accès."
+  },
+  "accessText": {
+    "message": "Kintsugi ne peut lire que les sites que vous avez autorisés. Les pages sont lues sur votre machine, et rien n'est envoyé ailleurs.",
+    "description": "L'explication sous la demande d'accès."
+  },
+  "accessGrant": {
+    "message": "Autoriser l'accès",
+    "description": "Le bouton qui demande l'accès au navigateur."
+  },
+  "accessDenied": {
+    "message": "L'accès n'a pas été autorisé, l'histoire ne peut pas être lue.",
+    "description": "Affiché quand la boîte de dialogue du navigateur est refusée."
+  },
+  "accessGranted": {
+    "message": "Kintsugi peut maintenant lire ce site.",
+    "description": "Affiché quand le site vient d’être autorisé."
   },
   "chapterStateQueued": {
     "message": "En attente",
@@ -223,10 +301,6 @@
     "message": "Ouvrir l'atelier",
     "description": "Le bouton principal du popup."
   },
-  "popupAddToLibrary": {
-    "message": "Ajouter à la bibliothèque",
-    "description": "Le bouton de bibliothèque du popup."
-  },
   "popupLibraryShort": {
     "message": "Bibliothèque",
     "description": "Le libellé visible du bouton de bibliothèque."
@@ -243,9 +317,13 @@
     "message": "Aucune histoire détectée sur cette page.",
     "description": "Quand la page n'est pas une histoire."
   },
-  "popupUnsupported": {
-    "message": "Ce site n'est pas encore pris en charge.",
-    "description": "Quand aucun analyseur ne correspond."
+  "popupWelcome": {
+    "message": "Bienvenue dans Kintsugi. Configurons tout avant votre premier livre.",
+    "description": "À la première ouverture, avant la présentation."
+  },
+  "popupGetStarted": {
+    "message": "Configurer Kintsugi",
+    "description": "Le bouton du popup qui ouvre la présentation."
   },
   "popupSaved": {
     "message": "Votre livre est prêt.",
@@ -255,6 +333,10 @@
     "message": "Réessayer",
     "description": "Le bouton de réessai du popup."
   },
+  "popupChecking": {
+    "message": "Analyse de cette page…",
+    "description": "Affiché pendant que le popup attend le processus d'arrière-plan."
+  },
   "popupUnsupportedHost": {
     "message": "$HOST$ n'est pas encore pris en charge.",
     "description": "Affiché quand aucun analyseur ne correspond au site actuel.",
@@ -262,6 +344,26 @@
       "host": {
         "content": "$1",
         "example": "example.com"
+      }
+    }
+  },
+  "popupChapterCount": {
+    "message": "$COUNT$ chapitres",
+    "description": "Combien de chapitres la fenêtre a trouvés.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "popupChapterCountOne": {
+    "message": "$COUNT$ chapitre",
+    "description": "Combien de chapitres la fenêtre a trouvés, quand il n'y en a qu'un.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
       }
     }
   },
@@ -284,10 +386,6 @@
   "optionsBehaviour": {
     "message": "Comportement",
     "description": "Le groupe des réglages de comportement."
-  },
-  "optionsPrivacy": {
-    "message": "Confidentialité",
-    "description": "Le groupe des réglages de confidentialité."
   },
   "optionsAdvanced": {
     "message": "Avancé",
@@ -350,12 +448,32 @@
     "description": "La liste des sites que l'extension peut lire."
   },
   "optionsRevoke": {
-    "message": "Révoquer",
+    "message": "Retirer l’accès",
     "description": "Retire l'accès à un site."
   },
   "optionsRevokeAll": {
-    "message": "Tout révoquer",
+    "message": "Retirer tous les accès",
     "description": "Retire l'accès à tous les sites."
+  },
+  "optionsRevokeAllConfirm": {
+    "message": "Kintsugi ne pourra plus lire aucun de ces sites tant que vous ne les aurez pas autorisés de nouveau, un par un.",
+    "description": "L’explication du dialogue qui retire l’accès à tous les sites."
+  },
+  "optionsSiteAccessEmpty": {
+    "message": "Aucun site pour l'instant. Kintsugi demande quand vous ouvrez une histoire.",
+    "description": "L'état vide de la liste des accès."
+  },
+  "optionsSiteAccessHint": {
+    "message": "Kintsugi ne peut lire que les sites listés ici.",
+    "description": "L'indication sous le titre des accès."
+  },
+  "optionsRevoked": {
+    "message": "L'accès au site a été retiré.",
+    "description": "Affiché après le retrait d'un accès."
+  },
+  "optionsRevokedAll": {
+    "message": "L'accès à tous les sites a été retiré.",
+    "description": "Affiché après le retrait de tous les accès."
   },
   "optionsExportSettings": {
     "message": "Exporter les paramètres",
@@ -369,9 +487,33 @@
     "message": "Réinitialiser tous les paramètres",
     "description": "Restaure tous les paramètres à leur valeur par défaut."
   },
+  "optionsExported": {
+    "message": "Les paramètres ont été enregistrés dans un fichier.",
+    "description": "Affiché après l'export des paramètres."
+  },
+  "optionsImported": {
+    "message": "Les paramètres ont été chargés depuis le fichier.",
+    "description": "Affiché après l'import des paramètres."
+  },
+  "optionsImportInvalid": {
+    "message": "Ce fichier n'est pas un fichier de paramètres Kintsugi.",
+    "description": "Affiché quand le fichier importé ne peut pas être lu."
+  },
+  "optionsResetDone": {
+    "message": "Tous les paramètres sont revenus à leur valeur par défaut.",
+    "description": "Affiché après la réinitialisation."
+  },
+  "optionsResetConfirm": {
+    "message": "Tous les paramètres reviennent à leur valeur par défaut. Votre bibliothèque et vos sites enregistrés ne sont pas touchés.",
+    "description": "L'explication de la boîte de dialogue de réinitialisation."
+  },
+  "optionsResetConfirmAction": {
+    "message": "Tout réinitialiser",
+    "description": "Le bouton de confirmation de la boîte de dialogue."
+  },
   "optionsPrivacyNote": {
     "message": "Kintsugi n'envoie rien à personne. Chaque requête réseau va vers le site que vous lisez.",
-    "description": "La note sous les paramètres de confidentialité."
+    "description": "La note au bas des paramètres."
   },
   "optionsLibrary": {
     "message": "Bibliothèque",
@@ -384,16 +526,6 @@
   "optionsLibraryEmptyText": {
     "message": "Les livres que vous créez sont conservés ici, pour pouvoir les mettre à jour quand un nouveau chapitre est publié.",
     "description": "L'explication de la bibliothèque vide."
-  },
-  "optionsLibraryChapters": {
-    "message": "$COUNT$ chapitres",
-    "description": "Combien de chapitres contient un livre.",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
   },
   "optionsNoResults": {
     "message": "Aucun résultat pour cette recherche.",
@@ -417,6 +549,58 @@
       }
     }
   },
+  "optionsLibraryMetaOne": {
+    "message": "$CHAPTERS$ chapitre · $SIZE$",
+    "description": "La ligne de métadonnées de la carte de bibliothèque, quand le livre n'a qu'un chapitre.",
+    "placeholders": {
+      "chapters": {
+        "content": "$1",
+        "example": "42"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "optionsLibraryImport": {
+    "message": "Importer depuis WebToEpub",
+    "description": "Le bouton qui importe une bibliothèque exportée par WebToEpub 1.x."
+  },
+  "optionsLibraryImported": {
+    "message": "$1 livres importés.",
+    "description": "Confirmation après l'import d'une bibliothèque de plusieurs livres."
+  },
+  "optionsLibraryImportedOne": {
+    "message": "$1 livre importé.",
+    "description": "Confirmation après l'import d'une bibliothèque d'un seul livre."
+  },
+  "optionsLibraryTooLarge": {
+    "message": "Ce fichier est trop volumineux pour être importé. La plus grande bibliothèque que Kintsugi peut lire fait $SIZE$.",
+    "description": "Affiché quand l'utilisateur choisit une export de bibliothèque plus grand que ce que Kintsugi lit.",
+    "placeholders": {
+      "size": {
+        "content": "$1",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "libraryRemove": {
+    "message": "Retirer",
+    "description": "Retire un livre de la bibliothèque."
+  },
+  "libraryRemoveTitle": {
+    "message": "Retirer ce livre de la bibliothèque ?",
+    "description": "Le titre du dialogue de retrait."
+  },
+  "libraryRemoveConfirm": {
+    "message": "Le fichier EPUB enregistré reste où il est. Seule son entrée dans la bibliothèque disparaît.",
+    "description": "L’explication du dialogue de retrait."
+  },
+  "libraryRemoved": {
+    "message": "Retiré de la bibliothèque.",
+    "description": "Confirmation après le retrait d'un livre."
+  },
   "settingReduceMotion": {
     "message": "Toujours réduire les animations",
     "description": "Le réglage de réduction des animations."
@@ -438,7 +622,7 @@
     "description": "Le réglage de langue par défaut."
   },
   "settingDefaultLanguageHint": {
-    "message": "Le code ISO 639 utilisé quand un site n'en déclare pas.",
+    "message": "La langue du livre quand le site ne l’indique pas.",
     "description": "Explique le réglage de langue par défaut."
   },
   "settingRemoveAuthorNotes": {
@@ -452,6 +636,10 @@
   "settingRemoveChapterNumbers": {
     "message": "Supprimer les numéros de chapitre des titres",
     "description": "Le réglage de suppression des numéros de chapitre."
+  },
+  "settingRemoveChapterNumbersHint": {
+    "message": "Supprime le numéro qu'un site place au début du titre d'un chapitre.",
+    "description": "Explique le réglage de suppression des numéros de chapitre."
   },
   "settingIncludeTocPage": {
     "message": "Inclure le sommaire comme chapitre",
@@ -497,18 +685,6 @@
     "message": "Autoriser les images SVG",
     "description": "Le réglage d'autorisation des images SVG."
   },
-  "settingCompressImages": {
-    "message": "Compresser les images",
-    "description": "Le réglage de compression des images."
-  },
-  "settingMaxResolution": {
-    "message": "Résolution maximale",
-    "description": "Le réglage de résolution maximale."
-  },
-  "settingMaxResolutionHint": {
-    "message": "En pixels sur le côté le plus long.",
-    "description": "Explique le réglage de résolution maximale."
-  },
   "settingSkipFailedChapters": {
     "message": "Ignorer les chapitres en échec",
     "description": "Le réglage d'ignorance des chapitres en échec."
@@ -520,6 +696,14 @@
   "settingRetryOnEmptyPage": {
     "message": "Réessayer sur une page vide",
     "description": "Le réglage de réessai sur une page vide."
+  },
+  "settingEmptyPageIsError": {
+    "message": "Une page vide est une erreur",
+    "description": "Le réglage qui fait d'une page vide une erreur."
+  },
+  "settingEmptyPageIsErrorHint": {
+    "message": "Certains sites répondent à une requête bloquée par une page vide. Lorsque cette option est active, cette page est signalée comme un échec au lieu de devenir un chapitre vide.",
+    "description": "Explique le réglage qui fait d'une page vide une erreur."
   },
   "settingMinimumDelay": {
     "message": "Délai minimum entre les requêtes",
@@ -540,22 +724,6 @@
   "settingDelayPerChapterHint": {
     "message": "En millisecondes, en plus du délai minimum.",
     "description": "Explique le réglage de délai supplémentaire par chapitre."
-  },
-  "settingMetadataLookup": {
-    "message": "Rechercher les métadonnées du livre",
-    "description": "Le réglage de recherche des métadonnées."
-  },
-  "settingMetadataLookupHint": {
-    "message": "Désactivé par défaut. Activé, le titre est vérifié dans une base de données publique.",
-    "description": "Explique le réglage de recherche des métadonnées."
-  },
-  "settingSendStoryUrl": {
-    "message": "Envoyer l'URL de l'histoire avec la recherche",
-    "description": "Le réglage d'envoi de l'URL de l'histoire."
-  },
-  "settingSendStoryUrlHint": {
-    "message": "Désactivé par défaut. Sans cela, la recherche ne peut utiliser que le titre.",
-    "description": "Explique le réglage d'envoi de l'URL de l'histoire."
   },
   "settingDiagnostics": {
     "message": "Diagnostics de développement",
@@ -581,10 +749,6 @@
     "message": "Étape 3 sur 3",
     "description": "L'étiquette de la troisième étape d'introduction."
   },
-  "onboardingNext": {
-    "message": "Suivant",
-    "description": "Le bouton qui passe à l'étape suivante."
-  },
   "onboardingBack": {
     "message": "Retour",
     "description": "Le bouton qui revient à l'étape précédente."
@@ -597,16 +761,20 @@
     "message": "Passer",
     "description": "Le bouton qui passe l'introduction."
   },
-  "onboardingGetStarted": {
-    "message": "Commencer",
-    "description": "Le bouton qui quitte l'introduction."
+  "onboardingNextSites": {
+    "message": "Suivant : les sites pris en charge",
+    "description": "De l’accueil à l’étape des sites."
+  },
+  "onboardingNextLook": {
+    "message": "Suivant : choisir l’apparence",
+    "description": "De l’étape des sites à l’apparence."
   },
   "onboardingWelcomeText": {
-    "message": "Transformez n'importe quel roman en ligne en un livre à garder. Pointez-le sur une liste de chapitres, et il crée un EPUB soigné — couverture, sommaire et tout le reste.",
+    "message": "Transformez n'importe quel roman en ligne en un livre à garder. Pointez-le sur une liste de chapitres, et il crée un EPUB soigné, avec couverture et sommaire.",
     "description": "L'explication de la première étape d'introduction."
   },
   "onboardingWelcomeFootnote": {
-    "message": "Pas de compte. Pas de suivi. Fonctionne hors ligne.",
+    "message": "Pas de compte, aucun suivi. Kintsugi ne parle qu’aux sites que vous lisez.",
     "description": "La note de la première étape d'introduction."
   },
   "onboardingWhichSite": {
@@ -618,7 +786,7 @@
     "description": "L'explication de la deuxième étape d'introduction."
   },
   "onboardingWhichSiteFootnote": {
-    "message": "Pas dans la liste ? Kintsugi peut quand même le lire — vous pouvez créer un sélecteur vous-même.",
+    "message": "Pas dans la liste ? Kintsugi peut quand même le lire si vous lui montrez où sont les chapitres.",
     "description": "La note de la deuxième étape d'introduction."
   },
   "onboardingMakeItYours": {
@@ -641,25 +809,41 @@
     "message": "Kintsugi ne connaît pas encore ce site.",
     "description": "Aucun analyseur ne correspond."
   },
-  "errorTimeout": {
-    "message": "Le site a mis trop de temps à répondre.",
-    "description": "Un délai dépassé."
-  },
   "errorCancelled": {
     "message": "Annulé.",
     "description": "L'utilisateur a annulé l'opération."
   },
-  "errorForbidden": {
-    "message": "Le site a refusé la requête.",
-    "description": "Une erreur HTTP 403."
+  "errorHttpStatus": {
+    "message": "Le site a répondu par une erreur.",
+    "description": "Le serveur a renvoyé une erreur HTTP."
+  },
+  "errorRateLimited": {
+    "message": "Le site limite les requêtes. Patientez un instant, puis réessayez.",
+    "description": "Le serveur a répondu 429."
+  },
+  "errorChallenge": {
+    "message": "Le site veut vérifier que vous êtes une personne. Ouvrez la page, puis réessayez.",
+    "description": "Le site a présenté une vérification, comme un captcha."
+  },
+  "errorEmptyChapter": {
+    "message": "Le chapitre est revenu vide. Il est peut-être verrouillé, ou le site a changé.",
+    "description": "Une page de chapitre sans texte."
+  },
+  "errorStorageFull": {
+    "message": "Il n’y a pas assez de place pour enregistrer ce livre.",
+    "description": "Le stockage du navigateur est plein."
+  },
+  "errorPermission": {
+    "message": "Kintsugi n’est pas autorisé à lire ce site.",
+    "description": "Le site n’a pas été autorisé."
+  },
+  "errorBusy": {
+    "message": "Un autre livre est en cours de création. Attendez qu’il se termine, ou annulez-le.",
+    "description": "Un second téléchargement a été lancé."
   },
   "errorParse": {
     "message": "La page n'a pas pu être lue.",
     "description": "La page n'a pas pu être analysée."
-  },
-  "errorNoChapters": {
-    "message": "Aucun chapitre trouvé sur cette page.",
-    "description": "La liste des chapitres était vide."
   },
   "filterSearch": {
     "message": "Rechercher",
@@ -690,6 +874,18 @@
   "filterClear": {
     "message": "Effacer",
     "description": "Efface le filtre."
+  },
+  "optionsNumberRequired": {
+    "message": "Saisissez un nombre.",
+    "description": "Sous un réglage numérique laissé vide."
+  },
+  "filterNoMatches": {
+    "message": "Aucun chapitre ne correspond à ces filtres",
+    "description": "Quand le filtre masque tous les chapitres."
+  },
+  "filterClearAll": {
+    "message": "Effacer les filtres",
+    "description": "Retire le filtre pour afficher de nouveau tous les chapitres."
   },
   "filterApply": {
     "message": "Appliquer",
@@ -800,5 +996,29 @@
   "siteSelectorTocDetected": {
     "message": "Cette page ressemble à un sommaire, pas à un chapitre. Ouvrez un chapitre et réessayez.",
     "description": "Quand le scanner reconnaît un sommaire."
+  },
+  "commonClose": {
+    "message": "Fermer",
+    "description": "Le libellé d'un bouton qui ferme une boîte de dialogue."
+  },
+  "commonDismiss": {
+    "message": "Ignorer",
+    "description": "Le libellé d'un bouton qui ferme une notification."
+  },
+  "commonLoading": {
+    "message": "Chargement…",
+    "description": "Pendant qu’une page se charge."
+  },
+  "siteSelectorSuggesting": {
+    "message": "Lecture de la page…",
+    "description": "Pendant l’analyse de la page."
+  },
+  "siteSelectorTesting": {
+    "message": "Essai des sélecteurs sur la page…",
+    "description": "Pendant le test des sélecteurs."
+  },
+  "commonCancel": {
+    "message": "Annuler",
+    "description": "Le libellé d'un bouton qui annule une action."
   }
 }

@@ -30,9 +30,11 @@ const isDev = process.argv.includes("--dev");
 
 /** The entry points that produce an extension page. */
 const PAGES = [
-    { name: "workbench", title: "Kintsugi — Workbench" },
+    // The titles are replaced in the user's language as soon as the page
+    // runs; these are what a tab shows before then.
+    { name: "workbench", title: "Workbench · Kintsugi" },
     { name: "popup", title: "Kintsugi" },
-    { name: "options", title: "Kintsugi — Settings" },
+    { name: "options", title: "Settings · Kintsugi" },
     { name: "onboarding", title: "Welcome to Kintsugi" },
 ];
 
@@ -62,10 +64,11 @@ async function buildManifest() {
 
     const manifest = {
         manifest_version: 3,
-        name: "Kintsugi",
+        // The name and description come from the locale files, so the add-on
+        // manager shows them in the user's language.
+        name: "__MSG_appName__",
         version: manifestVersion(pkg.version),
-        description:
-            "Turn any web novel into a book worth keeping. Point Kintsugi at a chapter list and it builds a clean EPUB — cover, table of contents, and all.",
+        description: "__MSG_appTagline__",
         default_locale: "en",
 
         icons: {
@@ -74,9 +77,27 @@ async function buildManifest() {
             128: "assets/icons/icon-128.png",
         },
 
-        permissions: ["downloads", "scripting", "storage", "declarativeNetRequest", "cookies"],
+        // `activeTab` lets the extension see the address of the tab the user
+        // is on, when the user has just clicked the toolbar button. It is the
+        // least-privilege way to do that: it grants no access to any other
+        // tab, and no access at all to any other site.
+        //
+        // `scripting` is needed by the site parsers that have to run code in
+        // the page itself; `cookies` by the parsers that read a site's own
+        // cookies; `declarativeNetRequest` by the origin-stripping rule that
+        // keeps the extension's own origin out of the sites' referrers.
+        permissions: [
+            "activeTab",
+            "downloads",
+            "scripting",
+            "storage",
+            "declarativeNetRequest",
+            "cookies",
+        ],
+        // No host permission is granted up front. The extension asks for one
+        // site at a time, at the moment the user opens a story there.
         host_permissions: [],
-        optional_host_permissions: ["*://*/*"],
+        optional_host_permissions: ["http://*/*", "https://*/*"],
 
         action: {
             default_title: "Kintsugi",
@@ -93,21 +114,18 @@ async function buildManifest() {
             type: "module",
         },
 
-        content_scripts: [
-            {
-                matches: ["<all_urls>"],
-                js: ["assets/content-script.js"],
-                run_at: "document_idle",
-                all_frames: false,
-            },
-        ],
-
-        web_accessible_resources: [
-            {
-                resources: ["assets/*"],
-                matches: ["<all_urls>"],
-            },
-        ],
+        // No content script is declared, and no resource is web-accessible.
+        //
+        // A content script would be injected into *every* page the user
+        // visits, which is more reach than the extension needs: it reads the
+        // page it was asked about, and only then. The `scripting` permission
+        // is still needed, but for a one-off injection into a tab the user
+        // has already opened — see ADR-0033.
+        //
+        // Publishing `assets/*` to `<all_urls>` would let any web page read
+        // the extension's own bundles, including the background worker. It
+        // is removed, and nothing needs it: the parsers inject a function,
+        // never a file.
 
         content_security_policy: {
             extension_pages:
@@ -182,39 +200,6 @@ async function bundleScripts() {
     });
 
     await buildVendorBundle();
-    await buildContentScript();
-}
-
-/**
- * Build the content script.
- *
- * The content script is the one file that runs in the *page's* world, where
- * Firefox does not support ES modules — so it is bundled as a classic script
- * rather than as a module. Bundling it with the rest would ship an `export`
- * statement into a classic script, which the browser rejects with a syntax
- * error, and the content script would silently never run.
- *
- * It is built on its own because a classic script cannot be code-split.
- *
- * @returns {Promise<void>} Resolves when the bundle is written.
- */
-async function buildContentScript() {
-    await build({
-        entryPoints: { "content-script": join(SRC, "core", "content-script.ts") },
-        outfile: join(DIST, "assets", "content-script.js"),
-        bundle: true,
-        format: "iife",
-        target: ["firefox140"],
-        platform: "browser",
-        splitting: false,
-        minify: !isDev,
-        sourcemap: isDev ? "inline" : false,
-        legalComments: "none",
-        logLevel: "info",
-        define: {
-            "process.env.NODE_ENV": JSON.stringify(isDev ? "development" : "production"),
-        },
-    });
 }
 
 /**

@@ -8,9 +8,276 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 The extension itself is published to Firefox with a simplified `major.minor.patch` version: `tools/build.mjs` (`manifestVersion()`) strips any pre-release suffix from the `package.json` version before writing `manifest.json`, so `2.0.0-alpha.1` ships in the browser as `2.0.0`. The full Semantic Version — including the pre-release suffix — lives in `package.json` and on the GitHub release tag, so alpha builds are distinguishable from the final release in the tag history, in CI artefacts, and in this changelog.
 
+## Unreleased: audit round 2
+
+The second internal audit: the parsers' compat layer, the network and
+download paths, the copy, and accessibility.
+
+### Fixed
+
+- Redirected chapters and images load: the browser follows the redirect, and
+  a dynamic declarativeNetRequest rule blocks the extension's requests to
+  private hosts. See
+  [ADR-0045](docs/decisions/ADR-0045-the-browser-follows-redirects.md).
+- Pages are decoded in their declared encoding, so GBK and Shift_JIS sites
+  are readable.
+- The download reuses the page and parser the chapter list was built from,
+  so a parser's own state and a script-built table of contents survive.
+- The compat layer runs the hooks the original ran before reading a story
+  (`disabled()`, `loadEpubMetaInfo`), gives the parsers that read the old
+  popup's controls stand-ins to read, keeps `convertPreTagToPTags` editing in
+  place, and lets `wrapFetch` return JSON and text again.
+- A parser's error handler judges only its own requests.
+- Timeouts are retried, and a response body has its own deadline.
+- The cookie bridge reads partitioned cookies and never overwrites one the
+  user already had.
+- One book is made at a time, a cancelled job stays cancelled, and the
+  per-chapter delay is waited once, not twice.
+- A failed cover is left out instead of saved as the book's cover, and a
+  chapter with nothing left after sanitising is not packed.
+- Forbidden characters and invalid ids are kept out of every file in the
+  EPUB, not only chapter bodies.
+- Failures are reported as what they are, not all as network failures, and
+  URLs in error details are redacted.
+- A truncated library entry is treated as unreadable.
+- The workbench packs the author, language and cover the user set, shows why
+  a story failed, ends a download in the status bar with a way on, and lets
+  the user tick a locked chapter by hand.
+- The popup offers Cancel during a download and recovers from a failed or
+  finished one.
+- Settings ask before removing a book or every site's access, and never store
+  an emptied number field as zero.
+- Migrated parsers no longer carry an AI authorship line they did not have in
+  the original.
+
+### Changed
+
+- CI runs on every pull request and runs the same checks as `npm run verify`.
+- Plural forms follow each language's rules, counts are formatted for the
+  locale, each error code has its own message, and messages no page shows are
+  removed.
+- Copy says only what is true (no "works offline"), uses one name for each
+  setting, and drops em dashes.
+- `AGENTS.md` describes where parsers live in `src/`.
+- Code with no callers is removed.
+
+### Accessibility
+
+- Text and control colours meet WCAG AA in both themes, with a test for every
+  pairing.
+- The focus ring stays visible everywhere, including Windows High Contrast.
+- The chapter list is a multi-select listbox.
+- Each page has landmarks, one `h1`, its UI language and a translated title.
+- Onboarding buttons name the step they lead to, and focus moves to the new
+  step.
+- Toasts stack instead of overlapping, and pause while focused.
+- Pack's reason for being unavailable is written beside it, in a live
+  region.
+
 ## [Unreleased]
 
-Nothing yet.
+The first internal audit of the alpha. Every fix below was found by reading
+the code against its own contracts and by running the extension, not by a
+user report — which is why several of them are severe.
+
+### Fixed
+
+- **Every migrated parser crashed on the first table of contents.** The
+  434 migrated parsers call `chapterUrlsUI.showTocProgress(...)`, but the
+  rewrite's progress reporter was never passed to them, so the call threw a
+  `TypeError` and the chapter list came back empty for every site. A
+  null-safe progress reporter is now installed before the parsers run, and
+  the contract test exercises all 434 parsers three ways.
+- **A parser called a method that did not exist.** `Po18csParser` called
+  `monoShowTocProgress`; the call was rewritten to the method that does exist.
+- **Images were downloaded and then thrown away.** The bytes were fetched but
+  never packaged, and the chapter's markup still pointed at the site's own
+  servers, so a saved book showed its pictures only while the reader was
+  online. Every referenced image is now packaged into `OEBPS/images`, written
+  once however many chapters use it, and the chapter's references are
+  rewritten to match. See [ADR-0016](docs/decisions/ADR-0016-package-images.md).
+- **The EPUB container had no `mimetype` entry.** The OCF specification
+  requires one, as the first archive entry, stored uncompressed. Without it a
+  reader that validates the container refuses the book. See
+  [ADR-0015](docs/decisions/ADR-0015-epub-container.md).
+- **The save hung for ever.** `zip.js` was trying to compress in a web
+  worker, which the extension's content security policy blocks; the promise
+  never settled and the download sat in the "saving" phase. See
+  [ADR-0017](docs/decisions/ADR-0017-zip-without-a-worker.md).
+- **Every chapter of every book rendered unstyled.** The chapters live in
+  `OEBPS/text` and the stylesheet lives in `OEBPS`, but the chapter linked it
+  as `styles.css`, which resolves to `OEBPS/text/styles.css` — a file that
+  is not in the book. The reference is now computed from the path of the file
+  that holds it, and the tests resolve each reference the way a reader would.
+- **A failed chapter fetch produced a silent, empty book.** The compat layer
+  returned `null` for a page it could not read, and the caller packed a
+  placeholder for every chapter without saying so. It now throws, and the
+  error is reported.
+- **The compat layer lost errors and mis-assigned parsers.** It used the
+  wrong parser when a page carried one, dropped the error message, and
+  swallowed failures instead of re-throwing them.
+- **The partitioned-cookie bridge never ran.** The code that copies a site's
+  partitioned cookies into an unpartitioned cookie for the duration of a
+  request was never constructed, so a site behind a login answered with a
+  login page. It is now installed, and the copy is removed in a `finally`.
+- **The rule that replaced the baseline's `webRequest` grant was never
+  installed.** The dynamic rule is now installed every time the worker
+  starts, because a dynamic rule does not survive the worker being torn down.
+- **The custom-error retry did not retry.** The `999` pseudo-status is how a
+  parser says "this failed, but it is worth trying again". `fetchHtml`
+  returned the rejected page as if it had succeeded on the last attempt, and
+  `fetchJson` never retried at all. Both now retry while the attempt budget
+  allows and fail when it is exhausted.
+- **`download:start` did not validate the URLs it was given.** A page could
+  ask the extension to fetch a `file:` URL or a URL on the local network and
+  have the extension act as its proxy. Every URL is now checked before the
+  job starts.
+- **The permission handlers did not validate the origin.** The requested
+  origin was pasted straight into a host permission pattern, so an origin
+  carrying a path, a query, a fragment or a wildcard of its own would grant
+  more than the user was shown. See
+  [ADR-0018](docs/decisions/ADR-0018-message-boundary.md).
+- **A malformed message reached a handler that assumed its shape.** The
+  failure surfaced as "Could not reach the site", sending the user looking in
+  the wrong place. Payloads are now validated at the bus.
+- **The chapter states were not translated.** The workbench showed the raw
+  state keys; they now come from the message catalogue like everything else,
+  and every locale is complete.
+
+### Added
+
+- **The page the user is looking at is read as the user sees it.** Many sites
+  build their chapter list in the browser, so the HTML the server sends is an
+  empty shell and no parser can find a list in it. The extension now reads the
+  live DOM of the tab showing the story, and falls back to fetching the page
+  when there is no such tab. See
+  [ADR-0033](docs/decisions/ADR-0033-read-the-page-the-user-is-looking-at.md).
+- **Host access is asked for one site at a time.** The extension ships with no
+  host permissions; the user grants a site when they choose it, the granted
+  sites are listed in the settings, and each can be revoked. See
+  [ADR-0030](docs/decisions/ADR-0030-host-access-one-site-at-a-time.md).
+- **A private host can be read when the user has allowed it.** A story served
+  from a home server is a real thing; a page that links to the network's
+  metadata service is an attack. The difference is the user's own grant. See
+  [ADR-0032](docs/decisions/ADR-0032-what-the-extension-may-fetch.md).
+- **The library records the books the user makes**, with their covers and their
+  chapter counts, and can be emptied. See
+  [ADR-0019](docs/decisions/ADR-0019-library-shelf.md).
+- **The first run explains itself.** A user who has not been through the
+  welcome is shown a short onboarding that ends on the workbench. See
+  [ADR-0020](docs/decisions/ADR-0020-first-run-explains-itself.md).
+- **A chapter range.** Two hundred checkboxes is a wall; a first and last
+  chapter number trims a hundred-volume story in two seconds, and the list is
+  still there to change the answer. See
+  [ADR-0027](docs/decisions/ADR-0027-the-user-chooses-the-chapters.md).
+- **The settings can be exported, imported and reset**, and the diagnostics
+  switch now does what it says.
+- **The workbench shows which chapter the download is on**, and the story's
+  options are wired up.
+
+### Changed
+
+- The end-to-end checks now assert what the pages _do_ rather than what they
+  are made of, so a refactor does not fail the build. Two of the checks were
+  themselves wrong — the settings search counted hidden groups, and the
+  onboarding looked for a custom element where the design uses native radio
+  inputs — and were corrected.
+- The test suite has grown from 169 tests; it now has **1095 tests across 71
+  files**, with new
+  coverage for the archiver, the fetch client's error handling, the cookie
+  bridge, the network rules, the image packaging, the message bus, the URL
+  and origin validators, the stylesheet references, the EPUB round trip, the
+  component library's reactivity and accessibility, and the locale catalogue.
+
+### Fixed (second audit round)
+
+- **A book could not be read back.** The reader took the first `<nav>` in the
+  navigation document, which is the landmarks list rather than the table of
+  contents, and read the chapters twice — once from the list and once from the
+  nested list under it. The table of contents is now found by its type, and
+  each chapter is read once.
+- **A book with more than a hundred chapters had colliding navigation
+  numbers.** The numbers were derived from the entry's index, so two chapters
+  in different groups could carry the same number. Each navigation point is
+  now numbered from its own counters.
+- **A book with no modification date was rejected.** The date is optional in
+  the specification; the writer now falls back to the moment the book was
+  built.
+- **Counts were shown in English.** The popup said "3 chapter(s)" in every
+  language. Firefox's `browser.i18n` does **not** choose a plural form — the
+  `_one` / `_other` suffixes are Chrome's, and Firefox ignores them — so the
+  extension now keeps two messages and picks between them itself. The
+  finding was measured in a real Firefox, not assumed.
+- **Two switches had no name.** Their labels are drawn outside the control,
+  so a screen reader announced them as "switch". The label is now mirrored
+  onto the control itself.
+- **The default dialog had no size of its own.** Every size but the default
+  had a rule; the default fell through to the component's own width. Each
+  size now has a rule, and the class documents what they are.
+- **Six message types were declared, validated and answered that nothing ever
+  sent.** They are gone, and a test now compares the registry against the
+  messages the interface really sends, in both directions.
+- **Overlapping saves could undo each other.** Two pages writing settings at
+  once could lose one of the changes. Writes are now serialised, so each one
+  sees the result of the one before it. See
+  [ADR-0021](docs/decisions/ADR-0021-serialised-settings-writes.md).
+- **A chapter was written as HTML into a book that has to be XML.** A chapter
+  containing a line break produced a file that was not well-formed, and a
+  reader that checked refused the whole book. Chapters are now serialised
+  from the parsed document as XML. See
+  [ADR-0025](docs/decisions/ADR-0025-chapters-are-written-as-xml.md).
+- **The book's own settings never reached the book.** The cover, the
+  language, the direction and the identifier were dropped on the way out.
+- **A missing image was stood in for by an SVG.** The extension has a setting
+  that says SVG images are not wanted, and an SVG placeholder defeated it.
+  The stand-in is now a PNG, and one copy is shared by every missing image.
+- **A failed image download wrote nothing at all**, leaving a reference in the
+  markup pointing at a file that was not in the book.
+- **The images were not inside the book.** They were fetched, and the
+  chapter's markup still pointed at the site's own servers.
+- **The library recorded the wrong book.** It saved the metadata of the story
+  that had been analysed rather than the book that had been made.
+- **The sample-book builder did not run.** It imported the TypeScript sources
+  directly, which Node cannot resolve. It now bundles them first, and the
+  books it produces validate with zero errors and zero warnings.
+- **A page could not say what had gone wrong.** A failure was logged to a
+  console nobody reads; it is now reported in the interface.
+- **The fetch layer misreported what went wrong**, hiding the real message
+  behind a generic one.
+- **A host permission pattern could name a port**, which matches nothing.
+- **The copy of a partitioned cookie was removed from the wrong path**, so it
+  survived the request it belonged to.
+- **A `data:` URL carrying a script could reach a chapter.**
+- **The end-to-end suite granted the fixture's host in a way Firefox would
+  not**, and asserted less than it claimed to.
+
+### Removed
+
+- Six message types that nothing sent (`settings:get`, `settings:set` and the
+  four `permissions:*` requests), their payload rules and their handlers.
+- The EPUB reader from the shipped tree: Kintsugi writes EPUBs, it never
+  reads them, and the reader exists only to prove the round trip. It now
+  lives in `tests/support/`.
+
+### Security
+
+- A page cannot use the extension to reach the user's own network: a private
+  host is fetched only when the user has granted access to it, and the grant
+  is checked per host. See
+  [ADR-0032](docs/decisions/ADR-0032-what-the-extension-may-fetch.md).
+- The content script that 2.0.0-alpha.1 shipped is gone: the extension
+  injects **no content script**. It reads the story tab's DOM
+  through the browser's scripting API, for one tab, and takes the markup
+  only.
+- Every message's payload is validated at the bus, and every URL and origin a
+  message carries is validated before it is used.
+
+### Fixed (false positives)
+
+None. The audit also checked a number of things that looked wrong and were
+not: the workbench's filtered-chapter toggle, the settings store's handling
+of partial storage, the message bus's correlation IDs, and the chapter
+selectors in four parsers that call `super.getChapterUrls` deliberately.
 
 ## [2.0.0-alpha.1] - 2026-11-23
 
@@ -35,8 +302,8 @@ The first alpha of the revamp: a full rewrite of WebToEpub on a modern MV3 / Typ
 ### Changed
 
 - **Parser registry.** 434 site parsers were migrated into `src/core/parsers/legacy/sites/`, registering 659 host names in total.
-- **Background service worker.** Fetching, EPUB assembly, saving and library persistence moved into the MV3 background worker (`src/core/background.ts`). Pages are clients, not workers.
-- **Content script** is now a read-only "reader" that reports a page summary; it no longer injects UI or performs fetches.
+- **Background event page.** Fetching, EPUB assembly, saving and library persistence moved into the background event page (`src/core/background.ts`, loaded through the manifest's `background.scripts`). Pages are clients, not workers.
+- **Content script** is now a read-only "reader" that reports a page summary; it no longer injects UI or performs fetches. (It was removed after this release; see the Security section under [Unreleased].)
 - **Storage moved from `localStorage` to `browser.storage.local`** with a typed, schema-validated store (`src/core/storage/settings-store.ts`). Settings are grouped into `appearance`, `story`, `epub`, `images`, `behaviour`, `privacy` and `advanced` sections, with booleans stored as real booleans rather than the string `"true"` / `"false"`.
 - **Chapter listings** honour `isIncludeable`: a chapter a parser marks as locked, paid or non-story starts unchecked, and it cannot be selected by the bulk actions.
 - **Throttling and concurrency** are enforced centrally: concurrent chapter fetches stay at 1 and the default minimum delay between requests is 500 ms.
@@ -55,7 +322,7 @@ The first alpha of the revamp: a full rewrite of WebToEpub on a modern MV3 / Typ
 ### Removed
 
 - **The original popup-as-whole-UI workflow.** The old sequence — open the popup, check the details tab, pick a cover, tick chapters, press pack — is gone. The popup stays a small launcher, and the workbench opens as its own titled page in a tab. There is no "the popup flashes and closes" dance, no native `beforeunload` confirmation when you close the tab, and no UI parked at an internal `popup.html?id=…` URL.
-- **Closing the tab no longer kills the download.** The work runs in the background service worker, so the download survives the workbench being closed or the popup being dismissed, and re-opening the workbench re-attaches to the running job and shows its progress.
+- **Closing the tab no longer kills the download.** The work runs in the background event page, so the download survives the workbench being closed or the popup being dismissed, and re-opening the workbench re-attaches to the running job and shows its progress.
 - **The ten mutually-toggling `<section>` surfaces**, replaced by four dedicated pages.
 - **`localStorage` usage** for settings, reading list and parser configs.
 - **Base64 EPUB storage** in extension storage, and the zero-byte files produced by failed image downloads (failed images are now visible placeholders in the EPUB).
@@ -71,7 +338,7 @@ The first alpha of the revamp: a full rewrite of WebToEpub on a modern MV3 / Typ
 - **The dark theme is dark.** The dark theme mapped `--bg` to the lightest step of the neutral ramp and `--text` to the darkest, which is the light theme's mapping. The ramp is now reversed inside the dark theme, so `--bg` means "the background" in both themes ([ADR-0014](docs/decisions/ADR-0014-dark-theme-token-ramp.md)).
 - **`[hidden]` is honoured.** The user agent's `[hidden]` rule loses to any author `display` rule, so the workbench's empty state stayed in the layout and pushed the chapter list out of the panel. A global rule puts the attribute back in charge (`src/ui/styles/base.css`).
 - **The chapter list fills its panel.** `contain: strict` implies `contain: size`, which made the list's height independent of its contents and stopped the flex algorithm from sizing it at all. It now uses `contain: content` (`src/ui/components/k-list.ts`).
-- **The content script runs.** It was bundled as an ES module, which Firefox does not support in the page's world; the browser rejected it with a syntax error and the content script silently never ran. It is now bundled as a classic script (`tools/build.mjs`).
+- **The content script runs.** It was bundled as an ES module, which Firefox does not support in the page's world; the browser rejected it with a syntax error and the content script silently never ran. It is now bundled as a classic script (`tools/build.mjs`). (The content script was removed after this release.)
 - **The settings validator no longer crashes.** Reading settings with a partially-written or older shape threw, which left the settings page unusable.
 - **The popup honours the user's theme.** It ignored the theme, accent, and density settings entirely, so a user who configured a dark interface got a light popup.
 - **The theme control works.** Changing the theme in the settings page did not change anything.
@@ -149,7 +416,7 @@ Resetting settings removes only the `kintsugi.settings` key and leaves site sele
 
 #### Permission changes
 
-The original manifest requested seven permissions — `cookies`, `downloads`, `webRequest`, `declarativeNetRequest`, `scripting`, `storage` and `unlimitedStorage` — plus static `<all_urls>` host access for every site. Kintsugi requests **five** permissions:
+The original manifest requested seven permissions — `cookies`, `downloads`, `webRequest`, `declarativeNetRequest`, `scripting`, `storage` and `unlimitedStorage` — plus static `<all_urls>` host access for every site. Kintsugi requests **six**:
 
 | Permission               | Change      |
 | ------------------------ | ----------- |
@@ -158,28 +425,41 @@ The original manifest requested seven permissions — `cookies`, `downloads`, `w
 | `storage`                | kept        |
 | `declarativeNetRequest`  | kept        |
 | `cookies`                | kept        |
+| `activeTab`              | **added**   |
 | `webRequest`             | **removed** |
 | `unlimitedStorage`       | **removed** |
 | `<all_urls>` host access | **removed** |
 
-There are no static host permissions at all. Instead, `*://*/*` is declared as an _optional_ host permission, and host access is requested per site at the moment the user picks one — the background worker exposes `permissions:check`, `permissions:request`, `permissions:list` and `permissions:revoke` handlers for that flow. Full rationale is in [docs/permissions.md](docs/permissions.md) and [ADR-0007](docs/decisions/ADR-0007-permissions.md).
+`activeTab` is the narrowest grant Firefox offers: it covers the address of
+the tab the user invoked the extension from, for that invocation, and nothing
+else. Without it the extension would have to ask for a host permission just
+to learn which page the user is on.
+
+There are no static host permissions at all. Instead, `http://*/*` and
+`https://*/*` are declared as _optional_ host permissions, and host access is
+requested per site at the moment the user picks one. The request is made from
+an extension page, in the handler of a real click — Firefox will not honour a
+request that has no user gesture behind it. Full rationale is in
+[docs/permissions.md](docs/permissions.md),
+[ADR-0007](docs/decisions/ADR-0007-permissions.md) and
+[ADR-0030](docs/decisions/ADR-0030-host-access-one-site-at-a-time.md).
 
 #### Parser compatibility
 
 All 434 site parsers were migrated into `src/core/parsers/legacy/sites/` and still work. The parser contract was preserved verbatim, so the migration is a code-motion exercise rather than a rewrite: `getChapterUrls` and `findContent` remain required, `extractTitleImpl` and `extractAuthor` keep their original meaning and return types, `isIncludeable` defaults to `true`, concurrent chapter fetches must stay at 1, the default minimum throttle is 500 ms, and the chapter shape remains `{ sourceUrl, title, isIncludeable?, previousDownload? }`.
 
-A compatibility shim provides the legacy globals (`util`, `HttpClient`, `UIText`, `ErrorLog`, `parserFactory`, `ChapterUrlsUI` and the `Parser` base class) to the migrated parsers, so the original parser source continues to run unchanged — including base-class helpers such as `makeEmptyDocForContent`, `findConstructedContent`, `addTextToChapterContent`, `walkTocPages` and `getChaptersFromAllTocPages`. A contract test in `tests/integration/parser-contract.test.ts` constructs every registered parser and asserts the contract, so breakage is caught in CI rather than at runtime.
+A compatibility shim provides the legacy globals (`util`, `HttpClient`, `UIText`, `ErrorLog`, `parserFactory`, `ChapterUrlsUI` and the `Parser` base class) to the migrated parsers, so the original parser source continues to run unchanged, including base-class helpers such as `makeEmptyDocForContent`, `findConstructedContent`, `addTextToChapterContent`, `walkTocPages` and `getChaptersFromAllTocPages`. A contract test in `tests/unit/tooling/parser-contract.test.ts` constructs every registered parser and asserts the contract, so breakage is caught in CI rather than at runtime.
 
 What _has_ changed is the plumbing around the parsers, not the parsers themselves: fetching, retrying, throttling and error classification are handled centrally by the background worker, so a parser no longer owns its own HTTP concerns. See [ADR-0002](docs/decisions/ADR-0002-parser-contract.md) and [ADR-0005](docs/decisions/ADR-0005-background-worker.md).
 
 ### Notes
 
-- Build output is approximately 1.18 MB unpacked, and the packaged `.xpi` is approximately 337 KB.
+- Build output is approximately 1.4 MB unpacked, and the packaged `.xpi` is approximately 374 KB.
 - The full source is not needed to run the extension: DOMPurify is vendored and no code is fetched at runtime.
 
 ## [Comparison links]
 
-- [Unreleased]: https://github.com/kintsugi/webtoepub/compare/v2.0.0-alpha.1...HEAD
-- [2.0.0-alpha.1]: https://github.com/kintsugi/webtoepub/releases/tag/v2.0.0-alpha.1
+- [Unreleased]: https://github.com/TheRebo/WebToEpub/compare/v2.0.0-alpha.1...HEAD
+- [2.0.0-alpha.1]: https://github.com/TheRebo/WebToEpub/releases/tag/v2.0.0-alpha.1
 - [Keep a Changelog]: https://keepachangelog.com/en/1.1.0/
 - [Semantic Versioning]: https://semver.org/spec/v2.0.0.html

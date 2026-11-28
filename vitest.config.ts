@@ -1,7 +1,7 @@
 /**
  * The test configuration.
  *
- * The unit and integration tests run against a DOM, because almost everything
+ * The unit tests run against a DOM, because almost everything
  * interesting in this project is a DOM operation: a parser finds a content
  * element, the sanitiser strips a script tag, the packer builds an EPUB from
  * a chapter's markup.
@@ -15,10 +15,10 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
     test: {
         environment: "happy-dom",
-        include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
+        include: ["tests/unit/**/*.test.ts"],
         // The migrated parsers are 434 modules; loading them all in one worker
-        // is slow but correct. The integration suite that needs them is
-        // isolated to its own file so the unit suite stays fast.
+        // is slow but correct. The contract test that needs them is isolated
+        // to its own file (tests/unit/tooling) so the rest stays fast.
         testTimeout: 30_000,
         hookTimeout: 30_000,
         coverage: {

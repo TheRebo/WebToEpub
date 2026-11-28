@@ -77,12 +77,44 @@ Specifically:
 | **Use Selenium WebDriver with geckodriver**  | A third process to install, version-match, and keep alive. Marionette is already inside Firefox and speaks a compatible protocol.                                                        |
 | **Test the UI in happy-dom only**            | Cannot exercise the real extension: no `browser.*` APIs, no content script, no background worker. It would have missed every defect found in visual QA.                                  |
 
+### The one thing Marionette cannot do
+
+The extension ships with **no** host permissions. It asks for one site at a
+time, from an extension page, in the handler of a real click — because
+Firefox will not honour a `permissions.request` that has no user gesture
+behind it, and a prompt that appears without the user having asked for
+something is one people dismiss.
+
+Marionette cannot click a permission prompt: the prompt is drawn by the
+browser's own chrome, not by a page, and the protocol has no command for it.
+So the harness grants the fixture's host the way Firefox itself would, from
+the chrome scope:
+
+```js
+ChromeUtils.importESModule(
+    "resource://gre/modules/ExtensionPermissions.sys.mjs",
+).ExtensionPermissions.add(ADDON_ID, {
+    permissions: [],
+    origins: ["http://localhost/*"],
+});
+```
+
+The grant is therefore **not** an end-to-end test of the permission flow. The
+flow is covered by unit tests and by the manual checklist in
+`docs/development.md`; what the harness proves is that the extension works
+once the grant exists. The pattern names no port, because a browser's host
+permission has no port in it — `http://localhost/*` is the pattern, and it
+covers every port on the host.
+
 ## Consequences
 
 ### Positive
 
 - The end-to-end tier tests **the artefact a user installs**: the same
-  `dist/`, the same manifest, the same content script, the same worker.
+  `dist/`, the same manifest, the same background worker. (There is no
+  declared content script: the manifest injects none, so there is none to
+  test — the live page is read through `browser.scripting`, from the
+  privileged side.)
 - No browser download. CI needs only a Firefox, which the runner image
   already has.
 - One automation stack instead of two. The dependency surface shrinks from

@@ -9,13 +9,13 @@ Format: newest entries at the top of each section.
 
 ## Progress
 
-| Phase                  | Status | Notes                                                                                                 |
-| ---------------------- | ------ | ----------------------------------------------------------------------------------------------------- |
-| 0 — Setup              | ✅     | `legacy` branch + `legacy/v-original` tag created; `main` branched from the original                  |
-| 1 — Discovery          | ✅     | Product inventory, technical audit, UX/visual audit written                                           |
-| 2 — Vision & design    | ✅     | Vision, design system, UX guidelines, screen designs, architecture, 12 ADRs, permissions rationale    |
-| 3 — Build from scratch | ✅     | Core, UI, all four pages, 434 migrated parsers, 146 unit tests, 14 browser-tier checks, 8 screenshots |
-| 4 — Docs & release     | 🔄     | README, CHANGELOG, CONTRIBUTING, CODE_OF_CONDUCT, development guide, 2 new ADRs; release pending      |
+| Phase                  | Status | Notes                                                                                                        |
+| ---------------------- | ------ | ------------------------------------------------------------------------------------------------------------ |
+| 0 — Setup              | ✅     | `legacy` branch + `legacy/v-original` tag created; `main` branched from the original                         |
+| 1 — Discovery          | ✅     | Product inventory, technical audit, UX/visual audit written                                                  |
+| 2: Vision & design     | ✅     | Vision, design system, UX guidelines, screen designs, architecture, ADRs (45 to date), permissions rationale |
+| 3 — Build from scratch | ✅     | Core, UI, all four pages, 434 migrated parsers, 146 unit tests, 14 browser-tier checks, 8 screenshots        |
+| 4 — Docs & release     | 🔄     | README, CHANGELOG, CONTRIBUTING, CODE_OF_CONDUCT, development guide, 2 new ADRs; release pending             |
 
 ---
 
@@ -317,17 +317,34 @@ The `155 KB` figure for `zip.js` in ADR-0012 is unrelated and correct.
 
 ### Still open
 
-1. **The library migration is not implemented.** The library store, the
-   IndexedDB schema and the read/write API all exist, but no code moves a
-   saved book from the baseline's `localStorage` shape into it. The upgrade
-   path for a user who has 200 books in the original extension is therefore
-   manual. This is the single largest gap between the documentation's promise
-   and the shipped code.
+1. **The library migration is done.** It shipped as an import of the ZIP
+   export the original extension writes (commit `910e3083`,
+   [ADR-0034](./decisions/ADR-0034-library-import.md)). A user brings their
+   saved books over by exporting from the original and importing that file.
 2. **The artifact is unsigned.** It installs through `about:debugging` with
-   the temporary add-on loader, or through a signed AMO build once a
-   `gecko` id and an AMO account exist.
+   the temporary add-on loader. The manifest carries the `gecko` id
+   `kintsugi@localhost` (set in `tools/build.mjs`); a signed AMO build still
+   needs an AMO account.
 3. **Firefox only.** The manifest and the extension APIs are Firefox-shaped;
    the Chromium path was not ported and is not claimed.
+
+#### 2026-11-28, audit round 2
+
+Deliberately deferred:
+
+1. **Per-site parser options are not shown.** 24 parsers add their own
+   controls through `populateUIImpl`; the rewrite has no place for them, so
+   those options keep their defaults.
+2. **The parsers that open tabs are untested under the rewrite.**
+   Wuxiaworld, Noveli, Fenrirealm and Lunarx call `tabs.create`,
+   `scripting.executeScript`, `tabs.onUpdated` or `runtime.onMessage`
+   themselves; MangaHere and ReadComicOnline open a tab through
+   `util.createChapterTab`.
+3. **Manual parser selection has no UI.** 9 parsers register through
+   `registerManualSelect`, and nothing lets the user pick one.
+4. **Series metadata is not written.** The compat layer still calls
+   `extractSeriesInfo`, but the EPUB writer does not write what it collects,
+   so a series name and index never reach the book.
 
 ---
 
@@ -344,7 +361,8 @@ The `155 KB` figure for `zip.js` in ADR-0012 is unrelated and correct.
 
 ## Environment notes
 
-- `npm install` runs a `postinstall` that copies `zip.js` and `DOMPurify` into
-  `plugin/`. The rewrite will need its own equivalent vendor step.
+- In the original, `npm install` runs a `postinstall` that copies `zip.js` and
+  `DOMPurify` into `plugin/`. The rewrite has no `postinstall`: the build
+  (`tools/build.mjs`) takes both from `node_modules`.
 - The baseline `npm test` opens a browser (`http-server -o unitTest/Tests.html`)
   — not CI-friendly. The rewrite should use a headless runner.

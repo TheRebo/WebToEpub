@@ -1,0 +1,116 @@
+/**
+ * Naming the file a book is saved as.
+ *
+ * The name comes either from the template the user set in the options page or
+ * from a name they typed into the workbench. Both have to survive the trip to
+ * the file system.
+ */
+import { describe, expect, it } from "vitest";
+import {
+    applyFilenameTemplate,
+    buildFileName,
+    DEFAULT_FILENAME_TEMPLATE,
+    sanitizeFileName,
+    stripEpubExtension,
+} from "../../src/core/util/file-name";
+
+describe("applyFilenameTemplate", () => {
+    it("fills in the title", () => {
+        expect(applyFilenameTemplate("{title}", { title: "A Story" })).toBe("A Story");
+    });
+
+    it("fills in the author", () => {
+        expect(
+            applyFilenameTemplate("{title} by {author}", { title: "A Story", author: "A Writer" }),
+        ).toBe("A Story by A Writer");
+    });
+
+    it("fills in every occurrence of a placeholder", () => {
+        expect(applyFilenameTemplate("{title} - {title}", { title: "A Story" })).toBe(
+            "A Story - A Story",
+        );
+    });
+
+    it("leaves an unknown placeholder alone", () => {
+        // A typo should be visible rather than silently changing the name.
+        expect(applyFilenameTemplate("{titel}", { title: "A Story" })).toBe("{titel}");
+    });
+
+    it("tidies away a separator left by a missing author", () => {
+        expect(applyFilenameTemplate("{title} by {author}", { title: "A Story" })).toBe("A Story");
+    });
+
+    it("uses the title when the template is empty", () => {
+        expect(applyFilenameTemplate("   ", { title: "A Story" })).toBe("A Story");
+    });
+});
+
+describe("sanitizeFileName", () => {
+    it("replaces the characters Windows refuses", () => {
+        expect(sanitizeFileName('a/b\\c:d*e?f"g<h>i|j')).toBe("a-b-c-d-e-f-g-h-i-j");
+    });
+
+    it("drops the control characters", () => {
+        expect(sanitizeFileName("a\u0000b")).toBe("ab");
+    });
+
+    it("trims the dots and spaces Windows refuses at the end", () => {
+        expect(sanitizeFileName("  a story.  ")).toBe("a story");
+    });
+
+    it("never returns an empty name", () => {
+        expect(sanitizeFileName("///")).toBe("---");
+        expect(sanitizeFileName("")).toBe("untitled");
+    });
+
+    it("shortens a name that is too long", () => {
+        expect(sanitizeFileName("a".repeat(200)).length).toBeLessThanOrEqual(120);
+    });
+});
+
+describe("stripEpubExtension", () => {
+    it("removes the extension", () => {
+        expect(stripEpubExtension("A Story.epub")).toBe("A Story");
+    });
+
+    it("is not confused by the case", () => {
+        expect(stripEpubExtension("A Story.EPUB")).toBe("A Story");
+    });
+
+    it("leaves a name without an extension alone", () => {
+        expect(stripEpubExtension("A Story")).toBe("A Story");
+    });
+});
+
+describe("buildFileName", () => {
+    it("uses the template", () => {
+        expect(buildFileName("{title}", { title: "A Story" })).toBe("A Story.epub");
+    });
+
+    it("uses the template's author", () => {
+        expect(buildFileName("{title} - {author}", { title: "A Story", author: "A Writer" })).toBe(
+            "A Story - A Writer.epub",
+        );
+    });
+
+    it("prefers the name the user typed", () => {
+        expect(buildFileName("{title}", { title: "A Story" }, "My Own Name")).toBe(
+            "My Own Name.epub",
+        );
+    });
+
+    it("does not add the extension twice", () => {
+        expect(buildFileName("{title}", { title: "A Story" }, "My Own Name.epub")).toBe(
+            "My Own Name.epub",
+        );
+    });
+
+    it("makes the name safe", () => {
+        expect(buildFileName("{title}", { title: "A/B" })).toBe("A-B.epub");
+    });
+
+    it("falls back to the default template", () => {
+        expect(DEFAULT_FILENAME_TEMPLATE).toBe("{title}");
+        expect(buildFileName("", { title: "A Story" })).toBe("A Story.epub");
+    });
+});

@@ -6,7 +6,7 @@
  * user one card and one button.
  *
  * It never fetches a page and never loads a parser: the worker owns both.
- * That is what keeps the popup opening instantly, even with 437 parsers in
+ * That is what keeps the popup opening instantly, even with 434 parsers in
  * the extension.
  *
  * See ADR-0005.
@@ -17,17 +17,28 @@ import "../../components/k-button";
 import "../../components/k-progress";
 import "../../components/k-toast";
 
-import { sendRequest } from "../../../core/message/bus";
+import { sendRequest, type DownloadProgress } from "../../../core/message/bus";
 import {
-    activeTab,
+    activePageUrl,
     openTab,
     sendMessage,
     getURL,
     localStorageAdapter,
 } from "../../../core/browser-api";
+import {
+    displayOrigin,
+    hasHostAccess,
+    originOf,
+    requestHostAccess,
+} from "../../../core/host-access";
 import { SettingsStore } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
-import { t } from "../../i18n";
+import { t, tDynamic } from "../../i18n";
+import { caughtErrorMessage, errorMessage } from "../../error-messages";
+import { runGuarded } from "../../guarded";
+import type { UserFacingError } from "../../../core/util/errors";
+import { pollUntilDone } from "../../poll";
+import { LatestOnly } from "../../latest-only";
 import { installI18n } from "../../i18n-bootstrap";
 import { buildPopup, renderPopup, type PopupElements, type PopupViewState } from "./view";
 
@@ -41,14 +52,27 @@ class PopupController {
         coverUrl: "",
         chapterCount: 0,
         hostName: "",
+        accessHost: "",
         error: "",
         phase: "",
         done: 0,
         total: 0,
         percent: 0,
     };
-    #pollTimer: ReturnType<typeof setTimeout> | undefined;
+    /** The URL the popup is looking at. */
+    #url: string | undefined;
+    /** Stops the poll for a running download. */
+    #stopPoll: (() => void) | undefined;
     #jobId: string | undefined;
+    /**
+     * The analyses that are in flight.
+     *
+     * Every analysis takes a number, and only the newest one is allowed to
+     * change the popup. Without the guard, a "Try again" pressed while the
+     * first attempt is still running lets the older answer land last, and the
+     * popup shows a story the user has already moved away from.
+     */
+    #analyses = new LatestOnly();
 
     constructor(root: HTMLElement) {
         this.#elements = buildPopup(root);
@@ -71,16 +95,29 @@ class PopupController {
         // event loop alive after the window is gone.
         window.addEventListener("unload", () => this.#stopPolling());
 
-        // A running download is the most valuable thing the popup can show,
-        // so it is checked first: it needs no network at all.
-        await this.#checkRunningJob();
+        // A user who has not been through the onboarding yet gets the welcome
+        // state, whatever page they are on. Introducing the extension before
+        // asking it to do anything is the difference between a tool and a
+        // puzzle.
+        if (!settings.onboardingComplete) {
+            this.#set({ state: "welcome" });
+            return;
+        }
 
         // The popup normally looks at the tab the user is on. A URL on the
         // query string overrides that, which is what makes the popup
         // linkable: a site can offer "add this chapter to your library"
-        // without sending the user to the workbench first.
-        const tab = await activeTab();
-        const url = requestedUrl() ?? tab?.url;
+        // without sending the user to the workbench first. It is read before
+        // anything else, so every later state can go back to the page.
+        const url = requestedUrl() ?? (await activePageUrl());
+        this.#url = url;
+
+        // A running download is the most valuable thing the popup can show,
+        // so it is checked first: it needs no network at all. When one is
+        // running the popup follows it instead of analysing the page, since a
+        // second analysis would replace the progress with a story card.
+        if (await this.#checkRunningJob()) return;
+
         if (!url) {
             this.#set({ state: "no-story", error: t("popupNoStory") });
             return;
@@ -92,12 +129,29 @@ class PopupController {
 
     /** Ask the worker what is on the page. */
     async #analyse(url: string): Promise<void> {
+        // This analysis is the newest one, so any older answer that arrives
+        // later is discarded.
+        const analysisNumber = this.#analyses.begin();
+        const isCurrent = (): boolean => this.#analyses.isCurrent(analysisNumber);
+
         try {
             const analysis = await sendRequest(
                 { sendMessage: (message) => sendMessage(message) },
                 "page:analyze",
                 { url },
             );
+            if (!isCurrent()) return;
+
+            // The worker reports a failure as an error rather than as an
+            // exception, so the error is read first: a page that could not be
+            // reached is not the same as a page no parser understands, and
+            // telling the user the site is "not supported yet" when the real
+            // problem is the network would send them off to write a parser
+            // they do not need.
+            if (analysis.error) {
+                await this.#handleAnalysisError(url, analysis.error);
+                return;
+            }
 
             if (!analysis.supported) {
                 this.#set({ state: "unsupported" });
@@ -119,20 +173,83 @@ class PopupController {
                     "chapters:list",
                     { url },
                 );
+                if (!isCurrent()) return;
                 this.#set({ chapterCount: chapters.chapters.length });
             } catch {
+                if (!isCurrent()) return;
                 this.#set({ chapterCount: 0 });
             }
         } catch (error) {
+            if (!isCurrent()) return;
             this.#set({
                 state: "error",
-                error: error instanceof Error ? error.message : t("errorGeneric"),
+                error: caughtErrorMessage(error),
             });
         }
     }
 
-    /** Check whether a download is running, and follow it if so. */
-    async #checkRunningJob(): Promise<void> {
+    /**
+     * Show what the analysis failure means.
+     *
+     * The one case that gets its own state is the one the user can fix: the
+     * extension was not allowed to read the site. Everything else is an error
+     * with the worker's own wording.
+     *
+     * @param url The URL that was analysed.
+     * @param error The failure the worker reported.
+     */
+    async #handleAnalysisError(url: string, error: UserFacingError): Promise<void> {
+        if (error.code === "UNSUPPORTED") {
+            this.#set({ state: "unsupported" });
+            return;
+        }
+
+        // A page the extension may not read fails to load, and the failure
+        // looks exactly like a site that is down. When the extension has not
+        // been allowed to read the site, that is what actually happened, and
+        // the fix is one button.
+        const origin = originOf(url);
+        if (error.code === "NETWORK" && origin && !(await hasHostAccess(origin))) {
+            this.#set({ state: "access", accessHost: displayOrigin(origin) });
+            return;
+        }
+
+        this.#set({ state: "error", error: error.message });
+    }
+
+    /**
+     * Ask the browser for access to the site.
+     *
+     * The request has to be made from the handler of the user's click, with
+     * nothing awaited before it: Firefox only shows the prompt when the
+     * request follows a real gesture. The request is therefore made on the
+     * first line, before any other work happens.
+     */
+    async #grantAccess(): Promise<void> {
+        const url = this.#url;
+        if (!url) return;
+        const origin = originOf(url);
+        if (!origin) return;
+
+        const granted = await requestHostAccess(origin);
+        if (!granted) {
+            this.#toast(t("accessDenied"), "warning");
+            return;
+        }
+
+        this.#toast(t("accessGranted"), "success");
+        await this.#analyse(url);
+    }
+
+    /**
+     * Check whether a download is running, and follow it if so.
+     *
+     * @returns `true` when a running download was found and is now being
+     *   followed. The caller uses this to decide not to analyse the page: the
+     *   progress is more useful than a story card, and the two fight over the
+     *   same screen.
+     */
+    async #checkRunningJob(): Promise<boolean> {
         try {
             const { jobs } = await sendRequest(
                 { sendMessage: (message) => sendMessage(message) },
@@ -143,61 +260,87 @@ class PopupController {
                 (job) =>
                     job.phase !== "complete" && job.phase !== "failed" && job.phase !== "cancelled",
             );
-            if (!running) return;
+            if (!running) return false;
 
             this.#jobId = running.jobId;
             this.#set({
                 state: "running",
-                phase: running.message,
+                phase: tDynamic(running.message),
                 done: running.chaptersDone,
                 total: running.chaptersTotal,
                 percent: running.percent,
             });
-            this.#poll();
+            this.#startPolling();
+            return true;
         } catch {
             // The worker may be asleep. The popup still works without this.
+            return false;
         }
     }
 
     /** Follow the running download. */
-    async #poll(): Promise<void> {
+    #startPolling(): void {
         if (!this.#jobId) return;
-        try {
-            const progress = await sendRequest(
-                { sendMessage: (message) => sendMessage(message) },
-                "download:progress",
-                { jobId: this.#jobId },
-            );
-            this.#set({
-                state: "running",
-                phase: progress.message,
-                done: progress.chaptersDone,
-                total: progress.chaptersTotal,
-                percent: progress.percent,
-            });
+        this.#stopPolling();
+        this.#stopPoll = pollUntilDone<DownloadProgress>({
+            intervalMs: 600,
+            step: async () => {
+                const jobId = this.#jobId;
+                if (!jobId) return undefined;
+                const progress = await sendRequest(
+                    { sendMessage: (message) => sendMessage(message) },
+                    "download:progress",
+                    { jobId },
+                );
+                this.#set({
+                    state: "running",
+                    // The worker sends the message *key*, so the popup
+                    // translates it in its own locale.
+                    phase: tDynamic(progress.message),
+                    done: progress.chaptersDone,
+                    total: progress.chaptersTotal,
+                    percent: progress.percent,
+                });
 
-            if (
-                progress.phase === "complete" ||
-                progress.phase === "failed" ||
-                progress.phase === "cancelled"
-            ) {
-                this.#jobId = undefined;
-                if (progress.phase === "complete") {
-                    this.#toast(t("popupSaved"), "success");
-                    this.#set({ state: "story" });
+                if (
+                    progress.phase === "complete" ||
+                    progress.phase === "failed" ||
+                    progress.phase === "cancelled"
+                ) {
+                    this.#jobId = undefined;
+                    if (progress.phase === "failed") {
+                        this.#set({
+                            state: "error",
+                            error: errorMessage(progress.error) || t("errorGeneric"),
+                        });
+                        return undefined;
+                    }
+                    if (progress.phase === "complete") this.#toast(t("popupSaved"), "success");
+                    // The job is over, so the popup goes back to the page the
+                    // user is on: a popup opened mid-job never analysed it.
+                    if (this.#url) {
+                        this.#set({ state: "loading" });
+                        await this.#analyse(this.#url);
+                    } else {
+                        this.#set({ state: "no-story", error: t("popupNoStory") });
+                    }
+                    return undefined;
                 }
-                return;
-            }
-        } catch {
-            // Keep polling: the job's state is durable.
-        }
-        this.#pollTimer = setTimeout(() => void this.#poll(), 600);
+                return progress;
+            },
+            onGiveUp: () => {
+                // The job is gone: the worker was restarted, or the job was
+                // cleaned up. Asking again would fail for ever.
+                this.#jobId = undefined;
+                this.#set({ state: "error", error: t("errorGeneric") });
+            },
+        });
     }
 
     /** Stop polling. */
     #stopPolling(): void {
-        if (this.#pollTimer) clearTimeout(this.#pollTimer);
-        this.#pollTimer = undefined;
+        this.#stopPoll?.();
+        this.#stopPoll = undefined;
     }
 
     /** Wire the events. */
@@ -206,7 +349,13 @@ class PopupController {
             const target = (event.target as HTMLElement)?.closest<HTMLElement>("[data-action]");
             const action = target?.dataset["action"];
             if (!action) return;
-            void this.#handle(action);
+            runGuarded(
+                () => this.#handle(action),
+                // A failure inside an action is the user's problem to know
+                // about: the popup shows it rather than the browser logging
+                // an unhandled rejection to a console nobody is watching.
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
         });
     }
 
@@ -214,8 +363,7 @@ class PopupController {
     async #handle(action: string): Promise<void> {
         switch (action) {
             case "primary": {
-                const tab = await activeTab();
-                const url = requestedUrl() ?? tab?.url;
+                const url = this.#url;
                 await openTab(
                     getURL(`workbench.html${url ? `?url=${encodeURIComponent(url)}` : ""}`),
                 );
@@ -237,9 +385,32 @@ class PopupController {
                 window.close();
                 return;
             }
+            case "onboarding": {
+                await openTab(getURL("onboarding.html"));
+                window.close();
+                return;
+            }
             case "retry": {
-                const tab = await activeTab();
-                if (tab?.url) await this.#analyse(tab.url);
+                if (this.#url) {
+                    this.#set({ state: "loading" });
+                    await this.#analyse(this.#url);
+                } else {
+                    await this.start();
+                }
+                return;
+            }
+            case "cancel": {
+                const jobId = this.#jobId;
+                if (!jobId) return;
+                await sendRequest(
+                    { sendMessage: (message) => sendMessage(message) },
+                    "download:cancel",
+                    { jobId },
+                );
+                return;
+            }
+            case "grant-access": {
+                await this.#grantAccess();
                 return;
             }
             default:
@@ -248,7 +419,7 @@ class PopupController {
     }
 
     /** Show a toast. */
-    #toast(message: string, variant: "info" | "success" | "warning" | "danger"): void {
+    #toast(message: string, variant: "info" | "success" | "warning" | "error"): void {
         const toast = document.createElement("k-toast");
         toast.setAttribute("message", message);
         toast.setAttribute("variant", variant);
@@ -301,7 +472,7 @@ function requestedUrl(): string | undefined {
 
 /** Start the popup. */
 async function main(): Promise<void> {
-    installI18n();
+    installI18n("appName");
     const controller = new PopupController(document.body);
     await controller.start();
 }

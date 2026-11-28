@@ -37,6 +37,23 @@ interface BrowserNamespace {
             remove(keys: string | string[]): Promise<void>;
             clear?(): Promise<void>;
         };
+        /**
+         * The storage change event.
+         *
+         * It is how the background worker learns that the options page has
+         * changed something: the options page writes to storage directly, so
+         * without this the worker would keep using the settings it read when
+         * it started.
+         */
+        onChanged?: {
+            addListener(
+                listener: (
+                    changes: Record<string, { oldValue?: unknown; newValue?: unknown }>,
+                    areaName: string,
+                ) => void,
+            ): void;
+            removeListener(listener: (...args: never[]) => unknown): void;
+        };
         session?: {
             get(keys: string | string[] | null): Promise<Record<string, unknown>>;
             set(items: Record<string, unknown>): Promise<void>;
@@ -51,6 +68,7 @@ interface BrowserNamespace {
                 title?: string;
                 active?: boolean;
                 windowId?: number;
+                lastAccessed?: number;
             }>
         >;
         create(options: { url?: string; active?: boolean }): Promise<{ id?: number }>;
@@ -82,6 +100,7 @@ interface BrowserNamespace {
                 domain?: string;
                 path?: string;
                 secure?: boolean;
+                httpOnly?: boolean;
                 sameSite?: string;
                 partitionKey?: unknown;
             }>
@@ -109,7 +128,7 @@ interface BrowserNamespace {
             target: { tabId: number };
             func?: (...args: never[]) => unknown;
             files?: string[];
-        }): Promise<unknown[]>;
+        }): Promise<Array<{ result?: unknown }>>;
     };
     i18n: {
         getMessage(key: string, substitutions?: string | string[]): string;
@@ -218,6 +237,53 @@ export async function activeTab(): Promise<
 }
 
 /**
+ * The address of the page the user is looking at.
+ *
+ * Firefox does not tell an extension the addresses of tabs it has no business
+ * knowing about. Without the `tabs` permission — which this extension does not
+ * ask for — a tab comes back without its address unless the extension has
+ * host access to that site, or the `activeTab` permission has been granted for
+ * it. So the active tab is used when it is a web page, and otherwise the most
+ * recently used web page *the extension can already reach* is used.
+ *
+ * That is a weaker promise than it looks: the page the user was on a moment
+ * ago is only found if the extension has access to it, which it does for the
+ * sites the user has already granted. It is a best effort, and the caller
+ * has to cope with `undefined`.
+ *
+ * @returns The address, or `undefined` when there is no page to speak of.
+ */
+export async function activePageUrl(): Promise<string | undefined> {
+    const api = getNamespace();
+    if (!api) return undefined;
+
+    const tabs = await api.tabs.query({ currentWindow: true });
+    const pages = tabs.filter((tab) => isWebUrl(tab.url));
+
+    const active = pages.find((tab) => tab.active);
+    if (active?.url) return active.url;
+
+    // The most recently accessed page. Firefox reports when a tab was last
+    // used; when it does not, the first web page in the list is as good a
+    // guess as any.
+    const recent = pages
+        .filter((tab) => typeof tab.lastAccessed === "number")
+        .sort((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0))[0];
+    return recent?.url ?? pages[0]?.url;
+}
+
+/**
+ * Whether an address is one the extension can work with.
+ *
+ * @param url The address.
+ * @returns Whether it is an `http:` or `https:` address.
+ */
+function isWebUrl(url: string | undefined): url is string {
+    if (!url) return false;
+    return url.startsWith("http://") || url.startsWith("https://");
+}
+
+/**
  * Open a URL in a new tab.
  */
 export async function openTab(url: string, active = true): Promise<void> {
@@ -227,10 +293,30 @@ export async function openTab(url: string, active = true): Promise<void> {
 }
 
 /**
+ * Listen for changes to the extension's storage.
+ *
+ * @param listener The listener. It receives the changed keys and the area they
+ *   changed in.
+ */
+export function onStorageChanged(
+    listener: (
+        changes: Record<string, { oldValue?: unknown; newValue?: unknown }>,
+        areaName: string,
+    ) => void,
+): void {
+    const api = getNamespace();
+    api?.storage.onChanged?.addListener(listener);
+}
+
+/**
  * The storage adapter for {@link SettingsStore}.
  *
  * `browser.storage.local` is the only place settings live; the library's EPUB
  * bytes go to IndexedDB instead.
+ *
+ * A write throws when the storage API is unavailable. Silently resolving
+ * would tell the caller the setting was saved when it was not, and the user
+ * would find their choice reverted the next time the extension started.
  */
 export const localStorageAdapter = {
     async get(keys: string | string[] | null): Promise<Record<string, unknown>> {
@@ -240,12 +326,16 @@ export const localStorageAdapter = {
     },
     async set(items: Record<string, unknown>): Promise<void> {
         const api = getNamespace();
-        if (!api) return;
+        if (!api) {
+            throw new Error("The extension storage is not available.");
+        }
         await api.storage.local.set(items);
     },
     async remove(keys: string | string[]): Promise<void> {
         const api = getNamespace();
-        if (!api) return;
+        if (!api) {
+            throw new Error("The extension storage is not available.");
+        }
         await api.storage.local.remove(keys);
     },
 };
@@ -262,12 +352,16 @@ export const sessionStorageAdapter = {
     },
     async set(items: Record<string, unknown>): Promise<void> {
         const api = getNamespace();
-        if (!api?.storage.session) return;
+        if (!api?.storage.session) {
+            throw new Error("The extension session storage is not available.");
+        }
         await api.storage.session.set(items);
     },
     async remove(keys: string | string[]): Promise<void> {
         const api = getNamespace();
-        if (!api?.storage.session) return;
+        if (!api?.storage.session) {
+            throw new Error("The extension session storage is not available.");
+        }
         await api.storage.session.remove(keys);
     },
 };

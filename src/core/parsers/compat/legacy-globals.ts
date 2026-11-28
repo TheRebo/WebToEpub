@@ -7,7 +7,7 @@
  * `FetchErrorHandler`, `ImageCollector`, `EpubItem` and friends. Nothing
  * declared them; they simply had to be there.
  *
- * The rewrite does not have globals. It has modules. But the 437 parsers are
+ * The rewrite does not have globals. It has modules. But the 434 parsers are
  * the product's core asset and they must keep working, so this module
  * re-creates the handful of globals the parsers actually touch, as ordinary
  * exported objects that the codemod turns into imports.
@@ -75,9 +75,16 @@ export const UIText = {
         httpFetchCanRetry: (): string => "The request can be retried.",
     },
     Default: {
-        /** The placeholder shown for a chapter that could not be fetched. */
-        chapterPlaceholderMessage: (title: string, url: string): string =>
-            `The chapter "${title}" (${url}) could not be fetched.`,
+        /**
+         * The placeholder shown for a chapter that could not be fetched.
+         *
+         * The baseline's message showed the chapter's URL and the error that
+         * stopped it being fetched. The URL alone was not enough: a reader
+         * with a chapter list in front of them cannot tell which chapter
+         * failed or why.
+         */
+        chapterPlaceholderMessage: (url: string, error: string): string =>
+            `This is a placeholder. Attempt to fetch chapter from '${url}' failed with error: ${error}`,
         /** The title of the generated information page. */
         informationPageTitle: "Information",
         /** The label of the table-of-contents link on the information page. */

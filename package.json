@@ -13,6 +13,7 @@
     "build": "node tools/build.mjs",
     "build:dev": "node tools/build.mjs --dev",
     "package": "node tools/package.mjs",
+    "package:verify": "node tools/verify-xpi.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -28,8 +29,9 @@
     "web-ext:lint:raw": "web-ext lint --source-dir dist",
     "web-ext:run": "web-ext run --source-dir dist",
     "links": "node tools/check-links.mjs",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run links && npm run build && npm run web-ext:lint && npm run test:e2e",
-    "precommit": "npm run lint && npm run typecheck",
+    "check:text": "node tools/check-text-files.mjs",
+    "verify": "npm run lint && npm run typecheck && npm run check:text && npm run test && npm run links && npm run build && npm run web-ext:lint && npm run package && npm run package:verify && npm run test:e2e",
+    "precommit": "npm run lint && npm run typecheck && npm run check:text",
     "prepare": "husky || true"
   },
   "dependencies": {

@@ -43,45 +43,91 @@ const SOURCE = {
     workbenchCover: ["Cover", "The heading of the cover section."],
     workbenchOptions: ["Options", "The heading of the options section."],
     workbenchChapters: ["Chapters", "The heading of the chapter list."],
-    workbenchChaptersFound: ["$COUNT$ chapters found", "How many chapters were found."],
     workbenchChapterCount: [
         "$VISIBLE$ of $TOTAL$",
         "How many chapters are visible, out of how many were found.",
     ],
     workbenchPack: ["Build EPUB", "The button that builds the book."],
-    workbenchSave: ["Save", "The button that saves the metadata."],
     workbenchCancel: ["Cancel", "The button that stops a download."],
+    workbenchRetry: ["Try again", "The button that starts a failed or cancelled download again."],
+    workbenchDismiss: ["Dismiss", "The button that hides a finished download's status."],
+    workbenchSavedAs: [
+        "Saved as $FILE$ ($SIZE$)",
+        "Shown when the book has been saved, with its file name and size.",
+    ],
     workbenchSelectAll: ["Select all", "The button that selects every chapter."],
     workbenchSelectNone: ["Select none", "The button that deselects every chapter."],
     workbenchInvert: ["Invert", "The button that inverts the selection."],
     workbenchRanges: ["Ranges", "The button that picks a range of chapters."],
+    workbenchRangeTitle: ["Select a range", "The heading of the range dialog."],
+    workbenchRangeFrom: ["First chapter", "The first chapter of the range."],
+    workbenchRangeTo: ["Last chapter", "The last chapter of the range."],
+    workbenchRangeCount: ["$COUNT$ chapters", "How many chapters the range covers."],
+    workbenchRangeCountOne: [
+        "$COUNT$ chapter",
+        "How many chapters the range covers, when there is one.",
+    ],
+    workbenchRangeSelect: ["Select range", "Selects the chapters in the range."],
+    workbenchRangeDeselect: ["Deselect range", "Deselects the chapters in the range."],
+    workbenchRangeInvalid: [
+        "Enter a chapter number between 1 and $COUNT$.",
+        "Shown when the range cannot be used.",
+    ],
     workbenchFilter: ["Filter", "The button that opens the filter."],
     workbenchNoChaptersSelected: ["No chapters selected", "Shown when nothing is ticked."],
+    workbenchBusy: ["A book is being made", "Why Pack is unavailable while a download runs."],
     workbenchWaitingForChapters: ["Looking for chapters…", "Shown while the chapter list loads."],
-    workbenchDetected: ["Detected", "Shown when a parser recognised the site."],
     workbenchFieldTitle: ["Title", "The story's title."],
     workbenchFieldAuthor: ["Author", "The story's author."],
     workbenchFieldLanguage: ["Language", "The story's language."],
     workbenchFieldFilename: ["File name", "The name the EPUB is saved under."],
     workbenchResetFilename: ["Reset", "Restores the default file name."],
-    workbenchChooseFromPage: ["Choose from page", "Picks the cover image from the page."],
     workbenchRemoveCover: ["Remove cover", "Removes the cover image."],
     workbenchIncludeAuthorNotes: [
         "Include author notes",
         "Keeps the notes at the end of a chapter.",
     ],
     workbenchIncludeTocPage: [
-        "Include the contents page",
+        "Include the table of contents as a chapter",
         "Adds the table of contents as a chapter.",
     ],
     workbenchMoreOptions: ["More options", "Opens the full settings page."],
-    workbenchNoCover: ["No cover", "Shown when there is no cover image."],
+    workbenchOptionsHint: [
+        "These apply to every book you make.",
+        "Explains that the workbench's switches change the settings.",
+    ],
     workbenchCoverUrl: ["Cover image address", "The address of the cover image."],
     workbenchNoStoryHere: ["No story found on this page", "Shown when the page is not a story."],
-    workbenchTryAnyway: ["Try anyway", "Opens the workbench regardless."],
-    workbenchUnsupportedSite: ["This site is not supported yet", "Shown when no parser matched."],
-    workbenchUseSelectorBuilder: ["Build a selector", "Opens the selector builder."],
-    workbenchReloadPage: ["Reload the page", "Reloads the tab."],
+    workbenchNoStoryHint: [
+        "Check that this is the story's chapter list, or show Kintsugi where the chapters are.",
+        "Shown under the empty chapter list.",
+    ],
+    workbenchFieldUrl: ["Story address", "The field holding the address of the story's page."],
+    workbenchFieldUrlHint: [
+        "Paste the address of the story's chapter list.",
+        "The hint under the story address field.",
+    ],
+    workbenchLoadStory: ["Load", "The button that loads the story at the given address."],
+    workbenchUrlInvalid: [
+        "That is not a web address.",
+        "Shown when the address in the story field cannot be used.",
+    ],
+
+    // --- Site access ---
+    accessTitle: ["Allow access to this site", "The heading of the site access prompt."],
+    accessText: [
+        "Kintsugi can only read a site you have allowed. The pages are read on your machine, and nothing is sent anywhere.",
+        "The explanation under the site access prompt.",
+    ],
+    accessGrant: ["Allow access", "The button that asks the browser for access."],
+    accessDenied: [
+        "Access was not allowed, so the story cannot be read.",
+        "Shown when the user declines the browser's permission prompt.",
+    ],
+    accessGranted: [
+        "Kintsugi can now read this site.",
+        "Shown when the user has just allowed the site.",
+    ],
 
     // --- Chapter states ---
     chapterStateQueued: ["Queued", "A chapter that is waiting to be fetched."],
@@ -103,17 +149,26 @@ const SOURCE = {
 
     // --- Popup ---
     popupOpenWorkbench: ["Open workbench", "The popup's main button."],
-    popupAddToLibrary: ["Add to library", "The popup's library button."],
     popupLibraryShort: ["Library", "The popup's library button's visible label."],
     popupWorkbenchShort: ["Workbench", "The popup's workbench button's visible label."],
     popupSettings: ["Settings", "The popup's settings button."],
     popupNoStory: ["No story detected on this page.", "Shown when the page is not a story."],
-    popupUnsupported: ["This site is not supported yet.", "Shown when no parser matched."],
+    popupWelcome: [
+        "Welcome to Kintsugi. Let’s set things up before your first book.",
+        "Shown on the first run, before the onboarding.",
+    ],
+    popupGetStarted: ["Set up Kintsugi", "The popup's button that opens the onboarding."],
     popupSaved: ["Your book is ready.", "Shown when a download finishes."],
     popupTryAgain: ["Try again", "The popup's retry button."],
+    popupChecking: ["Looking at this page…", "Shown while the popup waits for the worker."],
     popupUnsupportedHost: [
         "$HOST$ is not supported yet.",
         "Shown when no parser matched the current site.",
+    ],
+    popupChapterCount: ["$COUNT$ chapters", "How many chapters the popup found."],
+    popupChapterCountOne: [
+        "$COUNT$ chapter",
+        "How many chapters the popup found, when there is one.",
     ],
 
     // --- Options ---
@@ -122,7 +177,6 @@ const SOURCE = {
     optionsEpub: ["EPUB", "The EPUB settings group."],
     optionsImages: ["Images", "The image settings group."],
     optionsBehaviour: ["Behaviour", "The behaviour settings group."],
-    optionsPrivacy: ["Privacy", "The privacy settings group."],
     optionsAdvanced: ["Advanced", "The advanced settings group."],
     optionsTheme: ["Theme", "The theme setting."],
     optionsAccent: ["Accent", "The accent colour setting."],
@@ -138,14 +192,55 @@ const SOURCE = {
     optionsDensityCompact: ["Compact", "The compact density option."],
     optionsSearchSettings: ["Search settings", "The settings search box."],
     optionsSiteAccess: ["Site access", "The list of sites the extension may read."],
-    optionsRevoke: ["Revoke", "Removes access to a site."],
-    optionsRevokeAll: ["Revoke all", "Removes access to every site."],
+    optionsRevoke: ["Remove access", "Removes access to a site."],
+    optionsRevokeAll: ["Remove all access", "Removes access to every site."],
+    optionsRevokeAllConfirm: [
+        "Kintsugi will not be able to read any of these sites until you allow each one again.",
+        "The explanation in the dialog that confirms removing access to every site.",
+    ],
+    optionsSiteAccessEmpty: [
+        "No sites yet. Kintsugi asks when you open a story.",
+        "The empty state of the site access list.",
+    ],
+    optionsSiteAccessHint: [
+        "Kintsugi can only read the sites listed here.",
+        "The hint under the site access heading.",
+    ],
+    optionsRevoked: [
+        "Kintsugi can no longer read that site.",
+        "Shown after a site's access is revoked.",
+    ],
+    optionsRevokedAll: [
+        "Kintsugi can no longer read any site until you allow it again.",
+        "Shown after access to every site is revoked.",
+    ],
     optionsExportSettings: ["Export settings", "Saves the settings to a file."],
     optionsImportSettings: ["Import settings", "Loads the settings from a file."],
     optionsResetAll: ["Reset all settings", "Restores every setting to its default."],
+    optionsExported: [
+        "The settings were saved to a file.",
+        "Said after the settings are exported.",
+    ],
+    optionsImported: [
+        "The settings were loaded from the file.",
+        "Said after the settings are imported.",
+    ],
+    optionsImportInvalid: [
+        "That file is not a Kintsugi settings file.",
+        "Said when the imported file cannot be read.",
+    ],
+    optionsResetDone: [
+        "Every setting is back to its default.",
+        "Said after the settings are reset.",
+    ],
+    optionsResetConfirm: [
+        "Every setting goes back to its default. Your library and your saved sites are not touched.",
+        "The reset dialog's explanation.",
+    ],
+    optionsResetConfirmAction: ["Reset everything", "The reset dialog's confirm button."],
     optionsPrivacyNote: [
         "Kintsugi sends nothing to anyone. Every network request goes to the site you are reading.",
-        "The note under the privacy settings.",
+        "The note at the foot of the settings.",
     ],
 
     // --- Options: library ---
@@ -155,13 +250,39 @@ const SOURCE = {
         "Books you build are kept here, so you can update them when a new chapter is posted.",
         "The empty library's explanation.",
     ],
-    optionsLibraryChapters: ["$COUNT$ chapters", "How many chapters a book has."],
     optionsNoResults: [
         "Nothing matches that search.",
         "Shown when a settings search finds nothing.",
     ],
     optionsNavLabel: ["Settings groups", "The accessible name of the settings navigation."],
     optionsLibraryMeta: ["$CHAPTERS$ chapters · $SIZE$", "The library card's metadata line."],
+    optionsLibraryMetaOne: [
+        "$CHAPTERS$ chapter · $SIZE$",
+        "The library card's metadata line, when the book has one chapter.",
+    ],
+    optionsLibraryImport: [
+        "Import from WebToEpub",
+        "The button that imports a library exported by WebToEpub 1.x.",
+    ],
+    optionsLibraryImported: [
+        "Imported $1 books.",
+        "Confirmation after importing a library, when it held several books.",
+    ],
+    optionsLibraryImportedOne: [
+        "Imported $1 book.",
+        "Confirmation after importing a library, when it held one book.",
+    ],
+    optionsLibraryTooLarge: [
+        "That file is too large to import. The largest library Kintsugi can read is $SIZE$.",
+        "Shown when the user picks a library export that is larger than Kintsugi will read.",
+    ],
+    libraryRemove: ["Remove", "Removes a book from the library."],
+    libraryRemoveTitle: ["Remove this book from the library?", "The heading of the remove dialog."],
+    libraryRemoveConfirm: [
+        "The EPUB you saved stays where it is. Only its entry in the library goes.",
+        "The explanation in the remove dialog.",
+    ],
+    libraryRemoved: ["Removed from the library.", "Confirmation after removing a book."],
 
     // --- Options: individual settings ---
     settingReduceMotion: ["Always reduce motion", "The reduce-motion setting."],
@@ -176,7 +297,7 @@ const SOURCE = {
     ],
     settingDefaultLanguage: ["Default language", "The default-language setting."],
     settingDefaultLanguageHint: [
-        "The ISO 639 code used when a site does not declare one.",
+        "The language a book is marked as when its site does not say.",
         "Explains the default-language setting.",
     ],
     settingRemoveAuthorNotes: ["Remove author notes", "The remove-author-notes setting."],
@@ -187,6 +308,10 @@ const SOURCE = {
     settingRemoveChapterNumbers: [
         "Remove chapter numbers from titles",
         "The remove-chapter-numbers setting.",
+    ],
+    settingRemoveChapterNumbersHint: [
+        "Removes the number a site puts at the start of a chapter's title.",
+        "Explains the remove-chapter-numbers setting.",
     ],
     settingIncludeTocPage: [
         "Include the table of contents as a chapter",
@@ -217,18 +342,17 @@ const SOURCE = {
         "The prefer-highest-resolution setting.",
     ],
     settingUseSvg: ["Allow SVG images", "The allow-SVG setting."],
-    settingCompressImages: ["Compress images", "The compress-images setting."],
-    settingMaxResolution: ["Maximum resolution", "The maximum-resolution setting."],
-    settingMaxResolutionHint: [
-        "In pixels on the longest edge.",
-        "Explains the maximum-resolution setting.",
-    ],
     settingSkipFailedChapters: ["Skip chapters that fail", "The skip-failed-chapters setting."],
     settingSkipFailedChaptersHint: [
         "A failed chapter becomes a note in the book instead of stopping the run.",
         "Explains the skip-failed-chapters setting.",
     ],
     settingRetryOnEmptyPage: ["Retry on an empty page", "The retry-on-empty-page setting."],
+    settingEmptyPageIsError: ["An empty page is an error", "The empty-page-is-error setting."],
+    settingEmptyPageIsErrorHint: [
+        "Some sites answer a blocked request with a blank page. When this is on, that page is reported as a failure instead of becoming an empty chapter.",
+        "Explains the empty-page-is-error setting.",
+    ],
     settingMinimumDelay: ["Minimum delay between requests", "The minimum-delay setting."],
     settingMinimumDelayHint: [
         "In milliseconds. Raise it for sites that rate-limit aggressively.",
@@ -239,16 +363,6 @@ const SOURCE = {
     settingDelayPerChapterHint: [
         "In milliseconds, on top of the minimum delay.",
         "Explains the delay-per-chapter setting.",
-    ],
-    settingMetadataLookup: ["Look up book metadata", "The metadata-lookup setting."],
-    settingMetadataLookupHint: [
-        "Off by default. When on, the title is checked against a public database.",
-        "Explains the metadata-lookup setting.",
-    ],
-    settingSendStoryUrl: ["Send the story URL with the lookup", "The send-story-url setting."],
-    settingSendStoryUrlHint: [
-        "Off by default. Without it, the lookup can only use the title.",
-        "Explains the send-story-url setting.",
     ],
     settingDiagnostics: ["Developer diagnostics", "The diagnostics setting."],
     settingDiagnosticsHint: [
@@ -261,17 +375,23 @@ const SOURCE = {
     onboardingStep1: ["Step 1 of 3", "The first onboarding step's label."],
     onboardingStep2: ["Step 2 of 3", "The second onboarding step's label."],
     onboardingStep3: ["Step 3 of 3", "The third onboarding step's label."],
-    onboardingNext: ["Next", "The button that moves to the next step."],
     onboardingBack: ["Back", "The button that moves to the previous step."],
     onboardingFinish: ["Finish", "The button that completes the onboarding."],
     onboardingSkip: ["Skip", "The button that skips the onboarding."],
-    onboardingGetStarted: ["Get started", "The button that leaves the onboarding."],
+    onboardingNextSites: [
+        "Next: which sites work",
+        "Moves from the welcome step to the sites step.",
+    ],
+    onboardingNextLook: [
+        "Next: choose a look",
+        "Moves from the sites step to the appearance step.",
+    ],
     onboardingWelcomeText: [
-        "Turn any web novel into a book worth keeping. Point it at a chapter list, and it builds a clean EPUB — cover, table of contents, and all.",
+        "Turn any web novel into a book worth keeping. Point it at a chapter list and it builds a clean EPUB, with a cover and a table of contents.",
         "The first onboarding step's explanation.",
     ],
     onboardingWelcomeFootnote: [
-        "No account. No tracking. Works offline.",
+        "No account, and nothing is tracked. Kintsugi talks only to the sites you read.",
         "The first onboarding step's footnote.",
     ],
     onboardingWhichSite: ["Which site are you reading?", "The second onboarding step's heading."],
@@ -280,7 +400,7 @@ const SOURCE = {
         "The second onboarding step's explanation.",
     ],
     onboardingWhichSiteFootnote: [
-        "Not listed? Kintsugi can still read it — you can build a selector yourself.",
+        "Not listed? Kintsugi can still read it once you show it where the chapters are.",
         "The second onboarding step's footnote.",
     ],
     onboardingMakeItYours: ["Make it yours", "The third onboarding step's heading."],
@@ -293,11 +413,36 @@ const SOURCE = {
     errorGeneric: ["Something went wrong. Please try again.", "The fallback error message."],
     errorNetwork: ["Could not reach the site.", "A network failure."],
     errorNoParser: ["Kintsugi does not know this site yet.", "No parser matched the URL."],
-    errorTimeout: ["The site took too long to answer.", "A timeout."],
     errorCancelled: ["Cancelled.", "The user cancelled the operation."],
-    errorForbidden: ["The site refused the request.", "An HTTP 403."],
+    errorHttpStatus: [
+        "The site answered with an error.",
+        "The server returned an HTTP error status.",
+    ],
+    errorRateLimited: [
+        "The site is limiting requests. Wait a moment, then try again.",
+        "The server answered 429, too many requests.",
+    ],
+    errorChallenge: [
+        "The site wants to check that you are a person. Open the page, then try again.",
+        "The site served a challenge such as a captcha.",
+    ],
+    errorEmptyChapter: [
+        "The chapter came back empty. It may be locked, or the site may have changed.",
+        "A chapter page with no text in it.",
+    ],
+    errorStorageFull: [
+        "There is not enough space to save this book.",
+        "The browser's storage is full.",
+    ],
+    errorPermission: [
+        "Kintsugi is not allowed to read this site.",
+        "The site has not been allowed.",
+    ],
+    errorBusy: [
+        "Another book is still being made. Wait for it to finish, or cancel it.",
+        "A second download was started while one is running.",
+    ],
     errorParse: ["The page could not be read.", "The page could not be parsed."],
-    errorNoChapters: ["No chapters were found on this page.", "The chapter list was empty."],
 
     // --- Filter ---
     filterSearch: ["Search", "The filter's search box."],
@@ -306,6 +451,12 @@ const SOURCE = {
     filterExclude: ["Exclude", "Matching chapters are removed."],
     filterMatchCount: ["$COUNT$ matching", "How many chapters match the filter."],
     filterClear: ["Clear", "Clears the filter."],
+    optionsNumberRequired: ["Enter a number.", "Shown under a number setting that was left empty."],
+    filterNoMatches: [
+        "No chapters match these filters",
+        "Shown when the filter hides every chapter.",
+    ],
+    filterClearAll: ["Clear filters", "Removes the filter so every chapter shows again."],
     filterApply: ["Apply", "Applies the filter."],
     filterInvalidPattern: [
         "That is not a valid pattern.",
@@ -379,6 +530,17 @@ const SOURCE = {
         "That page looks like a table of contents, not a chapter. Open a chapter and try again.",
         "Shown when the scanner recognises a table of contents.",
     ],
+
+    // --- Shared across the components ---
+    commonClose: ["Close", "The label of a button that closes a dialog."],
+    commonDismiss: ["Dismiss", "The label of a button that dismisses a notification."],
+    commonLoading: ["Loading…", "Shown while a page reads what it needs."],
+    siteSelectorSuggesting: ["Looking at the page…", "Shown while the scanner reads the page."],
+    siteSelectorTesting: [
+        "Trying the selectors on the page…",
+        "Shown while the selectors are tested.",
+    ],
+    commonCancel: ["Cancel", "The label of a button that cancels an action."],
 };
 
 /**

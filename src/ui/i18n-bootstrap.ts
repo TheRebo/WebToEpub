@@ -9,7 +9,7 @@
  * the module must stay usable outside an extension (in a unit test, or in a
  * static preview of a component) where there is no `browser` global at all.
  */
-import { setI18nApi, type I18nApi } from "./i18n";
+import { setI18nApi, t, type I18nApi, type MessageName } from "./i18n";
 
 /**
  * Read the extension's i18n API, if this context has one.
@@ -36,6 +36,17 @@ function readI18nApi(): I18nApi | undefined {
  * Safe to call more than once: the last call wins, and the memoisation cache
  * is cleared so that a late install does not serve stale fallbacks.
  */
-export function installI18n(): void {
-    setI18nApi(readI18nApi());
+export function installI18n(titleKey?: MessageName): void {
+    const api = readI18nApi();
+    setI18nApi(api);
+
+    // The page is announced in the language it is written in, and its tab
+    // says which page it is, in that language too.
+    const language = api?.getUILanguage?.();
+    if (language) document.documentElement.lang = language;
+    if (titleKey) {
+        const page = t(titleKey);
+        const app = t("appName");
+        document.title = page === app ? app : `${page} · ${app}`;
+    }
 }

@@ -44,6 +44,7 @@
     "src/**/*.ts",
     "src/**/*.js",
     "tests/**/*.ts",
+    "tests/**/*.mjs",
     "tools/**/*.mjs",
     "*.config.ts",
     "*.config.mjs"

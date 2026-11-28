@@ -27,16 +27,6 @@
     "message": "Bab",
     "description": "Judul daftar bab."
   },
-  "workbenchChaptersFound": {
-    "message": "$COUNT$ bab ditemukan",
-    "description": "Berapa banyak bab yang ditemukan.",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
-  },
   "workbenchChapterCount": {
     "message": "$VISIBLE$ dari $TOTAL$",
     "description": "Berapa banyak bab yang terlihat dari total yang ditemukan.",
@@ -55,13 +45,31 @@
     "message": "Buat EPUB",
     "description": "Tombol untuk menyusun buku."
   },
-  "workbenchSave": {
-    "message": "Simpan",
-    "description": "Tombol untuk menyimpan metadata."
-  },
   "workbenchCancel": {
     "message": "Batal",
     "description": "Tombol untuk menghentikan unduhan."
+  },
+  "workbenchRetry": {
+    "message": "Coba lagi",
+    "description": "Tombol untuk memulai lagi unduhan yang gagal atau dibatalkan."
+  },
+  "workbenchDismiss": {
+    "message": "Tutup",
+    "description": "Tombol untuk menyembunyikan status unduhan yang selesai."
+  },
+  "workbenchSavedAs": {
+    "message": "Disimpan sebagai $FILE$ ($SIZE$)",
+    "description": "Ditampilkan setelah buku disimpan.",
+    "placeholders": {
+      "file": {
+        "content": "$1",
+        "example": "1"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
   },
   "workbenchSelectAll": {
     "message": "Pilih semua",
@@ -79,6 +87,56 @@
     "message": "Rentang",
     "description": "Tombol untuk memilih rentang bab."
   },
+  "workbenchRangeTitle": {
+    "message": "Pilih rentang",
+    "description": "Judul dialog rentang."
+  },
+  "workbenchRangeFrom": {
+    "message": "Bab pertama",
+    "description": "Bab pertama dalam rentang."
+  },
+  "workbenchRangeTo": {
+    "message": "Bab terakhir",
+    "description": "Bab terakhir dalam rentang."
+  },
+  "workbenchRangeCount": {
+    "message": "$COUNT$ bab",
+    "description": "Berapa banyak bab yang ada dalam rentang.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeCountOne": {
+    "message": "$COUNT$ bab",
+    "description": "Berapa banyak bab yang ada dalam rentang, ketika hanya ada satu.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeSelect": {
+    "message": "Pilih rentang",
+    "description": "Memilih bab dalam rentang."
+  },
+  "workbenchRangeDeselect": {
+    "message": "Batalkan rentang",
+    "description": "Membatalkan pilihan bab dalam rentang."
+  },
+  "workbenchRangeInvalid": {
+    "message": "Masukkan nomor bab antara 1 dan $COUNT$.",
+    "description": "Ditampilkan saat rentang tidak dapat dipakai.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
   "workbenchFilter": {
     "message": "Saring",
     "description": "Tombol untuk membuka penyaring."
@@ -87,13 +145,13 @@
     "message": "Tidak ada bab yang dipilih",
     "description": "Ditampilkan saat tidak ada yang dicentang."
   },
+  "workbenchBusy": {
+    "message": "Sebuah buku sedang dibuat",
+    "description": "Alasan tombol Buat tidak tersedia saat unduhan berjalan."
+  },
   "workbenchWaitingForChapters": {
     "message": "Mencari bab…",
     "description": "Ditampilkan saat daftar bab sedang dimuat."
-  },
-  "workbenchDetected": {
-    "message": "Terdeteksi",
-    "description": "Ditampilkan saat parser mengenali situs."
   },
   "workbenchFieldTitle": {
     "message": "Judul",
@@ -115,10 +173,6 @@
     "message": "Atur ulang",
     "description": "Mengembalikan nama berkas ke bawaan."
   },
-  "workbenchChooseFromPage": {
-    "message": "Pilih dari halaman",
-    "description": "Mengambil gambar sampul dari halaman."
-  },
   "workbenchRemoveCover": {
     "message": "Hapus sampul",
     "description": "Menghapus gambar sampul."
@@ -128,16 +182,16 @@
     "description": "Mempertahankan catatan di akhir bab."
   },
   "workbenchIncludeTocPage": {
-    "message": "Sertakan daftar isi",
+    "message": "Sertakan daftar isi sebagai bab",
     "description": "Menambahkan daftar isi sebagai satu bab."
   },
   "workbenchMoreOptions": {
     "message": "Pilihan lainnya",
     "description": "Membuka halaman pengaturan lengkap."
   },
-  "workbenchNoCover": {
-    "message": "Tanpa sampul",
-    "description": "Ditampilkan saat tidak ada gambar sampul."
+  "workbenchOptionsHint": {
+    "message": "Ini berlaku untuk setiap buku yang Anda buat.",
+    "description": "Menjelaskan bahwa sakelar ini mengubah pengaturan."
   },
   "workbenchCoverUrl": {
     "message": "Alamat gambar sampul",
@@ -147,21 +201,45 @@
     "message": "Tidak ada cerita di halaman ini",
     "description": "Ditampilkan saat halaman ini bukan cerita."
   },
-  "workbenchTryAnyway": {
-    "message": "Coba saja",
-    "description": "Membuka meja kerja tetap saja."
+  "workbenchNoStoryHint": {
+    "message": "Pastikan ini halaman daftar bab cerita, atau tunjukkan pada Kintsugi letak bab-babnya.",
+    "description": "Ditampilkan di bawah daftar bab yang kosong."
   },
-  "workbenchUnsupportedSite": {
-    "message": "Situs ini belum didukung",
-    "description": "Ditampilkan saat tidak ada parser yang cocok."
+  "workbenchFieldUrl": {
+    "message": "Alamat cerita",
+    "description": "Kolom yang berisi alamat halaman cerita."
   },
-  "workbenchUseSelectorBuilder": {
-    "message": "Buat selector",
-    "description": "Membuka pembuat selector."
+  "workbenchFieldUrlHint": {
+    "message": "Tempelkan alamat daftar bab.",
+    "description": "Petunjuk di bawah kolom alamat."
   },
-  "workbenchReloadPage": {
-    "message": "Muat ulang halaman",
-    "description": "Memuat ulang tab."
+  "workbenchLoadStory": {
+    "message": "Muat",
+    "description": "Tombol untuk memuat cerita dari alamat tersebut."
+  },
+  "workbenchUrlInvalid": {
+    "message": "Itu bukan alamat web.",
+    "description": "Ditampilkan ketika alamat tidak dapat dipakai."
+  },
+  "accessTitle": {
+    "message": "Izinkan akses ke situs ini",
+    "description": "Judul permintaan akses."
+  },
+  "accessText": {
+    "message": "Kintsugi hanya dapat membaca situs yang Anda izinkan. Halaman dibaca di mesin Anda, dan tidak ada yang dikirim ke mana pun.",
+    "description": "Penjelasan di bawah permintaan akses."
+  },
+  "accessGrant": {
+    "message": "Izinkan akses",
+    "description": "Tombol yang meminta akses dari peramban."
+  },
+  "accessDenied": {
+    "message": "Akses tidak diizinkan, jadi cerita tidak dapat dibaca.",
+    "description": "Ditampilkan ketika permintaan peramban ditolak."
+  },
+  "accessGranted": {
+    "message": "Kintsugi sekarang bisa membaca situs ini.",
+    "description": "Ditampilkan setelah situs baru saja diizinkan."
   },
   "chapterStateQueued": {
     "message": "Antre",
@@ -223,10 +301,6 @@
     "message": "Buka meja kerja",
     "description": "Tombol utama pada popup."
   },
-  "popupAddToLibrary": {
-    "message": "Tambahkan ke pustaka",
-    "description": "Tombol pustaka pada popup."
-  },
   "popupLibraryShort": {
     "message": "Pustaka",
     "description": "Label tombol pustaka pada popup."
@@ -243,9 +317,13 @@
     "message": "Tidak ada cerita terdeteksi di halaman ini.",
     "description": "Ditampilkan saat halaman ini bukan cerita."
   },
-  "popupUnsupported": {
-    "message": "Situs ini belum didukung.",
-    "description": "Ditampilkan saat tidak ada parser yang cocok."
+  "popupWelcome": {
+    "message": "Selamat datang di Kintsugi. Mari siapkan semuanya sebelum buku pertama Anda.",
+    "description": "Ditampilkan pada penggunaan pertama, sebelum panduan."
+  },
+  "popupGetStarted": {
+    "message": "Siapkan Kintsugi",
+    "description": "Tombol popup yang membuka panduan."
   },
   "popupSaved": {
     "message": "Buku Anda sudah siap.",
@@ -255,6 +333,10 @@
     "message": "Coba lagi",
     "description": "Tombol coba lagi pada popup."
   },
+  "popupChecking": {
+    "message": "Sedang melihat halaman ini…",
+    "description": "Ditampilkan saat popup menunggu pekerja latar belakang."
+  },
   "popupUnsupportedHost": {
     "message": "$HOST$ belum didukung.",
     "description": "Ditampilkan saat tidak ada parser yang cocok dengan situs saat ini.",
@@ -262,6 +344,26 @@
       "host": {
         "content": "$1",
         "example": "example.com"
+      }
+    }
+  },
+  "popupChapterCount": {
+    "message": "$COUNT$ bab",
+    "description": "Berapa banyak bab yang ditemukan popup.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "popupChapterCountOne": {
+    "message": "$COUNT$ bab",
+    "description": "Berapa banyak bab yang ditemukan popup, ketika hanya ada satu.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
       }
     }
   },
@@ -284,10 +386,6 @@
   "optionsBehaviour": {
     "message": "Perilaku",
     "description": "Kelompok pengaturan perilaku."
-  },
-  "optionsPrivacy": {
-    "message": "Privasi",
-    "description": "Kelompok pengaturan privasi."
   },
   "optionsAdvanced": {
     "message": "Lanjutan",
@@ -350,12 +448,32 @@
     "description": "Daftar situs yang boleh dibaca ekstensi."
   },
   "optionsRevoke": {
-    "message": "Cabut",
+    "message": "Cabut akses",
     "description": "Menghapus akses ke sebuah situs."
   },
   "optionsRevokeAll": {
-    "message": "Cabut semua",
+    "message": "Cabut semua akses",
     "description": "Menghapus akses ke semua situs."
+  },
+  "optionsRevokeAllConfirm": {
+    "message": "Kintsugi tidak akan bisa membaca situs-situs ini sampai Anda mengizinkannya lagi satu per satu.",
+    "description": "Penjelasan di dialog yang mencabut akses ke semua situs."
+  },
+  "optionsSiteAccessEmpty": {
+    "message": "Belum ada situs. Kintsugi bertanya saat Anda membuka cerita.",
+    "description": "Keadaan kosong daftar akses."
+  },
+  "optionsSiteAccessHint": {
+    "message": "Kintsugi hanya dapat membaca situs yang tercantum di sini.",
+    "description": "Petunjuk di bawah judul akses."
+  },
+  "optionsRevoked": {
+    "message": "Akses ke situs tersebut dicabut.",
+    "description": "Ditampilkan setelah akses dicabut."
+  },
+  "optionsRevokedAll": {
+    "message": "Akses ke semua situs dicabut.",
+    "description": "Ditampilkan setelah semua akses dicabut."
   },
   "optionsExportSettings": {
     "message": "Ekspor pengaturan",
@@ -369,9 +487,33 @@
     "message": "Atur ulang semua pengaturan",
     "description": "Mengembalikan setiap pengaturan ke nilai bawaan."
   },
+  "optionsExported": {
+    "message": "Pengaturan telah disimpan ke berkas.",
+    "description": "Ditampilkan setelah pengaturan diekspor."
+  },
+  "optionsImported": {
+    "message": "Pengaturan telah dimuat dari berkas.",
+    "description": "Ditampilkan setelah pengaturan diimpor."
+  },
+  "optionsImportInvalid": {
+    "message": "Berkas itu bukan berkas pengaturan Kintsugi.",
+    "description": "Ditampilkan ketika berkas yang diimpor tidak dapat dibaca."
+  },
+  "optionsResetDone": {
+    "message": "Setiap pengaturan kembali ke nilai bawaannya.",
+    "description": "Ditampilkan setelah pengaturan diatur ulang."
+  },
+  "optionsResetConfirm": {
+    "message": "Setiap pengaturan kembali ke nilai bawaannya. Pustaka dan situs tersimpan Anda tidak tersentuh.",
+    "description": "Penjelasan pada dialog atur ulang."
+  },
+  "optionsResetConfirmAction": {
+    "message": "Atur ulang semua",
+    "description": "Tombol konfirmasi pada dialog atur ulang."
+  },
   "optionsPrivacyNote": {
     "message": "Kintsugi tidak mengirim apa pun ke siapa pun. Setiap permintaan jaringan hanya menuju situs yang sedang Anda baca.",
-    "description": "Catatan di bawah pengaturan privasi."
+    "description": "Catatan di kaki pengaturan."
   },
   "optionsLibrary": {
     "message": "Pustaka",
@@ -384,16 +526,6 @@
   "optionsLibraryEmptyText": {
     "message": "Buku yang Anda buat disimpan di sini, sehingga Anda dapat memperbarui buku saat ada bab baru.",
     "description": "Penjelasan untuk pustaka yang kosong."
-  },
-  "optionsLibraryChapters": {
-    "message": "$COUNT$ bab",
-    "description": "Berapa banyak bab yang dimiliki sebuah buku.",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
   },
   "optionsNoResults": {
     "message": "Tidak ada yang cocok dengan pencarian itu.",
@@ -417,6 +549,58 @@
       }
     }
   },
+  "optionsLibraryMetaOne": {
+    "message": "$CHAPTERS$ bab · $SIZE$",
+    "description": "Baris metadata pada kartu pustaka, ketika buku hanya memiliki satu bab.",
+    "placeholders": {
+      "chapters": {
+        "content": "$1",
+        "example": "42"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "optionsLibraryImport": {
+    "message": "Impor dari WebToEpub",
+    "description": "Tombol untuk mengimpor pustaka yang diekspor oleh WebToEpub 1.x."
+  },
+  "optionsLibraryImported": {
+    "message": "$1 buku diimpor.",
+    "description": "Konfirmasi setelah mengimpor pustaka yang berisi beberapa buku."
+  },
+  "optionsLibraryImportedOne": {
+    "message": "$1 buku diimpor.",
+    "description": "Konfirmasi setelah mengimpor pustaka yang berisi satu buku."
+  },
+  "optionsLibraryTooLarge": {
+    "message": "Berkas itu terlalu besar untuk diimpor. Pustaka terbesar yang dapat dibaca Kintsugi adalah $SIZE$.",
+    "description": "Ditampilkan ketika pengguna memilih ekspor pustaka yang lebih besar dari yang dapat dibaca Kintsugi.",
+    "placeholders": {
+      "size": {
+        "content": "$1",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "libraryRemove": {
+    "message": "Hapus",
+    "description": "Menghapus buku dari pustaka."
+  },
+  "libraryRemoveTitle": {
+    "message": "Hapus buku ini dari pustaka?",
+    "description": "Judul dialog hapus."
+  },
+  "libraryRemoveConfirm": {
+    "message": "EPUB yang Anda simpan tetap di tempatnya. Hanya entrinya di pustaka yang dihapus.",
+    "description": "Penjelasan di dialog hapus."
+  },
+  "libraryRemoved": {
+    "message": "Dihapus dari pustaka.",
+    "description": "Konfirmasi setelah menghapus buku."
+  },
   "settingReduceMotion": {
     "message": "Selalu kurangi gerakan",
     "description": "Pengaturan pengurangan gerakan."
@@ -438,7 +622,7 @@
     "description": "Pengaturan bahasa bawaan."
   },
   "settingDefaultLanguageHint": {
-    "message": "Kode ISO 639 yang digunakan bila sebuah situs tidak menyatakannya.",
+    "message": "Bahasa buku jika situsnya tidak menyebutkannya.",
     "description": "Penjelasan pengaturan bahasa bawaan."
   },
   "settingRemoveAuthorNotes": {
@@ -452,6 +636,10 @@
   "settingRemoveChapterNumbers": {
     "message": "Hapus nomor bab dari judul",
     "description": "Pengaturan penghapusan nomor bab."
+  },
+  "settingRemoveChapterNumbersHint": {
+    "message": "Menghapus nomor yang situs tempatkan di awal judul bab.",
+    "description": "Penjelasan pengaturan penghapusan nomor bab."
   },
   "settingIncludeTocPage": {
     "message": "Sertakan daftar isi sebagai bab",
@@ -497,18 +685,6 @@
     "message": "Izinkan gambar SVG",
     "description": "Pengaturan izin gambar SVG."
   },
-  "settingCompressImages": {
-    "message": "Kompres gambar",
-    "description": "Pengaturan kompresi gambar."
-  },
-  "settingMaxResolution": {
-    "message": "Resolusi maksimum",
-    "description": "Pengaturan resolusi maksimum."
-  },
-  "settingMaxResolutionHint": {
-    "message": "Dalam piksel pada sisi terpanjang.",
-    "description": "Penjelasan pengaturan resolusi maksimum."
-  },
   "settingSkipFailedChapters": {
     "message": "Lewati bab yang gagal",
     "description": "Pengaturan melewati bab yang gagal."
@@ -520,6 +696,14 @@
   "settingRetryOnEmptyPage": {
     "message": "Coba lagi pada halaman kosong",
     "description": "Pengaturan percobaan ulang pada halaman kosong."
+  },
+  "settingEmptyPageIsError": {
+    "message": "Halaman kosong dianggap galat",
+    "description": "Pengaturan yang menjadikan halaman kosong sebagai galat."
+  },
+  "settingEmptyPageIsErrorHint": {
+    "message": "Sebagian situs menjawab permintaan yang diblokir dengan halaman kosong. Jika opsi ini aktif, halaman tersebut dilaporkan sebagai kegagalan, bukan menjadi bab kosong.",
+    "description": "Penjelasan pengaturan yang menjadikan halaman kosong sebagai galat."
   },
   "settingMinimumDelay": {
     "message": "Jeda minimum antarpermintaan",
@@ -540,22 +724,6 @@
   "settingDelayPerChapterHint": {
     "message": "Dalam milidetik, di atas jeda minimum.",
     "description": "Penjelasan pengaturan jeda per bab."
-  },
-  "settingMetadataLookup": {
-    "message": "Cari metadata buku",
-    "description": "Pengaturan pencarian metadata."
-  },
-  "settingMetadataLookupHint": {
-    "message": "Mati secara bawaan. Jika diaktifkan, judul diperiksa terhadap basis data publik.",
-    "description": "Penjelasan pengaturan pencarian metadata."
-  },
-  "settingSendStoryUrl": {
-    "message": "Kirim URL cerita bersama pencarian",
-    "description": "Pengaturan pengiriman URL cerita."
-  },
-  "settingSendStoryUrlHint": {
-    "message": "Mati secara bawaan. Tanpanya, pencarian hanya dapat memakai judul.",
-    "description": "Penjelasan pengaturan pengiriman URL cerita."
   },
   "settingDiagnostics": {
     "message": "Diagnostik pengembang",
@@ -581,10 +749,6 @@
     "message": "Langkah 3 dari 3",
     "description": "Label langkah ketiga orientasi."
   },
-  "onboardingNext": {
-    "message": "Berikutnya",
-    "description": "Tombol untuk ke langkah berikutnya."
-  },
   "onboardingBack": {
     "message": "Kembali",
     "description": "Tombol untuk ke langkah sebelumnya."
@@ -597,16 +761,20 @@
     "message": "Lewati",
     "description": "Tombol untuk melewati orientasi."
   },
-  "onboardingGetStarted": {
-    "message": "Mulai",
-    "description": "Tombol untuk keluar dari orientasi."
+  "onboardingNextSites": {
+    "message": "Berikutnya: situs yang didukung",
+    "description": "Dari langkah sambutan ke langkah situs."
+  },
+  "onboardingNextLook": {
+    "message": "Berikutnya: pilih tampilan",
+    "description": "Dari langkah situs ke langkah tampilan."
   },
   "onboardingWelcomeText": {
-    "message": "Ubah novel web mana pun menjadi buku yang layak disimpan. Arahkan ke daftar bab, dan Kintsugi akan menyusun EPUB yang rapi — lengkap dengan sampul dan daftar isi.",
+    "message": "Ubah novel web mana pun menjadi buku yang layak disimpan. Arahkan ke daftar bab, dan Kintsugi akan menyusun EPUB yang rapi, lengkap dengan sampul dan daftar isi.",
     "description": "Penjelasan langkah pertama orientasi."
   },
   "onboardingWelcomeFootnote": {
-    "message": "Tanpa akun. Tanpa pelacakan. Bisa dipakai luring.",
+    "message": "Tanpa akun dan tanpa pelacakan. Kintsugi hanya terhubung ke situs yang Anda baca.",
     "description": "Catatan kaki langkah pertama orientasi."
   },
   "onboardingWhichSite": {
@@ -618,7 +786,7 @@
     "description": "Penjelasan langkah kedua orientasi."
   },
   "onboardingWhichSiteFootnote": {
-    "message": "Tidak ada dalam daftar? Kintsugi tetap bisa membacanya — Anda bisa membuat selector sendiri.",
+    "message": "Tidak ada dalam daftar? Kintsugi tetap bisa membacanya setelah Anda menunjukkan letak bab-babnya.",
     "description": "Catatan kaki langkah kedua orientasi."
   },
   "onboardingMakeItYours": {
@@ -641,25 +809,41 @@
     "message": "Kintsugi belum mengenal situs ini.",
     "description": "Tidak ada parser yang cocok dengan URL ini."
   },
-  "errorTimeout": {
-    "message": "Situs terlalu lama menjawab.",
-    "description": "Waktu habis."
-  },
   "errorCancelled": {
     "message": "Dibatalkan.",
     "description": "Pengguna membatalkan operasi."
   },
-  "errorForbidden": {
-    "message": "Situs menolak permintaan tersebut.",
-    "description": "HTTP 403."
+  "errorHttpStatus": {
+    "message": "Situs menjawab dengan galat.",
+    "description": "Server mengembalikan status galat HTTP."
+  },
+  "errorRateLimited": {
+    "message": "Situs membatasi permintaan. Tunggu sebentar, lalu coba lagi.",
+    "description": "Server menjawab 429."
+  },
+  "errorChallenge": {
+    "message": "Situs ingin memastikan bahwa Anda manusia. Buka halamannya, lalu coba lagi.",
+    "description": "Situs menampilkan pemeriksaan seperti captcha."
+  },
+  "errorEmptyChapter": {
+    "message": "Bab ini kosong. Mungkin terkunci, atau situsnya berubah.",
+    "description": "Halaman bab tanpa teks."
+  },
+  "errorStorageFull": {
+    "message": "Ruang tidak cukup untuk menyimpan buku ini.",
+    "description": "Penyimpanan peramban penuh."
+  },
+  "errorPermission": {
+    "message": "Kintsugi tidak diizinkan membaca situs ini.",
+    "description": "Situs belum diizinkan."
+  },
+  "errorBusy": {
+    "message": "Buku lain masih dibuat. Tunggu sampai selesai, atau batalkan.",
+    "description": "Unduhan kedua dimulai saat satu masih berjalan."
   },
   "errorParse": {
     "message": "Halaman tidak dapat dibaca.",
     "description": "Halaman tidak dapat diurai."
-  },
-  "errorNoChapters": {
-    "message": "Tidak ditemukan bab di halaman ini.",
-    "description": "Daftar bab kosong."
   },
   "filterSearch": {
     "message": "Cari",
@@ -690,6 +874,18 @@
   "filterClear": {
     "message": "Bersihkan",
     "description": "Mengosongkan penyaring."
+  },
+  "optionsNumberRequired": {
+    "message": "Masukkan angka.",
+    "description": "Ditampilkan di bawah pengaturan angka yang dikosongkan."
+  },
+  "filterNoMatches": {
+    "message": "Tidak ada bab yang cocok dengan filter ini",
+    "description": "Ditampilkan saat filter menyembunyikan semua bab."
+  },
+  "filterClearAll": {
+    "message": "Hapus filter",
+    "description": "Menghapus filter agar semua bab tampil lagi."
   },
   "filterApply": {
     "message": "Terapkan",
@@ -800,5 +996,29 @@
   "siteSelectorTocDetected": {
     "message": "Halaman itu terlihat seperti daftar isi, bukan bab. Buka sebuah bab lalu coba lagi.",
     "description": "Ditampilkan saat pemindai mengenali daftar isi."
+  },
+  "commonClose": {
+    "message": "Tutup",
+    "description": "Label tombol yang menutup dialog."
+  },
+  "commonDismiss": {
+    "message": "Tutup",
+    "description": "Label tombol yang menutup notifikasi."
+  },
+  "commonLoading": {
+    "message": "Memuat…",
+    "description": "Saat halaman memuat."
+  },
+  "siteSelectorSuggesting": {
+    "message": "Membaca halaman…",
+    "description": "Saat halaman diperiksa."
+  },
+  "siteSelectorTesting": {
+    "message": "Mencoba selector di halaman…",
+    "description": "Saat selector diuji."
+  },
+  "commonCancel": {
+    "message": "Batal",
+    "description": "Label tombol yang membatalkan sebuah tindakan."
   }
 }

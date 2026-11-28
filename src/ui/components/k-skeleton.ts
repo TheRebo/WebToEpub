@@ -30,6 +30,14 @@ const STYLES = `
     animation: k-shimmer 1.2s linear infinite;
 }
 
+/*
+ * The in-app "Reduce motion" setting.
+ *
+ * The document's own rule cannot pierce the shadow boundary, so the base
+ * class mirrors the preference onto the host.
+ */
+:host([data-reduced-motion]) .skeleton { animation: none; }
+
 @keyframes k-shimmer {
     from { background-position: 200% 0; }
     to { background-position: -200% 0; }
@@ -62,7 +70,8 @@ export class KSkeleton extends KComponent {
         else skeleton.style.removeProperty("--_height");
         if (width) skeleton.style.setProperty("--_width", width);
         else skeleton.style.removeProperty("--_width");
-        if (radius) skeleton.style.setProperty("--radius", radius);
+        if (radius) skeleton.style.setProperty("--radius-xs", radius);
+        else skeleton.style.removeProperty("--radius-xs");
     }
 }
 

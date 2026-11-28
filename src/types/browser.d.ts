@@ -120,7 +120,7 @@ declare namespace browser {
                   target: { tabId: number };
                   func?: (...args: never[]) => unknown;
                   files?: string[];
-              }): Promise<unknown[]>;
+              }): Promise<Array<{ result?: unknown }>>;
           }
         | undefined;
 

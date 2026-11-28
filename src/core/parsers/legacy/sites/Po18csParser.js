@@ -1,4 +1,3 @@
-// Ai generated + Claude Opus 4.6
 // Migrated from `plugin/js/parsers/Po18csParser.js` on the `legacy` branch.
 // The parser's logic is unchanged; only the module wiring is new.
 "use strict";
@@ -58,8 +57,8 @@ export class Po18csParser extends Parser {
             };
 
             chapters.push(chapter);
-            
-            chapterUrlsUI.monoShowTocProgress(chapter);
+
+            chapterUrlsUI.showTocProgress([chapter]);
         }
 
         return chapters;

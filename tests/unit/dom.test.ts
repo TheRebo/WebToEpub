@@ -6,6 +6,7 @@ import {
     hyperLinkToChapter,
     hyperlinksToChapterList,
     moveChildElements,
+    normaliseUrlForCompare,
     removeChildElementsMatchingSelector,
     removeComments,
     removeEmptyDivElements,
@@ -16,6 +17,28 @@ import {
     removeUnwantedWordpressElements,
     resolveUrl,
 } from "../../src/core/util/dom";
+
+describe("normaliseUrlForCompare", () => {
+    it("drops the protocol", () => {
+        expect(normaliseUrlForCompare("https://example.com/a")).toBe("example.com/a");
+    });
+
+    it("drops the anchor", () => {
+        expect(normaliseUrlForCompare("https://example.com/a#part")).toBe("example.com/a");
+    });
+
+    it("drops the trailing slash", () => {
+        expect(normaliseUrlForCompare("https://example.com/a/")).toBe("example.com/a");
+    });
+
+    it("keeps the rest of the URL", () => {
+        expect(normaliseUrlForCompare("https://example.com/a/b?c=1")).toBe("example.com/a/b?c=1");
+    });
+
+    it("leaves a URL without a protocol alone", () => {
+        expect(normaliseUrlForCompare("/a/b")).toBe("/a/b");
+    });
+});
 
 /** Parse an HTML fragment into a document. */
 function parse(html: string): Document {
@@ -147,11 +170,22 @@ describe("convertPreTagToPTags", () => {
         expect(paragraphs[1]?.textContent).toBe("second line");
     });
 
-    it("removes a pre block that holds nothing", () => {
+    it("empties a pre block that holds nothing", () => {
         const dom = parse("<div><pre>   \n  </pre></div>");
         const pre = dom.querySelector("pre") as Element;
         convertPreTagToPTags(dom, pre);
-        expect(dom.querySelector("pre")).toBeNull();
+        expect(pre.childNodes).toHaveLength(0);
+    });
+
+    it("keeps the element the caller holds, so the caller can still use it", () => {
+        const dom = parse("<div id='content'>first\r\n\r\nsecond</div>");
+        const content = dom.querySelector("#content") as Element;
+        convertPreTagToPTags(dom, content, "\n\n");
+        expect(content.isConnected).toBe(true);
+        expect(Array.from(content.querySelectorAll("p"), (p) => p.textContent)).toEqual([
+            "first",
+            "second",
+        ]);
     });
 });
 

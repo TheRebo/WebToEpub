@@ -71,6 +71,46 @@ describe("validateSettings", () => {
         expect(settings.epub).toEqual(DEFAULT_SETTINGS.epub);
     });
 
+    it("keeps the defaults for the other settings in a partly-stored group", () => {
+        // A setting added in a later version is missing from the settings an
+        // existing user already has. The rest of its group must keep their
+        // defaults: a stored `images` group without `useSvg` must not turn
+        // SVG support off, and a stored `story` group without
+        // `defaultLanguage` must not leave the language empty.
+        const settings = validateSettings({ images: { skipImages: true } });
+        expect(settings.images.skipImages).toBe(true);
+        expect(settings.images.useSvg).toBe(DEFAULT_SETTINGS.images.useSvg);
+        expect(settings.images.removeDuplicates).toBe(DEFAULT_SETTINGS.images.removeDuplicates);
+
+        const story = validateSettings({ story: { removeAuthorNotes: true } });
+        expect(story.story.removeAuthorNotes).toBe(true);
+        expect(story.story.defaultLanguage).toBe(DEFAULT_SETTINGS.story.defaultLanguage);
+        expect(story.story.filenameTemplate).toBe(DEFAULT_SETTINGS.story.filenameTemplate);
+
+        const behaviour = validateSettings({ behaviour: { minimumDelay: 1000 } });
+        expect(behaviour.behaviour.minimumDelay).toBe(1000);
+        expect(behaviour.behaviour.skipFailedChapters).toBe(
+            DEFAULT_SETTINGS.behaviour.skipFailedChapters,
+        );
+        expect(behaviour.behaviour.retryOnEmptyPage).toBe(
+            DEFAULT_SETTINGS.behaviour.retryOnEmptyPage,
+        );
+
+        const epub = validateSettings({ epub: { version: 2 } });
+        expect(epub.epub.version).toBe(2);
+        expect(epub.epub.removeNextPrevLinks).toBe(DEFAULT_SETTINGS.epub.removeNextPrevLinks);
+    });
+
+    it("uses the default for a value that is not valid", () => {
+        // An unusable value falls back to the documented default, not to a
+        // zero: a corrupt `useSvg` must not quietly turn SVG support off.
+        const settings = validateSettings({
+            images: { useSvg: "yes", removeDuplicates: "no" },
+        });
+        expect(settings.images.useSvg).toBe(DEFAULT_SETTINGS.images.useSvg);
+        expect(settings.images.removeDuplicates).toBe(DEFAULT_SETTINGS.images.removeDuplicates);
+    });
+
     it("refuses a value that is not an object", () => {
         expect(validateSettings("nonsense")).toEqual(DEFAULT_SETTINGS);
         expect(validateSettings(null)).toEqual(DEFAULT_SETTINGS);
@@ -78,8 +118,22 @@ describe("validateSettings", () => {
     });
 
     it("clamps a number that is out of range", () => {
-        const settings = validateSettings({ images: { maxResolution: 999999 } });
-        expect(settings.images.maxResolution).toBe(10000);
+        const settings = validateSettings({ behaviour: { maxChapters: 999999 } });
+        expect(settings.behaviour.maxChapters).toBe(100000);
+    });
+
+    it("does not keep a setting that has been taken away", () => {
+        // The settings that were removed in this release are not in the
+        // schema, so they are dropped rather than carried forward into a
+        // settings file that would then export them again.
+        const settings = validateSettings({
+            images: { compress: true, maxResolution: 4000 },
+            privacy: { metadataLookup: true, sendStoryUrl: true },
+        }) as unknown as Record<string, Record<string, unknown>>;
+
+        expect(settings["images"]).not.toHaveProperty("compress");
+        expect(settings["images"]).not.toHaveProperty("maxResolution");
+        expect(settings["privacy"]).toBeUndefined();
     });
 
     it("cannot be used to inject a prototype", () => {
@@ -125,6 +179,47 @@ describe("SettingsStore", () => {
         expect(settings.appearance.accent).toBe("gold");
     });
 
+    it("merges a partial group over the group that is stored", async () => {
+        // A patch names the fields it changes. The rest of the group keeps the
+        // value it had, so a caller that only means to change the language
+        // cannot accidentally reset the options beside it.
+        const storage = memoryStorage();
+        const store = new SettingsStore(storage);
+        await store.update({ story: { includeTocPage: true, removeAuthorNotes: true } });
+        await store.update({ story: { defaultLanguage: "fr" } });
+
+        const settings = await store.get();
+        expect(settings.story.defaultLanguage).toBe("fr");
+        expect(settings.story.includeTocPage).toBe(true);
+        expect(settings.story.removeAuthorNotes).toBe(true);
+    });
+
+    it("does not let one page's change undo another page's change", async () => {
+        // The workbench and the options page each have their own store, and
+        // each has its own cache. The workbench's cache does not know about
+        // a change the options page has made, so a write that merged over the
+        // cache would put back the old value.
+        //
+        // A write merges over the *stored* value, and a patch names only the
+        // fields it changes, so the two changes both survive.
+        const storage = memoryStorage();
+        const workbench = new SettingsStore(storage);
+        const options = new SettingsStore(storage);
+
+        // The workbench reads its snapshot, which is now out of date.
+        await workbench.get();
+
+        // The options page changes an option.
+        await options.update({ story: { includeTocPage: true } });
+
+        // The workbench then saves the language.
+        await workbench.update({ story: { defaultLanguage: "fr" } });
+
+        const settings = await new SettingsStore(storage).get();
+        expect(settings.story.defaultLanguage).toBe("fr");
+        expect(settings.story.includeTocPage).toBe(true);
+    });
+
     it("removes only its own key when it is reset", async () => {
         const storage = memoryStorage({ "something.else": "keep me" });
         const store = new SettingsStore(storage);
@@ -132,5 +227,126 @@ describe("SettingsStore", () => {
         await store.reset();
         expect(storage.data[SETTINGS_KEY]).toBeUndefined();
         expect(storage.data["something.else"]).toBe("keep me");
+    });
+
+    it("does not let two overlapping updates discard each other", async () => {
+        // An update is a read-modify-write. Two of them that overlap each
+        // read the same snapshot, so the second write would drop the first
+        // one's change. The workbench saves the story's options from two
+        // different handlers, so this happens in real use.
+        const storage = memoryStorage();
+        const store = new SettingsStore(storage);
+
+        const first = store.update({
+            appearance: { ...DEFAULT_SETTINGS.appearance, theme: "dark" },
+        });
+        const second = store.update({
+            story: { ...DEFAULT_SETTINGS.story, defaultLanguage: "fr" },
+        });
+        await Promise.all([first, second]);
+
+        const settings = await store.get();
+        expect(settings.appearance.theme).toBe("dark");
+        expect(settings.story.defaultLanguage).toBe("fr");
+    });
+
+    it("does not let a whole write overlap an update", async () => {
+        // A write that runs beside an update can land between the update's
+        // read and its write, and the update's change is then lost. The
+        // options page writes the whole object while the workbench updates
+        // one group, so the two really do meet.
+        const storage = memoryStorage();
+        let writing = 0;
+        let overlapped = false;
+        const counting: SettingsStorage = {
+            ...storage,
+            async set(items) {
+                writing += 1;
+                if (writing > 1) overlapped = true;
+                await new Promise((resolve) => setTimeout(resolve, 1));
+                await storage.set(items);
+                writing -= 1;
+            },
+        };
+        const store = new SettingsStore(counting);
+
+        await Promise.all([
+            store.update({ appearance: { ...DEFAULT_SETTINGS.appearance, theme: "dark" } }),
+            store.set({
+                ...DEFAULT_SETTINGS,
+                story: { ...DEFAULT_SETTINGS.story, defaultLanguage: "fr" },
+            }),
+        ]);
+
+        expect(overlapped).toBe(false);
+    });
+
+    it("keeps the queue working after a failed write", async () => {
+        const storage = memoryStorage();
+        let failNext = true;
+        const failing: SettingsStorage = {
+            ...storage,
+            async set(items) {
+                if (failNext) {
+                    failNext = false;
+                    throw new Error("the disk is full");
+                }
+                await storage.set(items);
+            },
+        };
+        const store = new SettingsStore(failing);
+
+        await expect(
+            store.update({ appearance: { ...DEFAULT_SETTINGS.appearance, theme: "dark" } }),
+        ).rejects.toThrow("the disk is full");
+
+        // The next update still runs.
+        await store.update({ appearance: { ...DEFAULT_SETTINGS.appearance, theme: "light" } });
+        expect((await store.get()).appearance.theme).toBe("light");
+    });
+
+    it("does not report a value that was never written", async () => {
+        // The cache is only updated once the write has succeeded. A failed
+        // write — a full disk, say — must not leave the store reporting a
+        // value that was never persisted.
+        const storage = memoryStorage();
+        const failing: SettingsStorage = {
+            ...storage,
+            async set() {
+                throw new Error("the disk is full");
+            },
+        };
+        const store = new SettingsStore(failing);
+
+        // The default settings object is shared, so it is copied deeply
+        // before anything is changed.
+        const settings = structuredClone(DEFAULT_SETTINGS) as Settings;
+        settings.appearance.theme = "dark";
+        await expect(store.set(settings)).rejects.toThrow("the disk is full");
+
+        // Nothing was stored, so a read still reports the defaults rather
+        // than the theme that failed to save.
+        expect((await store.get()).appearance.theme).toBe("system");
+        expect(storage.data[SETTINGS_KEY]).toBeUndefined();
+    });
+
+    it("reads the settings again after the cache is cleared", async () => {
+        // The store caches the settings, and the options page writes to
+        // storage directly rather than through the bus. The background worker
+        // therefore has to be told when the settings have changed, or it would
+        // keep using the snapshot it read when it started.
+        const storage = memoryStorage();
+        const store = new SettingsStore(storage);
+        expect((await store.get()).appearance.theme).toBe("system");
+
+        // Another page changes the settings.
+        storage.data[SETTINGS_KEY] = { appearance: { theme: "dark" } };
+
+        // The cached copy is still the old one...
+        expect((await store.get()).appearance.theme).toBe("system");
+
+        // ...until the cache is cleared.
+        store.invalidate();
+        expect((await store.get()).appearance.theme).toBe("dark");
     });
 });

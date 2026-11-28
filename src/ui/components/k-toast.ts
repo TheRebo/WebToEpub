@@ -7,15 +7,11 @@
  * auto-dismisses after six seconds, with a visible progress bar that pauses
  * on hover.
  */
-import { KComponent, defineComponent } from "./base";
+import { KComponent, defineComponent, translate } from "./base";
 import { createIcon, type IconName } from "./icons";
 
 const STYLES = `
 :host {
-    position: fixed;
-    right: var(--space-5);
-    bottom: var(--space-5);
-    z-index: var(--z-toast);
     display: block;
     pointer-events: none;
 }
@@ -67,7 +63,7 @@ const STYLES = `
 }
 
 .action:hover { background: var(--accent-subtle); }
-.action:focus-visible { outline: none; box-shadow: var(--ring); }
+.action:focus-visible { outline: 2px solid transparent; box-shadow: var(--ring); }
 
 .close {
     flex-shrink: 0;
@@ -84,7 +80,7 @@ const STYLES = `
 }
 
 .close:hover { background: var(--bg-subtle); color: var(--text); }
-.close:focus-visible { outline: none; box-shadow: var(--ring); }
+.close:focus-visible { outline: 2px solid transparent; box-shadow: var(--ring); }
 
 .timer {
     position: absolute;
@@ -116,6 +112,16 @@ const STYLES = `
     .toast, .toast[data-leaving="true"] { animation: none; }
     .timer { animation: none; }
 }
+
+/*
+ * The in-app "Reduce motion" setting.
+ *
+ * The document's own rule cannot pierce the shadow boundary, so the base
+ * class mirrors the preference onto the host.
+ */
+:host([data-reduced-motion]) .toast,
+:host([data-reduced-motion]) .toast[data-leaving="true"] { animation: none; }
+:host([data-reduced-motion]) .timer { animation: none; }
 `;
 
 /** The toast's variants. */
@@ -136,12 +142,41 @@ export class KToast extends KComponent {
     /** The dismiss timer. */
     #timer: ReturnType<typeof setTimeout> | undefined;
 
+    /**
+     * How much of the toast's life is left, in milliseconds.
+     *
+     * The time is counted down rather than measured against a deadline, so
+     * that a pause genuinely stops the clock. A deadline would keep running
+     * while the toast was paused, and a toast whose pointer rested on it for
+     * a moment would be dismissed the instant the pointer left.
+     */
+    #remaining = 0;
+
+    /**
+     * When the current stretch of the toast's life started.
+     *
+     * A monotonic clock is used rather than the wall clock: the wall clock
+     * can jump when the machine's clock is corrected, which would make a
+     * toast vanish early or hang on for ever.
+     */
+    #startedAt = 0;
+
+    /** The token that guards against a stale announcement. */
+    #announceToken = 0;
+
+    /** Whether the toast has already been dismissed. */
+    #dismissed = false;
+
+    /** The timer that removes the element once its exit animation is over. */
+    #leaveTimer: ReturnType<typeof setTimeout> | undefined;
+
     protected override render(): void {
         const variant = (this.getAttribute("variant") ?? "info") as ToastVariant;
-        const message = this.getAttribute("message") ?? "";
         const duration = Number(this.getAttribute("duration") ?? 6000);
 
         this.root.replaceChildren();
+        this.#dismissed = false;
+        this.#clearTimer();
 
         const toast = document.createElement("div");
         toast.className = "toast";
@@ -156,7 +191,8 @@ export class KToast extends KComponent {
 
         const text = document.createElement("span");
         text.className = "text";
-        text.textContent = message;
+        // The message is filled in by #announce(), once the element is in the
+        // document, so that assistive technology announces the change.
 
         toast.appendChild(icon);
         toast.appendChild(text);
@@ -177,7 +213,7 @@ export class KToast extends KComponent {
         const close = document.createElement("button");
         close.type = "button";
         close.className = "close";
-        close.setAttribute("aria-label", "Dismiss");
+        close.setAttribute("aria-label", translate("commonDismiss", "Dismiss"));
         close.appendChild(createIcon("close", 14));
         close.addEventListener("click", () => this.dismiss());
         toast.appendChild(close);
@@ -189,39 +225,195 @@ export class KToast extends KComponent {
             timer.style.animationDuration = `${duration}ms`;
             toast.appendChild(timer);
 
-            toast.addEventListener("mouseenter", () => {
-                if (this.#timer) clearTimeout(this.#timer);
-                timer.style.animationPlayState = "paused";
-            });
-            toast.addEventListener("mouseleave", () => {
+            // The clock stops while the pointer rests on the toast or the
+            // keyboard is inside it, so neither reader loses it mid-sentence.
+            const holds = new Set<string>();
+            const hold = (reason: string): void => {
+                if (holds.size === 0) {
+                    this.#pauseTimer(duration);
+                    timer.style.animationPlayState = "paused";
+                }
+                holds.add(reason);
+            };
+            const release = (reason: string): void => {
+                if (!holds.delete(reason) || holds.size > 0) return;
                 timer.style.animationPlayState = "running";
-                this.#startTimer(duration);
-            });
+                this.#resumeTimer(duration);
+            };
+            toast.addEventListener("mouseenter", () => hold("pointer"));
+            toast.addEventListener("mouseleave", () => release("pointer"));
+            toast.addEventListener("focusin", () => hold("focus"));
+            toast.addEventListener("focusout", () => release("focus"));
         }
 
         this.root.appendChild(toast);
+        this.#announce();
         this.#startTimer(duration);
     }
 
-    /** Start the dismiss timer. */
+    /**
+     * Put the message into the live region.
+     *
+     * A live region that is populated in the same tick it is created is often
+     * missed: the assistive technology has not yet registered the region, so
+     * there is no change for it to announce. The message is therefore written
+     * in a microtask, after the element is in the document.
+     */
+    #announce(): void {
+        const message = this.getAttribute("message") ?? "";
+        const text = this.root.querySelector(".text");
+        if (!text) return;
+
+        const token = ++this.#announceToken;
+        const write = (): void => {
+            if (token !== this.#announceToken) return;
+            text.textContent = message;
+        };
+
+        if (this.isConnected) {
+            queueMicrotask(write);
+        } else {
+            write();
+        }
+    }
+
+    /**
+     * Start the dismiss timer.
+     *
+     * @param duration How long the toast should live, in milliseconds.
+     */
     #startTimer(duration: number): void {
         if (duration <= 0) return;
-        if (this.#timer) clearTimeout(this.#timer);
+        this.#clearTimer();
+        this.#remaining = duration;
+        this.#startedAt = now();
         this.#timer = setTimeout(() => this.dismiss(), duration);
     }
 
-    /** Dismiss the toast. */
+    /**
+     * Stop the dismiss timer, keeping the time that is left.
+     *
+     * @param duration The toast's full lifetime, in milliseconds.
+     */
+    #pauseTimer(duration: number): void {
+        if (this.#timer === undefined) return;
+        const elapsed = now() - this.#startedAt;
+        clearTimeout(this.#timer);
+        this.#timer = undefined;
+        // The timer's own schedule knows how much of the toast's life it
+        // was going to use, so what is left is what it was not.
+        this.#remaining = Math.max(0, Math.min(duration, duration - elapsed));
+    }
+
+    /**
+     * Restart the dismiss timer for the time that is left.
+     *
+     * @param duration The toast's full lifetime, in milliseconds.
+     */
+    #resumeTimer(duration: number): void {
+        if (duration <= 0) return;
+        const remaining = this.#remaining;
+        this.#clearTimer();
+        // A toast whose time ran out while the pointer was over it goes now,
+        // rather than waiting out another full period.
+        if (remaining <= 0) {
+            this.dismiss();
+            return;
+        }
+        this.#timer = setTimeout(() => this.dismiss(), remaining);
+    }
+
+    /** Cancel the dismiss timer. */
+    #clearTimer(): void {
+        if (this.#timer !== undefined) {
+            clearTimeout(this.#timer);
+            this.#timer = undefined;
+        }
+    }
+
+    /**
+     * Dismiss the toast.
+     *
+     * Dismissing twice does nothing the second time: the toast emits one
+     * dismissal event and is removed once, however many callers ask for it.
+     */
     dismiss(): void {
-        if (this.#timer) clearTimeout(this.#timer);
+        if (this.#dismissed) return;
+        this.#dismissed = true;
+        this.#clearTimer();
         const toast = this.root.querySelector(".toast") as HTMLElement | null;
         if (toast) {
             toast.dataset.leaving = "true";
-            setTimeout(() => this.remove(), 220);
+            this.#leaveTimer = setTimeout(() => this.remove(), leaveDuration(this));
         } else {
             this.remove();
         }
         this.emit("k-dismiss", {});
     }
+
+    /**
+     * Join a stack before rendering.
+     *
+     * Every toast used to be fixed to the same corner, so two at once sat
+     * on top of each other and only the last could be read. A page's own
+     * toast container now lines them up; a toast dropped straight onto the
+     * body joins a shared stack instead.
+     */
+    override connectedCallback(): void {
+        if (this.parentElement === this.ownerDocument.body) {
+            toastStack(this.ownerDocument).appendChild(this);
+            return;
+        }
+        super.connectedCallback();
+    }
+
+    /** Cancel the timers when the toast leaves the document. */
+    override disconnectedCallback(): void {
+        this.#clearTimer();
+        if (this.#leaveTimer !== undefined) {
+            clearTimeout(this.#leaveTimer);
+            this.#leaveTimer = undefined;
+        }
+        super.disconnectedCallback();
+    }
+}
+
+/**
+ * A monotonic clock, in milliseconds.
+ *
+ * `performance.now()` is monotonic: it cannot jump backwards when the
+ * machine's clock is corrected, and it does not include the time the machine
+ * was asleep. That matters for a toast, whose lifetime is a stretch of
+ * attention rather than a stretch of calendar time.
+ *
+ * @returns The current value of the monotonic clock.
+ */
+function now(): number {
+    if (typeof performance !== "undefined" && typeof performance.now === "function") {
+        return performance.now();
+    }
+    return Date.now();
+}
+
+/**
+ * The leave animation's duration, in milliseconds.
+ *
+ * The removal has to wait for the exit animation, so it uses the same
+ * `--dur-base` token the animation uses.
+ *
+ * @param host The toast element.
+ * @returns The duration in milliseconds.
+ */
+function leaveDuration(host: Element): number {
+    try {
+        const raw = getComputedStyle(host).getPropertyValue("--dur-base").trim();
+        const parsed = Number.parseFloat(raw);
+        if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    } catch {
+        // The computed style is unavailable; fall through to the token's
+        // declared value.
+    }
+    return 200;
 }
 
 defineComponent("k-toast", KToast);
@@ -230,4 +422,35 @@ declare global {
     interface HTMLElementTagNameMap {
         "k-toast": KToast;
     }
+}
+
+/** The id of the stack the toasts line up in. */
+const STACK_ID = "k-toast-stack";
+
+/**
+ * The page's toast stack, created on first use.
+ *
+ * @param doc The document.
+ * @returns The stack.
+ */
+function toastStack(doc: Document): HTMLElement {
+    let stack = doc.getElementById(STACK_ID);
+    if (!stack) {
+        stack = doc.createElement("div");
+        stack.id = STACK_ID;
+        Object.assign(stack.style, {
+            position: "fixed",
+            right: "var(--space-5)",
+            bottom: "var(--space-5)",
+            zIndex: "var(--z-toast)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: "var(--space-3)",
+            pointerEvents: "none",
+            maxWidth: "calc(100vw - 2 * var(--space-5))",
+        });
+        doc.body.appendChild(stack);
+    }
+    return stack;
 }

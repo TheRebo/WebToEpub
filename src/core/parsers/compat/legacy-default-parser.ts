@@ -27,6 +27,7 @@
 import { util } from "./legacy-util";
 import { siteSelectors } from "../../storage/site-selectors";
 import type { SiteSelectorConfig } from "../../storage/site-selectors-store";
+import { normaliseHostName } from "../../storage/site-selectors-store";
 
 /** The logic a site needs to find its content, title and junk. */
 export interface DefaultParserLogic {
@@ -54,6 +55,19 @@ export class DefaultParserSiteSettings {
         this.configs = new Map(siteSelectors.peekAll());
     }
 
+    /**
+     * The key a host name is stored under.
+     *
+     * The migrated `DefaultParser` looks a host name up with
+     * `util.extractHostName`, which returns the raw host name — `www.` and
+     * all. The store strips `www.`, so a lookup that used the raw name would
+     * never find what was saved. The key is normalised here, in one place, so
+     * the migrated parser and the rewritten one agree.
+     */
+    #key(hostname: string): string {
+        return normaliseHostName(hostname);
+    }
+
     /** Whether a configuration can be used. */
     static isConfigValid(selectors: SiteSelectorConfig): boolean {
         return selectors.contentCss !== undefined && !util.isNullOrEmpty(selectors.contentCss);
@@ -73,10 +87,11 @@ export class DefaultParserSiteSettings {
         removeCss: string,
         testUrl: string,
     ): void {
-        if (!this.isConfigChanged(hostname, contentCss, titleCss, removeCss, testUrl)) return;
+        const key = this.#key(hostname);
+        if (!this.isConfigChanged(key, contentCss, titleCss, removeCss, testUrl)) return;
 
-        this.configs.set(hostname, { contentCss, titleCss, removeCss, testUrl });
-        void siteSelectors.setForHost(hostname, { contentCss, titleCss, removeCss, testUrl });
+        this.configs.set(key, { contentCss, titleCss, removeCss, testUrl });
+        void siteSelectors.setForHost(key, { contentCss, titleCss, removeCss, testUrl });
     }
 
     /** Whether the selectors differ from the saved ones. */
@@ -99,7 +114,7 @@ export class DefaultParserSiteSettings {
 
     /** The saved selectors for a host name. */
     getConfigForSite(hostname: string): SiteSelectorConfig | undefined {
-        return this.configs.get(hostname);
+        return this.configs.get(this.#key(hostname));
     }
 
     /**

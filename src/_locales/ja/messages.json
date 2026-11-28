@@ -27,16 +27,6 @@
     "message": "話数",
     "description": "章リストの見出し。"
   },
-  "workbenchChaptersFound": {
-    "message": "$COUNT$ 話が見つかりました",
-    "description": "見つかった章の数。",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
-  },
   "workbenchChapterCount": {
     "message": "$VISIBLE$ 件 / $TOTAL$ 件",
     "description": "見つかった章のうち、今表示されている章の数。",
@@ -55,13 +45,31 @@
     "message": "EPUB を作成",
     "description": "本を作るボタン。"
   },
-  "workbenchSave": {
-    "message": "保存",
-    "description": "メタデータを保存するボタン。"
-  },
   "workbenchCancel": {
     "message": "キャンセル",
     "description": "ダウンロードを止めるボタン。"
+  },
+  "workbenchRetry": {
+    "message": "もう一度試す",
+    "description": "失敗またはキャンセルしたダウンロードをやり直すボタン。"
+  },
+  "workbenchDismiss": {
+    "message": "閉じる",
+    "description": "終わったダウンロードの状態を隠すボタン。"
+  },
+  "workbenchSavedAs": {
+    "message": "$FILE$ として保存しました（$SIZE$）",
+    "description": "本が保存されたときに表示されます。",
+    "placeholders": {
+      "file": {
+        "content": "$1",
+        "example": "1"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
   },
   "workbenchSelectAll": {
     "message": "すべて選択",
@@ -79,6 +87,56 @@
     "message": "範囲",
     "description": "章の範囲を選ぶボタン。"
   },
+  "workbenchRangeTitle": {
+    "message": "範囲の選択",
+    "description": "範囲ダイアログのタイトル。"
+  },
+  "workbenchRangeFrom": {
+    "message": "最初の章",
+    "description": "範囲の最初の章。"
+  },
+  "workbenchRangeTo": {
+    "message": "最後の章",
+    "description": "範囲の最後の章。"
+  },
+  "workbenchRangeCount": {
+    "message": "$COUNT$ 章",
+    "description": "範囲に含まれる章の数。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeCountOne": {
+    "message": "$COUNT$ 章",
+    "description": "範囲に含まれる章の数（一章のみの場合）。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "workbenchRangeSelect": {
+    "message": "範囲を選択",
+    "description": "範囲内の章を選択します。"
+  },
+  "workbenchRangeDeselect": {
+    "message": "範囲を選択解除",
+    "description": "範囲内の章の選択を解除します。"
+  },
+  "workbenchRangeInvalid": {
+    "message": "1 から $COUNT$ までの章番号を入力してください。",
+    "description": "範囲を使用できないときに表示。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
   "workbenchFilter": {
     "message": "フィルター",
     "description": "フィルターを開くボタン。"
@@ -87,13 +145,13 @@
     "message": "章が選択されていません",
     "description": "何もチェックされていないときに表示。"
   },
+  "workbenchBusy": {
+    "message": "本を作成しています",
+    "description": "ダウンロード中に作成ボタンが使えない理由。"
+  },
   "workbenchWaitingForChapters": {
     "message": "章を探しています…",
     "description": "章リストを読み込み中に表示。"
-  },
-  "workbenchDetected": {
-    "message": "検出済み",
-    "description": "パーサーがサイトを認識できたときに表示。"
   },
   "workbenchFieldTitle": {
     "message": "タイトル",
@@ -115,10 +173,6 @@
     "message": "リセット",
     "description": "既定のファイル名に戻します。"
   },
-  "workbenchChooseFromPage": {
-    "message": "ページから選択",
-    "description": "ページ内の画像から表紙を選びます。"
-  },
   "workbenchRemoveCover": {
     "message": "表紙を削除",
     "description": "表紙画像を削除します。"
@@ -128,16 +182,16 @@
     "description": "章の末尾にある注記を残します。"
   },
   "workbenchIncludeTocPage": {
-    "message": "目次ページを含める",
+    "message": "目次を1つの章として含める",
     "description": "目次を1つの章として追加します。"
   },
   "workbenchMoreOptions": {
     "message": "その他のオプション",
     "description": "設定ページ全体を開くボタン。"
   },
-  "workbenchNoCover": {
-    "message": "表紙なし",
-    "description": "表紙画像がないときに表示。"
+  "workbenchOptionsHint": {
+    "message": "これは作成するすべての本に適用されます。",
+    "description": "スイッチが設定そのものを変えることの説明。"
   },
   "workbenchCoverUrl": {
     "message": "表紙画像の URL",
@@ -147,21 +201,45 @@
     "message": "このページに物語が見つかりません",
     "description": "ページが物語ではないときに表示。"
   },
-  "workbenchTryAnyway": {
-    "message": "このまま試す",
-    "description": "検討中、通常はそのまま開きます。"
+  "workbenchNoStoryHint": {
+    "message": "このページが作品の目次か確認するか、章の場所を Kintsugi に教えてください。",
+    "description": "空の章リストの下に表示されます。"
   },
-  "workbenchUnsupportedSite": {
-    "message": "このサイトはまだ対応していません",
-    "description": "パーサーが一致しなかったときに表示。"
+  "workbenchFieldUrl": {
+    "message": "物語のURL",
+    "description": "物語のページURLを入れる欄。"
   },
-  "workbenchUseSelectorBuilder": {
-    "message": "セレクターを作成",
-    "description": "セレクタービルダーを開くボタン。"
+  "workbenchFieldUrlHint": {
+    "message": "章一覧のURLを貼り付けてください。",
+    "description": "URL欄の下の説明。"
   },
-  "workbenchReloadPage": {
-    "message": "ページを再読み込み",
-    "description": "タブを再読み込みします。"
+  "workbenchLoadStory": {
+    "message": "読み込む",
+    "description": "指定したURLの物語を読み込むボタン。"
+  },
+  "workbenchUrlInvalid": {
+    "message": "これはURLではありません。",
+    "description": "URLが使えないときに表示。"
+  },
+  "accessTitle": {
+    "message": "このサイトへのアクセスを許可",
+    "description": "アクセス許可の表示見出し。"
+  },
+  "accessText": {
+    "message": "Kintsugiは許可したサイトだけを読めます。ページはお使いの端末で読み込まれ、どこにも送信されません。",
+    "description": "アクセス許可の説明。"
+  },
+  "accessGrant": {
+    "message": "アクセスを許可",
+    "description": "ブラウザーにアクセスを求めるボタン。"
+  },
+  "accessDenied": {
+    "message": "アクセスが許可されなかったため、物語を読み込めません。",
+    "description": "ブラウザーのダイアログを拒否したときに表示。"
+  },
+  "accessGranted": {
+    "message": "Kintsugi がこのサイトを読めるようになりました。",
+    "description": "サイトが許可された直後に表示されます。"
   },
   "chapterStateQueued": {
     "message": "待機中",
@@ -223,10 +301,6 @@
     "message": "ワークベンチを開く",
     "description": "ポップアップの主ボタン。"
   },
-  "popupAddToLibrary": {
-    "message": "ライブラリに追加",
-    "description": "ポップアップのライブラリボタン。"
-  },
   "popupLibraryShort": {
     "message": "ライブラリ",
     "description": "ポップアップのライブラリボタンのラベル。"
@@ -243,9 +317,13 @@
     "message": "このページに物語は検出されませんでした。",
     "description": "ページが物語ではないときに表示。"
   },
-  "popupUnsupported": {
-    "message": "このサイトはまだ対応していません。",
-    "description": "パーサーが一致しなかったときに表示。"
+  "popupWelcome": {
+    "message": "Kintsugi へようこそ。最初の書籍を作る前に設定を整えましょう。",
+    "description": "初回起動時、ガイドの前に表示。"
+  },
+  "popupGetStarted": {
+    "message": "Kintsugi を設定",
+    "description": "ガイドを開くポップアップのボタン。"
   },
   "popupSaved": {
     "message": "本の準備ができました。",
@@ -255,6 +333,10 @@
     "message": "再試行",
     "description": "ポップアップの再試行ボタン。"
   },
+  "popupChecking": {
+    "message": "このページを確認しています…",
+    "description": "ポップアップがバックグラウンド処理の応答を待っている間に表示されます。"
+  },
   "popupUnsupportedHost": {
     "message": "$HOST$ はまだ対応していません。",
     "description": "現在のサイトに一致するパーサーがなかったときに表示。",
@@ -262,6 +344,26 @@
       "host": {
         "content": "$1",
         "example": "example.com"
+      }
+    }
+  },
+  "popupChapterCount": {
+    "message": "$COUNT$ 話",
+    "description": "ポップアップが見つけた話の数。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "popupChapterCountOne": {
+    "message": "$COUNT$ 話",
+    "description": "ポップアップが見つけた話の数（一話のみの場合）。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
       }
     }
   },
@@ -284,10 +386,6 @@
   "optionsBehaviour": {
     "message": "動作",
     "description": "動作設定のグループ。"
-  },
-  "optionsPrivacy": {
-    "message": "プライバシー",
-    "description": "プライバシー設定のグループ。"
   },
   "optionsAdvanced": {
     "message": "詳細",
@@ -350,12 +448,32 @@
     "description": "拡張機能が読み取れるサイトの一覧。"
   },
   "optionsRevoke": {
-    "message": "取り消す",
+    "message": "アクセスを外す",
     "description": "サイトへのアクセスを削除します。"
   },
   "optionsRevokeAll": {
-    "message": "すべて取り消す",
+    "message": "すべてのアクセスを外す",
     "description": "すべてのサイトへのアクセスを削除します。"
+  },
+  "optionsRevokeAllConfirm": {
+    "message": "もう一度ひとつずつ許可するまで、Kintsugi はこれらのサイトを読めなくなります。",
+    "description": "すべてのサイトへのアクセスを外す確認ダイアログの説明。"
+  },
+  "optionsSiteAccessEmpty": {
+    "message": "まだサイトがありません。物語を開いたときに Kintsugi が尋ねます。",
+    "description": "アクセス一覧の空の状態。"
+  },
+  "optionsSiteAccessHint": {
+    "message": "Kintsugiはここに記載されたサイトだけを読めます。",
+    "description": "アクセスの見出しの下の説明。"
+  },
+  "optionsRevoked": {
+    "message": "そのサイトへのアクセスを取り消しました。",
+    "description": "アクセス取り消し後に表示されます。"
+  },
+  "optionsRevokedAll": {
+    "message": "すべてのサイトへのアクセスを取り消しました。",
+    "description": "すべてのアクセスを取り消した後に表示されます。"
   },
   "optionsExportSettings": {
     "message": "設定を書き出す",
@@ -369,9 +487,33 @@
     "message": "すべての設定をリセット",
     "description": "すべての設定を既定値に戻します。"
   },
+  "optionsExported": {
+    "message": "設定をファイルに保存しました。",
+    "description": "設定を書き出した後に表示されます。"
+  },
+  "optionsImported": {
+    "message": "ファイルから設定を読み込みました。",
+    "description": "設定を読み込んだ後に表示されます。"
+  },
+  "optionsImportInvalid": {
+    "message": "このファイルは Kintsugi の設定ファイルではありません。",
+    "description": "読み込むファイルが解釈できないときに表示されます。"
+  },
+  "optionsResetDone": {
+    "message": "すべての設定が既定値に戻りました。",
+    "description": "設定をリセットした後に表示されます。"
+  },
+  "optionsResetConfirm": {
+    "message": "すべての設定が既定値に戻ります。ライブラリと保存したサイトには手を加えません。",
+    "description": "リセットの確認ダイアログの説明。"
+  },
+  "optionsResetConfirmAction": {
+    "message": "すべてリセット",
+    "description": "リセットの確認ダイアログの決定ボタン。"
+  },
   "optionsPrivacyNote": {
     "message": "Kintsugi はどこにもデータを送信しません。すべての通信は、読んでいるサイトに対してのみ行われます。",
-    "description": "プライバシー設定の項目の下に置く注記。"
+    "description": "設定の下に置く注記。"
   },
   "optionsLibrary": {
     "message": "ライブラリ",
@@ -384,16 +526,6 @@
   "optionsLibraryEmptyText": {
     "message": "作成した本はここに保存されます。新しい章が公開されたら更新できます。",
     "description": "空のライブラリの説明。"
-  },
-  "optionsLibraryChapters": {
-    "message": "$COUNT$ 章",
-    "description": "本に含まれる章の数。",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "42"
-      }
-    }
   },
   "optionsNoResults": {
     "message": "検索に一致するものはありません。",
@@ -417,6 +549,58 @@
       }
     }
   },
+  "optionsLibraryMetaOne": {
+    "message": "$CHAPTERS$ 章 · $SIZE$",
+    "description": "ライブラリカードのメタ情報行（章が一つだけの場合）。",
+    "placeholders": {
+      "chapters": {
+        "content": "$1",
+        "example": "42"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "optionsLibraryImport": {
+    "message": "WebToEpub から取り込む",
+    "description": "WebToEpub 1.x が書き出したライブラリを読み込むボタン。"
+  },
+  "optionsLibraryImported": {
+    "message": "$1 冊を取り込みました。",
+    "description": "ライブラリを取り込んだ後の確認（複数冊の場合）。"
+  },
+  "optionsLibraryImportedOne": {
+    "message": "$1 冊を取り込みました。",
+    "description": "ライブラリを取り込んだ後の確認（一冊の場合）。"
+  },
+  "optionsLibraryTooLarge": {
+    "message": "このファイルは大きすぎて取り込めません。Kintsugi が読み込める最大のライブラリは $SIZE$ です。",
+    "description": "Kintsugi が読み込めるサイズより大きなライブラリ書き出しが選ばれたときに表示されます。",
+    "placeholders": {
+      "size": {
+        "content": "$1",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "libraryRemove": {
+    "message": "削除",
+    "description": "ライブラリから本を削除します。"
+  },
+  "libraryRemoveTitle": {
+    "message": "この本をライブラリから外しますか？",
+    "description": "削除ダイアログの見出し。"
+  },
+  "libraryRemoveConfirm": {
+    "message": "保存した EPUB はそのまま残ります。ライブラリの項目だけが消えます。",
+    "description": "削除ダイアログの説明。"
+  },
+  "libraryRemoved": {
+    "message": "ライブラリから削除しました。",
+    "description": "本を削除した後の確認。"
+  },
   "settingReduceMotion": {
     "message": "常に動きを減らす",
     "description": "動きを減らす設定。"
@@ -438,7 +622,7 @@
     "description": "既定の言語の設定。"
   },
   "settingDefaultLanguageHint": {
-    "message": "サイトが言語を宣言していないときに使われる ISO 639 コードです。",
+    "message": "サイトが言語を示していないときの本の言語。",
     "description": "既定の言語の設定の説明。"
   },
   "settingRemoveAuthorNotes": {
@@ -452,6 +636,10 @@
   "settingRemoveChapterNumbers": {
     "message": "タイトルから章番号を削除",
     "description": "章番号をタイトルから削除する設定。"
+  },
+  "settingRemoveChapterNumbersHint": {
+    "message": "サイトがチャプネルの先頭に付けている番号を取り除きます。",
+    "description": "章番号をタイトルから削除する設定の説明。"
   },
   "settingIncludeTocPage": {
     "message": "目次を1つの章として含める",
@@ -497,18 +685,6 @@
     "message": "SVG 画像を許可",
     "description": "SVG 画像を許可する設定。"
   },
-  "settingCompressImages": {
-    "message": "画像を圧縮",
-    "description": "画像を圧縮する設定。"
-  },
-  "settingMaxResolution": {
-    "message": "最大解像度",
-    "description": "最大解像度の設定。"
-  },
-  "settingMaxResolutionHint": {
-    "message": "長辺のピクセル数で指定します。",
-    "description": "最大解像度の設定の説明。"
-  },
   "settingSkipFailedChapters": {
     "message": "失敗した章をスキップ",
     "description": "失敗した章をスキップする設定。"
@@ -520,6 +696,14 @@
   "settingRetryOnEmptyPage": {
     "message": "空のページでは再試行",
     "description": "空のページで再試行する設定。"
+  },
+  "settingEmptyPageIsError": {
+    "message": "空のページはエラーとして扱う",
+    "description": "空のページをエラーとして扱う設定。"
+  },
+  "settingEmptyPageIsErrorHint": {
+    "message": "一部のサイトは、ブロックされた要求に対して空のページを返します。この設定を有効にすると、そのページは空の章ではなく失敗として報告されます。",
+    "description": "空のページをエラーとして扱う設定の説明。"
   },
   "settingMinimumDelay": {
     "message": "リクエスト間の最小待機時間",
@@ -540,22 +724,6 @@
   "settingDelayPerChapterHint": {
     "message": "ミリ秒単位です。最小待機時間に加算されます。",
     "description": "章ごとの追加待機時間の設定の説明。"
-  },
-  "settingMetadataLookup": {
-    "message": "書籍情報を検索",
-    "description": "メタデータ検索の設定。"
-  },
-  "settingMetadataLookupHint": {
-    "message": "既定ではオフです。有効にすると、タイトルを公開データベースと照合します。",
-    "description": "メタデータ検索の設定の説明。"
-  },
-  "settingSendStoryUrl": {
-    "message": "検索時に物語の URL を送信",
-    "description": "物語の URL を送信する設定。"
-  },
-  "settingSendStoryUrlHint": {
-    "message": "既定ではオフです。オフの場合、検索にはタイトルしか使われません。",
-    "description": "物語の URL を送信する設定の説明。"
   },
   "settingDiagnostics": {
     "message": "開発者向け診断",
@@ -581,10 +749,6 @@
     "message": "3 ステップ中の 3 番目",
     "description": "3 番目のステップのラベル。"
   },
-  "onboardingNext": {
-    "message": "次へ",
-    "description": "次のステップへ進むボタン。"
-  },
   "onboardingBack": {
     "message": "戻る",
     "description": "前のステップへ戻るボタン。"
@@ -597,16 +761,20 @@
     "message": "スキップ",
     "description": "導入をスキップするボタン。"
   },
-  "onboardingGetStarted": {
-    "message": "はじめる",
-    "description": "導入を抜けるボタン。"
+  "onboardingNextSites": {
+    "message": "次へ：対応サイト",
+    "description": "ようこそから対応サイトの手順へ。"
+  },
+  "onboardingNextLook": {
+    "message": "次へ：見た目を選ぶ",
+    "description": "対応サイトから見た目の手順へ。"
   },
   "onboardingWelcomeText": {
-    "message": "どんなウェブ小説も、永く残したい一冊の本に変えます。章リストを指定するだけで、表紙と目次を備えた整整った EPUB が完成します。",
+    "message": "どんなウェブ小説も、永く残したい一冊の本に変えます。章リストを指定するだけで、表紙と目次を備えた整った EPUB が完成します。",
     "description": "最初のステップの説明。"
   },
   "onboardingWelcomeFootnote": {
-    "message": "アカウント不要。追跡なし。オフラインでも使えます。",
+    "message": "アカウント不要、追跡なし。Kintsugi が通信するのは、読んでいるサイトだけです。",
     "description": "最初のステップの脚注。"
   },
   "onboardingWhichSite": {
@@ -618,7 +786,7 @@
     "description": "2 番目のステップの説明。"
   },
   "onboardingWhichSiteFootnote": {
-    "message": "一覧にないサイトでも読み取れます。セレクターは自分で作成することもできます。",
+    "message": "一覧にないサイトでも、章の場所を教えれば読み取れます。",
     "description": "2 番目のステップの脚注。"
   },
   "onboardingMakeItYours": {
@@ -641,25 +809,41 @@
     "message": "Kintsugi はまだこのサイトを知りません。",
     "description": "URL に一致するパーサーがなかった。"
   },
-  "errorTimeout": {
-    "message": "サイトの応答に時間がかかりすぎました。",
-    "description": "タイムアウト。"
-  },
   "errorCancelled": {
     "message": "キャンセルしました。",
     "description": "ユーザーが操作を取り消した。"
   },
-  "errorForbidden": {
-    "message": "サイトがリクエストを拒否しました。",
-    "description": "HTTP 403。"
+  "errorHttpStatus": {
+    "message": "サイトがエラーを返しました。",
+    "description": "サーバーが HTTP エラーを返しました。"
+  },
+  "errorRateLimited": {
+    "message": "サイトがリクエストを制限しています。少し待ってからやり直してください。",
+    "description": "サーバーが 429 を返しました。"
+  },
+  "errorChallenge": {
+    "message": "サイトが人間かどうかを確認しようとしています。ページを開いてから、やり直してください。",
+    "description": "サイトが captcha などの確認を表示しました。"
+  },
+  "errorEmptyChapter": {
+    "message": "章が空でした。ロックされているか、サイトが変わった可能性があります。",
+    "description": "本文のない章ページ。"
+  },
+  "errorStorageFull": {
+    "message": "この本を保存する空き容量がありません。",
+    "description": "ブラウザーのストレージがいっぱいです。"
+  },
+  "errorPermission": {
+    "message": "Kintsugi はこのサイトを読むことを許可されていません。",
+    "description": "サイトが許可されていません。"
+  },
+  "errorBusy": {
+    "message": "別の本を作成中です。終わるまで待つか、キャンセルしてください。",
+    "description": "実行中に 2 つ目のダウンロードが開始されました。"
   },
   "errorParse": {
     "message": "ページを読み取れませんでした。",
     "description": "ページを解析できなかった。"
-  },
-  "errorNoChapters": {
-    "message": "このページに章は見つかりませんでした。",
-    "description": "章リストが空だった。"
   },
   "filterSearch": {
     "message": "検索",
@@ -690,6 +874,18 @@
   "filterClear": {
     "message": "クリア",
     "description": "フィルターを消去します。"
+  },
+  "optionsNumberRequired": {
+    "message": "数値を入力してください。",
+    "description": "空のままの数値設定の下に表示されます。"
+  },
+  "filterNoMatches": {
+    "message": "このフィルターに一致する章はありません",
+    "description": "フィルターですべての章が隠れたときに表示されます。"
+  },
+  "filterClearAll": {
+    "message": "フィルターを解除",
+    "description": "フィルターを外してすべての章を表示します。"
   },
   "filterApply": {
     "message": "適用",
@@ -800,5 +996,29 @@
   "siteSelectorTocDetected": {
     "message": "このページの目次です。章を開いてからやり直してください。",
     "description": "スキャナーが目次と判定したとき。"
+  },
+  "commonClose": {
+    "message": "閉じる",
+    "description": "ダイアログを閉じるボタンのラベル。"
+  },
+  "commonDismiss": {
+    "message": "閉じる",
+    "description": "通知を閉じるボタンのラベル。"
+  },
+  "commonLoading": {
+    "message": "読み込み中…",
+    "description": "ページの読み込み中。"
+  },
+  "siteSelectorSuggesting": {
+    "message": "ページを読んでいます…",
+    "description": "ページを調べているとき。"
+  },
+  "siteSelectorTesting": {
+    "message": "ページでセレクターを試しています…",
+    "description": "セレクターのテスト中。"
+  },
+  "commonCancel": {
+    "message": "キャンセル",
+    "description": "操作を取り消すボタンのラベル。"
   }
 }

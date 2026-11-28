@@ -24,20 +24,40 @@ import "../../components/k-skeleton";
 import "../../components/k-switch";
 import "../../components/k-toast";
 
-import { sendRequest } from "../../../core/message/bus";
+import { sendRequest, type DownloadProgress } from "../../../core/message/bus";
 import { isParsableSelector } from "../../../core/util/css";
-import { localStorageAdapter, activeTab } from "../../../core/browser-api";
+import { validateHostName } from "../../../core/storage/site-selectors-store";
+import { DEFAULT_FILENAME_TEMPLATE } from "../../../core/util/file-name";
+import { localStorageAdapter, activePageUrl, getURL, openTab } from "../../../core/browser-api";
+import { hasHostAccess, originOf, requestHostAccess } from "../../../core/host-access";
+import { normaliseStoryUrl } from "../../../core/util/url";
 import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
+import { caughtErrorMessage, errorMessage } from "../../error-messages";
+import { runGuarded } from "../../guarded";
+import { LatestOnly } from "../../latest-only";
+import { pollUntilDone } from "../../poll";
 import { themeController } from "../../styles/theme-controller";
-import { t } from "../../i18n";
+import { t, tCount, tDynamic } from "../../i18n";
 import { installI18n } from "../../i18n-bootstrap";
-import { buildWorkbench, renderWorkbench, type WorkbenchElements } from "./view";
+import {
+    buildWorkbench,
+    deriveFilename,
+    formatSize,
+    renderWorkbench,
+    type WorkbenchElements,
+} from "./view";
 import {
     WorkbenchStore,
     compilePattern,
+    finishedChapterStates,
     matchingIndices,
+    parseChapterRange,
+    storyOptionSwitches,
     type Chapter,
+    type ChapterRange,
+    type DownloadProgressState,
     type FilterState,
+    type StoryMeta,
     type WorkbenchState,
 } from "./state";
 
@@ -52,26 +72,60 @@ function initialState(): WorkbenchState {
             description: "",
             sourceUrl: "",
             parserName: "",
+            fileName: "untitled.epub",
+            fileNameEdited: false,
         },
         chapters: [],
         loadingChapters: false,
         filter: { query: "", useRegex: false, include: [], exclude: [] },
-        dirty: false,
         usedDefaultParser: false,
+        accessOrigin: undefined,
         progress: undefined,
         error: undefined,
     };
 }
 
-/** The workbench controller. */
-class WorkbenchController {
+/**
+ * The workbench controller.
+ *
+ * Exported so that the page's behaviour can be tested without a browser: the
+ * controller is where the story is loaded, and loading a story is where the
+ * interesting failures live.
+ */
+export class WorkbenchController {
     #store = new WorkbenchStore(initialState());
     #elements: WorkbenchElements;
     #settings: SettingsStore = new SettingsStore(localStorageAdapter);
     #settingsValue: Settings | undefined;
     #jobId: string | undefined;
+    /** The story the running job is making. */
+    #jobStoryUrl: string | undefined;
+    /**
+     * The workbench's indexes of the chapters the running job is fetching.
+     *
+     * The job counts the chapters the user *selected*, which is a subset of
+     * the workbench's list. The job's index therefore has to be mapped back
+     * through this list before it can be shown on the right row.
+     */
+    #jobChapterIndexes: number[] = [];
     #pollTimer: ReturnType<typeof setTimeout> | undefined;
+    /**Stops the poll for a running download. */
+    #stopPoll: (() => void) | undefined;
     #renderQueued = false;
+    /**
+     * The story that is currently being loaded.
+     *
+     * Loading a story takes two round trips to the worker — one to read the
+     * metadata and one to read the chapter list — and either of them can take
+     * a while. The user does not wait: they can type another address while the
+     * first one is still being read, and the first load then finishes *after*
+     * the second one and overwrites it. The story on screen is then the one
+     * the user moved away from.
+     *
+     * The guard numbers the loads and says which of them is still wanted, so
+     * a late answer is discarded.
+     */
+    #loads = new LatestOnly();
 
     constructor(root: HTMLElement) {
         this.#elements = buildWorkbench(root);
@@ -79,37 +133,192 @@ class WorkbenchController {
         this.#wire();
     }
 
+    /**
+     * The state the page is showing.
+     *
+     * Exposed so that the page's behaviour can be checked without reading the
+     * DOM: the state is what the user sees, and it is the thing a bug is most
+     * likely to get wrong.
+     */
+    get state(): WorkbenchState {
+        return this.#store.state;
+    }
+
+    /** The page's elements, for tests. */
+    get elements(): WorkbenchElements {
+        return this.#elements;
+    }
+
     /** Start the page. */
     async start(): Promise<void> {
         this.#settingsValue = await this.#settings.get();
         themeController.start();
         themeController.applySettings(this.#settingsValue.appearance);
+        this.#applyStoryOptions(this.#settingsValue);
         this.#render();
 
         // The popup hands over the URL it was invoked on. When the workbench is
-        // opened directly, there is no query string and the active tab is the
-        // right source.
-        const url = requestedUrl() ?? (await activeTab())?.url;
+        // opened directly, there is no query string, and the most recently
+        // used web page is the best guess at what the user means.
+        //
+        // The address is checked before it is used: the workbench is an
+        // extension page, so the tab it is looking at is the workbench itself,
+        // and its address says nothing about a story.
+        const url = requestedUrl() ?? (await activePageUrl());
         if (!url) {
-            this.#store.setError(t("errorGeneric"));
+            // The workbench can be opened on its own, without a page to read.
+            // Rather than showing an error, the story address field is put
+            // ready for the user to paste an address into.
+            this.#elements.urlField.focus();
             this.#render();
             return;
         }
 
-        await this.#analyse(url);
-        await this.#loadChapters(url);
+        await this.#loadStory(url);
     }
 
-    /** Analyse the page, to fill in the metadata. */
-    async #analyse(url: string): Promise<void> {
+    /**
+     * Run work that the user started, without waiting for it.
+     *
+     * The event handlers cannot be `async` — the browser's event system does
+     * not wait for them, and a handler that returns a promise leaves the
+     * rejection unhandled. A rejected promise is not a small problem here: the
+     * browser logs it, the user is told nothing, and the thing they asked for
+     * silently does not happen.
+     *
+     * So the work is started through {@link runGuarded}, and its failure is
+     * caught and shown.
+     *
+     * @param work The work to do.
+     * @param report How to report a failure.
+     */
+    #run(work: () => Promise<void>, report: (error: unknown) => void): void {
+        runGuarded(work, report);
+    }
+
+    /**
+     * Load a story.
+     *
+     * The extension has no host permissions of its own, so it has to be
+     * allowed to read the site before it can read anything there. When it has
+     * not been allowed, the workbench asks for that permission instead of
+     * failing with a network error the user cannot act on.
+     *
+     * @param url The story's URL.
+     */
+    async #loadStory(url: string): Promise<void> {
+        // This load is the newest one, so anything older that comes back
+        // later is discarded.
+        const loadNumber = this.#loads.begin();
+
+        this.#store.setError(undefined);
+        this.#elements.urlField.value = url;
+
+        // Another story's title and chapters must not stay on screen while
+        // this one loads, or if it fails: Pack would build the wrong book.
+        if (url !== this.#store.state.story.sourceUrl) {
+            this.#store.setStory({ ...initialState().story });
+            this.#store.setChapters([]);
+            this.#store.setUsedDefaultParser(false);
+        }
+
+        const origin = originOf(url);
+        if (origin && !(await hasHostAccess(origin))) {
+            // The answer can arrive after the user has moved on to another
+            // story, in which case the prompt belongs to a story they are no
+            // longer looking at.
+            if (!this.#loads.isCurrent(loadNumber)) return;
+            this.#store.setAccessOrigin(origin);
+            this.#render();
+            return;
+        }
+
+        this.#store.setAccessOrigin(undefined);
+        await this.#analyse(url, loadNumber);
+        if (!this.#loads.isCurrent(loadNumber)) return;
+        // An analysis that failed has nothing to offer, and the chapter list
+        // would only add a second error on top of the first.
+        if (this.#store.state.error) return;
+        await this.#loadChapters(url, loadNumber);
+    }
+
+    /**
+     * Load the story at the address in the field.
+     *
+     * The address is checked before anything is fetched: a mistyped or
+     * non-web address would otherwise turn into a confusing network error.
+     */
+    async #loadFromField(): Promise<void> {
+        const url = normaliseStoryUrl(this.#elements.urlField.value);
+        if (!url) {
+            this.#store.setError(t("workbenchUrlInvalid"));
+            this.#render();
+            return;
+        }
+        await this.#loadStory(url);
+    }
+
+    /**
+     * Ask the browser for access to the site the story is on.
+     *
+     * The permission request has to be made from the handler of the user's
+     * click, with nothing awaited before it: Firefox only shows the prompt
+     * when the request follows a real gesture. The origin is therefore read
+     * from the state, and the request is made on the first line, before any
+     * other work happens.
+     */
+    async #grantAccess(): Promise<void> {
+        const origin = this.#store.state.accessOrigin;
+        if (!origin) return;
+
+        const granted = await requestHostAccess(origin);
+        if (!granted) {
+            this.#toast(t("accessDenied"), "warning");
+            return;
+        }
+
+        const url = this.#elements.urlField.value;
+        this.#store.setAccessOrigin(undefined);
+        this.#toast(t("accessGranted"), "success");
+        await this.#loadStory(url);
+    }
+
+    /**
+     * Show the story options as the settings have them.
+     *
+     * The switches used to start blank whatever the user had chosen, so a
+     * story that had the author notes removed — or the contents page
+     * included — showed the opposite of what was actually going to happen.
+     */
+    #applyStoryOptions(settings: Settings): void {
+        const switches = storyOptionSwitches(settings.story);
+        this.#elements.authorNotesSwitch.checked = switches.includeAuthorNotes;
+        this.#elements.tocPageSwitch.checked = switches.includeTocPage;
+    }
+
+    /**
+     * Analyse the page, to fill in the metadata.
+     *
+     * @param url The story's URL.
+     * @param loadNumber The number of the load this belongs to.
+     */
+    async #analyse(url: string, loadNumber: number): Promise<void> {
         try {
             const analysis = await sendRequest(
                 { sendMessage: (message) => sendMessageToWorker(message) },
                 "page:analyze",
                 { url },
             );
+            // A newer load has taken over: this answer is about a story the
+            // user has moved away from, and applying it would put that story
+            // on screen.
+            if (!this.#loads.isCurrent(loadNumber)) return;
             if (!analysis.supported) {
-                this.#store.setError(t("errorNoParser"));
+                // The worker says why: a site it does not know, a network
+                // failure, a challenge. Each needs different advice.
+                this.#store.setError(
+                    analysis.error ? errorMessage(analysis.error) : t("errorNoParser"),
+                );
                 return;
             }
             this.#store.setStory({
@@ -120,15 +329,41 @@ class WorkbenchController {
                 description: analysis.description ?? "",
                 sourceUrl: url,
                 parserName: analysis.parserName ?? "",
+                fileName: deriveFilename(
+                    analysis.title ?? "",
+                    analysis.author ?? "",
+                    this.#settingsValue?.story.filenameTemplate ?? DEFAULT_FILENAME_TEMPLATE,
+                ),
+                fileNameEdited: false,
             });
             this.#store.setUsedDefaultParser(analysis.usedDefaultParser === true);
         } catch (error) {
-            this.#store.setError(error instanceof Error ? error.message : t("errorGeneric"));
+            if (!this.#loads.isCurrent(loadNumber)) return;
+            this.#store.setError(caughtErrorMessage(error));
         }
     }
 
-    /** Load the chapter list. */
-    async #loadChapters(url: string): Promise<void> {
+    /**
+     * The file name the title and the author's name lead to.
+     *
+     * The user's filename template is filled in. It is only used while the
+     * user has not named the file themselves.
+     */
+    #derivedFileName(title: string): Partial<StoryMeta> {
+        if (this.#store.state.story.fileNameEdited) return {};
+        const template = this.#settingsValue?.story.filenameTemplate ?? DEFAULT_FILENAME_TEMPLATE;
+        return {
+            fileName: deriveFilename(title, this.#store.state.story.author, template),
+        };
+    }
+
+    /**
+     * Load the chapter list.
+     *
+     * @param url The story's URL.
+     * @param loadNumber The number of the load this belongs to.
+     */
+    async #loadChapters(url: string, loadNumber: number): Promise<void> {
         this.#store.setLoading(true);
         this.#render();
         try {
@@ -137,8 +372,11 @@ class WorkbenchController {
                 "chapters:list",
                 { url },
             );
+            // The story on screen is a newer one: this list belongs to a
+            // story the user has moved away from.
+            if (!this.#loads.isCurrent(loadNumber)) return;
             if (result.error) {
-                this.#store.setError(result.error.message);
+                this.#store.setError(errorMessage(result.error));
                 this.#store.setLoading(false);
                 return;
             }
@@ -153,7 +391,8 @@ class WorkbenchController {
             }));
             this.#store.setChapters(chapters);
         } catch (error) {
-            this.#store.setError(error instanceof Error ? error.message : t("errorGeneric"));
+            if (!this.#loads.isCurrent(loadNumber)) return;
+            this.#store.setError(caughtErrorMessage(error));
             this.#store.setLoading(false);
         }
     }
@@ -162,56 +401,96 @@ class WorkbenchController {
     #wire(): void {
         const elements = this.#elements;
 
+        // --- The story's address ---
+        //
+        // The workbench can be opened on its own, without a page to read. The
+        // field is what makes that case usable: paste an address, and the
+        // workbench reads it.
+        elements.urlLoadButton.addEventListener("k-click", () => {
+            this.#run(
+                () => this.#loadFromField(),
+                (error) => this.#store.setError(caughtErrorMessage(error)),
+            );
+        });
+        elements.urlField.addEventListener("keydown", (event) => {
+            if ((event as KeyboardEvent).key !== "Enter") return;
+            event.preventDefault();
+            this.#run(
+                () => this.#loadFromField(),
+                (error) => this.#store.setError(caughtErrorMessage(error)),
+            );
+        });
+
+        // --- The site access prompt ---
+        elements.accessGrantButton.addEventListener("k-click", () => {
+            this.#run(
+                () => this.#grantAccess(),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
+        });
+
         // --- Metadata fields ---
         elements.titleField.addEventListener("input", () => {
-            this.#store.setStory({ title: elements.titleField.value });
-            this.#store.markDirty(true);
+            this.#store.setStory({
+                title: elements.titleField.value,
+                // The file name follows the title until the user gives the
+                // book a name of its own.
+                ...this.#derivedFileName(elements.titleField.value),
+            });
         });
         elements.authorField.addEventListener("input", () => {
             this.#store.setStory({ author: elements.authorField.value });
-            this.#store.markDirty(true);
         });
         elements.languageField.addEventListener("change", () => {
             this.#store.setStory({ language: elements.languageField.value });
-            this.#store.markDirty(true);
         });
         elements.filenameField.addEventListener("input", () => {
-            this.#store.markDirty(true);
+            // What the user typed is what the book is saved as. It used to be
+            // thrown away: the field was overwritten on the next render, and
+            // the name never reached the download.
+            this.#store.setStory({
+                fileName: elements.filenameField.value,
+                fileNameEdited: true,
+            });
         });
         elements.resetFilename.addEventListener("click", () => {
-            elements.filenameField.value = "";
-            this.#store.markDirty(true);
+            this.#store.setStory({
+                ...this.#derivedFileName(this.#store.state.story.title),
+                fileNameEdited: false,
+            });
         });
 
         // --- Cover ---
         elements.coverUrlField.addEventListener("input", () => {
             this.#store.setStory({ coverUrl: elements.coverUrlField.value });
-            this.#store.markDirty(true);
         });
         elements.removeCover.addEventListener("click", () => {
             elements.coverUrlField.value = "";
             this.#store.setStory({ coverUrl: "" });
-            this.#store.markDirty(true);
         });
 
         // --- Options ---
         elements.authorNotesSwitch.addEventListener("k-change", (event) => {
             const detail = (event as CustomEvent<{ checked: boolean }>).detail;
-            void this.#saveStoryOption("removeAuthorNotes", !detail.checked);
+            this.#run(
+                () => this.#saveStoryOption("removeAuthorNotes", !detail.checked),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
         });
         elements.tocPageSwitch.addEventListener("k-change", (event) => {
             const detail = (event as CustomEvent<{ checked: boolean }>).detail;
-            void this.#saveStoryOption("includeTocPage", detail.checked);
-        });
-
-        // --- Save ---
-        elements.saveButton.addEventListener("k-click", () => {
-            void this.#save();
+            this.#run(
+                () => this.#saveStoryOption("includeTocPage", detail.checked),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
         });
 
         // --- Pack ---
         elements.packButton.addEventListener("k-click", () => {
-            void this.#pack();
+            this.#run(
+                () => this.#pack(),
+                (error) => this.#store.setError(caughtErrorMessage(error)),
+            );
         });
 
         // --- Chapter list ---
@@ -233,6 +512,9 @@ class WorkbenchController {
             this.#store.setAllSelected(false),
         );
         elements.invertButton.addEventListener("k-click", () => this.#store.invertSelection());
+        elements.rangesButton.addEventListener("k-click", () => {
+            this.#openRangeDialog();
+        });
         elements.filterButton.addEventListener("k-click", () => {
             this.#openFilter();
         });
@@ -262,28 +544,87 @@ class WorkbenchController {
             this.#resetFilterDraft();
         });
 
+        // --- The range dialog ---
+        elements.rangeSelect.addEventListener("k-click", () => {
+            this.#applyRange(true);
+        });
+        elements.rangeDeselect.addEventListener("k-click", () => {
+            this.#applyRange(false);
+        });
+        for (const input of [elements.rangeFrom, elements.rangeTo]) {
+            input.addEventListener("input", () => {
+                this.#previewRange();
+            });
+        }
+
         // --- The site-selector dialog ---
-        elements.selectorBannerButton.addEventListener("k-click", () => {
-            void this.#openSelectorDialog();
-        });
-        elements.selectorSuggest.addEventListener("k-click", () => {
-            void this.#suggestSelectors();
-        });
-        elements.selectorTest.addEventListener("k-click", () => {
-            void this.#testSelectors();
-        });
-        elements.selectorSave.addEventListener("k-click", () => {
-            void this.#saveSelectors();
-        });
-        elements.selectorForget.addEventListener("k-click", () => {
-            void this.#forgetSelectors();
+        elements.noMatchesClear.addEventListener("k-click", () => {
+            this.#clearFilter();
         });
 
-        // The Cancel button lives in the status bar and is rebuilt each time
-        // the bar is rendered, so it never carries stale state.
+        elements.emptyAction.addEventListener("k-click", () => {
+            this.#run(
+                () => this.#openSelectorDialog(),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
+        });
+
+        elements.moreOptions.addEventListener("click", () => {
+            this.#run(
+                () => openTab(getURL("options.html")),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
+        });
+
+        elements.selectorBannerButton.addEventListener("k-click", () => {
+            this.#run(
+                () => this.#openSelectorDialog(),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
+        });
+        elements.selectorSuggest.addEventListener("k-click", () => {
+            this.#run(
+                () => this.#suggestSelectors(),
+                (error) => this.#setSelectorStatus(caughtErrorMessage(error), "error"),
+            );
+        });
+        elements.selectorTest.addEventListener("k-click", () => {
+            this.#run(
+                () => this.#testSelectors(),
+                (error) => this.#setSelectorStatus(caughtErrorMessage(error), "error"),
+            );
+        });
+        elements.selectorSave.addEventListener("k-click", () => {
+            this.#run(
+                () => this.#saveSelectors(),
+                (error) => this.#setSelectorStatus(caughtErrorMessage(error), "error"),
+            );
+        });
+        elements.selectorForget.addEventListener("k-click", () => {
+            this.#run(
+                () => this.#forgetSelectors(),
+                (error) => this.#setSelectorStatus(caughtErrorMessage(error), "error"),
+            );
+        });
+
+        // The status bar's buttons are rebuilt each time the bar is rendered,
+        // so each one says what it does in `data-action`.
         elements.statusActions.addEventListener("k-click", (event) => {
-            if ((event.target as HTMLElement)?.closest?.("k-button")) {
-                void this.#cancel();
+            const action = (event.target as HTMLElement)?.closest?.<HTMLElement>("k-button")
+                ?.dataset.action;
+            if (action === "cancel") {
+                this.#run(
+                    () => this.#cancel(),
+                    (error) => this.#toast(caughtErrorMessage(error), "error"),
+                );
+            } else if (action === "retry") {
+                this.#store.setProgress(undefined);
+                this.#run(
+                    () => this.#pack(),
+                    (error) => this.#toast(caughtErrorMessage(error), "error"),
+                );
+            } else if (action === "dismiss") {
+                this.#store.setProgress(undefined);
             }
         });
     }
@@ -352,7 +693,14 @@ class WorkbenchController {
 
     /** Apply the draft filter. */
     #applyFilter(): void {
-        this.#store.setFilter(this.#filterDraft());
+        const draft = this.#filterDraft();
+        // An invalid pattern would match nothing and leave the user staring
+        // at an empty list; the dialog stays open with the error instead.
+        if (draft.useRegex && draft.query.trim() && !compilePattern(draft.query)) {
+            this.#previewFilter();
+            return;
+        }
+        this.#store.setFilter(draft);
         (this.#elements.filterDialog as unknown as { close(): void }).close();
     }
 
@@ -367,6 +715,68 @@ class WorkbenchController {
         elements.filterExclude.value = "";
         elements.filterRegex.toggleAttribute("checked", false);
         this.#previewFilter();
+    }
+
+    /**
+     * Open the range dialog.
+     *
+     * The fields are seeded with the whole chapter list, so the dialog opens
+     * on something sensible and the user only has to change what they mean
+     * to change.
+     */
+    #openRangeDialog(): void {
+        const elements = this.#elements;
+        const total = this.#store.state.chapters.length;
+        if (total === 0) return;
+
+        elements.rangeFrom.value = "1";
+        elements.rangeTo.value = String(total);
+        this.#previewRange();
+        (elements.rangeDialog as unknown as { open(): void }).open();
+    }
+
+    /**
+     * The range the dialog is editing, as the chapter numbers the user typed.
+     *
+     * The numbers are one-based, because that is how the chapters are
+     * numbered in the list. `null` means the range is not usable.
+     */
+    #range(): ChapterRange | null {
+        const elements = this.#elements;
+        return parseChapterRange(
+            elements.rangeFrom.value,
+            elements.rangeTo.value,
+            this.#store.state.chapters.length,
+        );
+    }
+
+    /** Check the range the user typed, and say what it covers. */
+    #previewRange(): void {
+        const elements = this.#elements;
+        const total = this.#store.state.chapters.length;
+        const range = this.#range();
+        if (!range) {
+            elements.rangeError.hidden = false;
+            elements.rangeError.textContent = t("workbenchRangeInvalid", [String(total)]);
+            elements.rangeCount.textContent = "";
+            return;
+        }
+        elements.rangeError.hidden = true;
+        elements.rangeError.textContent = "";
+        elements.rangeCount.textContent = tCount("workbenchRangeCount", range.to - range.from + 1);
+    }
+
+    /** Apply the range to the selection. */
+    #applyRange(selected: boolean): void {
+        const range = this.#range();
+        if (!range) {
+            this.#previewRange();
+            return;
+        }
+        // The store counts the chapters from zero; the dialog counts them
+        // from one.
+        this.#store.setRange(range.from - 1, range.to - 1, selected);
+        (this.#elements.rangeDialog as unknown as { close(): void }).close();
     }
 
     /** Reset the draft, so the next open starts from the applied filter. */
@@ -389,7 +799,10 @@ class WorkbenchController {
     #selectorHost(): string {
         const source = this.#store.state.story.sourceUrl;
         try {
-            return new URL(source).hostname.replace(/^www\./, "").toLowerCase();
+            // The workbench and the worker have to agree on the key the
+            // selectors are filed under, so the name is normalised by the
+            // store's own rule rather than by a second, local one.
+            return validateHostName(new URL(source).hostname) ?? "";
         } catch {
             return "";
         }
@@ -432,7 +845,7 @@ class WorkbenchController {
         const url = this.#store.state.story.sourceUrl;
         if (!url) return;
 
-        this.#setSelectorStatus(t("workbenchWaitingForChapters"));
+        this.#setSelectorStatus(t("siteSelectorSuggesting"));
         try {
             const suggestion = await sendRequest(
                 { sendMessage: (message) => sendMessageToWorker(message) },
@@ -451,10 +864,7 @@ class WorkbenchController {
             elements.selectorTitle.value = suggestion.titleCss;
             this.#setSelectorStatus(t("siteSelectorSuggested"));
         } catch (error) {
-            this.#setSelectorStatus(
-                error instanceof Error ? error.message : t("errorGeneric"),
-                "error",
-            );
+            this.#setSelectorStatus(caughtErrorMessage(error), "error");
         }
     }
 
@@ -470,7 +880,7 @@ class WorkbenchController {
             return;
         }
 
-        this.#setSelectorStatus(t("workbenchWaitingForChapters"));
+        this.#setSelectorStatus(t("siteSelectorTesting"));
         try {
             const result = await sendRequest(
                 { sendMessage: (message) => sendMessageToWorker(message) },
@@ -492,10 +902,7 @@ class WorkbenchController {
                 this.#setSelectorStatus(t("siteSelectorTestFailed"), "error");
             }
         } catch (error) {
-            this.#setSelectorStatus(
-                error instanceof Error ? error.message : t("errorGeneric"),
-                "error",
-            );
+            this.#setSelectorStatus(caughtErrorMessage(error), "error");
         }
     }
 
@@ -534,10 +941,7 @@ class WorkbenchController {
                 },
             );
         } catch (error) {
-            this.#setSelectorStatus(
-                error instanceof Error ? error.message : t("errorGeneric"),
-                "error",
-            );
+            this.#setSelectorStatus(caughtErrorMessage(error), "error");
             return;
         }
 
@@ -547,8 +951,13 @@ class WorkbenchController {
 
         // The saved selectors change what the extension sees on this site, so
         // the page is analysed again and the chapter list is rebuilt from it.
-        await this.#analyse(this.#store.state.story.sourceUrl);
-        await this.#loadChapters(this.#store.state.story.sourceUrl);
+        //
+        // This is a new load: it takes a new number, so any load still in
+        // flight is discarded rather than landing on top of this one.
+        const loadNumber = this.#loads.begin();
+        await this.#analyse(this.#store.state.story.sourceUrl, loadNumber);
+        if (!this.#loads.isCurrent(loadNumber)) return;
+        await this.#loadChapters(this.#store.state.story.sourceUrl, loadNumber);
     }
 
     /** Forget the selectors for the host name. */
@@ -564,10 +973,7 @@ class WorkbenchController {
                 { hostname: host },
             );
         } catch (error) {
-            this.#setSelectorStatus(
-                error instanceof Error ? error.message : t("errorGeneric"),
-                "error",
-            );
+            this.#setSelectorStatus(caughtErrorMessage(error), "error");
             return;
         }
 
@@ -598,27 +1004,28 @@ class WorkbenchController {
         key: "removeAuthorNotes" | "includeTocPage",
         value: boolean,
     ): Promise<void> {
-        const current = await this.#settings.get();
-        await this.#settings.update({ story: { ...current.story, [key]: value } });
-    }
-
-    /** Save the metadata. */
-    async #save(): Promise<void> {
-        const state = this.#store.state;
-        await this.#settings.update({
-            story: {
-                ...(await this.#settings.get()).story,
-                defaultLanguage: state.story.language,
-            },
-        });
-        this.#store.markDirty(false);
+        // Only the option that was toggled is written. Writing the whole group
+        // from a snapshot would carry the old value of every other option,
+        // and the snapshot is exactly what goes stale when the user changes
+        // two things in a row.
+        const next = await this.#settings.update({ story: { [key]: value } });
+        // The snapshot has to be kept in step with the write: the file name
+        // is derived from the template it holds.
+        this.#settingsValue = next;
     }
 
     /** Start the download. */
     async #pack(): Promise<void> {
         const state = this.#store.state;
-        const selected = state.chapters.filter((chapter) => chapter.selected);
+        const selected = state.chapters
+            .map((chapter, index) => ({ chapter, index }))
+            .filter((entry) => entry.chapter.selected);
         if (selected.length === 0) return;
+
+        // The job counts its own chapters, so the mapping back to the
+        // workbench's list is kept for the progress poll.
+        this.#jobChapterIndexes = selected.map((entry) => entry.index);
+        this.#jobStoryUrl = state.story.sourceUrl;
 
         try {
             const { jobId } = await sendRequest(
@@ -627,55 +1034,116 @@ class WorkbenchController {
                 {
                     url: state.story.sourceUrl,
                     title: state.story.title,
-                    chapters: selected.map((chapter) => ({
-                        sourceUrl: chapter.sourceUrl,
-                        title: chapter.title,
+                    // The name the user chose, if they chose one. Without it the
+                    // worker falls back to the filename template.
+                    fileName: state.story.fileNameEdited ? state.story.fileName : undefined,
+                    // The fields the user can correct, so the book says what
+                    // the workbench showed.
+                    author: state.story.author,
+                    language: state.story.language,
+                    coverUrl: state.story.coverUrl,
+                    chapters: selected.map((entry) => ({
+                        sourceUrl: entry.chapter.sourceUrl,
+                        title: entry.chapter.title,
                     })),
                 },
             );
             this.#jobId = jobId;
-            this.#pollProgress();
+            this.#startPolling();
         } catch (error) {
-            this.#store.setError(error instanceof Error ? error.message : t("errorGeneric"));
+            this.#store.setError(caughtErrorMessage(error));
         }
     }
 
     /** Poll the download's progress. */
-    async #pollProgress(): Promise<void> {
+    #startPolling(): void {
         if (!this.#jobId) return;
-        try {
-            const progress = await sendRequest(
-                { sendMessage: (message) => sendMessageToWorker(message) },
-                "download:progress",
-                { jobId: this.#jobId },
-            );
-            this.#store.setProgress({
-                phase: progress.phase,
-                done: progress.chaptersDone,
-                total: progress.chaptersTotal,
-                percent: progress.percent,
-                message: progress.message,
-                succeeded: progress.phase === "complete",
-            });
+        this.#stopPolling();
+        this.#stopPoll = pollUntilDone<DownloadProgress>({
+            intervalMs: 500,
+            step: async () => {
+                const jobId = this.#jobId;
+                if (!jobId) return undefined;
+                const progress = await sendRequest(
+                    { sendMessage: (message) => sendMessageToWorker(message) },
+                    "download:progress",
+                    { jobId },
+                );
+                this.#store.setProgress({
+                    phase: progress.phase,
+                    done: progress.chaptersDone,
+                    total: progress.chaptersTotal,
+                    percent: progress.percent,
+                    // The worker sends the message *key*, so the page translates
+                    // it in its own locale.
+                    message: tDynamic(progress.message),
+                    succeeded: progress.phase === "complete",
+                    ...progressOutcome(progress),
+                });
 
-            if (
-                progress.phase === "complete" ||
-                progress.phase === "failed" ||
-                progress.phase === "cancelled"
-            ) {
+                this.#applyChapterState(progress);
+
+                if (
+                    progress.phase === "complete" ||
+                    progress.phase === "failed" ||
+                    progress.phase === "cancelled"
+                ) {
+                    this.#jobId = undefined;
+                    return undefined;
+                }
+                return progress;
+            },
+            onGiveUp: (error) => {
+                // The job is gone: the worker was restarted, or the job was
+                // cleaned up. Asking again would fail for ever.
                 this.#jobId = undefined;
-                return;
-            }
-        } catch {
-            // The worker may have been suspended. Keep polling; the job's
-            // state is durable.
-        }
-
-        this.#pollTimer = setTimeout(() => void this.#pollProgress(), 500);
+                this.#store.setError(caughtErrorMessage(error));
+            },
+        });
     }
 
     /** Stop polling, if the page is being torn down. */
     dispose(): void {
+        this.#stopPolling();
+    }
+
+    /**
+     * Show which chapter the job is on.
+     *
+     * The job reports the chapter it is fetching, counted among the chapters
+     * the user selected. The workbench's list is the whole list, so the
+     * index is mapped back through the selection before the row is updated.
+     *
+     * Without this the chapter list sits at "idle" for the whole download,
+     * which reads as a broken list rather than a busy one.
+     *
+     * The job also reports the chapters that have *finished*. A finished
+     * chapter keeps its final state for the rest of the download, so the list
+     * reads as a record of what has happened rather than a row of spinners
+     * that never stop.
+     */
+    #applyChapterState(progress: DownloadProgress): void {
+        // The user may have moved on to another story while this one is
+        // still being made; its rows are not this job's rows.
+        if (this.#store.state.story.sourceUrl !== this.#jobStoryUrl) return;
+        const finished = progress.finished;
+        if (finished) {
+            for (const change of finishedChapterStates(finished, this.#jobChapterIndexes)) {
+                this.#store.setChapterState(change.index, change.state);
+            }
+        }
+
+        const current = progress.current;
+        if (!current) return;
+        const index = this.#jobChapterIndexes[current.index];
+        if (index === undefined) return;
+        this.#store.setChapterState(index, current.state);
+    }
+
+    /** Stop the progress poll. */
+    #stopPolling(): void {
+        this.#stopPoll?.();
+        this.#stopPoll = undefined;
         if (this.#pollTimer) clearTimeout(this.#pollTimer);
         this.#pollTimer = undefined;
     }
@@ -685,10 +1153,7 @@ class WorkbenchController {
         if (!this.#jobId) return;
         const jobId = this.#jobId;
         this.#jobId = undefined;
-        if (this.#pollTimer) {
-            clearTimeout(this.#pollTimer);
-            this.#pollTimer = undefined;
-        }
+        this.#stopPolling();
         try {
             await sendRequest(
                 { sendMessage: (message) => sendMessageToWorker(message) },
@@ -697,6 +1162,17 @@ class WorkbenchController {
             );
         } catch {
             // The job may already have finished; nothing to cancel.
+        }
+        // The poll has stopped, so the bar is told the job ended here.
+        const progress = this.#store.state.progress;
+        if (progress) {
+            this.#store.setProgress({
+                ...progress,
+                phase: "cancelled",
+                message: t("phaseCancelled"),
+                outcome: "cancelled",
+                detail: undefined,
+            });
         }
     }
 
@@ -763,7 +1239,7 @@ async function sendMessageToWorker(message: unknown): Promise<unknown> {
 
 /** Start the page. */
 async function main(): Promise<void> {
-    installI18n();
+    installI18n("workbenchTitle");
     const root = document.body;
     const controller = new WorkbenchController(root);
     await controller.start();
@@ -772,3 +1248,25 @@ async function main(): Promise<void> {
 void main().catch((error) => {
     console.error("[kintsugi] The workbench failed to start:", error);
 });
+
+/**
+ * How a job ended, and the line to show under the status label.
+ *
+ * @param progress The job's progress, as the worker reported it.
+ * @returns The outcome and the detail, or nothing while the job runs.
+ */
+export function progressOutcome(
+    progress: DownloadProgress,
+): Pick<DownloadProgressState, "outcome" | "detail"> {
+    if (progress.phase === "complete") {
+        const detail = progress.fileName
+            ? t("workbenchSavedAs", [progress.fileName, formatSize(progress.fileSize ?? 0)])
+            : undefined;
+        return { outcome: "success", detail };
+    }
+    if (progress.phase === "failed") {
+        return { outcome: "failed", detail: errorMessage(progress.error) || undefined };
+    }
+    if (progress.phase === "cancelled") return { outcome: "cancelled" };
+    return {};
+}

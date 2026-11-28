@@ -139,9 +139,15 @@ export class ChapterEpubItem extends EpubItem {
     /** The arc the chapter starts, if any. */
     newArc: unknown = null;
 
+    /**
+     * @param chapter The chapter the item is built from.
+     * @param content The element holding the item's content. Only its child
+     *   nodes are used, so a fragment works as well as an element.
+     * @param index The item's index in the book.
+     */
     constructor(
         chapter: { sourceUrl: string; title?: string; newArc?: unknown },
-        content: Element,
+        content: { childNodes: ArrayLike<Node> },
         index: number,
     ) {
         super(chapter.sourceUrl);

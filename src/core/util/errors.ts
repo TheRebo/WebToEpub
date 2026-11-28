@@ -10,6 +10,7 @@
  * pure function, so it is exhaustively testable and the UI never has to
  * interpret an exception.
  */
+import { redactUrl } from "./url";
 
 /** The machine-readable causes. */
 export type ErrorCode =
@@ -21,8 +22,11 @@ export type ErrorCode =
     | "TOO_MANY_CHAPTERS"
     | "STORAGE_FULL"
     | "PARSE_FAILED"
+    | "UNSUPPORTED"
+    | "UNSUPPORTED_CONTENT"
     | "CANCELLED"
     | "PERMISSION_DENIED"
+    | "BUSY"
     | "UNKNOWN";
 
 /** An action the UI may offer in response to an error. */
@@ -61,6 +65,12 @@ export interface ErrorContext {
     challenge?: boolean;
     /** The chapter index, when the failure was chapter-specific. */
     chapterIndex?: number;
+    /** The machine-readable cause, when the failure already knows it. */
+    code?: ErrorCode;
+    /** The media type the server sent, when it was the wrong one. */
+    mediaType?: string;
+    /** Whether the failure happened on the way to or from a server. */
+    transport?: boolean;
 }
 
 /** The host part of a URL, for a message that mentions the site. */
@@ -72,6 +82,15 @@ function hostOf(url: string | undefined): string | null {
         return null;
     }
 }
+
+/**
+ * A URL with its query string and fragment removed.
+ *
+ * The implementation lives in `util/url.ts`, because the rule — a query string
+ * is a secret — has to be the same everywhere a URL is shown: in an error, in
+ * a log, and in an exported book.
+ */
+export { redactUrl } from "./url";
 
 /** A sentence describing the failure, with the site named where possible. */
 function describe(context: ErrorContext): {
@@ -87,6 +106,33 @@ function describe(context: ErrorContext): {
                 ? `${host} is asking the browser to verify you before it will show the chapter.`
                 : "This site is asking the browser to verify you before it will show the chapter.",
             code: "CHALLENGE",
+            actions: [
+                { id: "open-url", label: "Open the page" },
+                { id: "retry", label: "Retry" },
+            ],
+        };
+    }
+
+    if (context.code === "PERMISSION_DENIED") {
+        return {
+            message: host
+                ? `The extension is not allowed to read ${host}. Grant it access and try again.`
+                : "The extension is not allowed to read that site.",
+            code: "PERMISSION_DENIED",
+            actions: [
+                { id: "grant-access", label: "Grant access" },
+                { id: "cancel", label: "Cancel" },
+            ],
+        };
+    }
+
+    if (context.code === "UNSUPPORTED_CONTENT") {
+        const sent = describeMediaType(context.mediaType);
+        return {
+            message: host
+                ? `${host} sent ${sent} instead of a page.`
+                : `The site sent ${sent} instead of a page.`,
+            code: "UNSUPPORTED_CONTENT",
             actions: [
                 { id: "open-url", label: "Open the page" },
                 { id: "retry", label: "Retry" },
@@ -130,6 +176,15 @@ function describe(context: ErrorContext): {
         };
     }
 
+    if (!context.transport) {
+        return {
+            message:
+                "Something went wrong. Try again, and turn on diagnostics if it keeps happening.",
+            code: "UNKNOWN",
+            actions: [{ id: "retry", label: "Retry" }],
+        };
+    }
+
     return {
         message: host ? `Could not reach ${host}.` : "Could not reach the site.",
         code: "NETWORK",
@@ -138,6 +193,89 @@ function describe(context: ErrorContext): {
             { id: "cancel", label: "Cancel" },
         ],
     };
+}
+
+/**
+ * A friendly name for a media type, so the message reads like a sentence.
+ *
+ * The user does not know what "application/xhtml+xml" is; they know what a
+ * PDF is. Anything unknown keeps its raw name, which is still better than
+ * saying nothing.
+ */
+function describeMediaType(mediaType: string | undefined): string {
+    switch (mediaType) {
+        case "application/pdf":
+            return "a PDF";
+        case "text/plain":
+            return "plain text";
+        case "application/json":
+            return "JSON";
+        case "image/svg+xml":
+            return "an SVG image";
+        case "application/zip":
+            return "a ZIP archive";
+        case "application/xhtml+xml":
+        case "text/html":
+            return "HTML";
+        case "video/mp4":
+            return "a video";
+        case "audio/mpeg":
+            return "audio";
+        default:
+            return mediaType ? `a ${mediaType} file` : "something that is not a page";
+    }
+}
+
+/**
+ * The facts a failure carries about itself.
+ *
+ * The network layer knows the status the server answered with, how many
+ * attempts were made, and whether the site asked the user to prove they were
+ * human. It puts all three on the error it throws. Without reading them here,
+ * every server failure would be reported as "could not reach the site" — which
+ * is wrong advice for a rate limit, a missing chapter, or a challenge.
+ *
+ * The error is read by shape rather than by type, so that this layer does not
+ * have to know about the network layer — the rule is about what an error
+ * *may* carry, not about where it came from.
+ */
+function failureFacts(error: unknown): {
+    status?: number;
+    attempts?: number;
+    challenge?: boolean;
+    code?: ErrorCode;
+    mediaType?: string;
+} {
+    if (!error || typeof error !== "object") return {};
+    const candidate = error as {
+        status?: unknown;
+        attempts?: unknown;
+        isChallenge?: unknown;
+        code?: unknown;
+        mediaType?: unknown;
+    };
+    const facts: {
+        status?: number;
+        attempts?: number;
+        challenge?: boolean;
+        code?: ErrorCode;
+        mediaType?: string;
+    } = {};
+
+    // A status of zero means the request never reached a server, so it is a
+    // transport failure rather than an answer from one.
+    if (typeof candidate.status === "number" && candidate.status > 0) {
+        facts.status = candidate.status;
+    }
+    if (typeof candidate.attempts === "number" && candidate.attempts > 0) {
+        facts.attempts = candidate.attempts;
+    }
+    if (candidate.isChallenge === true) facts.challenge = true;
+    if (typeof candidate.code === "string") facts.code = candidate.code as ErrorCode;
+    if (typeof candidate.mediaType === "string" && candidate.mediaType) {
+        facts.mediaType = candidate.mediaType;
+    }
+    return facts;
 }
 
 /**
@@ -164,19 +302,57 @@ export function toUserFacingError(error: unknown, context: ErrorContext = {}): U
         };
     }
 
-    const described = describe(context);
+    // What the failure knows about itself fills in what the caller did not
+    // say. The caller always wins: it is the one that knows which URL the
+    // user was actually trying to reach.
+    const facts = failureFacts(error);
+    const described = describe({
+        ...context,
+        status: context.status ?? facts.status,
+        attempts: context.attempts ?? facts.attempts,
+        challenge: context.challenge ?? facts.challenge,
+        code: context.code ?? facts.code,
+        mediaType: context.mediaType ?? facts.mediaType,
+        transport: context.transport ?? isTransportFailure(error),
+    });
     const result: UserFacingError = {
         message: described.message,
         code: described.code,
     };
-    if (context.url) result.url = context.url;
+    // The URL is redacted: its query string can carry a session token, and the
+    // error travels over the message bus to the extension's own pages.
+    const safeUrl = redactUrl(context.url);
+    if (safeUrl) result.url = safeUrl;
     if (described.actions) result.actions = described.actions;
     if (error instanceof Error && error.message) {
-        result.detail = `${error.name}: ${error.message}`;
+        result.detail = redactUrlsIn(`${error.name}: ${error.message}`);
     } else if (error !== undefined && error !== null) {
-        result.detail = String(error);
+        result.detail = redactUrlsIn(String(error));
     }
     return result;
+}
+
+/**
+ * Whether a failure came from the network rather than from the extension.
+ *
+ * A failed `fetch` rejects with a `TypeError`, a timeout with a
+ * `TimeoutError`, and the fetch layer throws a `FetchError`. Anything else (a
+ * packing failure, a closed save dialog, a file that is not a library) is
+ * not "could not reach the site", and saying so sends the user the wrong way.
+ */
+function isTransportFailure(error: unknown): boolean {
+    if (!(error instanceof Error)) return false;
+    if (error instanceof TypeError) return /network|fetch/i.test(error.message);
+    if (["FetchError", "TimeoutError", "NetworkError"].includes(error.name)) return true;
+    return typeof (error as { status?: unknown }).status === "number";
+}
+
+/**
+ * A message with every URL in it redacted, because a fetch error's message
+ * names the URL and its query string can carry a session token (ADR-0023).
+ */
+export function redactUrlsIn(text: string): string {
+    return text.replace(/https?:\/\/[^\s"'<>)]+/g, (url) => redactUrl(url) ?? url);
 }
 
 /** True when the error is an abort, from a cancelled fetch. */
@@ -214,19 +390,10 @@ export class UserFacingErrorError extends Error {
     toUserFacingError(): UserFacingError {
         const result: UserFacingError = { message: this.message, code: this.code };
         if (this.actions) result.actions = this.actions;
-        if (this.url) result.url = this.url;
+        const safeUrl = redactUrl(this.url);
+        if (safeUrl) result.url = safeUrl;
         return result;
     }
-}
-
-/** Raise a `UserFacingErrorError`. */
-export function userError(
-    message: string,
-    code: ErrorCode = "UNKNOWN",
-    actions?: ErrorAction[],
-    url?: string,
-): never {
-    throw new UserFacingErrorError(message, code, actions, url);
 }
 
 /** The message for an empty chapter. */

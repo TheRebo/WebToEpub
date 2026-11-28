@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+    isPrivateHost,
     isSameRegistrableDomain,
     registrableDomain,
     sanitizeHtml,
     sanitizeToFragment,
     validateFetchableUrl,
+    validateOrigin,
 } from "../../src/core/util/sanitize";
 
 describe("sanitizeHtml", () => {
@@ -68,6 +70,71 @@ describe("sanitizeHtml", () => {
         const once = sanitizeHtml('<p class="x">Hello <em>world</em></p>');
         expect(sanitizeHtml(once)).toBe(once);
     });
+
+    it("removes a data: URL that can carry a document", () => {
+        // An SVG is a document, and an SVG document can carry a script. It is
+        // the one image type the extension builds itself, so it cannot simply
+        // be banned — but it must not survive in a chapter either.
+        const svg = sanitizeHtml(
+            "<img src=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' onload='alert(1)'/>\">",
+        );
+        expect(svg).not.toContain("data:image/svg+xml");
+        expect(svg).not.toContain("onload");
+    });
+
+    it("removes a base64 data: URL that can carry a document", () => {
+        const svg = sanitizeHtml(
+            '<img src="data:image/svg+xml;base64,PHN2ZyBvbmxvYWQ9YWxlcnQoMSk+">',
+        );
+        expect(svg).not.toContain("data:image/svg+xml");
+    });
+
+    it("removes a data: URL with a document media type", () => {
+        expect(sanitizeHtml('<img src="data:text/html,<script>x</script>">')).not.toContain(
+            "data:",
+        );
+        expect(sanitizeHtml('<img src="data:application/xhtml+xml,<html/>">')).not.toContain(
+            "data:",
+        );
+    });
+
+    it("removes a data: URL with no media type at all", () => {
+        // The default media type is `text/plain`, which is not an image, so
+        // the reference is dropped rather than left pointing at nothing.
+        expect(sanitizeHtml('<img src="data:,hello">')).not.toContain("data:");
+    });
+
+    it("keeps a data: URL for an inert raster image", () => {
+        const png = sanitizeHtml('<img src="data:image/png;base64,iVBORw0KGgo=">');
+        expect(png).toContain("data:image/png;base64,iVBORw0KGgo=");
+    });
+
+    it("removes a data: URL in an href", () => {
+        expect(sanitizeHtml('<a href="data:text/html,x">y</a>')).not.toContain("data:");
+    });
+
+    it("keeps a picture and its sources", () => {
+        // A responsive image is a `<picture>` with a `<source>` for each
+        // format. Dropping them loses the picture's own markup, and a
+        // `<picture>` whose image has no `src` of its own loses the picture
+        // entirely.
+        const html = sanitizeHtml(
+            '<picture><source srcset="https://example.com/a.webp" type="image/webp"><img src="https://example.com/a.png" alt="a"></picture>',
+        );
+        expect(html).toContain("<picture");
+        expect(html).toContain("<source");
+        expect(html).toContain("a.webp");
+        expect(html).toContain("a.png");
+    });
+
+    it("removes a dangerous URL that hides in a srcset", () => {
+        // The attribute as a whole starts with an harmless URL, so it has to
+        // be checked candidate by candidate.
+        const html = sanitizeHtml(
+            '<img srcset="https://example.com/a.png 1x, javascript:alert(1) 2x">',
+        );
+        expect(html).not.toContain("javascript:");
+    });
 });
 
 describe("sanitizeToFragment", () => {
@@ -97,6 +164,53 @@ describe("validateFetchableUrl", () => {
 
     it("rejects a URL that cannot be parsed", () => {
         expect(validateFetchableUrl("not a url")).toBeNull();
+    });
+});
+
+describe("validateOrigin", () => {
+    it("accepts a plain web host", () => {
+        expect(validateOrigin("https://example.com")).toBe("https://example.com");
+        expect(validateOrigin("http://example.com")).toBe("http://example.com");
+    });
+
+    it("accepts a host with a trailing slash", () => {
+        expect(validateOrigin("https://example.com/")).toBe("https://example.com");
+    });
+
+    it("keeps the port, because it is part of the host", () => {
+        expect(validateOrigin("http://localhost:8080")).toBe("http://localhost:8080");
+    });
+
+    it("rejects any other scheme", () => {
+        expect(validateOrigin("file:///etc/passwd")).toBeNull();
+        expect(validateOrigin("javascript:alert(1)")).toBeNull();
+        expect(validateOrigin("data:text/html,<script>")).toBeNull();
+    });
+
+    it("rejects an origin that carries a path", () => {
+        // A path would be pasted into the permission pattern as
+        // `https://example.com/some/path/*`, which is not a pattern the
+        // browser understands.
+        expect(validateOrigin("https://example.com/some/path")).toBeNull();
+    });
+
+    it("rejects an origin that carries a query or a fragment", () => {
+        expect(validateOrigin("https://example.com/?a=b")).toBeNull();
+        expect(validateOrigin("https://example.com/#section")).toBeNull();
+    });
+
+    it("rejects an origin that carries credentials", () => {
+        expect(validateOrigin("https://user:pass@example.com")).toBeNull();
+    });
+
+    it("rejects a wildcard, which would grant more than one host", () => {
+        expect(validateOrigin("https://*")).toBeNull();
+        expect(validateOrigin("*://*/*")).toBeNull();
+    });
+
+    it("rejects an origin that cannot be parsed", () => {
+        expect(validateOrigin("not a url")).toBeNull();
+        expect(validateOrigin("")).toBeNull();
     });
 });
 
@@ -137,5 +251,131 @@ describe("isSameRegistrableDomain", () => {
 
     it("refuses to guess when a URL is malformed", () => {
         expect(isSameRegistrableDomain("nonsense", "https://example.com")).toBe(false);
+    });
+});
+
+describe("isPrivateHost", () => {
+    it("names the loopback address", () => {
+        expect(isPrivateHost("127.0.0.1")).toBe(true);
+        expect(isPrivateHost("127.1.2.3")).toBe(true);
+    });
+
+    it("names the local host name", () => {
+        expect(isPrivateHost("localhost")).toBe(true);
+        expect(isPrivateHost("LOCALHOST")).toBe(true);
+        expect(isPrivateHost("anything.localhost")).toBe(true);
+    });
+
+    it("names the private IPv4 ranges", () => {
+        expect(isPrivateHost("10.0.0.1")).toBe(true);
+        expect(isPrivateHost("172.16.0.1")).toBe(true);
+        expect(isPrivateHost("172.31.255.255")).toBe(true);
+        expect(isPrivateHost("192.168.1.1")).toBe(true);
+    });
+
+    it("names the link-local range, where the cloud metadata lives", () => {
+        expect(isPrivateHost("169.254.169.254")).toBe(true);
+    });
+
+    it("names the IPv6 loopback and link-local addresses", () => {
+        expect(isPrivateHost("[::1]")).toBe(true);
+        expect(isPrivateHost("[fe80::1]")).toBe(true);
+        expect(isPrivateHost("[fc00::1]")).toBe(true);
+        expect(isPrivateHost("[::ffff:127.0.0.1]")).toBe(true);
+    });
+
+    it("names an IPv6 address that carries a private IPv4 address", () => {
+        // The URL parser rewrites the embedded IPv4 address into hexadecimal,
+        // so `::ffff:127.0.0.1` arrives as `::ffff:7f00:1`. A check written
+        // against the dotted-quad spelling never sees the address the code
+        // is actually given, and the extension ends up as a proxy into the
+        // user's own network.
+        expect(isPrivateHost("[::ffff:7f00:1]")).toBe(true);
+        expect(isPrivateHost("[::ffff:a9fe:a9fe]")).toBe(true);
+        expect(isPrivateHost("[::7f00:1]")).toBe(true);
+        expect(isPrivateHost("[::a9fe:a9fe]")).toBe(true);
+    });
+
+    it("names a private IPv6 address as the URL parser hands it over", () => {
+        // The same addresses, but through the parser, which is how the code
+        // really receives them.
+        for (const url of [
+            "http://[::ffff:127.0.0.1]/",
+            "http://[::ffff:169.254.169.254]/",
+            "http://[::127.0.0.1]/",
+            "http://[fc00::1]/",
+            "http://[fe80::1]/",
+            "http://[::1]/",
+        ]) {
+            const hostname = new URL(url).hostname;
+            expect(isPrivateHost(hostname), `${url} was not recognised`).toBe(true);
+        }
+    });
+
+    it("does not name a public IPv6 address", () => {
+        for (const url of [
+            "http://[::ffff:8.8.8.8]/",
+            "http://[2001:db8::1]/",
+            "http://[2606:4700:4700::1111]/",
+        ]) {
+            const hostname = new URL(url).hostname;
+            expect(isPrivateHost(hostname), `${url} was wrongly named`).toBe(false);
+        }
+    });
+
+    it("names the local network suffix", () => {
+        expect(isPrivateHost("printer.local")).toBe(true);
+    });
+
+    it("does not name a public address", () => {
+        expect(isPrivateHost("example.com")).toBe(false);
+        expect(isPrivateHost("8.8.8.8")).toBe(false);
+        expect(isPrivateHost("172.15.0.1")).toBe(false);
+        expect(isPrivateHost("172.32.0.1")).toBe(false);
+        expect(isPrivateHost("192.169.1.1")).toBe(false);
+        expect(isPrivateHost("[2606:4700:4700::1111]")).toBe(false);
+    });
+});
+
+describe("validateFetchableUrl", () => {
+    it("accepts a public web address", () => {
+        expect(validateFetchableUrl("https://example.com/chapter/1")).not.toBeNull();
+    });
+
+    it("refuses a URL that is not absolute", () => {
+        expect(validateFetchableUrl("/chapter/1")).toBeNull();
+        expect(validateFetchableUrl("nonsense")).toBeNull();
+    });
+
+    it("refuses a scheme that is not HTTP", () => {
+        expect(validateFetchableUrl("file:///etc/passwd")).toBeNull();
+        expect(validateFetchableUrl("data:text/html,<script>")).toBeNull();
+        expect(validateFetchableUrl("blob:https://example.com/abc")).toBeNull();
+        expect(validateFetchableUrl("javascript:alert(1)")).toBeNull();
+    });
+
+    it("refuses a URL naming the local machine", () => {
+        expect(validateFetchableUrl("http://localhost:8080/")).toBeNull();
+        expect(validateFetchableUrl("http://127.0.0.1/")).toBeNull();
+        expect(validateFetchableUrl("http://[::1]/")).toBeNull();
+    });
+
+    it("refuses a URL naming the cloud metadata service", () => {
+        expect(validateFetchableUrl("http://169.254.169.254/latest/meta-data/")).toBeNull();
+    });
+
+    it("refuses a URL naming the local network", () => {
+        expect(validateFetchableUrl("http://192.168.0.1/")).toBeNull();
+        expect(validateFetchableUrl("http://10.0.0.5/")).toBeNull();
+        expect(validateFetchableUrl("http://172.16.0.1/")).toBeNull();
+    });
+
+    it("refuses a URL whose host is an obfuscated loopback address", () => {
+        // The URL parser normalises these to `127.0.0.1` before the host is
+        // examined, so they are caught even though they do not look like an
+        // address at all.
+        expect(validateFetchableUrl("http://0x7f000001/")).toBeNull();
+        expect(validateFetchableUrl("http://2130706433/")).toBeNull();
+        expect(validateFetchableUrl("http://127.0.0.1.nip.io/")).not.toBeNull();
     });
 });

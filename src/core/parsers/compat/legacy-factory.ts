@@ -25,7 +25,7 @@
 "use strict";
 
 import { ParserRegistry, type ParserConstructor } from "../registry";
-import type { Parser } from "../parser";
+import type { Parser, ParserServices } from "../parser";
 import { HttpClient } from "./legacy-http-client";
 import type { LegacyChapter, LegacyParser } from "./legacy-parser";
 
@@ -41,9 +41,15 @@ type LegacyConstructor = (url?: string) => Parser;
 /** The registry the legacy factory writes to. */
 export const legacyRegistry = new ParserRegistry();
 
-/** Translate a legacy constructor into a registry constructor. */
+/**
+ * Translate a legacy constructor into a registry constructor.
+ *
+ * A legacy thunk ignores its argument; a parser written against the new
+ * `Parser` contract and registered through `parserFactory` receives the
+ * services it needs.
+ */
 function toRegistryConstructor(constructor: LegacyConstructor): ParserConstructor {
-    return () => constructor();
+    return (services) => (constructor as unknown as (services: ParserServices) => Parser)(services);
 }
 
 /**
@@ -171,8 +177,13 @@ export class LegacyParserFactory {
             const responseXML = (await HttpClient.wrapFetch(url)).responseXML;
             parser = this.fetch(url, responseXML);
         }
-        if (parser === null) return;
-        const legacyParser = parser as LegacyParser;
+
+        // When no parser can be found for the group, the parser that listed
+        // the chapters is the one that fetches them. Leaving the chapters
+        // without a parser would mean they were fetched by whatever parser
+        // happened to be running, which is rarely the right one.
+        const legacyParser = (parser as LegacyParser | null) ?? initialParser;
+
         if (typeof legacyParser.copyState === "function") {
             legacyParser.copyState(initialParser);
         }

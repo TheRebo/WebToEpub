@@ -15,51 +15,98 @@ export default {
     workbenchCover: ["Couverture", "Le titre de la section de couverture."],
     workbenchOptions: ["Options", "Le titre de la section des options."],
     workbenchChapters: ["Chapitres", "Le titre de la liste des chapitres."],
-    workbenchChaptersFound: ["$COUNT$ chapitres trouvés", "Combien de chapitres ont été trouvés."],
     workbenchChapterCount: [
         "$VISIBLE$ sur $TOTAL$",
         "Combien de chapitres sont visibles, sur combien ont été trouvés.",
     ],
     workbenchPack: ["Créer l'EPUB", "Le bouton qui crée le livre."],
-    workbenchSave: ["Enregistrer", "Le bouton qui enregistre les métadonnées."],
     workbenchCancel: ["Annuler", "Le bouton qui arrête un téléchargement."],
+    workbenchRetry: ["Réessayer", "Relance un téléchargement échoué ou annulé."],
+    workbenchDismiss: ["Masquer", "Masque l’état d’un téléchargement terminé."],
+    workbenchSavedAs: [
+        "Enregistré sous $FILE$ ($SIZE$)",
+        "Affiché quand le livre a été enregistré.",
+    ],
     workbenchSelectAll: ["Tout sélectionner", "Le bouton qui sélectionne tous les chapitres."],
     workbenchSelectNone: ["Tout désélectionner", "Le bouton qui désélectionne tous les chapitres."],
     workbenchInvert: ["Inverser", "Le bouton qui inverse la sélection."],
     workbenchRanges: ["Plages", "Le bouton qui choisit une plage de chapitres."],
+    workbenchRangeTitle: ["Sélectionner une plage", "Le titre de la boîte de dialogue."],
+    workbenchRangeFrom: ["Premier chapitre", "Le premier chapitre de la plage."],
+    workbenchRangeTo: ["Dernier chapitre", "Le dernier chapitre de la plage."],
+    workbenchRangeCount: ["$COUNT$ chapitres", "Combien de chapitres la plage contient."],
+    workbenchRangeCountOne: [
+        "$COUNT$ chapitre",
+        "Combien de chapitres la plage contient, quand il n'y en a qu'un.",
+    ],
+    workbenchRangeSelect: ["Sélectionner la plage", "Sélectionne les chapitres de la plage."],
+    workbenchRangeDeselect: ["Désélectionner la plage", "Désélectionne les chapitres de la plage."],
+    workbenchRangeInvalid: [
+        "Saisissez un numéro de chapitre entre 1 et $COUNT$.",
+        "Affiché quand la plage est inutilisable.",
+    ],
     workbenchFilter: ["Filtrer", "Le bouton qui ouvre le filtre."],
+    workbenchBusy: [
+        "Un livre est en cours de création",
+        "Pourquoi Créer est indisponible pendant un téléchargement.",
+    ],
     workbenchNoChaptersSelected: ["Aucun chapitre sélectionné", "Affiché quand rien n'est coché."],
     workbenchWaitingForChapters: ["Recherche des chapitres…", "Affiché pendant le chargement."],
-    workbenchDetected: ["Détecté", "Affiché quand un analyseur a reconnu le site."],
     workbenchFieldTitle: ["Titre", "Le titre de l'histoire."],
     workbenchFieldAuthor: ["Auteur", "L'auteur de l'histoire."],
     workbenchFieldLanguage: ["Langue", "La langue de l'histoire."],
     workbenchFieldFilename: ["Nom du fichier", "Le nom du fichier EPUB."],
     workbenchResetFilename: ["Réinitialiser", "Restaure le nom de fichier par défaut."],
-    workbenchChooseFromPage: [
-        "Choisir depuis la page",
-        "Choisit l'image de couverture depuis la page.",
-    ],
     workbenchRemoveCover: ["Retirer la couverture", "Retire l'image de couverture."],
     workbenchIncludeAuthorNotes: [
         "Inclure les notes de l'auteur",
         "Conserve les notes à la fin d'un chapitre.",
     ],
-    workbenchIncludeTocPage: ["Inclure le sommaire", "Ajoute le sommaire comme chapitre."],
+    workbenchIncludeTocPage: [
+        "Inclure le sommaire comme chapitre",
+        "Ajoute le sommaire comme chapitre.",
+    ],
+    workbenchOptionsHint: [
+        "Cela s’applique à chaque livre que vous créez.",
+        "Explique que ces interrupteurs modifient les réglages.",
+    ],
     workbenchMoreOptions: ["Plus d'options", "Ouvre la page complète des paramètres."],
-    workbenchNoCover: ["Aucune couverture", "Affiché quand il n'y a pas d'image de couverture."],
     workbenchCoverUrl: ["Adresse de l'image de couverture", "L'adresse de l'image de couverture."],
     workbenchNoStoryHere: [
         "Aucune histoire trouvée sur cette page",
         "Quand la page n'est pas une histoire.",
     ],
-    workbenchTryAnyway: ["Essayer quand même", "Ouvre l'atelier malgré tout."],
-    workbenchUnsupportedSite: [
-        "Ce site n'est pas encore pris en charge",
-        "Quand aucun analyseur ne correspond.",
+    workbenchNoStoryHint: [
+        "Vérifiez qu’il s’agit bien de la liste des chapitres, ou montrez à Kintsugi où se trouvent les chapitres.",
+        "Sous la liste de chapitres vide.",
     ],
-    workbenchUseSelectorBuilder: ["Créer un sélecteur", "Ouvre le créateur de sélecteurs."],
-    workbenchReloadPage: ["Recharger la page", "Recharge l'onglet."],
+    workbenchFieldUrl: [
+        "Adresse de l'histoire",
+        "Le champ qui contient l'adresse de la page de l'histoire.",
+    ],
+    workbenchFieldUrlHint: [
+        "Collez l'adresse de la liste des chapitres.",
+        "L'indication sous le champ d'adresse.",
+    ],
+    workbenchLoadStory: ["Charger", "Le bouton qui charge l'histoire à cette adresse."],
+    workbenchUrlInvalid: [
+        "Cette adresse n'est pas une adresse web.",
+        "Affiché quand l'adresse ne peut pas être utilisée.",
+    ],
+    accessTitle: ["Autoriser l'accès à ce site", "Le titre de la demande d'accès."],
+    accessText: [
+        "Kintsugi ne peut lire que les sites que vous avez autorisés. Les pages sont lues sur votre machine, et rien n'est envoyé ailleurs.",
+        "L'explication sous la demande d'accès.",
+    ],
+    accessGrant: ["Autoriser l'accès", "Le bouton qui demande l'accès au navigateur."],
+    accessDenied: [
+        "L'accès n'a pas été autorisé, l'histoire ne peut pas être lue.",
+        "Affiché quand la boîte de dialogue du navigateur est refusée.",
+    ],
+    accessGranted: [
+        "Kintsugi peut maintenant lire ce site.",
+        "Affiché quand le site vient d’être autorisé.",
+    ],
     chapterStateQueued: ["En attente", "Un chapitre qui attend d'être récupéré."],
     chapterStateFetching: ["Récupération", "Un chapitre en cours de récupération."],
     chapterStateLoaded: ["Chargé", "Un chapitre qui a été lu."],
@@ -75,7 +122,6 @@ export default {
     phaseFailed: ["Échec", "Affiché quand le téléchargement a échoué."],
     phaseCancelled: ["Annulé", "Affiché quand le téléchargement a été arrêté."],
     popupOpenWorkbench: ["Ouvrir l'atelier", "Le bouton principal du popup."],
-    popupAddToLibrary: ["Ajouter à la bibliothèque", "Le bouton de bibliothèque du popup."],
     popupLibraryShort: ["Bibliothèque", "Le libellé visible du bouton de bibliothèque."],
     popupWorkbenchShort: ["Atelier", "Le libellé visible du bouton d'atelier."],
     popupSettings: ["Paramètres", "Le bouton de paramètres du popup."],
@@ -83,22 +129,31 @@ export default {
         "Aucune histoire détectée sur cette page.",
         "Quand la page n'est pas une histoire.",
     ],
-    popupUnsupported: [
-        "Ce site n'est pas encore pris en charge.",
-        "Quand aucun analyseur ne correspond.",
+    popupWelcome: [
+        "Bienvenue dans Kintsugi. Configurons tout avant votre premier livre.",
+        "À la première ouverture, avant la présentation.",
     ],
+    popupGetStarted: ["Configurer Kintsugi", "Le bouton du popup qui ouvre la présentation."],
     popupSaved: ["Votre livre est prêt.", "Affiché quand un téléchargement se termine."],
     popupTryAgain: ["Réessayer", "Le bouton de réessai du popup."],
+    popupChecking: [
+        "Analyse de cette page…",
+        "Affiché pendant que le popup attend le processus d'arrière-plan.",
+    ],
     popupUnsupportedHost: [
         "$HOST$ n'est pas encore pris en charge.",
         "Affiché quand aucun analyseur ne correspond au site actuel.",
+    ],
+    popupChapterCount: ["$COUNT$ chapitres", "Combien de chapitres la fenêtre a trouvés."],
+    popupChapterCountOne: [
+        "$COUNT$ chapitre",
+        "Combien de chapitres la fenêtre a trouvés, quand il n'y en a qu'un.",
     ],
     optionsAppearance: ["Apparence", "Le groupe des réglages d'apparence."],
     optionsStory: ["Histoire", "Le groupe des réglages d'histoire."],
     optionsEpub: ["EPUB", "Le groupe des réglages EPUB."],
     optionsImages: ["Images", "Le groupe des réglages d'images."],
     optionsBehaviour: ["Comportement", "Le groupe des réglages de comportement."],
-    optionsPrivacy: ["Confidentialité", "Le groupe des réglages de confidentialité."],
     optionsAdvanced: ["Avancé", "Le groupe des réglages avancés."],
     optionsTheme: ["Thème", "Le réglage du thème."],
     optionsAccent: ["Accent", "Le réglage de la couleur d'accent."],
@@ -117,8 +172,25 @@ export default {
         "Le champ de recherche des paramètres.",
     ],
     optionsSiteAccess: ["Accès aux sites", "La liste des sites que l'extension peut lire."],
-    optionsRevoke: ["Révoquer", "Retire l'accès à un site."],
-    optionsRevokeAll: ["Tout révoquer", "Retire l'accès à tous les sites."],
+    optionsRevoke: ["Retirer l’accès", "Retire l'accès à un site."],
+    optionsRevokeAll: ["Retirer tous les accès", "Retire l'accès à tous les sites."],
+    optionsRevokeAllConfirm: [
+        "Kintsugi ne pourra plus lire aucun de ces sites tant que vous ne les aurez pas autorisés de nouveau, un par un.",
+        "L’explication du dialogue qui retire l’accès à tous les sites.",
+    ],
+    optionsSiteAccessEmpty: [
+        "Aucun site pour l'instant. Kintsugi demande quand vous ouvrez une histoire.",
+        "L'état vide de la liste des accès.",
+    ],
+    optionsSiteAccessHint: [
+        "Kintsugi ne peut lire que les sites listés ici.",
+        "L'indication sous le titre des accès.",
+    ],
+    optionsRevoked: ["L'accès au site a été retiré.", "Affiché après le retrait d'un accès."],
+    optionsRevokedAll: [
+        "L'accès à tous les sites a été retiré.",
+        "Affiché après le retrait de tous les accès.",
+    ],
     optionsExportSettings: [
         "Exporter les paramètres",
         "Enregistre les paramètres dans un fichier.",
@@ -128,9 +200,33 @@ export default {
         "Réinitialiser tous les paramètres",
         "Restaure tous les paramètres à leur valeur par défaut.",
     ],
+    optionsExported: [
+        "Les paramètres ont été enregistrés dans un fichier.",
+        "Affiché après l'export des paramètres.",
+    ],
+    optionsImported: [
+        "Les paramètres ont été chargés depuis le fichier.",
+        "Affiché après l'import des paramètres.",
+    ],
+    optionsImportInvalid: [
+        "Ce fichier n'est pas un fichier de paramètres Kintsugi.",
+        "Affiché quand le fichier importé ne peut pas être lu.",
+    ],
+    optionsResetDone: [
+        "Tous les paramètres sont revenus à leur valeur par défaut.",
+        "Affiché après la réinitialisation.",
+    ],
+    optionsResetConfirm: [
+        "Tous les paramètres reviennent à leur valeur par défaut. Votre bibliothèque et vos sites enregistrés ne sont pas touchés.",
+        "L'explication de la boîte de dialogue de réinitialisation.",
+    ],
+    optionsResetConfirmAction: [
+        "Tout réinitialiser",
+        "Le bouton de confirmation de la boîte de dialogue.",
+    ],
     optionsPrivacyNote: [
         "Kintsugi n'envoie rien à personne. Chaque requête réseau va vers le site que vous lisez.",
-        "La note sous les paramètres de confidentialité.",
+        "La note au bas des paramètres.",
     ],
     optionsLibrary: ["Bibliothèque", "L'onglet bibliothèque, et les livres que vous avez créés."],
     optionsLibraryEmptyTitle: ["Votre bibliothèque est vide.", "Le titre de la bibliothèque vide."],
@@ -138,7 +234,6 @@ export default {
         "Les livres que vous créez sont conservés ici, pour pouvoir les mettre à jour quand un nouveau chapitre est publié.",
         "L'explication de la bibliothèque vide.",
     ],
-    optionsLibraryChapters: ["$COUNT$ chapitres", "Combien de chapitres contient un livre."],
     optionsNoResults: [
         "Aucun résultat pour cette recherche.",
         "Affiché quand une recherche dans les paramètres ne trouve rien.",
@@ -151,6 +246,36 @@ export default {
         "$CHAPTERS$ chapitres · $SIZE$",
         "La ligne de métadonnées de la carte de bibliothèque.",
     ],
+    optionsLibraryMetaOne: [
+        "$CHAPTERS$ chapitre · $SIZE$",
+        "La ligne de métadonnées de la carte de bibliothèque, quand le livre n'a qu'un chapitre.",
+    ],
+    optionsLibraryImport: [
+        "Importer depuis WebToEpub",
+        "Le bouton qui importe une bibliothèque exportée par WebToEpub 1.x.",
+    ],
+    optionsLibraryImported: [
+        "$1 livres importés.",
+        "Confirmation après l'import d'une bibliothèque de plusieurs livres.",
+    ],
+    optionsLibraryImportedOne: [
+        "$1 livre importé.",
+        "Confirmation après l'import d'une bibliothèque d'un seul livre.",
+    ],
+    optionsLibraryTooLarge: [
+        "Ce fichier est trop volumineux pour être importé. La plus grande bibliothèque que Kintsugi peut lire fait $SIZE$.",
+        "Affiché quand l'utilisateur choisit une export de bibliothèque plus grand que ce que Kintsugi lit.",
+    ],
+    libraryRemove: ["Retirer", "Retire un livre de la bibliothèque."],
+    libraryRemoveTitle: [
+        "Retirer ce livre de la bibliothèque ?",
+        "Le titre du dialogue de retrait.",
+    ],
+    libraryRemoveConfirm: [
+        "Le fichier EPUB enregistré reste où il est. Seule son entrée dans la bibliothèque disparaît.",
+        "L’explication du dialogue de retrait.",
+    ],
+    libraryRemoved: ["Retiré de la bibliothèque.", "Confirmation après le retrait d'un livre."],
     settingReduceMotion: [
         "Toujours réduire les animations",
         "Le réglage de réduction des animations.",
@@ -169,7 +294,7 @@ export default {
     ],
     settingDefaultLanguage: ["Langue par défaut", "Le réglage de langue par défaut."],
     settingDefaultLanguageHint: [
-        "Le code ISO 639 utilisé quand un site n'en déclare pas.",
+        "La langue du livre quand le site ne l’indique pas.",
         "Explique le réglage de langue par défaut.",
     ],
     settingRemoveAuthorNotes: [
@@ -183,6 +308,10 @@ export default {
     settingRemoveChapterNumbers: [
         "Supprimer les numéros de chapitre des titres",
         "Le réglage de suppression des numéros de chapitre.",
+    ],
+    settingRemoveChapterNumbersHint: [
+        "Supprime le numéro qu'un site place au début du titre d'un chapitre.",
+        "Explique le réglage de suppression des numéros de chapitre.",
     ],
     settingIncludeTocPage: [
         "Inclure le sommaire comme chapitre",
@@ -216,12 +345,6 @@ export default {
         "Le réglage de préférence pour la résolution la plus élevée.",
     ],
     settingUseSvg: ["Autoriser les images SVG", "Le réglage d'autorisation des images SVG."],
-    settingCompressImages: ["Compresser les images", "Le réglage de compression des images."],
-    settingMaxResolution: ["Résolution maximale", "Le réglage de résolution maximale."],
-    settingMaxResolutionHint: [
-        "En pixels sur le côté le plus long.",
-        "Explique le réglage de résolution maximale.",
-    ],
     settingSkipFailedChapters: [
         "Ignorer les chapitres en échec",
         "Le réglage d'ignorance des chapitres en échec.",
@@ -233,6 +356,14 @@ export default {
     settingRetryOnEmptyPage: [
         "Réessayer sur une page vide",
         "Le réglage de réessai sur une page vide.",
+    ],
+    settingEmptyPageIsError: [
+        "Une page vide est une erreur",
+        "Le réglage qui fait d'une page vide une erreur.",
+    ],
+    settingEmptyPageIsErrorHint: [
+        "Certains sites répondent à une requête bloquée par une page vide. Lorsque cette option est active, cette page est signalée comme un échec au lieu de devenir un chapitre vide.",
+        "Explique le réglage qui fait d'une page vide une erreur.",
     ],
     settingMinimumDelay: ["Délai minimum entre les requêtes", "Le réglage de délai minimum."],
     settingMinimumDelayHint: [
@@ -251,22 +382,6 @@ export default {
         "En millisecondes, en plus du délai minimum.",
         "Explique le réglage de délai supplémentaire par chapitre.",
     ],
-    settingMetadataLookup: [
-        "Rechercher les métadonnées du livre",
-        "Le réglage de recherche des métadonnées.",
-    ],
-    settingMetadataLookupHint: [
-        "Désactivé par défaut. Activé, le titre est vérifié dans une base de données publique.",
-        "Explique le réglage de recherche des métadonnées.",
-    ],
-    settingSendStoryUrl: [
-        "Envoyer l'URL de l'histoire avec la recherche",
-        "Le réglage d'envoi de l'URL de l'histoire.",
-    ],
-    settingSendStoryUrlHint: [
-        "Désactivé par défaut. Sans cela, la recherche ne peut utiliser que le titre.",
-        "Explique le réglage d'envoi de l'URL de l'histoire.",
-    ],
     settingDiagnostics: ["Diagnostics de développement", "Le réglage des diagnostics."],
     settingDiagnosticsHint: [
         "Journalise plus de détails dans la console. Désactivé par défaut.",
@@ -276,17 +391,20 @@ export default {
     onboardingStep1: ["Étape 1 sur 3", "L'étiquette de la première étape d'introduction."],
     onboardingStep2: ["Étape 2 sur 3", "L'étiquette de la deuxième étape d'introduction."],
     onboardingStep3: ["Étape 3 sur 3", "L'étiquette de la troisième étape d'introduction."],
-    onboardingNext: ["Suivant", "Le bouton qui passe à l'étape suivante."],
     onboardingBack: ["Retour", "Le bouton qui revient à l'étape précédente."],
     onboardingFinish: ["Terminer", "Le bouton qui termine l'introduction."],
     onboardingSkip: ["Passer", "Le bouton qui passe l'introduction."],
-    onboardingGetStarted: ["Commencer", "Le bouton qui quitte l'introduction."],
+    onboardingNextSites: [
+        "Suivant : les sites pris en charge",
+        "De l’accueil à l’étape des sites.",
+    ],
+    onboardingNextLook: ["Suivant : choisir l’apparence", "De l’étape des sites à l’apparence."],
     onboardingWelcomeText: [
-        "Transformez n'importe quel roman en ligne en un livre à garder. Pointez-le sur une liste de chapitres, et il crée un EPUB soigné — couverture, sommaire et tout le reste.",
+        "Transformez n'importe quel roman en ligne en un livre à garder. Pointez-le sur une liste de chapitres, et il crée un EPUB soigné, avec couverture et sommaire.",
         "L'explication de la première étape d'introduction.",
     ],
     onboardingWelcomeFootnote: [
-        "Pas de compte. Pas de suivi. Fonctionne hors ligne.",
+        "Pas de compte, aucun suivi. Kintsugi ne parle qu’aux sites que vous lisez.",
         "La note de la première étape d'introduction.",
     ],
     onboardingWhichSite: [
@@ -298,7 +416,7 @@ export default {
         "L'explication de la deuxième étape d'introduction.",
     ],
     onboardingWhichSiteFootnote: [
-        "Pas dans la liste ? Kintsugi peut quand même le lire — vous pouvez créer un sélecteur vous-même.",
+        "Pas dans la liste ? Kintsugi peut quand même le lire si vous lui montrez où sont les chapitres.",
         "La note de la deuxième étape d'introduction.",
     ],
     onboardingMakeItYours: ["Personnalisez-le", "Le titre de la troisième étape d'introduction."],
@@ -312,20 +430,48 @@ export default {
     ],
     errorNetwork: ["Impossible de joindre le site.", "Un échec réseau."],
     errorNoParser: ["Kintsugi ne connaît pas encore ce site.", "Aucun analyseur ne correspond."],
-    errorTimeout: ["Le site a mis trop de temps à répondre.", "Un délai dépassé."],
     errorCancelled: ["Annulé.", "L'utilisateur a annulé l'opération."],
-    errorForbidden: ["Le site a refusé la requête.", "Une erreur HTTP 403."],
-    errorParse: ["La page n'a pas pu être lue.", "La page n'a pas pu être analysée."],
-    errorNoChapters: [
-        "Aucun chapitre trouvé sur cette page.",
-        "La liste des chapitres était vide.",
+    errorHttpStatus: ["Le site a répondu par une erreur.", "Le serveur a renvoyé une erreur HTTP."],
+    errorRateLimited: [
+        "Le site limite les requêtes. Patientez un instant, puis réessayez.",
+        "Le serveur a répondu 429.",
     ],
+    errorChallenge: [
+        "Le site veut vérifier que vous êtes une personne. Ouvrez la page, puis réessayez.",
+        "Le site a présenté une vérification, comme un captcha.",
+    ],
+    errorEmptyChapter: [
+        "Le chapitre est revenu vide. Il est peut-être verrouillé, ou le site a changé.",
+        "Une page de chapitre sans texte.",
+    ],
+    errorStorageFull: [
+        "Il n’y a pas assez de place pour enregistrer ce livre.",
+        "Le stockage du navigateur est plein.",
+    ],
+    errorPermission: [
+        "Kintsugi n’est pas autorisé à lire ce site.",
+        "Le site n’a pas été autorisé.",
+    ],
+    errorBusy: [
+        "Un autre livre est en cours de création. Attendez qu’il se termine, ou annulez-le.",
+        "Un second téléchargement a été lancé.",
+    ],
+    errorParse: ["La page n'a pas pu être lue.", "La page n'a pas pu être analysée."],
     filterSearch: ["Rechercher", "Le champ de recherche du filtre."],
     filterUseRegex: ["Utiliser une expression régulière", "Si la recherche est une regex."],
     filterInclude: ["Inclure", "Ne garde que les chapitres correspondants."],
     filterExclude: ["Exclure", "Retire les chapitres correspondants."],
     filterMatchCount: ["$COUNT$ correspondants", "Combien de chapitres correspondent."],
     filterClear: ["Effacer", "Efface le filtre."],
+    filterNoMatches: [
+        "Aucun chapitre ne correspond à ces filtres",
+        "Quand le filtre masque tous les chapitres.",
+    ],
+    filterClearAll: [
+        "Effacer les filtres",
+        "Retire le filtre pour afficher de nouveau tous les chapitres.",
+    ],
+    optionsNumberRequired: ["Saisissez un nombre.", "Sous un réglage numérique laissé vide."],
     filterApply: ["Appliquer", "Applique le filtre."],
     filterInvalidPattern: ["Ce motif n'est pas valide.", "Quand la regex ne compile pas."],
     siteSelectorBannerTitle: [
@@ -397,4 +543,10 @@ export default {
         "Cette page ressemble à un sommaire, pas à un chapitre. Ouvrez un chapitre et réessayez.",
         "Quand le scanner reconnaît un sommaire.",
     ],
+    commonClose: ["Fermer", "Le libellé d'un bouton qui ferme une boîte de dialogue."],
+    commonDismiss: ["Ignorer", "Le libellé d'un bouton qui ferme une notification."],
+    commonLoading: ["Chargement…", "Pendant qu’une page se charge."],
+    siteSelectorSuggesting: ["Lecture de la page…", "Pendant l’analyse de la page."],
+    siteSelectorTesting: ["Essai des sélecteurs sur la page…", "Pendant le test des sélecteurs."],
+    commonCancel: ["Annuler", "Le libellé d'un bouton qui annule une action."],
 };

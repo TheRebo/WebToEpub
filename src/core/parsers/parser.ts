@@ -1,7 +1,7 @@
 /**
  * The parser contract.
  *
- * This is the interface every one of the 437 site parsers implements, and
+ * This is the interface every one of the 434 site parsers implements, and
  * the single most valuable asset the project owns. It is preserved
  * **verbatim** from the baseline so that every parser keeps working
  * unchanged.
@@ -14,6 +14,22 @@
  * See ADR-0002.
  */
 import { resolveUrl, type ChapterLink } from "../util/dom";
+
+/**
+ * The selectors that name the page's cover image, in order of confidence.
+ *
+ * These are the conventions sites use to point at their own cover: the Open
+ * Graph image, the Twitter card image, and the `link` element some sites
+ * still use. The content element's first image is the fallback, and it is not
+ * in this list, because it is a guess rather than a statement.
+ */
+const COVER_IMAGE_SELECTORS = [
+    'meta[property="og:image"]',
+    'meta[name="og:image"]',
+    'meta[name="twitter:image"]',
+    'meta[property="twitter:image"]',
+    'link[rel="image_src"]',
+];
 
 /** The chapter object a parser produces. */
 export interface WebPage {
@@ -44,6 +60,45 @@ export interface TocProgress {
     showTocProgress(chapters: ChapterLink[]): void;
 }
 
+/**
+ * A progress reporter that records nothing.
+ *
+ * The migrated parsers dereference the reporter they are given without a
+ * guard, because the baseline always passed one. The rewrite's runtime passes
+ * a real one; this is the fallback for the paths that do not — the legacy
+ * loader, the tests, and any future caller that has no UI to report to.
+ *
+ * It exists so that a missing reporter can never turn into a `TypeError`
+ * halfway through building a chapter list.
+ */
+export const NULL_TOC_PROGRESS: TocProgress = {
+    showTocProgress: () => undefined,
+};
+
+/**
+ * Build a parser's chapter list, with a reporter that is always present.
+ *
+ * The migrated parsers dereference the reporter they are given without a
+ * guard, because the baseline always passed one. Calling them through this
+ * function makes the reporter's presence a property of the *runtime* rather
+ * than of each individual parser, so a missing reporter can never turn into a
+ * `TypeError` halfway through building a chapter list.
+ *
+ * This is the only supported way to ask a parser for its chapter list.
+ *
+ * @param parser The parser to ask.
+ * @param dom The table-of-contents page.
+ * @param chapterUrlsUI The reporter, if the caller has one.
+ * @returns The chapters.
+ */
+export async function listChapterUrls<T extends ChapterLink>(
+    parser: Parser,
+    dom: Document,
+    chapterUrlsUI?: TocProgress,
+): Promise<T[]> {
+    return (await parser.getChapterUrls(dom, chapterUrlsUI ?? NULL_TOC_PROGRESS)) as T[];
+}
+
 /** The image collector, which parsers use to gather chapter images. */
 export interface ImageCollector {
     /** Add an image to the collection. */
@@ -67,6 +122,14 @@ export interface ParserServices {
     imageCollector: ImageCollector;
     /** Report progress to the UI. */
     progress?: TocProgress;
+    /**
+     * The user's preferences.
+     *
+     * The legacy parsers read them directly, and a parser that was given the
+     * wrong ones would quietly do the wrong thing — so they are part of the
+     * services rather than something the caller has to remember to apply.
+     */
+    preferences?: unknown;
 }
 
 /** The utility functions a parser may call. */
@@ -125,6 +188,19 @@ export abstract class Parser {
     /** The signal that aborts an in-flight download. */
     signal?: AbortSignal;
 
+    /**
+     * The URL of the story the parser was chosen for.
+     *
+     * A parser is chosen once, for the story's own page, and then used for
+     * every chapter of that story. The chapters are not always served from
+     * the same host as the story — a site may serve them from a mirror, a
+     * subdomain or a CDN — so the story's address is kept here, for the
+     * parsers that need to know where the book came from.
+     *
+     * The registry sets it when it builds the parser.
+     */
+    storyUrl?: string;
+
     constructor(services: ParserServices) {
         this.services = services;
     }
@@ -150,11 +226,26 @@ export abstract class Parser {
      * Extract the chapter list from the table of contents.
      *
      * The one method every parser must implement.
+     *
+     * The reporter is optional in the *signature* because a parser that has
+     * nothing to report can ignore it, but the runtime always supplies one —
+     * see {@link NULL_TOC_PROGRESS} for why.
      */
     abstract getChapterUrls(
         dom: Document,
         chapterUrlsUI?: TocProgress,
     ): Promise<ChapterLink[]> | ChapterLink[];
+
+    /**
+     * The reporter to use when a caller has none.
+     *
+     * The migrated parsers assume the reporter is there. Rather than patch
+     * 434 generated files, the compat base class normalises the argument at
+     * the boundary, so `chapterUrlsUI` is never `undefined` inside a parser.
+     */
+    protected get tocProgress(): TocProgress {
+        return NULL_TOC_PROGRESS;
+    }
 
     /**
      * Find the element holding the chapter's content.
@@ -211,10 +302,28 @@ export abstract class Parser {
     /**
      * The cover image URL.
      *
+     * The page's own statement of what its cover is comes first: the Open
+     * Graph image, then the Twitter card image, then a `link` that names the
+     * page's image. Those are put on the page by whoever made the page, and
+     * they are right far more often than a guess.
+     *
+     * The guess comes after: the first image in the content element. That is
+     * the original's rule, and it is a good one for the sites that put the
+     * cover at the top of the chapter — but it is a guess, and a page whose
+     * content opens with an advert would give the advert.
+     *
      * The URL is resolved against the page's base, because a relative `src` is
      * useless to the downloader: it has no idea what the page's address was.
      */
     findCoverImageUrl(dom: Document): string | null {
+        for (const selector of COVER_IMAGE_SELECTORS) {
+            const element = dom.querySelector(selector);
+            const source = element?.getAttribute("content") ?? element?.getAttribute("href");
+            if (!source) continue;
+            const resolved = resolveUrl(source, dom.baseURI);
+            if (resolved) return resolved;
+        }
+
         const content = this.findContent(dom);
         const image = content?.querySelector("img");
         const source = image?.getAttribute("src");
@@ -440,19 +549,22 @@ export abstract class Parser {
         moreChapterTextUrl: (dom: Document) => string | null,
     ): Promise<Document> {
         const first = await this.services.fetchHtml(url, { signal: this.signal });
-        let dom = first.dom;
+        // The **first** page is the accumulator. Every later page's content is
+        // merged into it, because that is the document the caller will read.
+        // Returning the last page's document instead would throw away
+        // everything that was merged.
+        const dom = first.dom;
+        const target = this.findContent(dom);
         let count = 2;
         let nextUrl = moreChapterTextUrl(dom);
 
         while (nextUrl !== null && count < 1000) {
             const result = await this.services.fetchHtml(nextUrl, { signal: this.signal });
             const content = this.findContent(result.dom);
-            if (content) {
-                const target = this.findContent(dom);
-                if (target) this.services.util.moveChildElements(content, target);
+            if (content && target) {
+                this.services.util.moveChildElements(content, target);
             }
-            dom = result.dom;
-            nextUrl = moreChapterTextUrl(dom);
+            nextUrl = moreChapterTextUrl(result.dom);
             count += 1;
         }
         return dom;

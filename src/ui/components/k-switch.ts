@@ -61,6 +61,15 @@ input:focus-visible + .track { box-shadow: var(--ring); }
 :host([disabled]) .track { background: var(--surface-sunken); }
 :host([disabled]) .thumb { background: var(--border-strong); }
 
+/*
+ * The in-app "Reduce motion" setting.
+ *
+ * The document's own rule cannot pierce the shadow boundary, so the base
+ * class mirrors the preference onto the host.
+ */
+:host([data-reduced-motion]) .track,
+:host([data-reduced-motion]) .thumb { transition: none; }
+
 @media (prefers-reduced-motion: reduce) {
     .track, .thumb { transition: none; }
 }
@@ -68,7 +77,7 @@ input:focus-visible + .track { box-shadow: var(--ring); }
 
 export class KSwitch extends KComponent {
     static override styles = STYLES;
-    static override observedAttributes = ["checked", "disabled", "label"];
+    static override observedAttributes = ["checked", "disabled", "label", "aria-label"];
 
     private input: HTMLInputElement | undefined;
 
@@ -82,6 +91,15 @@ export class KSwitch extends KComponent {
         }
         this.input.checked = this.hasAttribute("checked");
         this.input.disabled = this.hasAttribute("disabled");
+
+        // The accessible name is mirrored onto the input, because the input is
+        // the control a screen reader reaches: a name on the host alone would
+        // label the wrapper, not the switch. A switch whose label is drawn
+        // outside the component — a row of settings, say — supplies the name
+        // this way.
+        const ariaLabel = this.getAttribute("aria-label");
+        if (ariaLabel) this.input.setAttribute("aria-label", ariaLabel);
+        else this.input.removeAttribute("aria-label");
 
         // The label lives in a shadow node that is built once, so it has to be
         // updated on every render — otherwise a switch whose `label` attribute

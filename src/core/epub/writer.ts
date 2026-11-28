@@ -12,6 +12,8 @@
 import {
     CONTAINER_PATH,
     CSS_PATH,
+    MIMETYPE_CONTENT,
+    MIMETYPE_PATH,
     NAV_PATH,
     NCX_PATH,
     OPF_PATH,
@@ -21,6 +23,7 @@ import {
     escapeXml,
     escapeXmlAttribute,
     mediaTypeForPath,
+    opfVersionAttribute,
     XHTML_MEDIA_TYPE,
 } from "./document";
 
@@ -98,9 +101,29 @@ export function buildPackageXml(document: EpubDocument): string {
     const { metadata, manifest, spine } = document.package;
     const uniqueIdentifier = document.package.uniqueIdentifier;
 
+    // The creator's role is expressed differently in the two versions. EPUB 2
+    // uses an `opf:role` attribute, which EPUB 3's schema does not allow at
+    // all; EPUB 3 refines the creator with a `meta` element instead.
+    const isEpub3 = document.version === 3;
     const creators = metadata.creators
-        .map((creator) => `    <dc:creator opf:role="aut">${escapeXml(creator)}</dc:creator>`)
+        .map((creator, index) => {
+            const id = `creator-${index + 1}`;
+            const role = isEpub3
+                ? `<dc:creator id="${escapeXmlAttribute(id)}">${escapeXml(creator)}</dc:creator>`
+                : `<dc:creator opf:role="aut">${escapeXml(creator)}</dc:creator>`;
+            return role;
+        })
         .join("\n");
+
+    // The refinement that gives the creator its role in an EPUB 3 book.
+    const creatorRoles = isEpub3
+        ? metadata.creators
+              .map(
+                  (_, index) =>
+                      `    <meta refines="#creator-${index + 1}" property="role" scheme="marc:relators">aut</meta>`,
+              )
+              .join("\n")
+        : "";
 
     const subjects = metadata.subjects
         .map((subject) => `    <dc:subject>${escapeXml(subject)}</dc:subject>`)
@@ -108,9 +131,13 @@ export function buildPackageXml(document: EpubDocument): string {
 
     const manifestXml = manifest
         .map((item) => {
-            const properties = item.properties
-                ? ` properties="${escapeXmlAttribute(item.properties)}"`
-                : "";
+            // The `properties` attribute is an EPUB 3 addition. EPUB 2's
+            // schema has no such attribute, and a validator rejects the
+            // package document outright when it finds one.
+            const properties =
+                isEpub3 && item.properties
+                    ? ` properties="${escapeXmlAttribute(item.properties)}"`
+                    : "";
             return `    <item id="${escapeXmlAttribute(item.id)}" href="${escapeXmlAttribute(item.href)}" media-type="${escapeXmlAttribute(item.mediaType)}"${properties}/>`;
         })
         .join("\n");
@@ -121,6 +148,13 @@ export function buildPackageXml(document: EpubDocument): string {
             return `    <itemref idref="${escapeXmlAttribute(item.idRef)}"${linear}/>`;
         })
         .join("\n");
+
+    // The spine names the NCX. EPUB 3 deprecated the attribute in favour of
+    // the navigation document, but the specification still requires it for a
+    // book that carries an NCX, and a validator rejects the book without it.
+    const tocAttribute = document.package.tocId
+        ? ` toc="${escapeXmlAttribute(document.package.tocId)}"`
+        : "";
 
     const coverMeta = metadata.coverId
         ? `    <meta name="cover" content="${escapeXmlAttribute(metadata.coverId)}"/>\n`
@@ -134,17 +168,33 @@ export function buildPackageXml(document: EpubDocument): string {
         : "";
     const date = metadata.date ? `    <dc:date>${escapeXml(metadata.date)}</dc:date>\n` : "";
 
+    // The modification date is required in an EPUB 3 book, exactly once. It
+    // records when the book was generated, which is what a reader's library
+    // uses to decide whether an update has happened.
+    //
+    // It must not be empty. An empty element is not a valid date, and a
+    // validator rejects the book — which happens whenever a book is read
+    // from somewhere that did not carry the date, and written again.
+    const modifiedValue = metadata.modified ?? new Date().toISOString().replace(/\.\d+Z$/, "Z");
+    const modified = isEpub3
+        ? `    <meta property="dcterms:modified">${escapeXml(modifiedValue)}</meta>\n`
+        : "";
+
+    // EPUB 2's package element has no `xml:lang` attribute: the language is
+    // carried by the `dc:language` element alone.
+    const languageAttribute = isEpub3 ? ` xml:lang="${escapeXmlAttribute(metadata.language)}"` : "";
+
     return `<?xml version="1.0" encoding="UTF-8"?>
-<package xmlns="http://www.idpf.org/2007/opf" version="${document.version}" unique-identifier="${escapeXmlAttribute(uniqueIdentifier)}" xml:lang="${escapeXmlAttribute(metadata.language)}">
+<package xmlns="http://www.idpf.org/2007/opf" version="${opfVersionAttribute(document.version)}" unique-identifier="${escapeXmlAttribute(uniqueIdentifier)}"${languageAttribute}>
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
     <dc:identifier id="${escapeXmlAttribute(uniqueIdentifier)}">${escapeXml(metadata.identifier)}</dc:identifier>
     <dc:title>${escapeXml(metadata.title)}</dc:title>
     <dc:language>${escapeXml(metadata.language)}</dc:language>
-${creators}${publisher}${description}${subjects}${date}${coverMeta}  </metadata>
+${creators}${creatorRoles ? `${creatorRoles}\n` : ""}${publisher}${description}${subjects}${date}${modified}${coverMeta}  </metadata>
   <manifest>
 ${manifestXml}
   </manifest>
-  <spine>
+  <spine${tocAttribute}>
 ${spineXml}
   </spine>
 </package>
@@ -153,7 +203,27 @@ ${spineXml}
 
 /** The NCX document, for EPUB 2 readers. */
 export function buildNcxXml(document: EpubDocument): string {
-    const points = document.toc.map((point, index) => buildNcxPoint(point, index + 1)).join("\n");
+    // The navigation points are numbered by a counter rather than by an
+    // arithmetic rule. The rule used to be `id * 100 + index + 1` for a
+    // child, which collides as soon as the book has more than a hundred
+    // chapters: the hundred-and-first chapter's own number is the same as
+    // the first chapter's first child's number. A collision makes the
+    // document invalid, and a validator says so.
+    //
+    // The two numbers are counted separately, because they mean different
+    // things. The identifier has to be unique; the play order is the order
+    // the reader meets the content in.
+    let id = 0;
+    let playOrder = 0;
+    const points = document.toc
+        .map((point) =>
+            buildNcxPoint(
+                point,
+                () => (id += 1),
+                () => (playOrder += 1),
+            ),
+        )
+        .join("\n");
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
@@ -171,27 +241,48 @@ ${points}
 `;
 }
 
-/** One navigation point in the NCX. */
-function buildNcxPoint(point: NavigationPoint, id: number): string {
+/**
+ * One navigation point in the NCX.
+ *
+ * @param point The point to write.
+ * @param nextId A function that hands out the next unique identifier.
+ * @param nextPlayOrder A function that hands out the next play order.
+ */
+function buildNcxPoint(
+    point: NavigationPoint,
+    nextId: () => number,
+    nextPlayOrder: () => number,
+): string {
+    const id = nextId();
+    const order = nextPlayOrder();
     const children =
         point.children.length > 0
-            ? `\n${point.children.map((child, index) => buildNcxPoint(child, id * 100 + index + 1)).join("\n")}`
+            ? `\n${point.children.map((child) => buildNcxPoint(child, nextId, nextPlayOrder)).join("\n")}`
             : "";
-    return `    <navPoint id="navPoint-${id}" playOrder="${id}">
+    return `    <navPoint id="navPoint-${id}" playOrder="${order}">
       <navLabel><text>${escapeXml(point.label)}</text></navLabel>
       <content src="${escapeXmlAttribute(point.src)}"/>${children}
     </navPoint>`;
 }
 
-/** The EPUB 3 navigation document. */
-export function buildNavXml(document: EpubDocument): string {
+/**
+ * The EPUB 3 navigation document.
+ *
+ * @param document The EPUB document.
+ * @param stylesheet The relative reference to the stylesheet. The navigation
+ *   document sits in the same directory as the stylesheet, so it links it by
+ *   name.
+ */
+export function buildNavXml(document: EpubDocument, stylesheet = "styles.css"): string {
     const listItems = document.toc
         .map((point) => {
+            // A nested entry must sit in its own <ol>; a bare <li> inside an
+            // <li> is not a valid navigation document.
             const children =
                 point.children.length > 0
-                    ? `\n${point.children.map((child) => `      <li><a href="${escapeXmlAttribute(child.src)}">${escapeXml(child.label)}</a></li>`).join("\n")}`
+                    ? `\n      <ol>\n${point.children.map((child) => `        <li><a href="${escapeXmlAttribute(child.src)}">${escapeXml(child.label)}</a></li>`).join("\n")}\n      </ol>`
                     : "";
-            return `    <li><a href="${escapeXmlAttribute(point.src)}">${escapeXml(point.label)}</a>${children ? `\n${children}` : ""}</li>`;
+            return `    <li><a href="${escapeXmlAttribute(point.src)}">${escapeXml(point.label)}</a>${children}</li>`;
         })
         .join("\n");
 
@@ -201,6 +292,7 @@ export function buildNavXml(document: EpubDocument): string {
   <head>
     <title>${escapeXml(document.package.metadata.title)}</title>
     <meta charset="utf-8"/>
+    <link rel="stylesheet" type="text/css" href="${escapeXmlAttribute(stylesheet)}"/>
   </head>
   <body>
     <nav epub:type="toc" id="toc">
@@ -214,15 +306,54 @@ ${listItems}
 `;
 }
 
-/** Wrap a body fragment in a complete XHTML document. */
-export function buildXhtml(title: string, bodyHtml: string, language = "en"): string {
+/**
+ * Wrap a body fragment in a complete XHTML document.
+ *
+ * The two EPUB versions want different dialects of XHTML, and a reader that
+ * validates its input refuses a book that mixes them. EPUB 3 uses XHTML 5,
+ * with the `<!DOCTYPE html>` declaration and a `<meta charset>` element.
+ * EPUB 2 uses XHTML 1.1, which has neither: it wants the XHTML 1.1 public
+ * doctype, and it wants the character set declared with an `http-equiv`
+ * `<meta>` element instead.
+ *
+ * @param title The document's title.
+ * @param bodyHtml The body's markup.
+ * @param language The document's language.
+ * @param stylesheet The relative reference to the stylesheet. It has to be
+ *   relative to the file being written, so a chapter in `OEBPS/text` links
+ *   `../styles.css` while the navigation document links `styles.css`.
+ * @param version The EPUB version the document is written for.
+ */
+export function buildXhtml(
+    title: string,
+    bodyHtml: string,
+    language = "en",
+    stylesheet = "styles.css",
+    version: 2 | 3 = 3,
+): string {
+    if (version === 2) {
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${escapeXmlAttribute(language)}">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>${escapeXml(title)}</title>
+    <link rel="stylesheet" type="text/css" href="${escapeXmlAttribute(stylesheet)}"/>
+  </head>
+  <body>
+${bodyHtml}
+  </body>
+</html>
+`;
+    }
+
     return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="${escapeXmlAttribute(language)}" lang="${escapeXmlAttribute(language)}">
   <head>
     <meta charset="utf-8"/>
     <title>${escapeXml(title)}</title>
-    <link rel="stylesheet" type="text/css" href="styles.css"/>
+    <link rel="stylesheet" type="text/css" href="${escapeXmlAttribute(stylesheet)}"/>
   </head>
   <body>
 ${bodyHtml}
@@ -234,6 +365,16 @@ ${bodyHtml}
 /** The files an EPUB document consists of. */
 export function collectFiles(document: EpubDocument): EpubFile[] {
     const files: EpubFile[] = [];
+
+    // The `mimetype` file comes first, because the OCF specification requires
+    // it to be the very first entry in the archive, stored uncompressed, so
+    // that a reader can identify the file format from the first few bytes
+    // without unpacking it.
+    files.push({
+        path: MIMETYPE_PATH,
+        content: MIMETYPE_CONTENT,
+        mediaType: MIMETYPE_CONTENT,
+    });
 
     files.push({
         path: CONTAINER_PATH,

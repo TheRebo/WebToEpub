@@ -26,6 +26,8 @@
 }
 
 .workbench-title__name {
+    margin: 0;
+    line-height: var(--leading-snug);
     font-size: var(--text-md);
     font-weight: var(--weight-medium);
     color: var(--text);
@@ -117,7 +119,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-5);
-    padding: var(--space-5);
+    padding: 0 var(--space-5) var(--space-5);
 }
 
 .workbench-panel__summary {
@@ -125,6 +127,9 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-3);
+    min-height: 44px;
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-lg);
     list-style: none;
     cursor: pointer;
     user-select: none;
@@ -138,12 +143,14 @@
     color: var(--accent-text);
 }
 
+/* A panel's name is a heading, in sentence case at reading size: an 11 px
+   tracked-out capital label is harder to read and says nothing more. */
 .workbench-panel__title {
-    font-size: var(--text-2xs);
+    margin: 0;
+    font-size: var(--text-sm);
     font-weight: var(--weight-semibold);
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: var(--text-muted);
+    line-height: var(--leading-snug);
+    color: var(--text);
     transition: color var(--dur-fast) var(--ease-out);
 }
 
@@ -202,14 +209,19 @@ details[open] > .workbench-panel__summary .workbench-panel__chevron {
 
 select.story-field__input {
     padding-right: 30px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c7466' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    /* Two gradients draw the chevron, so it takes the theme's colour. */
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%),
+        linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
     background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 16px;
+    background-position:
+        right 15px center,
+        right 10px center;
+    background-size: 5px 5px;
 }
 
 .story-field__input:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     border-color: var(--accent);
     box-shadow: var(--ring);
 }
@@ -221,19 +233,45 @@ select.story-field__input {
     cursor: not-allowed;
 }
 
+/* A field and the button that acts on it. The row holds the field's label
+   too, so the button sits on the input's line, not the middle of both. */
 .story-field__row {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
     gap: var(--space-2);
 }
 
+/*
+ * A group of a field and the note under it. The note is a hint, not an error,
+ * so it uses the quiet text colour and the smallest type.
+ */
+.story-field__group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.story-field__group .story-field {
+    flex: 1;
+    min-width: 0;
+}
+
+.story-field__hint {
+    margin: 0;
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
+    color: var(--text-muted);
+}
+
 .story-field__reset {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: var(--control-height-md);
+    height: var(--control-height-md);
     padding: 0;
     border: none;
     border-radius: var(--radius-sm);
@@ -251,7 +289,7 @@ select.story-field__input {
 }
 
 .story-field__reset:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--ring);
 }
 
@@ -345,7 +383,7 @@ select.story-field__input {
 }
 
 .workbench-link:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--ring);
     border-radius: var(--radius-xs);
 }
@@ -462,6 +500,23 @@ select.story-field__input {
 }
 .status-bar[data-variant="danger"] .status-bar__icon {
     color: var(--danger);
+}
+.status-bar[data-variant="neutral"] .status-bar__icon {
+    color: var(--text-muted);
+}
+
+/* A finished job swaps its counters for a sentence; the counters' own
+   display rules would otherwise beat the hidden attribute. */
+.status-bar__body > [hidden] {
+    display: none;
+}
+
+.status-bar__detail {
+    color: var(--text-secondary);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .status-bar__body {
@@ -588,7 +643,7 @@ select.story-field__input {
 }
 
 .filter-body .story-field__input:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     border-color: var(--accent);
     box-shadow: var(--ring);
 }
@@ -652,6 +707,74 @@ select.story-field__input {
     font-size: var(--text-sm);
     line-height: var(--leading-normal);
     color: var(--text);
+}
+
+/* --- The site-access banner -------------------------------------------- */
+
+/*
+ * The banner says "I cannot read this site yet". It is the one thing the user
+ * has to do before anything else can happen, so it is the one thing the
+ * workbench says plainly — with the host name, so there is no doubt about
+ * which site is being asked for.
+ *
+ * It is warmer than the error banner: nothing has gone wrong, and the way
+ * forward is a button rather than a retry.
+ */
+.access-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+    background: var(--warning-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    flex-shrink: 0;
+}
+
+.access-banner[hidden] {
+    display: none;
+}
+
+.access-banner__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--warning);
+}
+
+.access-banner__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.access-banner__title {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-snug);
+    color: var(--text);
+}
+
+.access-banner__text {
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
+    color: var(--text-secondary);
+}
+
+.access-banner__host {
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
+    font-weight: var(--weight-semibold);
+    color: var(--text);
+    word-break: break-all;
 }
 
 /* --- The site-selector banner ----------------------------------------- */
@@ -757,7 +880,7 @@ select.story-field__input {
 }
 
 .selector-field__input:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     border-color: var(--focus-ring);
     box-shadow: var(--ring);
 }
@@ -820,4 +943,16 @@ select.story-field__input {
     .k-app-bar {
         padding: 0 var(--space-4);
     }
+}
+
+.option-rows__hint {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.workbench-actions__hint {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    white-space: nowrap;
 }

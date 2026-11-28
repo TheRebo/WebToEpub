@@ -1,7 +1,7 @@
 /**
  * The legacy `util` shim.
  *
- * The 437 site parsers that are the product's core asset are legacy
+ * The 434 site parsers that are the product's core asset are legacy
  * JavaScript. They call a single ambient global — `util` — with around
  * ninety helper functions, most of which are untyped and several of which
  * are surprising.
@@ -1969,7 +1969,7 @@ function sanitizeNode(dirty: Node): Node | null {
 /**
  * The legacy `util` object.
  *
- * The 437 legacy parsers call `util.<name>(…)`; this is that object.
+ * The 434 legacy parsers call `util.<name>(…)`; this is that object.
  */
 export const util: LegacyUtil = {
     XMLNS,

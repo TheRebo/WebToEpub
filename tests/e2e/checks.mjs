@@ -60,7 +60,12 @@ function assertEqual(actual, expected, message) {
     }
 }
 
-/** Sleep. */
+/**
+ * Sleep.
+ *
+ * @param {number} ms How long to sleep.
+ * @returns {Promise<void>} A promise that resolves after the delay.
+ */
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -100,6 +105,28 @@ async function writeAppearance(harness, appearance) {
 }
 
 /**
+ * Mark the onboarding as finished.
+ *
+ * A fresh install greets the user with the welcome state, and every check
+ * after this one is about what a *returning* user sees. Without this, the
+ * popup would answer every check with the welcome card — which is right, and
+ * useless for testing anything else.
+ *
+ * @param {import("../../tools/e2e-harness.mjs").Harness} harness The harness.
+ * @param {boolean} complete Whether the onboarding is finished.
+ */
+async function setOnboardingComplete(harness, complete) {
+    await harness.asyncScript(`
+        const api = globalThis.browser ?? globalThis.chrome;
+        const stored = await api.storage.local.get("kintsugi.settings");
+        const settings = stored["kintsugi.settings"] ?? {};
+        settings.onboardingComplete = ${complete ? "true" : "false"};
+        await api.storage.local.set({ "kintsugi.settings": settings });
+        return true;
+    `);
+}
+
+/**
  * Run the checks.
  *
  * @param {import("../../tools/e2e-harness.mjs").Harness} harness The harness.
@@ -114,6 +141,27 @@ export async function run(harness) {
     console.log("The popup");
 
     await harness.setViewport(400, 580);
+
+    // The first run: the popup greets the user before it does anything else.
+    await harness.goto("popup.html");
+    await sleep(1200);
+
+    await check("welcomes a first-time user", async () => {
+        const result = await harness.script(`
+            return JSON.stringify({
+                state: document.body.dataset.state,
+                text: document.querySelector(".popup-empty-text")?.textContent ?? "",
+                button: document.querySelector(".popup-primary")?.textContent ?? "",
+            });
+        `);
+        const data = JSON.parse(result);
+        assertEqual(data.state, "welcome", "The popup should greet a first-time user.");
+        assert(data.text.length > 0, "The welcome state has no explanation.");
+        assert(data.button.length > 0, "The welcome state offers no way in.");
+    });
+
+    // Everything after this is about the returning user.
+    await setOnboardingComplete(harness, true);
     await harness.goto("popup.html");
     await sleep(1500);
 
@@ -129,7 +177,7 @@ export async function run(harness) {
         assertEqual(data.wordmark, "Kintsugi", "The wordmark is missing.");
         assert(data.hasSettings, "The settings button is missing.");
         assert(
-            ["loading", "story", "no-story", "unsupported", "running", "error"].includes(
+            ["loading", "story", "no-story", "unsupported", "access", "running", "error"].includes(
                 data.state,
             ),
             `The popup reports an unknown state ("${data.state}").`,
@@ -155,6 +203,10 @@ export async function run(harness) {
     });
 
     await check("shows the story when the active tab is a novel", async () => {
+        // The extension asks for a site at a time, so the fixture's host has to
+        // be allowed before the extension can read anything.
+        await harness.grantHostAccess("http://localhost/*");
+
         // The popup reads the *active* tab, so a fixture page has to be the
         // active one. Marionette activates the tab it switches to, so the
         // popup cannot simply look at a background tab.
@@ -254,6 +306,43 @@ export async function run(harness) {
         );
     });
 
+    // The worker's selector tester fetches a page through the same fetch
+    // layer as a download, so it shows what a chapter fetch would see.
+    const testSelectors = async (path, contentCss, titleCss) =>
+        JSON.parse(
+            await harness.asyncScript(`
+                const api = globalThis.browser ?? globalThis.chrome;
+                const response = await api.runtime.sendMessage({
+                    type: "site-selectors:test",
+                    payload: {
+                        url: ${JSON.stringify(harness.fixtureOrigin)} + ${JSON.stringify(path)},
+                        contentCss: ${JSON.stringify(contentCss)},
+                        titleCss: ${JSON.stringify(titleCss)},
+                        removeCss: "",
+                    },
+                    id: "e2e-selectors-" + Math.random(),
+                });
+                return JSON.stringify(response?.result ?? response);
+            `),
+        );
+
+    await check("follows a chapter that has moved to a new address", async () => {
+        // A manual redirect is opaque to an extension; the browser has to
+        // follow it, and the private-network rule has to let a host the user
+        // allowed through (ADR-0045).
+        const result = await testSelectors("/moved/3", ".chapter-content", ".chapter-title");
+        assert(result.ok === true, `The moved chapter was not read (${JSON.stringify(result)}).`);
+        assert(
+            result.titleText.includes("3rd Seal"),
+            `The moved chapter's title is wrong (got "${result.titleText}").`,
+        );
+    });
+
+    await check("reads a page in the encoding it declares", async () => {
+        const result = await testSelectors("/gbk", "p", "title");
+        assertEqual(result.titleText, "中文", "The GBK page was not decoded as GBK.");
+    });
+
     await check("selects, clears and inverts the selection", async () => {
         const selectedCount = async () =>
             Number(
@@ -263,6 +352,12 @@ export async function run(harness) {
                 `),
             );
 
+        /**
+         * Click a button in the chapter list's toolbar.
+         *
+         * @param {number} index The button's index.
+         * @returns {Promise<void>} A promise that resolves once it is clicked.
+         */
         const click = async (index) => {
             await harness.script(`
                 const toolbar = document.querySelector(".chapters-toolbar");
@@ -402,9 +497,10 @@ export async function run(harness) {
         await sleep(400);
         const empty = await harness.script(`
             const noResults = document.querySelector(".options-no-results");
+            const groups = Array.from(document.querySelectorAll(".options-group"));
             return JSON.stringify({
                 visible: noResults ? !noResults.hidden : false,
-                groups: document.querySelectorAll(".options-group").length,
+                groups: groups.filter((group) => !group.hidden).length,
             });
         `);
         const data = JSON.parse(empty);
@@ -418,6 +514,68 @@ export async function run(harness) {
             return true;
         `);
         await sleep(300);
+    });
+
+    await check("gives the library a heading and an import control", async () => {
+        await harness.goto("options.html#library");
+        await sleep(1200);
+        const state = await harness.script(`
+            const panel = document.querySelector("#library");
+            const heading = panel?.querySelector(".options-library-title");
+            const button = panel?.querySelector('k-button[data-action="import-library"]');
+            const input = panel?.querySelector('input[data-action="import-library"]');
+            return JSON.stringify({
+                panelVisible: panel ? !panel.hidden : false,
+                heading: heading?.textContent ?? "",
+                button: button?.textContent ?? "",
+                inputType: input?.type ?? "",
+            });
+        `);
+        const data = JSON.parse(state);
+        assert(data.panelVisible, "The library panel did not open.");
+        assert(data.heading.length > 0, "The library panel has no heading.");
+        assert(data.button.length > 0, "The library panel has no import button.");
+        assertEqual(data.inputType, "file", "The import control is not a file input.");
+    });
+
+    await check("keeps the tab in the URL", async () => {
+        await harness.goto("options.html");
+        await sleep(1000);
+
+        // Choosing a tab puts it in the URL, so the page can be linked to.
+        await harness.script(`
+            const button = document.querySelector('.options-nav-link[data-group="site-access"]');
+            button.click();
+            return true;
+        `);
+        await sleep(600);
+        const after = await harness.script(`
+            return JSON.stringify({
+                hash: window.location.hash,
+                selected: document.querySelector(".options-nav-link[aria-selected='true']")?.dataset.group ?? "",
+                panelVisible: document.querySelector("#site-access") ? !document.querySelector("#site-access").hidden : false,
+            });
+        `);
+        const data = JSON.parse(after);
+        assertEqual(data.hash, "#site-access", "The tab was not written to the URL.");
+        assertEqual(data.selected, "site-access", "The URL and the tab disagree.");
+        assert(data.panelVisible, "The site-access panel did not open.");
+
+        // The back button walks back through the tabs.
+        await harness.script(`
+            window.history.back();
+            return true;
+        `);
+        await sleep(600);
+        const back = await harness.script(`
+            return JSON.stringify({
+                hash: window.location.hash,
+                selected: document.querySelector(".options-nav-link[aria-selected='true']")?.dataset.group ?? "",
+            });
+        `);
+        const backData = JSON.parse(back);
+        assertEqual(backData.selected, "appearance", "The back button did not go back a tab.");
+        assert(backData.hash !== "#site-access", "The URL did not go back a tab.");
     });
 
     await check("applies a theme change live", async () => {
@@ -481,9 +639,7 @@ export async function run(harness) {
 
     await check("applies the accent the user picks", async () => {
         await harness.script(`
-            const groups = document.querySelectorAll("k-radio-group");
-            const accent = groups[1];
-            const radio = accent.shadowRoot.querySelector('input[value="plum"]');
+            const radio = document.querySelector('input[data-path="appearance.accent"][value="plum"]');
             radio.click();
             return true;
         `);

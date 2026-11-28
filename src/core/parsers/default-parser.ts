@@ -58,10 +58,13 @@ const TITLE_SELECTORS = [
 
 /** The default parser. */
 export class DefaultParser extends Parser {
-    /** The selectors saved for the host name, if there are any. */
-    #saved = null as ReturnType<typeof siteSelectors.peek>;
-    /** Whether the saved selectors have been looked up yet. */
-    #savedResolved = false;
+    /**
+     * The selectors saved for a host name, cached.
+     *
+     * The cache is keyed by host name, because a book may be read from more
+     * than one host.
+     */
+    #saved = new Map<string, ReturnType<typeof siteSelectors.peek>>();
 
     constructor(services: ConstructorParameters<typeof Parser>[0]) {
         super(services);
@@ -166,16 +169,30 @@ export class DefaultParser extends Parser {
     /**
      * The selectors saved for the page's host name.
      *
-     * The lookup is cached per parser, because the same parser instance
-     * handles every chapter of a book and the answer cannot change while the
-     * download runs.
+     * The lookup is keyed by the host of the document being read, not by the
+     * host of the first document that happened to arrive. A site may serve
+     * its chapters from another host than its story page — a mirror, a
+     * subdomain, a CDN — and the selectors the user saved belong to the
+     * story, so the story's host is the fallback.
+     *
+     * The result is cached per host, because the same parser instance
+     * handles every chapter of a book and the answer cannot change while
+     * the download runs.
      */
     #savedSelectors(dom: Document): ReturnType<typeof siteSelectors.peek> {
-        if (this.#savedResolved) return this.#saved;
-        const host = hostNameOf(dom.baseURI);
-        this.#saved = siteSelectors.peek(host);
-        this.#savedResolved = true;
-        return this.#saved;
+        const hosts = [hostNameOf(dom.baseURI)];
+        const storyHost = this.storyUrl ? hostNameOf(this.storyUrl) : "";
+        if (storyHost !== "" && !hosts.includes(storyHost)) hosts.push(storyHost);
+
+        for (const host of hosts) {
+            if (host === "") continue;
+            const cached = this.#saved.get(host);
+            if (cached !== undefined) return cached;
+            const found = siteSelectors.peek(host);
+            this.#saved.set(host, found);
+            if (found) return found;
+        }
+        return null;
     }
 }
 

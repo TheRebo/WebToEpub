@@ -48,16 +48,18 @@ body {
  *
  * The ring is never removed. `:focus-visible` is used rather than `:focus`
  * so a mouse user does not see a ring on every click, but a keyboard user
- * always sees one.
+ * always sees one. The ring is a shadow so it follows the element's corners;
+ * the transparent outline beside it is what Windows High Contrast draws,
+ * since forced colours remove every shadow.
  */
-:focus {
+:focus:not(:focus-visible) {
     outline: none;
 }
 
 :focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
     box-shadow: var(--ring);
-    border-radius: var(--radius-sm);
 }
 
 /* Content that only assistive technology should see. */

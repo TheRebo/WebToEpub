@@ -62,10 +62,6 @@ export interface ImageSettings {
     preferHighestResolution: boolean;
     /** Whether to allow SVG images. */
     useSvg: boolean;
-    /** Whether to compress images. */
-    compress: boolean;
-    /** The maximum resolution, in pixels. */
-    maxResolution: number;
 }
 
 /** The behaviour settings. */
@@ -80,14 +76,15 @@ export interface BehaviourSettings {
     maxChapters: number;
     /** The delay between chapters, in milliseconds. */
     delayPerChapter: number;
-}
-
-/** The privacy settings. */
-export interface PrivacySettings {
-    /** Whether to look up book metadata. */
-    metadataLookup: boolean;
-    /** Whether to send the story URL to the metadata service. */
-    sendStoryUrl: boolean;
+    /**
+     * Whether a page with no content is treated as an error.
+     *
+     * Some sites answer a blocked request with an empty page rather than a
+     * status code. When this is on, such a page is reported as a failure, so
+     * the user is told the site refused the request instead of being given a
+     * blank chapter.
+     */
+    emptyPageIsError: boolean;
 }
 
 /** The advanced settings. */
@@ -103,11 +100,28 @@ export interface Settings {
     epub: EpubSettings;
     images: ImageSettings;
     behaviour: BehaviourSettings;
-    privacy: PrivacySettings;
     advanced: AdvancedSettings;
     /** Whether the onboarding has been completed. */
     onboardingComplete: boolean;
 }
+
+/**
+ * A change to the settings.
+ *
+ * Every group may be left out, and every group that is given may itself be
+ * partial: `update({ story: { defaultLanguage: "fr" } })` changes the language
+ * and leaves the rest of the story settings alone.
+ *
+ * This matters. A caller that had to hand over a whole group had to build it
+ * from a snapshot it had read earlier, and a snapshot that has gone stale
+ * carries the old values of everything it did not mean to change. The
+ * workbench's Save button wrote the whole story group from its snapshot, so
+ * saving the language could quietly undo the option the user had toggled a
+ * moment earlier.
+ */
+export type SettingsPatch = {
+    [K in keyof Settings]?: Partial<Settings[K]>;
+};
 
 /** The default settings. */
 export const DEFAULT_SETTINGS: Settings = {
@@ -135,8 +149,6 @@ export const DEFAULT_SETTINGS: Settings = {
         removeDuplicates: true,
         preferHighestResolution: true,
         useSvg: true,
-        compress: false,
-        maxResolution: 2000,
     },
     behaviour: {
         skipFailedChapters: true,
@@ -144,10 +156,7 @@ export const DEFAULT_SETTINGS: Settings = {
         minimumDelay: 500,
         maxChapters: 5000,
         delayPerChapter: 0,
-    },
-    privacy: {
-        metadataLookup: false,
-        sendStoryUrl: false,
+        emptyPageIsError: false,
     },
     advanced: {
         diagnostics: false,
@@ -158,14 +167,29 @@ export const DEFAULT_SETTINGS: Settings = {
 /** The storage key. */
 export const SETTINGS_KEY = "kintsugi.settings";
 
-/** A validator for a value. */
+/**
+ * A validator for a value.
+ *
+ * Every validator takes the value it falls back to, and every fallback is
+ * taken from `DEFAULT_SETTINGS`. A value that is missing or invalid is
+ * therefore replaced by the *documented* default rather than by an arbitrary
+ * zero, which matters whenever a setting is added in a later version: the
+ * stored settings of an existing user do not have the new key, and the other
+ * keys in its group must keep their defaults.
+ */
 type Validator<T> = (value: unknown) => T;
 
 /** A validator for a boolean. */
-const boolean: Validator<boolean> = (value) => (typeof value === "boolean" ? value : false);
+const boolean =
+    (fallback: boolean): Validator<boolean> =>
+    (value) =>
+        typeof value === "boolean" ? value : fallback;
 
 /** A validator for a string. */
-const string: Validator<string> = (value) => (typeof value === "string" ? value : "");
+const string =
+    (fallback: string): Validator<string> =>
+    (value) =>
+        typeof value === "string" ? value : fallback;
 
 /** A validator for a number within a range. */
 const integerIn =
@@ -183,7 +207,6 @@ const oneOf =
             ? (value as T)
             : fallback;
 
-/** A validator for one of a set of numeric literals. */
 const oneOfNumber =
     <T extends number>(allowed: readonly T[], fallback: T): Validator<T> =>
     (value) =>
@@ -209,47 +232,45 @@ function shape<T extends Record<string, Validator<unknown>>>(
 /** The schema for the settings. */
 const SETTINGS_SCHEMA = {
     appearance: shape({
-        theme: oneOf(["system", "light", "dark"] as const, "system"),
-        accent: oneOf(["gold", "ink", "verdigris", "plum"] as const, "gold"),
-        density: oneOf(["comfortable", "compact"] as const, "comfortable"),
-        reduceMotion: boolean,
+        theme: oneOf(["system", "light", "dark"] as const, DEFAULT_SETTINGS.appearance.theme),
+        accent: oneOf(
+            ["gold", "ink", "verdigris", "plum"] as const,
+            DEFAULT_SETTINGS.appearance.accent,
+        ),
+        density: oneOf(["comfortable", "compact"] as const, DEFAULT_SETTINGS.appearance.density),
+        reduceMotion: boolean(DEFAULT_SETTINGS.appearance.reduceMotion),
     }),
     story: shape({
-        filenameTemplate: string,
-        defaultLanguage: string,
-        removeAuthorNotes: boolean,
-        removeChapterNumbers: boolean,
-        includeTocPage: boolean,
+        filenameTemplate: string(DEFAULT_SETTINGS.story.filenameTemplate),
+        defaultLanguage: string(DEFAULT_SETTINGS.story.defaultLanguage),
+        removeAuthorNotes: boolean(DEFAULT_SETTINGS.story.removeAuthorNotes),
+        removeChapterNumbers: boolean(DEFAULT_SETTINGS.story.removeChapterNumbers),
+        includeTocPage: boolean(DEFAULT_SETTINGS.story.includeTocPage),
     }),
     epub: shape({
-        version: oneOfNumber([2, 3] as const, 3),
-        addInfoPage: boolean,
-        removeNextPrevLinks: boolean,
-        includeSourceUrl: boolean,
+        version: oneOfNumber([2, 3] as const, DEFAULT_SETTINGS.epub.version),
+        addInfoPage: boolean(DEFAULT_SETTINGS.epub.addInfoPage),
+        removeNextPrevLinks: boolean(DEFAULT_SETTINGS.epub.removeNextPrevLinks),
+        includeSourceUrl: boolean(DEFAULT_SETTINGS.epub.includeSourceUrl),
     }),
     images: shape({
-        skipImages: boolean,
-        removeDuplicates: boolean,
-        preferHighestResolution: boolean,
-        useSvg: boolean,
-        compress: boolean,
-        maxResolution: integerIn(100, 10000, 2000),
+        skipImages: boolean(DEFAULT_SETTINGS.images.skipImages),
+        removeDuplicates: boolean(DEFAULT_SETTINGS.images.removeDuplicates),
+        preferHighestResolution: boolean(DEFAULT_SETTINGS.images.preferHighestResolution),
+        useSvg: boolean(DEFAULT_SETTINGS.images.useSvg),
     }),
     behaviour: shape({
-        skipFailedChapters: boolean,
-        retryOnEmptyPage: boolean,
-        minimumDelay: integerIn(0, 60000, 500),
-        maxChapters: integerIn(1, 100000, 5000),
-        delayPerChapter: integerIn(0, 60000, 0),
-    }),
-    privacy: shape({
-        metadataLookup: boolean,
-        sendStoryUrl: boolean,
+        skipFailedChapters: boolean(DEFAULT_SETTINGS.behaviour.skipFailedChapters),
+        retryOnEmptyPage: boolean(DEFAULT_SETTINGS.behaviour.retryOnEmptyPage),
+        minimumDelay: integerIn(0, 60000, DEFAULT_SETTINGS.behaviour.minimumDelay),
+        maxChapters: integerIn(1, 100000, DEFAULT_SETTINGS.behaviour.maxChapters),
+        delayPerChapter: integerIn(0, 60000, DEFAULT_SETTINGS.behaviour.delayPerChapter),
+        emptyPageIsError: boolean(DEFAULT_SETTINGS.behaviour.emptyPageIsError),
     }),
     advanced: shape({
-        diagnostics: boolean,
+        diagnostics: boolean(DEFAULT_SETTINGS.advanced.diagnostics),
     }),
-    onboardingComplete: boolean,
+    onboardingComplete: boolean(DEFAULT_SETTINGS.onboardingComplete),
 };
 
 /**
@@ -304,6 +325,22 @@ export interface SettingsStorage {
 export class SettingsStore {
     #storage: SettingsStorage;
     #cache: Settings | undefined;
+    /**
+     * The queue of pending writes.
+     *
+     * A write is a read-modify-write: the current settings are read, the
+     * change is merged into them, and the whole object is written back. Two
+     * updates that overlap would each read the same snapshot, and the second
+     * write would discard the first one's change.
+     *
+     * The workbench saves the story's options from two different handlers,
+     * both of them fire-and-forget, so the overlap is real rather than
+     * theoretical: toggling two options in quick succession silently
+     * reverted one of them.
+     *
+     * Chaining the writes makes each one see the previous one's result.
+     */
+    #queue: Promise<unknown> = Promise.resolve();
 
     constructor(storage: SettingsStorage) {
         this.#storage = storage;
@@ -312,6 +349,22 @@ export class SettingsStore {
     /** Read the settings, validating them. */
     async get(): Promise<Settings> {
         if (this.#cache) return this.#cache;
+        return this.#read();
+    }
+
+    /**
+     * Read the settings from storage, whether or not there is a cache.
+     *
+     * The cache belongs to one store, and there is one store per page. The
+     * options page and the workbench each have their own, and a change made
+     * in one of them is not in the other's cache — the browser's storage
+     * events are only wired up in the worker.
+     *
+     * So a write that merges over the cache can merge over a stale copy and
+     * put back the value the other page has just changed. The write reads
+     * the stored value instead, which is always the truth.
+     */
+    async #read(): Promise<Settings> {
         const stored = await this.#storage.get(SETTINGS_KEY);
         const raw = stored[SETTINGS_KEY];
         this.#cache = validateSettings(raw);
@@ -321,18 +374,37 @@ export class SettingsStore {
     /** Write the settings. */
     async set(settings: Settings): Promise<void> {
         const validated = validateSettings(settings);
-        this.#cache = validated;
-        await this.#storage.set({ [SETTINGS_KEY]: validated });
+        await this.#enqueue(async () => {
+            // The cache is updated only once the write has succeeded. Setting
+            // it first would let a failed write — a full disk, say — leave the
+            // store reporting a value that was never persisted, and the
+            // failure would be masked.
+            await this.#storage.set({ [SETTINGS_KEY]: validated });
+            this.#cache = validated;
+        });
     }
 
     /**
      * Update part of the settings.
+     *
+     * The change is merged over the current settings, so a group that is named
+     * does not have to be given in full.
+     *
+     * @param partial The change to make.
+     * @returns The settings as they are after the change.
      */
-    async update(partial: Partial<Settings>): Promise<Settings> {
-        const current = await this.get();
-        const next = validateSettings(deepMerge(current, partial as Record<string, unknown>));
-        await this.set(next);
-        return next;
+    async update(partial: SettingsPatch): Promise<Settings> {
+        // The whole read-modify-write is queued, so two overlapping updates
+        // cannot discard each other.
+        return this.#enqueue(async () => {
+            // The stored value is read, not the cache: another page may have
+            // changed the settings since this one last read them.
+            const current = await this.#read();
+            const next = validateSettings(deepMerge(current, partial as Record<string, unknown>));
+            await this.#storage.set({ [SETTINGS_KEY]: next });
+            this.#cache = next;
+            return next;
+        });
     }
 
     /**
@@ -343,13 +415,45 @@ export class SettingsStore {
      * parsers — are untouched.
      */
     async reset(): Promise<Settings> {
-        await this.#storage.remove(SETTINGS_KEY);
-        this.#cache = undefined;
-        return this.get();
+        return this.#enqueue(async () => {
+            await this.#storage.remove(SETTINGS_KEY);
+            this.#cache = undefined;
+            return this.get();
+        });
+    }
+
+    /**
+     * Run work after everything already queued.
+     *
+     * The queue is what keeps two overlapping writes from discarding each
+     * other: each one sees the result of the one before it. The queue is not
+     * broken by a failure — the next write still has to run — but the failure
+     * is reported to whoever asked for the work.
+     *
+     * @param work The work to do.
+     * @returns Whatever the work returned.
+     */
+    async #enqueue<T>(work: () => Promise<T>): Promise<T> {
+        const result = this.#queue.then(work);
+        this.#queue = result.then(
+            () => undefined,
+            () => undefined,
+        );
+        return result;
     }
 
     /** Clear the cache, so the next read comes from storage. */
     invalidate(): void {
         this.#cache = undefined;
+    }
+
+    /**
+     * The settings the store already holds, without reading storage.
+     *
+     * @returns The cached settings, or `undefined` when nothing has been read
+     *   yet.
+     */
+    cached(): Settings | undefined {
+        return this.#cache;
     }
 }

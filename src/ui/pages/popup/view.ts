@@ -8,10 +8,18 @@
  * markup from a string, so a page title can never become HTML.
  */
 import { createIcon } from "../../components/icons";
-import { t } from "../../i18n";
+import { t, tCount } from "../../i18n";
 
 /** The states the popup can be in. */
-export type PopupState = "loading" | "story" | "no-story" | "unsupported" | "running" | "error";
+export type PopupState =
+    | "loading"
+    | "welcome"
+    | "story"
+    | "no-story"
+    | "unsupported"
+    | "access"
+    | "running"
+    | "error";
 
 /** What the popup shows. */
 export interface PopupViewState {
@@ -27,6 +35,12 @@ export interface PopupViewState {
     chapterCount: number;
     /** The site's host name. */
     hostName: string;
+    /**
+     * The host the extension is asking to be allowed to read.
+     *
+     * It is set in the `access` state, and is empty everywhere else.
+     */
+    accessHost: string;
     /** The error, if the state is `error`. */
     error: string;
     /** The download's phase, when a download is running. */
@@ -57,6 +71,12 @@ export interface PopupElements {
     chapterCount: HTMLElement;
     /** The empty state. */
     empty: HTMLElement;
+    /** The state that asks the user for access to the site. */
+    access: HTMLElement;
+    /** The host in the access state. */
+    accessHost: HTMLElement;
+    /** The state shown while the worker is answering. */
+    loading: HTMLElement;
     /** The live progress strip. */
     progress: HTMLElement;
     /** The progress label. */
@@ -69,6 +89,10 @@ export interface PopupElements {
     primary: HTMLElement;
     /** The secondary actions. */
     actions: HTMLElement;
+    /** The error message, shown in the error state. */
+    error: HTMLElement;
+    /** The error message's text. */
+    errorText: HTMLElement;
 }
 
 /**
@@ -90,15 +114,16 @@ export function buildPopup(root: HTMLElement): PopupElements {
     mark.setAttribute("aria-hidden", "true");
     mark.appendChild(createIcon("book", 20));
 
-    const wordmark = document.createElement("span");
+    const wordmark = document.createElement("h1");
     wordmark.className = "popup-wordmark";
-    wordmark.textContent = "Kintsugi";
+    wordmark.textContent = t("appName");
 
     const settings = document.createElement("k-button");
     settings.className = "popup-settings";
     settings.setAttribute("variant", "ghost");
     settings.setAttribute("size", "sm");
     settings.setAttribute("icon-only", "");
+    settings.setAttribute("icon", "settings");
     settings.setAttribute("aria-label", t("popupSettings"));
     settings.dataset["action"] = "settings";
 
@@ -145,13 +170,83 @@ export function buildPopup(root: HTMLElement): PopupElements {
     const emptyIcon = document.createElement("span");
     emptyIcon.className = "popup-empty-icon";
     emptyIcon.setAttribute("aria-hidden", "true");
-    emptyIcon.appendChild(createIcon("search", 28));
+    emptyIcon.appendChild(createIcon("book", 28));
 
     const emptyText = document.createElement("p");
     emptyText.className = "popup-empty-text";
 
     empty.appendChild(emptyIcon);
     empty.appendChild(emptyText);
+
+    // --- The access state ---
+    //
+    // The extension can only read a site the user has allowed. When it has not
+    // been allowed, the popup says so and offers the one button that fixes it,
+    // rather than showing a network error the user cannot act on.
+    const access = document.createElement("div");
+    access.className = "popup-access";
+
+    const accessIcon = document.createElement("span");
+    accessIcon.className = "popup-access-icon";
+    accessIcon.setAttribute("aria-hidden", "true");
+    accessIcon.appendChild(createIcon("lock", 20));
+
+    const accessTitle = document.createElement("p");
+    accessTitle.className = "popup-access-title";
+    accessTitle.textContent = t("accessTitle");
+
+    const accessHostNode = document.createElement("p");
+    accessHostNode.className = "popup-access-host";
+
+    const accessButton = document.createElement("k-button");
+    accessButton.className = "popup-access-button";
+    accessButton.setAttribute("variant", "primary");
+    accessButton.setAttribute("size", "lg");
+    accessButton.dataset["action"] = "grant-access";
+    accessButton.textContent = t("accessGrant");
+
+    access.appendChild(accessIcon);
+    access.appendChild(accessTitle);
+    access.appendChild(accessHostNode);
+    access.appendChild(accessButton);
+
+    // --- The loading state ---
+    //
+    // The popup opens while the worker is still answering. It used to show
+    // nothing at all during that time, which reads as a broken window: a
+    // blank rectangle with no text and no spinner. The state says what it is
+    // waiting for instead.
+    const loading = document.createElement("div");
+    loading.className = "popup-loading";
+
+    const loadingSpinner = document.createElement("span");
+    loadingSpinner.className = "popup-loading-spinner";
+    loadingSpinner.setAttribute("aria-hidden", "true");
+    loadingSpinner.appendChild(createIcon("spinner", 18));
+
+    const loadingText = document.createElement("p");
+    loadingText.className = "popup-loading-text";
+    loadingText.textContent = t("popupChecking");
+
+    loading.append(loadingSpinner, loadingText);
+
+    // --- The error state ---
+    //
+    // An error the user is never shown is an error they cannot act on. The
+    // message is the worker's own wording, so it says what actually failed.
+    const error = document.createElement("div");
+    error.className = "popup-error";
+    error.setAttribute("role", "alert");
+
+    const errorIcon = document.createElement("span");
+    errorIcon.className = "popup-error-icon";
+    errorIcon.setAttribute("aria-hidden", "true");
+    errorIcon.appendChild(createIcon("alert-triangle", 18));
+
+    const errorText = document.createElement("p");
+    errorText.className = "popup-error-text";
+
+    error.append(errorIcon, errorText);
 
     // --- The live progress strip ---
     const progress = document.createElement("div");
@@ -192,7 +287,6 @@ export function buildPopup(root: HTMLElement): PopupElements {
     library.setAttribute("variant", "secondary");
     library.setAttribute("size", "sm");
     library.setAttribute("icon", "book");
-    library.setAttribute("aria-label", t("popupAddToLibrary"));
     library.dataset["action"] = "library";
     library.appendChild(document.createTextNode(t("popupLibraryShort")));
 
@@ -201,17 +295,19 @@ export function buildPopup(root: HTMLElement): PopupElements {
     workbench.setAttribute("variant", "secondary");
     workbench.setAttribute("size", "sm");
     workbench.setAttribute("icon", "list");
-    workbench.setAttribute("aria-label", t("popupOpenWorkbench"));
     workbench.dataset["action"] = "workbench";
     workbench.appendChild(document.createTextNode(t("popupWorkbenchShort")));
 
     actions.appendChild(library);
     actions.appendChild(workbench);
 
-    const body = document.createElement("div");
+    const body = document.createElement("main");
     body.className = "popup-body";
     body.appendChild(card);
     body.appendChild(empty);
+    body.appendChild(access);
+    body.appendChild(loading);
+    body.appendChild(error);
     body.appendChild(progress);
     body.appendChild(primary);
     body.appendChild(actions);
@@ -228,12 +324,17 @@ export function buildPopup(root: HTMLElement): PopupElements {
         subtitle,
         chapterCount,
         empty,
+        access,
+        accessHost: accessHostNode,
+        loading,
         progress,
         progressLabel,
         progressBar,
         progressCount,
         primary,
         actions,
+        error,
+        errorText,
     };
 }
 
@@ -262,20 +363,42 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
     }
 
     elements.chapterCount.textContent =
-        state.chapterCount > 0
-            ? `${state.chapterCount} ${state.chapterCount === 1 ? "chapter" : "chapters"}`
-            : "";
+        state.chapterCount > 0 ? tCount("popupChapterCount", state.chapterCount) : "";
 
     // --- The empty state ---
-    const showEmpty = state.state === "no-story" || state.state === "unsupported";
+    const showEmpty =
+        state.state === "no-story" || state.state === "unsupported" || state.state === "welcome";
     elements.empty.hidden = !showEmpty;
     const emptyText = elements.empty.querySelector(".popup-empty-text");
     if (emptyText) {
         emptyText.textContent =
             state.state === "unsupported"
                 ? t("popupUnsupportedHost", state.hostName)
-                : t("popupNoStory");
+                : state.state === "welcome"
+                  ? t("popupWelcome")
+                  : t("popupNoStory");
     }
+
+    // --- The access state ---
+    //
+    // The extension is asking to be allowed to read the site. The button that
+    // grants it has to be the primary action, because it is the only thing
+    // that makes the rest of the popup work.
+    const showAccess = state.state === "access";
+    elements.access.hidden = !showAccess;
+    elements.accessHost.textContent = state.accessHost;
+
+    // --- The loading state ---
+    elements.loading.hidden = state.state !== "loading";
+
+    // --- The error state ---
+    //
+    // The message is the worker's own wording. The state is not hidden when
+    // there is no message, because an empty red box is worse than a red box
+    // with a sentence in it — but the box is only shown in the error state, so
+    // it never appears with nothing in it by accident.
+    elements.error.hidden = state.state !== "error";
+    elements.errorText.textContent = state.error;
 
     // --- The progress strip ---
     const showProgress = state.state === "running";
@@ -287,17 +410,41 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
     elements.progressBar.style.setProperty("--k-progress", `${state.percent}%`);
 
     // --- The primary action ---
-    const showPrimary = state.state !== "running" && state.state !== "loading";
-    elements.primary.hidden = !showPrimary;
+    elements.primary.hidden = state.state === "loading";
 
-    if (state.state === "error") {
+    if (state.state === "running") {
+        // A download the user started can be stopped from where they see it.
+        elements.primary.setAttribute("variant", "secondary");
+        elements.primary.textContent = t("workbenchCancel");
+        elements.primary.dataset["action"] = "cancel";
+    } else if (state.state === "error") {
         elements.primary.setAttribute("variant", "primary");
         elements.primary.textContent = t("popupTryAgain");
         elements.primary.dataset["action"] = "retry";
-    } else if (state.state === "unsupported" || state.state === "no-story") {
+    } else if (state.state === "welcome") {
+        // The first run gets its own button: the point of the welcome state
+        // is to show the user the way in, not to make them guess.
+        elements.primary.setAttribute("variant", "primary");
+        elements.primary.textContent = t("popupGetStarted");
+        elements.primary.dataset["action"] = "onboarding";
+    } else if (state.state === "unsupported") {
+        // The workbench can be shown where the story is on a site it does
+        // not know yet.
         elements.primary.setAttribute("variant", "secondary");
-        elements.primary.textContent = t("workbenchTryAnyway");
+        elements.primary.textContent = t("siteSelectorOpen");
         elements.primary.dataset["action"] = "primary";
+    } else if (state.state === "no-story") {
+        elements.primary.setAttribute("variant", "secondary");
+        elements.primary.textContent = t("popupOpenWorkbench");
+        elements.primary.dataset["action"] = "primary";
+    } else if (state.state === "access") {
+        // The access state has its own button, so the primary action would be
+        // a second way of doing the same thing. It is hidden rather than
+        // disabled, so a screen reader is not offered a button that does
+        // nothing. The action is still set, so that a stale "retry" from a
+        // previous state cannot survive into this one.
+        elements.primary.dataset["action"] = "grant-access";
+        elements.primary.hidden = true;
     } else {
         elements.primary.setAttribute("variant", "primary");
         elements.primary.textContent = t("popupOpenWorkbench");
@@ -308,6 +455,15 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
     elements.actions.hidden = state.state === "loading";
     const library = elements.actions.querySelector<HTMLElement>('[data-action="library"]');
     const workbench = elements.actions.querySelector<HTMLElement>('[data-action="workbench"]');
-    if (library) library.hidden = state.state === "no-story" || state.state === "unsupported";
-    if (workbench) workbench.hidden = false;
+    if (library) {
+        library.hidden =
+            state.state === "no-story" ||
+            state.state === "unsupported" ||
+            state.state === "welcome";
+    }
+    // The primary button already opens the workbench in these states, so a
+    // second button doing the same would only be noise.
+    if (workbench) {
+        workbench.hidden = ["story", "no-story", "unsupported"].includes(state.state);
+    }
 }

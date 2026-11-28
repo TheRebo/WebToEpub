@@ -38,10 +38,13 @@ const STYLES = `
     transition: transform var(--dur-base) var(--ease-out);
 }
 
-.label {
-    font-size: var(--text-xs);
-    color: var(--text-secondary);
-}
+/*
+ * The in-app "Reduce motion" setting.
+ *
+ * The document's own rule cannot pierce the shadow boundary, so the base
+ * class mirrors the preference onto the host.
+ */
+:host([data-reduced-motion]) .fill { transition: none; }
 
 @media (prefers-reduced-motion: reduce) {
     .fill { transition: none; }
@@ -74,14 +77,37 @@ export class KProgress extends KComponent {
 
         const bar = this.root.querySelector(".bar");
         bar?.setAttribute("aria-valuemin", "0");
-        bar?.setAttribute("aria-valuemax", String(max));
-        bar?.setAttribute("aria-valuenow", String(Math.round(value)));
+        /*
+         * A range whose maximum is zero is not a range.
+         *
+         * ARIA requires a progress bar's value to be between its minimum and
+         * its maximum, and "aria-valuemax=0" with "aria-valuemin=0" describes
+         * an empty range, which assistive technology reports as a broken
+         * widget. An indeterminate progress bar is the correct thing to show
+         * when there is no total to count towards, and that is what dropping
+         * the value attributes asks for.
+         */
+        if (max > 0) {
+            bar?.setAttribute("aria-valuemax", String(max));
+            bar?.setAttribute("aria-valuenow", String(Math.round(value)));
+        } else {
+            bar?.removeAttribute("aria-valuemax");
+            bar?.removeAttribute("aria-valuenow");
+        }
+
+        // The accessible name comes from the `label` attribute. Without it the
+        // progressbar is an unnamed widget, and a screen reader announces a
+        // bare percentage with no indication of what is progressing.
         const label = this.getAttribute("label");
         if (label) {
-            bar?.setAttribute("aria-valuetext", label);
+            bar?.setAttribute("aria-label", label);
         } else {
-            bar?.removeAttribute("aria-valuetext");
+            bar?.removeAttribute("aria-label");
         }
+
+        // The value text describes the value, not the name, so it is the
+        // percentage rather than the label.
+        bar?.setAttribute("aria-valuetext", `${Math.round(percent * 100)}%`);
     }
 
     /** The current value. */

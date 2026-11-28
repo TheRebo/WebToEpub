@@ -23,36 +23,52 @@ export const MESSAGES = {
     workbenchCover: "workbenchCover",
     workbenchOptions: "workbenchOptions",
     workbenchChapters: "workbenchChapters",
-    workbenchChaptersFound: "workbenchChaptersFound",
     workbenchChapterCount: "workbenchChapterCount",
     workbenchPack: "workbenchPack",
-    workbenchSave: "workbenchSave",
     workbenchCancel: "workbenchCancel",
+    workbenchRetry: "workbenchRetry",
+    workbenchDismiss: "workbenchDismiss",
+    workbenchSavedAs: "workbenchSavedAs",
     workbenchSelectAll: "workbenchSelectAll",
     workbenchSelectNone: "workbenchSelectNone",
     workbenchInvert: "workbenchInvert",
     workbenchRanges: "workbenchRanges",
+    workbenchRangeTitle: "workbenchRangeTitle",
+    workbenchRangeFrom: "workbenchRangeFrom",
+    workbenchRangeTo: "workbenchRangeTo",
+    workbenchRangeCount: "workbenchRangeCount",
+    workbenchRangeCountOne: "workbenchRangeCountOne",
+    workbenchRangeSelect: "workbenchRangeSelect",
+    workbenchRangeDeselect: "workbenchRangeDeselect",
+    workbenchRangeInvalid: "workbenchRangeInvalid",
     workbenchFilter: "workbenchFilter",
     workbenchNoChaptersSelected: "workbenchNoChaptersSelected",
+    workbenchBusy: "workbenchBusy",
     workbenchWaitingForChapters: "workbenchWaitingForChapters",
-    workbenchDetected: "workbenchDetected",
     workbenchFieldTitle: "workbenchFieldTitle",
     workbenchFieldAuthor: "workbenchFieldAuthor",
     workbenchFieldLanguage: "workbenchFieldLanguage",
     workbenchFieldFilename: "workbenchFieldFilename",
     workbenchResetFilename: "workbenchResetFilename",
-    workbenchChooseFromPage: "workbenchChooseFromPage",
     workbenchRemoveCover: "workbenchRemoveCover",
     workbenchIncludeAuthorNotes: "workbenchIncludeAuthorNotes",
     workbenchIncludeTocPage: "workbenchIncludeTocPage",
     workbenchMoreOptions: "workbenchMoreOptions",
-    workbenchNoCover: "workbenchNoCover",
+    workbenchOptionsHint: "workbenchOptionsHint",
     workbenchCoverUrl: "workbenchCoverUrl",
     workbenchNoStoryHere: "workbenchNoStoryHere",
-    workbenchTryAnyway: "workbenchTryAnyway",
-    workbenchUnsupportedSite: "workbenchUnsupportedSite",
-    workbenchUseSelectorBuilder: "workbenchUseSelectorBuilder",
-    workbenchReloadPage: "workbenchReloadPage",
+    workbenchNoStoryHint: "workbenchNoStoryHint",
+    workbenchFieldUrl: "workbenchFieldUrl",
+    workbenchFieldUrlHint: "workbenchFieldUrlHint",
+    workbenchLoadStory: "workbenchLoadStory",
+    workbenchUrlInvalid: "workbenchUrlInvalid",
+
+    // Site access
+    accessTitle: "accessTitle",
+    accessText: "accessText",
+    accessGrant: "accessGrant",
+    accessDenied: "accessDenied",
+    accessGranted: "accessGranted",
 
     // Chapter states
     chapterStateQueued: "chapterStateQueued",
@@ -74,13 +90,26 @@ export const MESSAGES = {
 
     // Popup
     popupOpenWorkbench: "popupOpenWorkbench",
-    popupAddToLibrary: "popupAddToLibrary",
+    popupLibraryShort: "popupLibraryShort",
+    popupWorkbenchShort: "popupWorkbenchShort",
     popupSettings: "popupSettings",
     popupNoStory: "popupNoStory",
-    popupUnsupported: "popupUnsupported",
+    popupWelcome: "popupWelcome",
+    popupGetStarted: "popupGetStarted",
     popupSaved: "popupSaved",
     popupTryAgain: "popupTryAgain",
+    popupChecking: "popupChecking",
     popupUnsupportedHost: "popupUnsupportedHost",
+    popupChapterCount: "popupChapterCount",
+    popupChapterCountOne: "popupChapterCountOne",
+
+    // Common
+    commonClose: "commonClose",
+    commonDismiss: "commonDismiss",
+    commonCancel: "commonCancel",
+    commonLoading: "commonLoading",
+    siteSelectorSuggesting: "siteSelectorSuggesting",
+    siteSelectorTesting: "siteSelectorTesting",
 
     // Options
     optionsAppearance: "optionsAppearance",
@@ -88,7 +117,6 @@ export const MESSAGES = {
     optionsEpub: "optionsEpub",
     optionsImages: "optionsImages",
     optionsBehaviour: "optionsBehaviour",
-    optionsPrivacy: "optionsPrivacy",
     optionsAdvanced: "optionsAdvanced",
     optionsTheme: "optionsTheme",
     optionsAccent: "optionsAccent",
@@ -106,19 +134,38 @@ export const MESSAGES = {
     optionsSiteAccess: "optionsSiteAccess",
     optionsRevoke: "optionsRevoke",
     optionsRevokeAll: "optionsRevokeAll",
+    optionsRevokeAllConfirm: "optionsRevokeAllConfirm",
+    optionsSiteAccessEmpty: "optionsSiteAccessEmpty",
+    optionsSiteAccessHint: "optionsSiteAccessHint",
+    optionsRevoked: "optionsRevoked",
+    optionsRevokedAll: "optionsRevokedAll",
     optionsExportSettings: "optionsExportSettings",
     optionsImportSettings: "optionsImportSettings",
     optionsResetAll: "optionsResetAll",
+    optionsExported: "optionsExported",
+    optionsImported: "optionsImported",
+    optionsImportInvalid: "optionsImportInvalid",
+    optionsResetDone: "optionsResetDone",
+    optionsResetConfirm: "optionsResetConfirm",
+    optionsResetConfirmAction: "optionsResetConfirmAction",
     optionsPrivacyNote: "optionsPrivacyNote",
 
     // Options: library
     optionsLibrary: "optionsLibrary",
     optionsLibraryEmptyTitle: "optionsLibraryEmptyTitle",
     optionsLibraryEmptyText: "optionsLibraryEmptyText",
-    optionsLibraryChapters: "optionsLibraryChapters",
     optionsNoResults: "optionsNoResults",
     optionsNavLabel: "optionsNavLabel",
     optionsLibraryMeta: "optionsLibraryMeta",
+    optionsLibraryMetaOne: "optionsLibraryMetaOne",
+    optionsLibraryImport: "optionsLibraryImport",
+    optionsLibraryImported: "optionsLibraryImported",
+    optionsLibraryImportedOne: "optionsLibraryImportedOne",
+    optionsLibraryTooLarge: "optionsLibraryTooLarge",
+    libraryRemove: "libraryRemove",
+    libraryRemoveTitle: "libraryRemoveTitle",
+    libraryRemoveConfirm: "libraryRemoveConfirm",
+    libraryRemoved: "libraryRemoved",
 
     // Options: individual settings
     settingReduceMotion: "settingReduceMotion",
@@ -130,6 +177,7 @@ export const MESSAGES = {
     settingRemoveAuthorNotes: "settingRemoveAuthorNotes",
     settingRemoveAuthorNotesHint: "settingRemoveAuthorNotesHint",
     settingRemoveChapterNumbers: "settingRemoveChapterNumbers",
+    settingRemoveChapterNumbersHint: "settingRemoveChapterNumbersHint",
     settingIncludeTocPage: "settingIncludeTocPage",
     settingEpubVersion: "settingEpubVersion",
     settingEpubVersionHint: "settingEpubVersionHint",
@@ -141,21 +189,16 @@ export const MESSAGES = {
     settingRemoveDuplicates: "settingRemoveDuplicates",
     settingPreferHighestResolution: "settingPreferHighestResolution",
     settingUseSvg: "settingUseSvg",
-    settingCompressImages: "settingCompressImages",
-    settingMaxResolution: "settingMaxResolution",
-    settingMaxResolutionHint: "settingMaxResolutionHint",
     settingSkipFailedChapters: "settingSkipFailedChapters",
     settingSkipFailedChaptersHint: "settingSkipFailedChaptersHint",
     settingRetryOnEmptyPage: "settingRetryOnEmptyPage",
+    settingEmptyPageIsError: "settingEmptyPageIsError",
+    settingEmptyPageIsErrorHint: "settingEmptyPageIsErrorHint",
     settingMinimumDelay: "settingMinimumDelay",
     settingMinimumDelayHint: "settingMinimumDelayHint",
     settingMaxChapters: "settingMaxChapters",
     settingDelayPerChapter: "settingDelayPerChapter",
     settingDelayPerChapterHint: "settingDelayPerChapterHint",
-    settingMetadataLookup: "settingMetadataLookup",
-    settingMetadataLookupHint: "settingMetadataLookupHint",
-    settingSendStoryUrl: "settingSendStoryUrl",
-    settingSendStoryUrlHint: "settingSendStoryUrlHint",
     settingDiagnostics: "settingDiagnostics",
     settingDiagnosticsHint: "settingDiagnosticsHint",
 
@@ -164,11 +207,11 @@ export const MESSAGES = {
     onboardingStep1: "onboardingStep1",
     onboardingStep2: "onboardingStep2",
     onboardingStep3: "onboardingStep3",
-    onboardingNext: "onboardingNext",
     onboardingBack: "onboardingBack",
     onboardingFinish: "onboardingFinish",
     onboardingSkip: "onboardingSkip",
-    onboardingGetStarted: "onboardingGetStarted",
+    onboardingNextSites: "onboardingNextSites",
+    onboardingNextLook: "onboardingNextLook",
     onboardingWelcomeText: "onboardingWelcomeText",
     onboardingWelcomeFootnote: "onboardingWelcomeFootnote",
     onboardingWhichSite: "onboardingWhichSite",
@@ -181,11 +224,15 @@ export const MESSAGES = {
     errorGeneric: "errorGeneric",
     errorNetwork: "errorNetwork",
     errorNoParser: "errorNoParser",
-    errorTimeout: "errorTimeout",
     errorCancelled: "errorCancelled",
-    errorForbidden: "errorForbidden",
+    errorHttpStatus: "errorHttpStatus",
+    errorRateLimited: "errorRateLimited",
+    errorChallenge: "errorChallenge",
+    errorEmptyChapter: "errorEmptyChapter",
+    errorStorageFull: "errorStorageFull",
+    errorPermission: "errorPermission",
+    errorBusy: "errorBusy",
     errorParse: "errorParse",
-    errorNoChapters: "errorNoChapters",
 
     // Filter
     filterSearch: "filterSearch",
@@ -194,6 +241,9 @@ export const MESSAGES = {
     filterExclude: "filterExclude",
     filterMatchCount: "filterMatchCount",
     filterClear: "filterClear",
+    optionsNumberRequired: "optionsNumberRequired",
+    filterNoMatches: "filterNoMatches",
+    filterClearAll: "filterClearAll",
     filterApply: "filterApply",
     filterInvalidPattern: "filterInvalidPattern",
 
@@ -274,13 +324,15 @@ export function uiLanguage(): string {
  * expensive cross-process call and the workbench asks for the same dozen
  * strings on every render.
  *
- * @param key The message name.
+ * @param key The message name. It must be one the catalogue lists: a typo
+ *   would otherwise show the user the raw key at runtime, which is the one
+ *   failure mode this module exists to prevent.
  * @param substitutions The substitutions, if any.
  * @returns The translated string, or the key itself when there is no
- * translation. Returning the key is better than an empty string: a missing
- * translation should be visible, not invisible.
+ *   translation. Returning the key is better than an empty string: a missing
+ *   translation should be visible, not invisible.
  */
-export function t(key: MessageName | string, substitutions?: Substitutions): string {
+export function t(key: MessageName, substitutions?: Substitutions): string {
     const cacheKey = substitutions === undefined ? key : `${key}|${JSON.stringify(substitutions)}`;
     const cached = cache.get(cacheKey);
     if (cached !== undefined) return cached;
@@ -306,27 +358,76 @@ export function t(key: MessageName | string, substitutions?: Substitutions): str
 }
 
 /**
- * Translate a message with a count.
+ * Translate a message whose name is only known at runtime.
  *
- * The message must have a `one` and a `many` form, which is what
- * `browser.i18n.getMessage` expects for a counted string.
+ * Most of the interface asks for a message by a literal name, which
+ * {@link t} type-checks against the catalogue. A few places — a label stored
+ * in a settings table, an error code mapped to a message — only learn the name
+ * at runtime, and there the compiler cannot help. Those call sites use this,
+ * so that "the key is not in the catalogue" stays a deliberate, visible choice
+ * rather than an accident.
+ *
+ * @param key The message name.
+ * @param substitutions The substitutions, if any.
+ * @returns The translated string, or the key itself when there is no
+ *   translation.
  */
-export function tCount(key: MessageName | string, count: number, substitutions?: string[]): string {
-    const cacheKey = `${key}|count:${count}|${JSON.stringify(substitutions ?? [])}`;
-    const cached = cache.get(cacheKey);
-    if (cached !== undefined) return cached;
+export function tDynamic(key: string, substitutions?: Substitutions): string {
+    return t(key as MessageName, substitutions);
+}
 
-    let message = "";
-    if (api) {
-        try {
-            message = api.getMessage(key, [...(substitutions ?? []), String(count)]);
-        } catch {
-            message = "";
-        }
+/**
+ * The counted messages, and the singular form of each.
+ *
+ * Firefox's `browser.i18n` does not choose a plural form on its own. The
+ * `_one` and `_other` variants that Chrome understands are ignored there, and
+ * the base message is returned whatever the count is — so a message that
+ * counted chapters would say "1 chapters". A counted message therefore comes
+ * in two: the base name for the plural, and the base name with `One` for the
+ * singular. See ADR-0010.
+ *
+ * The map is the single list of messages that are counted, so a message
+ * cannot be counted without a singular form existing for it.
+ */
+export const COUNTED = {
+    popupChapterCount: "popupChapterCountOne",
+    workbenchRangeCount: "workbenchRangeCountOne",
+    optionsLibraryMeta: "optionsLibraryMetaOne",
+    optionsLibraryImported: "optionsLibraryImportedOne",
+} as const;
+
+/** The name of a message that can be counted. */
+export type CountedName = keyof typeof COUNTED;
+
+/**
+ * Translate a message that counts something.
+ *
+ * The count is the first substitution, so a message that counts chapters and
+ * shows a size as well takes the size second.
+ *
+ * @param key The message name for the plural form.
+ * @param count The number being counted.
+ * @param substitutions The other substitutions, after the count.
+ * @returns The translated string, in the right number.
+ */
+export function tCount(key: CountedName, count: number, substitutions: string[] = []): string {
+    // The language's own rules decide the form: French counts 0 as
+    // singular, and Japanese has no singular at all.
+    const language = uiLanguage();
+    let category: string;
+    try {
+        category = new Intl.PluralRules(language).select(count);
+    } catch {
+        category = count === 1 ? "one" : "other";
     }
-    if (!message) message = key;
-    cache.set(cacheKey, message);
-    return message;
+    const name = category === "one" ? COUNTED[key] : key;
+    let shown: string;
+    try {
+        shown = count.toLocaleString(language);
+    } catch {
+        shown = String(count);
+    }
+    return t(name, [shown, ...substitutions]);
 }
 
 /** Clear the memoisation cache. */

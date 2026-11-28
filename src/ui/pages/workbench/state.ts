@@ -45,6 +45,21 @@ export interface StoryMeta {
     sourceUrl: string;
     /** The parser that found it. */
     parserName: string;
+    /**
+     * The name the book will be saved as.
+     *
+     * It is derived from the title and the user's filename template until the
+     * user edits it, at which point it is whatever they typed.
+     */
+    fileName: string;
+    /**
+     * Whether the user has edited the file name.
+     *
+     * While this is false the name follows the title, so renaming the book
+     * renames the file. Once the user has typed a name of their own it is
+     * left alone.
+     */
+    fileNameEdited: boolean;
 }
 
 /** The filter's state. */
@@ -69,8 +84,6 @@ export interface WorkbenchState {
     loadingChapters: boolean;
     /** The filter. */
     filter: FilterState;
-    /** Whether the metadata has unsaved edits. */
-    dirty: boolean;
     /**
      * Whether the fallback parser was used.
      *
@@ -79,6 +92,15 @@ export interface WorkbenchState {
      * accepting a guess on every visit.
      */
     usedDefaultParser: boolean;
+    /**
+     * The origin the extension needs access to, if any.
+     *
+     * The extension has no host permissions of its own: it asks for one site at
+     * a time, when the user opens a story there. While this is set, the
+     * workbench cannot read the story, and it says so instead of failing with
+     * a network error the user cannot act on.
+     */
+    accessOrigin: string | undefined;
     /** The progress of the running download. */
     progress: DownloadProgressState | undefined;
     /** The error, if anything failed. */
@@ -99,6 +121,68 @@ export interface DownloadProgressState {
     message: string;
     /** Whether the job finished successfully. */
     succeeded: boolean;
+    /** How the job ended, once it has. */
+    outcome?: "success" | "failed" | "cancelled";
+    /** The line under the label: where the book went, or what went wrong. */
+    detail?: string;
+}
+
+/**
+ * A chapter's state, as the download reports it.
+ */
+export interface ReportedChapterState {
+    /** The chapter's index **within the job**. */
+    index: number;
+    /** The state the chapter is in. */
+    state: ChapterState;
+}
+
+/**
+ * The chapters a download has finished.
+ */
+export interface ReportedFinished {
+    /**
+     * The index of the last chapter that has finished.
+     *
+     * The chapters are fetched in order, so everything below this index has
+     * finished too.
+     */
+    upTo: number;
+    /** The indices, within the job, of the chapters that failed. */
+    failed: number[];
+}
+
+/**
+ * Work out which chapters changed state.
+ *
+ * The download reports the chapters it has finished as a watermark and the
+ * failures within that range. The workbench's list is the whole list, and the
+ * job's list is only the chapters the user selected, so the job's indices are
+ * mapped back through the selection.
+ *
+ * This is a pure function so that the mapping can be tested on its own: it is
+ * the part that decides whether a row shows a spinner or a tick, and a row
+ * that never stops spinning is a list that looks broken.
+ *
+ * @param finished The chapters the job has finished.
+ * @param jobChapterIndexes The workbench's index for each of the job's
+ *   chapters.
+ * @returns The workbench's chapter indices and their new states.
+ */
+export function finishedChapterStates(
+    finished: ReportedFinished,
+    jobChapterIndexes: number[],
+): { index: number; state: ChapterState }[] {
+    const failed = new Set(finished.failed);
+    const changes: { index: number; state: ChapterState }[] = [];
+
+    for (let jobIndex = 0; jobIndex <= finished.upTo; jobIndex += 1) {
+        const index = jobChapterIndexes[jobIndex];
+        if (index === undefined) continue;
+        changes.push({ index, state: failed.has(jobIndex) ? "failed" : "loaded" });
+    }
+
+    return changes;
 }
 
 /** The store. */
@@ -149,17 +233,17 @@ export class WorkbenchStore {
         });
     }
 
-    /** Mark the metadata as edited. */
-    markDirty(dirty: boolean): void {
-        this.update((state) => {
-            state.dirty = dirty;
-        });
-    }
-
     /** Record whether the fallback parser was used. */
     setUsedDefaultParser(used: boolean): void {
         this.update((state) => {
             state.usedDefaultParser = used;
+        });
+    }
+
+    /** Record the origin the extension needs access to. */
+    setAccessOrigin(origin: string | undefined): void {
+        this.update((state) => {
+            state.accessOrigin = origin;
         });
     }
 
@@ -187,13 +271,14 @@ export class WorkbenchStore {
     /**
      * Toggle a chapter's selection.
      *
-     * A chapter that cannot be included is never selectable — the user can
-     * still tick it in the baseline, but the download then fails on it.
+     * A locked chapter starts unticked, but the user can tick it by hand: a
+     * reader who bought it can download it. The bulk actions leave locked
+     * chapters alone, so "Select all" never sweeps in a paywalled page.
      */
     toggleChapter(index: number): void {
         this.update((state) => {
             const chapter = state.chapters[index];
-            if (!chapter || !chapter.isIncludeable) return;
+            if (!chapter) return;
             chapter.selected = !chapter.selected;
         });
     }
@@ -247,6 +332,78 @@ export class WorkbenchStore {
     get visibleChapters(): number[] {
         return matchingIndices(this.#state.chapters, this.#state.filter);
     }
+}
+
+/**
+ * A range of chapters, as the user typed it.
+ *
+ * The numbers are one-based, because that is how the chapters are numbered in
+ * the list.
+ */
+export interface ChapterRange {
+    /** The first chapter of the range, one-based. */
+    from: number;
+    /** The last chapter of the range, one-based. */
+    to: number;
+}
+
+/**
+ * Parse the two numbers of the range dialog.
+ *
+ * The result is `null` when the range cannot be used: the numbers are not
+ * numbers, they are below one, or they reach past the end of the list.
+ *
+ * The order the two numbers are given in does not matter: a range typed
+ * backwards is the range the user meant.
+ *
+ * @param fromText The first field's value.
+ * @param toText The second field's value.
+ * @param total How many chapters the list holds.
+ * @returns The range, or `null` when it is not usable.
+ */
+export function parseChapterRange(
+    fromText: string,
+    toText: string,
+    total: number,
+): ChapterRange | null {
+    if (total <= 0) return null;
+
+    const from = Number.parseInt(fromText, 10);
+    const to = Number.parseInt(toText, 10);
+    if (!Number.isFinite(from) || !Number.isFinite(to)) return null;
+    if (from < 1 || to < 1 || from > total || to > total) return null;
+
+    return { from: Math.min(from, to), to: Math.max(from, to) };
+}
+
+/**
+ * The story options, as the workbench's switches show them.
+ *
+ * The switches and the settings do not use the same words, which is why this
+ * mapping lives in one place: the switch says "include the author notes" and
+ * the setting says "remove the author notes", so the two are opposites.
+ */
+export interface StoryOptionSwitches {
+    /** Whether the "include the author notes" switch is on. */
+    includeAuthorNotes: boolean;
+    /** Whether the "include the contents page" switch is on. */
+    includeTocPage: boolean;
+}
+
+/**
+ * Read the story options out of the settings, for the switches to show.
+ *
+ * @param story The story group's settings.
+ * @returns The switches' states.
+ */
+export function storyOptionSwitches(story: {
+    removeAuthorNotes: boolean;
+    includeTocPage: boolean;
+}): StoryOptionSwitches {
+    return {
+        includeAuthorNotes: !story.removeAuthorNotes,
+        includeTocPage: story.includeTocPage,
+    };
 }
 
 /**
