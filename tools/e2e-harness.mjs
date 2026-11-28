@@ -1063,6 +1063,12 @@ async function main() {
             // The extension's page stays active in the window being
             // photographed, which is a different window — Firefox's "active
             // tab" is a per-window notion, so each window has its own.
+            // A screenshot of a page that cannot read the story shows only
+            // the access prompt, so the fixture's host is allowed first,
+            // unless the access prompt is what is being photographed.
+            if (options["no-grant"] === undefined) {
+                await harness.grantHostAccess("http://localhost/*");
+            }
             const fixtureWindow = await harness.newWindow();
             await harness.switchTo(fixtureWindow);
             await harness.navigate(`${harness.fixtureOrigin}/`);
