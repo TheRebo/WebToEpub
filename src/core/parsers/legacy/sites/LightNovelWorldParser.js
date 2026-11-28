@@ -240,5 +240,13 @@ export class NovelPhoenixParser extends LightNovelWorldParser {
         }
         return urls;
     }
+
+    getInformationEpubItemChildNodes(dom) {
+        return [...dom.querySelectorAll("div.summary div.content")];
+    }
+
+    cleanInformationNode(node) {
+        util.removeChildElementsMatchingSelector(node, "div.expand");
+    }
 }
 
