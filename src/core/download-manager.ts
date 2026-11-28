@@ -162,7 +162,7 @@ export interface DownloadBehaviour {
  * same way whether or not the settings have been read yet.
  */
 export const DEFAULT_BEHAVIOUR: DownloadBehaviour = {
-    skipFailedChapters: false,
+    skipFailedChapters: true,
     retryOnEmptyPage: true,
     minimumDelay: 500,
     maxChapters: 5000,
@@ -952,7 +952,12 @@ export class DownloadManager {
         // The cover is usually *not* in any chapter, so it is added to the
         // set of images to fetch here. Without this, a book whose cover
         // lives only on the story page would be built without one.
-        const coverUrl = parser && storyDom ? parser.findCoverImageUrl(storyDom) : null;
+        let coverUrl: string | null = null;
+        try {
+            coverUrl = parser && storyDom ? parser.findCoverImageUrl(storyDom) : null;
+        } catch {
+            // A parser that cannot find its cover leaves the book without one.
+        }
         if (coverUrl) {
             const absolute = resolveUrl(coverUrl, job.sourceUrl);
             if (absolute && !images.has(absolute)) {
@@ -965,6 +970,9 @@ export class DownloadManager {
         }
 
         const downloaded = new Map<string, ImageData>();
+        // The images that stand in for a failed download. A chapter keeps its
+        // placeholder, but a placeholder is never the book's cover.
+        const failedImages = new Set<string>();
         for (const url of images.keys()) {
             if (signal.aborted) {
                 job.phase = "cancelled";
@@ -982,6 +990,7 @@ export class DownloadManager {
                 // A failed image becomes a visible placeholder rather than a
                 // zero-byte file, which would corrupt the EPUB.
                 downloaded.set(url, buildPlaceholderImage());
+                failedImages.add(url);
             }
             await throttle(100, signal);
         }
@@ -1000,6 +1009,7 @@ export class DownloadManager {
             for (const [url, image] of downloaded) {
                 if (image.mediaType === SVG_MEDIA_TYPE) {
                     downloaded.set(url, buildPlaceholderImage());
+                    failedImages.add(url);
                 }
             }
         }
@@ -1052,7 +1062,8 @@ export class DownloadManager {
         this.#report(job);
         diagnostic("Building the EPUB", job.id, packed.length, "chapters");
 
-        const metadata = this.#buildMetadata(job, storyDom, parser, downloaded, bookSettings);
+        const usable = new Map([...downloaded].filter(([url]) => !failedImages.has(url)));
+        const metadata = this.#buildMetadata(job, storyDom, parser, usable, bookSettings);
         const result = packEpub(packed, metadata);
 
         // --- Save ---
@@ -1599,7 +1610,9 @@ function isEmptyDocument(dom: Document): boolean {
  * real chapter.
  */
 function hasVisibleText(element: Element): boolean {
-    if (element.querySelector("img, svg, image, video, audio, embed, object")) return true;
+    // Only an image survives the sanitiser; a chapter that is nothing but a
+    // video or an embedded SVG would be packed empty (ADR-0041).
+    if (element.querySelector("img")) return true;
     const text = element.textContent?.replace(/\s+/g, " ").trim() ?? "";
     return text.length > 0;
 }

@@ -296,6 +296,8 @@ describe("the download manager's library record", () => {
             saveFile: async (fileName) => ({ fileName, fileSize: 4096 }),
             parserFor: () => null,
             throttle: async () => undefined,
+            // No parser reads these chapters, so they are kept as placeholders.
+            behaviour: async () => ({ ...DEFAULT_BEHAVIOUR, skipFailedChapters: false }),
             saveToLibrary: async (entry) => {
                 saved.push(entry);
             },

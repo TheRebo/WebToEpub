@@ -109,15 +109,12 @@ function isSvg(data: Uint8Array): boolean {
     const head = new TextDecoder("utf-8", { fatal: false }).decode(data.subarray(0, 512));
     const trimmed = head.trimStart().toLowerCase();
     if (!trimmed.startsWith("<")) return false;
-    return (
-        trimmed.startsWith("<?xml") ||
-        trimmed.startsWith("<svg") ||
-        trimmed.startsWith("<!doctype svg") ||
-        trimmed.startsWith("<!--") ||
-        trimmed.startsWith("<g") ||
-        trimmed.startsWith("<path") ||
-        trimmed.startsWith("<rect")
+    // An XML declaration or a comment can open an XHTML error page as easily
+    // as an SVG, so the first real element has to be `<svg>`.
+    const element = /<(?![?!])([a-z][\w:-]*)/.exec(
+        trimmed.replace(/<!--[\s\S]*?-->/g, "").replace(/<!doctype[^>]*>/g, ""),
     );
+    return element?.[1] === "svg" || element?.[1] === "svg:svg";
 }
 
 /**

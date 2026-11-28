@@ -152,3 +152,27 @@ describe("one download at a time", () => {
         expect(manager.progress(id)?.phase).toBe("cancelled");
     });
 });
+
+describe("a cover that could not be downloaded", () => {
+    it("is left out, instead of the missing-image picture becoming the cover", async () => {
+        const saved: Array<{ cover?: Uint8Array }> = [];
+        const parser = {
+            ...fakeParser("story", []),
+            findCoverImageUrl: () => "https://example.com/cover.png",
+        } as unknown as Parser;
+        const manager = new DownloadManager({
+            ...dependencies({ parserFor: () => parser }, []),
+            fetchBytes: async () => {
+                throw new TypeError("NetworkError when attempting to fetch resource.");
+            },
+            saveToLibrary: async (entry) => {
+                saved.push(entry);
+            },
+        });
+        const id = manager.start("https://example.com/story", "Story", [
+            { sourceUrl: "https://example.com/1", title: "One" },
+        ]);
+        expect((await settle(manager, id)).phase).toBe("complete");
+        expect(saved[0]?.cover).toBeUndefined();
+    });
+});
