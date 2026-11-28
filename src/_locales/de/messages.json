@@ -45,10 +45,6 @@
     "message": "EPUB erstellen",
     "description": "Die Schaltfläche, die das Buch erstellt."
   },
-  "workbenchSave": {
-    "message": "Speichern",
-    "description": "Die Schaltfläche, die die Metadaten speichert."
-  },
   "workbenchCancel": {
     "message": "Abbrechen",
     "description": "Die Schaltfläche, die einen Download stoppt."
@@ -157,10 +153,6 @@
     "message": "Suche nach Kapiteln…",
     "description": "Wird beim Laden der Kapitelliste angezeigt."
   },
-  "workbenchDetected": {
-    "message": "Erkannt",
-    "description": "Wird angezeigt, wenn ein Parser die Seite erkannt hat."
-  },
   "workbenchFieldTitle": {
     "message": "Titel",
     "description": "Der Titel der Story."
@@ -180,10 +172,6 @@
   "workbenchResetFilename": {
     "message": "Zurücksetzen",
     "description": "Stellt den Standarddateinamen wieder her."
-  },
-  "workbenchChooseFromPage": {
-    "message": "Von Seite wählen",
-    "description": "Wählt das Coverbild von der Seite aus."
   },
   "workbenchRemoveCover": {
     "message": "Cover entfernen",
@@ -205,10 +193,6 @@
     "message": "Das gilt für jedes Buch, das Sie erstellen.",
     "description": "Erklärt, dass die Schalter die Einstellungen ändern."
   },
-  "workbenchNoCover": {
-    "message": "Kein Cover",
-    "description": "Wird angezeigt, wenn es kein Coverbild gibt."
-  },
   "workbenchCoverUrl": {
     "message": "Adresse des Coverbilds",
     "description": "Die Adresse des Coverbilds."
@@ -217,25 +201,9 @@
     "message": "Auf dieser Seite wurde keine Story gefunden",
     "description": "Wenn die Seite keine Story ist."
   },
-  "workbenchTryAnyway": {
-    "message": "Trotzdem versuchen",
-    "description": "Öffnet die Werkbank trotzdem."
-  },
   "workbenchNoStoryHint": {
     "message": "Prüfen Sie, ob dies die Kapitelliste der Geschichte ist, oder zeigen Sie Kintsugi, wo die Kapitel stehen.",
     "description": "Unter der leeren Kapitelliste."
-  },
-  "workbenchUnsupportedSite": {
-    "message": "Diese Seite wird noch nicht unterstützt",
-    "description": "Wenn kein Parser passt."
-  },
-  "workbenchUseSelectorBuilder": {
-    "message": "Selektor erstellen",
-    "description": "Öffnet den Selektor-Editor."
-  },
-  "workbenchReloadPage": {
-    "message": "Seite neu laden",
-    "description": "Lädt den Tab neu."
   },
   "workbenchFieldUrl": {
     "message": "Story-Adresse",
@@ -333,10 +301,6 @@
     "message": "Werkbank öffnen",
     "description": "Die Hauptschaltfläche des Popups."
   },
-  "popupAddToLibrary": {
-    "message": "Zur Bibliothek hinzufügen",
-    "description": "Die Bibliotheksschaltfläche des Popups."
-  },
   "popupLibraryShort": {
     "message": "Bibliothek",
     "description": "Die sichtbare Beschriftung der Bibliotheksschaltfläche."
@@ -360,10 +324,6 @@
   "popupGetStarted": {
     "message": "Kintsugi einrichten",
     "description": "Die Schaltfläche des Popups, die die Einführung öffnet."
-  },
-  "popupUnsupported": {
-    "message": "Diese Seite wird noch nicht unterstützt.",
-    "description": "Wenn kein Parser passt."
   },
   "popupSaved": {
     "message": "Ihr Buch ist fertig.",
@@ -789,10 +749,6 @@
     "message": "Schritt 3 von 3",
     "description": "Die Beschriftung des dritten Einführungsschritts."
   },
-  "onboardingNext": {
-    "message": "Weiter",
-    "description": "Die Schaltfläche für den nächsten Schritt."
-  },
   "onboardingBack": {
     "message": "Zurück",
     "description": "Die Schaltfläche für den vorherigen Schritt."
@@ -853,25 +809,41 @@
     "message": "Kintsugi kennt diese Seite noch nicht.",
     "description": "Kein Parser passte zur URL."
   },
-  "errorTimeout": {
-    "message": "Die Seite hat zu lange gebraucht.",
-    "description": "Eine Zeitüberschreitung."
-  },
   "errorCancelled": {
     "message": "Abgebrochen.",
     "description": "Der Nutzer hat den Vorgang abgebrochen."
   },
-  "errorForbidden": {
-    "message": "Die Seite hat die Anfrage abgelehnt.",
-    "description": "Ein HTTP 403."
+  "errorHttpStatus": {
+    "message": "Die Seite hat mit einem Fehler geantwortet.",
+    "description": "Der Server meldete einen HTTP-Fehler."
+  },
+  "errorRateLimited": {
+    "message": "Die Seite begrenzt die Anfragen. Warten Sie kurz und versuchen Sie es erneut.",
+    "description": "Der Server antwortete mit 429."
+  },
+  "errorChallenge": {
+    "message": "Die Seite möchte prüfen, ob Sie ein Mensch sind. Öffnen Sie die Seite und versuchen Sie es dann erneut.",
+    "description": "Die Seite zeigte eine Prüfung wie ein Captcha."
+  },
+  "errorEmptyChapter": {
+    "message": "Das Kapitel kam leer zurück. Es ist vielleicht gesperrt, oder die Seite hat sich geändert.",
+    "description": "Eine Kapitelseite ohne Text."
+  },
+  "errorStorageFull": {
+    "message": "Es ist nicht genug Platz, um dieses Buch zu speichern.",
+    "description": "Der Speicher des Browsers ist voll."
+  },
+  "errorPermission": {
+    "message": "Kintsugi darf diese Seite nicht lesen.",
+    "description": "Die Seite wurde nicht erlaubt."
+  },
+  "errorBusy": {
+    "message": "Ein anderes Buch wird noch erstellt. Warten Sie, bis es fertig ist, oder brechen Sie es ab.",
+    "description": "Ein zweiter Download wurde gestartet."
   },
   "errorParse": {
     "message": "Die Seite konnte nicht gelesen werden.",
     "description": "Die Seite konnte nicht ausgewertet werden."
-  },
-  "errorNoChapters": {
-    "message": "Auf dieser Seite wurden keine Kapitel gefunden.",
-    "description": "Die Kapitelliste war leer."
   },
   "filterSearch": {
     "message": "Suchen",

@@ -48,7 +48,6 @@ const SOURCE = {
         "How many chapters are visible, out of how many were found.",
     ],
     workbenchPack: ["Build EPUB", "The button that builds the book."],
-    workbenchSave: ["Save", "The button that saves the metadata."],
     workbenchCancel: ["Cancel", "The button that stops a download."],
     workbenchRetry: ["Try again", "The button that starts a failed or cancelled download again."],
     workbenchDismiss: ["Dismiss", "The button that hides a finished download's status."],
@@ -78,13 +77,11 @@ const SOURCE = {
     workbenchNoChaptersSelected: ["No chapters selected", "Shown when nothing is ticked."],
     workbenchBusy: ["A book is being made", "Why Pack is unavailable while a download runs."],
     workbenchWaitingForChapters: ["Looking for chapters…", "Shown while the chapter list loads."],
-    workbenchDetected: ["Detected", "Shown when a parser recognised the site."],
     workbenchFieldTitle: ["Title", "The story's title."],
     workbenchFieldAuthor: ["Author", "The story's author."],
     workbenchFieldLanguage: ["Language", "The story's language."],
     workbenchFieldFilename: ["File name", "The name the EPUB is saved under."],
     workbenchResetFilename: ["Reset", "Restores the default file name."],
-    workbenchChooseFromPage: ["Choose from page", "Picks the cover image from the page."],
     workbenchRemoveCover: ["Remove cover", "Removes the cover image."],
     workbenchIncludeAuthorNotes: [
         "Include author notes",
@@ -99,17 +96,12 @@ const SOURCE = {
         "These apply to every book you make.",
         "Explains that the workbench's switches change the settings.",
     ],
-    workbenchNoCover: ["No cover", "Shown when there is no cover image."],
     workbenchCoverUrl: ["Cover image address", "The address of the cover image."],
     workbenchNoStoryHere: ["No story found on this page", "Shown when the page is not a story."],
-    workbenchTryAnyway: ["Try anyway", "Opens the workbench regardless."],
     workbenchNoStoryHint: [
         "Check that this is the story's chapter list, or show Kintsugi where the chapters are.",
         "Shown under the empty chapter list.",
     ],
-    workbenchUnsupportedSite: ["This site is not supported yet", "Shown when no parser matched."],
-    workbenchUseSelectorBuilder: ["Build a selector", "Opens the selector builder."],
-    workbenchReloadPage: ["Reload the page", "Reloads the tab."],
     workbenchFieldUrl: ["Story address", "The field holding the address of the story's page."],
     workbenchFieldUrlHint: [
         "Paste the address of the story's chapter list.",
@@ -157,7 +149,6 @@ const SOURCE = {
 
     // --- Popup ---
     popupOpenWorkbench: ["Open workbench", "The popup's main button."],
-    popupAddToLibrary: ["Add to library", "The popup's library button."],
     popupLibraryShort: ["Library", "The popup's library button's visible label."],
     popupWorkbenchShort: ["Workbench", "The popup's workbench button's visible label."],
     popupSettings: ["Settings", "The popup's settings button."],
@@ -167,7 +158,6 @@ const SOURCE = {
         "Shown on the first run, before the onboarding.",
     ],
     popupGetStarted: ["Set up Kintsugi", "The popup's button that opens the onboarding."],
-    popupUnsupported: ["This site is not supported yet.", "Shown when no parser matched."],
     popupSaved: ["Your book is ready.", "Shown when a download finishes."],
     popupTryAgain: ["Try again", "The popup's retry button."],
     popupChecking: ["Looking at this page…", "Shown while the popup waits for the worker."],
@@ -385,7 +375,6 @@ const SOURCE = {
     onboardingStep1: ["Step 1 of 3", "The first onboarding step's label."],
     onboardingStep2: ["Step 2 of 3", "The second onboarding step's label."],
     onboardingStep3: ["Step 3 of 3", "The third onboarding step's label."],
-    onboardingNext: ["Next", "The button that moves to the next step."],
     onboardingBack: ["Back", "The button that moves to the previous step."],
     onboardingFinish: ["Finish", "The button that completes the onboarding."],
     onboardingSkip: ["Skip", "The button that skips the onboarding."],
@@ -424,11 +413,36 @@ const SOURCE = {
     errorGeneric: ["Something went wrong. Please try again.", "The fallback error message."],
     errorNetwork: ["Could not reach the site.", "A network failure."],
     errorNoParser: ["Kintsugi does not know this site yet.", "No parser matched the URL."],
-    errorTimeout: ["The site took too long to answer.", "A timeout."],
     errorCancelled: ["Cancelled.", "The user cancelled the operation."],
-    errorForbidden: ["The site refused the request.", "An HTTP 403."],
+    errorHttpStatus: [
+        "The site answered with an error.",
+        "The server returned an HTTP error status.",
+    ],
+    errorRateLimited: [
+        "The site is limiting requests. Wait a moment, then try again.",
+        "The server answered 429, too many requests.",
+    ],
+    errorChallenge: [
+        "The site wants to check that you are a person. Open the page, then try again.",
+        "The site served a challenge such as a captcha.",
+    ],
+    errorEmptyChapter: [
+        "The chapter came back empty. It may be locked, or the site may have changed.",
+        "A chapter page with no text in it.",
+    ],
+    errorStorageFull: [
+        "There is not enough space to save this book.",
+        "The browser's storage is full.",
+    ],
+    errorPermission: [
+        "Kintsugi is not allowed to read this site.",
+        "The site has not been allowed.",
+    ],
+    errorBusy: [
+        "Another book is still being made. Wait for it to finish, or cancel it.",
+        "A second download was started while one is running.",
+    ],
     errorParse: ["The page could not be read.", "The page could not be parsed."],
-    errorNoChapters: ["No chapters were found on this page.", "The chapter list was empty."],
 
     // --- Filter ---
     filterSearch: ["Search", "The filter's search box."],

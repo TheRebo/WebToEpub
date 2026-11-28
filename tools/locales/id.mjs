@@ -22,7 +22,6 @@ export default {
         "Berapa banyak bab yang terlihat dari total yang ditemukan.",
     ],
     workbenchPack: ["Buat EPUB", "Tombol untuk menyusun buku."],
-    workbenchSave: ["Simpan", "Tombol untuk menyimpan metadata."],
     workbenchCancel: ["Batal", "Tombol untuk menghentikan unduhan."],
     workbenchRetry: ["Coba lagi", "Tombol untuk memulai lagi unduhan yang gagal atau dibatalkan."],
     workbenchDismiss: ["Tutup", "Tombol untuk menyembunyikan status unduhan yang selesai."],
@@ -55,13 +54,11 @@ export default {
         "Ditampilkan saat tidak ada yang dicentang.",
     ],
     workbenchWaitingForChapters: ["Mencari bab…", "Ditampilkan saat daftar bab sedang dimuat."],
-    workbenchDetected: ["Terdeteksi", "Ditampilkan saat parser mengenali situs."],
     workbenchFieldTitle: ["Judul", "Judul cerita."],
     workbenchFieldAuthor: ["Penulis", "Penulis cerita."],
     workbenchFieldLanguage: ["Bahasa", "Bahasa cerita."],
     workbenchFieldFilename: ["Nama berkas", "Nama untuk menyimpan berkas EPUB."],
     workbenchResetFilename: ["Atur ulang", "Mengembalikan nama berkas ke bawaan."],
-    workbenchChooseFromPage: ["Pilih dari halaman", "Mengambil gambar sampul dari halaman."],
     workbenchRemoveCover: ["Hapus sampul", "Menghapus gambar sampul."],
     workbenchIncludeAuthorNotes: [
         "Sertakan catatan penulis",
@@ -73,7 +70,6 @@ export default {
         "Menjelaskan bahwa sakelar ini mengubah pengaturan.",
     ],
     workbenchMoreOptions: ["Pilihan lainnya", "Membuka halaman pengaturan lengkap."],
-    workbenchNoCover: ["Tanpa sampul", "Ditampilkan saat tidak ada gambar sampul."],
     workbenchCoverUrl: ["Alamat gambar sampul", "Alamat gambar sampul."],
     workbenchNoStoryHere: [
         "Tidak ada cerita di halaman ini",
@@ -83,13 +79,6 @@ export default {
         "Pastikan ini halaman daftar bab cerita, atau tunjukkan pada Kintsugi letak bab-babnya.",
         "Ditampilkan di bawah daftar bab yang kosong.",
     ],
-    workbenchTryAnyway: ["Coba saja", "Membuka meja kerja tetap saja."],
-    workbenchUnsupportedSite: [
-        "Situs ini belum didukung",
-        "Ditampilkan saat tidak ada parser yang cocok.",
-    ],
-    workbenchUseSelectorBuilder: ["Buat selector", "Membuka pembuat selector."],
-    workbenchReloadPage: ["Muat ulang halaman", "Memuat ulang tab."],
     workbenchFieldUrl: ["Alamat cerita", "Kolom yang berisi alamat halaman cerita."],
     workbenchFieldUrlHint: ["Tempelkan alamat daftar bab.", "Petunjuk di bawah kolom alamat."],
     workbenchLoadStory: ["Muat", "Tombol untuk memuat cerita dari alamat tersebut."],
@@ -132,7 +121,6 @@ export default {
 
     // --- Popup ---
     popupOpenWorkbench: ["Buka meja kerja", "Tombol utama pada popup."],
-    popupAddToLibrary: ["Tambahkan ke pustaka", "Tombol pustaka pada popup."],
     popupLibraryShort: ["Pustaka", "Label tombol pustaka pada popup."],
     popupWorkbenchShort: ["Meja kerja", "Label tombol meja kerja pada popup."],
     popupSettings: ["Pengaturan", "Tombol pengaturan pada popup."],
@@ -145,10 +133,6 @@ export default {
         "Ditampilkan pada penggunaan pertama, sebelum panduan.",
     ],
     popupGetStarted: ["Siapkan Kintsugi", "Tombol popup yang membuka panduan."],
-    popupUnsupported: [
-        "Situs ini belum didukung.",
-        "Ditampilkan saat tidak ada parser yang cocok.",
-    ],
     popupSaved: ["Buku Anda sudah siap.", "Ditampilkan saat unduhan selesai."],
     popupTryAgain: ["Coba lagi", "Tombol coba lagi pada popup."],
     popupChecking: [
@@ -372,7 +356,6 @@ export default {
     onboardingStep1: ["Langkah 1 dari 3", "Label langkah pertama orientasi."],
     onboardingStep2: ["Langkah 2 dari 3", "Label langkah kedua orientasi."],
     onboardingStep3: ["Langkah 3 dari 3", "Label langkah ketiga orientasi."],
-    onboardingNext: ["Berikutnya", "Tombol untuk ke langkah berikutnya."],
     onboardingBack: ["Kembali", "Tombol untuk ke langkah sebelumnya."],
     onboardingFinish: ["Selesai", "Tombol untuk menyelesaikan orientasi."],
     onboardingSkip: ["Lewati", "Tombol untuk melewati orientasi."],
@@ -411,11 +394,30 @@ export default {
         "Kintsugi belum mengenal situs ini.",
         "Tidak ada parser yang cocok dengan URL ini.",
     ],
-    errorTimeout: ["Situs terlalu lama menjawab.", "Waktu habis."],
     errorCancelled: ["Dibatalkan.", "Pengguna membatalkan operasi."],
-    errorForbidden: ["Situs menolak permintaan tersebut.", "HTTP 403."],
+    errorHttpStatus: ["Situs menjawab dengan galat.", "Server mengembalikan status galat HTTP."],
+    errorRateLimited: [
+        "Situs membatasi permintaan. Tunggu sebentar, lalu coba lagi.",
+        "Server menjawab 429.",
+    ],
+    errorChallenge: [
+        "Situs ingin memastikan bahwa Anda manusia. Buka halamannya, lalu coba lagi.",
+        "Situs menampilkan pemeriksaan seperti captcha.",
+    ],
+    errorEmptyChapter: [
+        "Bab ini kosong. Mungkin terkunci, atau situsnya berubah.",
+        "Halaman bab tanpa teks.",
+    ],
+    errorStorageFull: [
+        "Ruang tidak cukup untuk menyimpan buku ini.",
+        "Penyimpanan peramban penuh.",
+    ],
+    errorPermission: ["Kintsugi tidak diizinkan membaca situs ini.", "Situs belum diizinkan."],
+    errorBusy: [
+        "Buku lain masih dibuat. Tunggu sampai selesai, atau batalkan.",
+        "Unduhan kedua dimulai saat satu masih berjalan.",
+    ],
     errorParse: ["Halaman tidak dapat dibaca.", "Halaman tidak dapat diurai."],
-    errorNoChapters: ["Tidak ditemukan bab di halaman ini.", "Daftar bab kosong."],
 
     // --- Filter ---
     filterSearch: ["Cari", "Kotak pencarian penyaring."],

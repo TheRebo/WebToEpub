@@ -45,10 +45,6 @@
     "message": "EPUB を作成",
     "description": "本を作るボタン。"
   },
-  "workbenchSave": {
-    "message": "保存",
-    "description": "メタデータを保存するボタン。"
-  },
   "workbenchCancel": {
     "message": "キャンセル",
     "description": "ダウンロードを止めるボタン。"
@@ -157,10 +153,6 @@
     "message": "章を探しています…",
     "description": "章リストを読み込み中に表示。"
   },
-  "workbenchDetected": {
-    "message": "検出済み",
-    "description": "パーサーがサイトを認識できたときに表示。"
-  },
   "workbenchFieldTitle": {
     "message": "タイトル",
     "description": "物語のタイトル。"
@@ -180,10 +172,6 @@
   "workbenchResetFilename": {
     "message": "リセット",
     "description": "既定のファイル名に戻します。"
-  },
-  "workbenchChooseFromPage": {
-    "message": "ページから選択",
-    "description": "ページ内の画像から表紙を選びます。"
   },
   "workbenchRemoveCover": {
     "message": "表紙を削除",
@@ -205,10 +193,6 @@
     "message": "これは作成するすべての本に適用されます。",
     "description": "スイッチが設定そのものを変えることの説明。"
   },
-  "workbenchNoCover": {
-    "message": "表紙なし",
-    "description": "表紙画像がないときに表示。"
-  },
   "workbenchCoverUrl": {
     "message": "表紙画像の URL",
     "description": "表紙画像のアドレス。"
@@ -217,25 +201,9 @@
     "message": "このページに物語が見つかりません",
     "description": "ページが物語ではないときに表示。"
   },
-  "workbenchTryAnyway": {
-    "message": "このまま試す",
-    "description": "検討中、通常はそのまま開きます。"
-  },
   "workbenchNoStoryHint": {
     "message": "このページが作品の目次か確認するか、章の場所を Kintsugi に教えてください。",
     "description": "空の章リストの下に表示されます。"
-  },
-  "workbenchUnsupportedSite": {
-    "message": "このサイトはまだ対応していません",
-    "description": "パーサーが一致しなかったときに表示。"
-  },
-  "workbenchUseSelectorBuilder": {
-    "message": "セレクターを作成",
-    "description": "セレクタービルダーを開くボタン。"
-  },
-  "workbenchReloadPage": {
-    "message": "ページを再読み込み",
-    "description": "タブを再読み込みします。"
   },
   "workbenchFieldUrl": {
     "message": "物語のURL",
@@ -333,10 +301,6 @@
     "message": "ワークベンチを開く",
     "description": "ポップアップの主ボタン。"
   },
-  "popupAddToLibrary": {
-    "message": "ライブラリに追加",
-    "description": "ポップアップのライブラリボタン。"
-  },
   "popupLibraryShort": {
     "message": "ライブラリ",
     "description": "ポップアップのライブラリボタンのラベル。"
@@ -360,10 +324,6 @@
   "popupGetStarted": {
     "message": "Kintsugi を設定",
     "description": "ガイドを開くポップアップのボタン。"
-  },
-  "popupUnsupported": {
-    "message": "このサイトはまだ対応していません。",
-    "description": "パーサーが一致しなかったときに表示。"
   },
   "popupSaved": {
     "message": "本の準備ができました。",
@@ -789,10 +749,6 @@
     "message": "3 ステップ中の 3 番目",
     "description": "3 番目のステップのラベル。"
   },
-  "onboardingNext": {
-    "message": "次へ",
-    "description": "次のステップへ進むボタン。"
-  },
   "onboardingBack": {
     "message": "戻る",
     "description": "前のステップへ戻るボタン。"
@@ -853,25 +809,41 @@
     "message": "Kintsugi はまだこのサイトを知りません。",
     "description": "URL に一致するパーサーがなかった。"
   },
-  "errorTimeout": {
-    "message": "サイトの応答に時間がかかりすぎました。",
-    "description": "タイムアウト。"
-  },
   "errorCancelled": {
     "message": "キャンセルしました。",
     "description": "ユーザーが操作を取り消した。"
   },
-  "errorForbidden": {
-    "message": "サイトがリクエストを拒否しました。",
-    "description": "HTTP 403。"
+  "errorHttpStatus": {
+    "message": "サイトがエラーを返しました。",
+    "description": "サーバーが HTTP エラーを返しました。"
+  },
+  "errorRateLimited": {
+    "message": "サイトがリクエストを制限しています。少し待ってからやり直してください。",
+    "description": "サーバーが 429 を返しました。"
+  },
+  "errorChallenge": {
+    "message": "サイトが人間かどうかを確認しようとしています。ページを開いてから、やり直してください。",
+    "description": "サイトが captcha などの確認を表示しました。"
+  },
+  "errorEmptyChapter": {
+    "message": "章が空でした。ロックされているか、サイトが変わった可能性があります。",
+    "description": "本文のない章ページ。"
+  },
+  "errorStorageFull": {
+    "message": "この本を保存する空き容量がありません。",
+    "description": "ブラウザーのストレージがいっぱいです。"
+  },
+  "errorPermission": {
+    "message": "Kintsugi はこのサイトを読むことを許可されていません。",
+    "description": "サイトが許可されていません。"
+  },
+  "errorBusy": {
+    "message": "別の本を作成中です。終わるまで待つか、キャンセルしてください。",
+    "description": "実行中に 2 つ目のダウンロードが開始されました。"
   },
   "errorParse": {
     "message": "ページを読み取れませんでした。",
     "description": "ページを解析できなかった。"
-  },
-  "errorNoChapters": {
-    "message": "このページに章は見つかりませんでした。",
-    "description": "章リストが空だった。"
   },
   "filterSearch": {
     "message": "検索",

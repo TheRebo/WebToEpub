@@ -20,7 +20,6 @@ export default {
         "Wie viele Kapitel sichtbar sind, von wie vielen gefunden wurden.",
     ],
     workbenchPack: ["EPUB erstellen", "Die Schaltfläche, die das Buch erstellt."],
-    workbenchSave: ["Speichern", "Die Schaltfläche, die die Metadaten speichert."],
     workbenchCancel: ["Abbrechen", "Die Schaltfläche, die einen Download stoppt."],
     workbenchRetry: [
         "Erneut versuchen",
@@ -62,13 +61,11 @@ export default {
         "Suche nach Kapiteln…",
         "Wird beim Laden der Kapitelliste angezeigt.",
     ],
-    workbenchDetected: ["Erkannt", "Wird angezeigt, wenn ein Parser die Seite erkannt hat."],
     workbenchFieldTitle: ["Titel", "Der Titel der Story."],
     workbenchFieldAuthor: ["Autor", "Der Autor der Story."],
     workbenchFieldLanguage: ["Sprache", "Die Sprache der Story."],
     workbenchFieldFilename: ["Dateiname", "Der Name der gespeicherten EPUB."],
     workbenchResetFilename: ["Zurücksetzen", "Stellt den Standarddateinamen wieder her."],
-    workbenchChooseFromPage: ["Von Seite wählen", "Wählt das Coverbild von der Seite aus."],
     workbenchRemoveCover: ["Cover entfernen", "Entfernt das Coverbild."],
     workbenchIncludeAuthorNotes: [
         "Autorennotizen einschließen",
@@ -83,7 +80,6 @@ export default {
         "Erklärt, dass die Schalter die Einstellungen ändern.",
     ],
     workbenchMoreOptions: ["Weitere Optionen", "Öffnet die vollständige Einstellungsseite."],
-    workbenchNoCover: ["Kein Cover", "Wird angezeigt, wenn es kein Coverbild gibt."],
     workbenchCoverUrl: ["Adresse des Coverbilds", "Die Adresse des Coverbilds."],
     workbenchNoStoryHere: [
         "Auf dieser Seite wurde keine Story gefunden",
@@ -93,13 +89,6 @@ export default {
         "Prüfen Sie, ob dies die Kapitelliste der Geschichte ist, oder zeigen Sie Kintsugi, wo die Kapitel stehen.",
         "Unter der leeren Kapitelliste.",
     ],
-    workbenchTryAnyway: ["Trotzdem versuchen", "Öffnet die Werkbank trotzdem."],
-    workbenchUnsupportedSite: [
-        "Diese Seite wird noch nicht unterstützt",
-        "Wenn kein Parser passt.",
-    ],
-    workbenchUseSelectorBuilder: ["Selektor erstellen", "Öffnet den Selektor-Editor."],
-    workbenchReloadPage: ["Seite neu laden", "Lädt den Tab neu."],
     workbenchFieldUrl: ["Story-Adresse", "Das Feld mit der Adresse der Story-Seite."],
     workbenchFieldUrlHint: [
         "Füge die Adresse der Kapitelliste ein.",
@@ -139,7 +128,6 @@ export default {
     phaseFailed: ["Fehlgeschlagen", "Wird angezeigt, wenn der Download fehlgeschlagen ist."],
     phaseCancelled: ["Abgebrochen", "Wird angezeigt, wenn der Download gestoppt wurde."],
     popupOpenWorkbench: ["Werkbank öffnen", "Die Hauptschaltfläche des Popups."],
-    popupAddToLibrary: ["Zur Bibliothek hinzufügen", "Die Bibliotheksschaltfläche des Popups."],
     popupLibraryShort: ["Bibliothek", "Die sichtbare Beschriftung der Bibliotheksschaltfläche."],
     popupWorkbenchShort: ["Werkbank", "Die sichtbare Beschriftung der Werkbankschaltfläche."],
     popupSettings: ["Einstellungen", "Die Einstellungsschaltfläche des Popups."],
@@ -155,7 +143,6 @@ export default {
         "Kintsugi einrichten",
         "Die Schaltfläche des Popups, die die Einführung öffnet.",
     ],
-    popupUnsupported: ["Diese Seite wird noch nicht unterstützt.", "Wenn kein Parser passt."],
     popupSaved: ["Ihr Buch ist fertig.", "Wird angezeigt, wenn ein Download endet."],
     popupTryAgain: ["Erneut versuchen", "Die Wiederholen-Schaltfläche des Popups."],
     popupChecking: [
@@ -413,7 +400,6 @@ export default {
     onboardingStep1: ["Schritt 1 von 3", "Die Beschriftung des ersten Einführungsschritts."],
     onboardingStep2: ["Schritt 2 von 3", "Die Beschriftung des zweiten Einführungsschritts."],
     onboardingStep3: ["Schritt 3 von 3", "Die Beschriftung des dritten Einführungsschritts."],
-    onboardingNext: ["Weiter", "Die Schaltfläche für den nächsten Schritt."],
     onboardingBack: ["Zurück", "Die Schaltfläche für den vorherigen Schritt."],
     onboardingFinish: ["Fertig", "Die Schaltfläche, die die Einführung beendet."],
     onboardingSkip: ["Überspringen", "Die Schaltfläche, die die Einführung überspringt."],
@@ -456,16 +442,35 @@ export default {
     ],
     errorNetwork: ["Die Seite war nicht erreichbar.", "Ein Netzwerkfehler."],
     errorNoParser: ["Kintsugi kennt diese Seite noch nicht.", "Kein Parser passte zur URL."],
-    errorTimeout: ["Die Seite hat zu lange gebraucht.", "Eine Zeitüberschreitung."],
     errorCancelled: ["Abgebrochen.", "Der Nutzer hat den Vorgang abgebrochen."],
-    errorForbidden: ["Die Seite hat die Anfrage abgelehnt.", "Ein HTTP 403."],
+    errorHttpStatus: [
+        "Die Seite hat mit einem Fehler geantwortet.",
+        "Der Server meldete einen HTTP-Fehler.",
+    ],
+    errorRateLimited: [
+        "Die Seite begrenzt die Anfragen. Warten Sie kurz und versuchen Sie es erneut.",
+        "Der Server antwortete mit 429.",
+    ],
+    errorChallenge: [
+        "Die Seite möchte prüfen, ob Sie ein Mensch sind. Öffnen Sie die Seite und versuchen Sie es dann erneut.",
+        "Die Seite zeigte eine Prüfung wie ein Captcha.",
+    ],
+    errorEmptyChapter: [
+        "Das Kapitel kam leer zurück. Es ist vielleicht gesperrt, oder die Seite hat sich geändert.",
+        "Eine Kapitelseite ohne Text.",
+    ],
+    errorStorageFull: [
+        "Es ist nicht genug Platz, um dieses Buch zu speichern.",
+        "Der Speicher des Browsers ist voll.",
+    ],
+    errorPermission: ["Kintsugi darf diese Seite nicht lesen.", "Die Seite wurde nicht erlaubt."],
+    errorBusy: [
+        "Ein anderes Buch wird noch erstellt. Warten Sie, bis es fertig ist, oder brechen Sie es ab.",
+        "Ein zweiter Download wurde gestartet.",
+    ],
     errorParse: [
         "Die Seite konnte nicht gelesen werden.",
         "Die Seite konnte nicht ausgewertet werden.",
-    ],
-    errorNoChapters: [
-        "Auf dieser Seite wurden keine Kapitel gefunden.",
-        "Die Kapitelliste war leer.",
     ],
     filterSearch: ["Suchen", "Das Suchfeld des Filters."],
     filterUseRegex: ["Regulären Ausdruck verwenden", "Ob die Suche ein Regex ist."],

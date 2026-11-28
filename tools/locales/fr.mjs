@@ -20,7 +20,6 @@ export default {
         "Combien de chapitres sont visibles, sur combien ont été trouvés.",
     ],
     workbenchPack: ["Créer l'EPUB", "Le bouton qui crée le livre."],
-    workbenchSave: ["Enregistrer", "Le bouton qui enregistre les métadonnées."],
     workbenchCancel: ["Annuler", "Le bouton qui arrête un téléchargement."],
     workbenchRetry: ["Réessayer", "Relance un téléchargement échoué ou annulé."],
     workbenchDismiss: ["Masquer", "Masque l’état d’un téléchargement terminé."],
@@ -53,16 +52,11 @@ export default {
     ],
     workbenchNoChaptersSelected: ["Aucun chapitre sélectionné", "Affiché quand rien n'est coché."],
     workbenchWaitingForChapters: ["Recherche des chapitres…", "Affiché pendant le chargement."],
-    workbenchDetected: ["Détecté", "Affiché quand un analyseur a reconnu le site."],
     workbenchFieldTitle: ["Titre", "Le titre de l'histoire."],
     workbenchFieldAuthor: ["Auteur", "L'auteur de l'histoire."],
     workbenchFieldLanguage: ["Langue", "La langue de l'histoire."],
     workbenchFieldFilename: ["Nom du fichier", "Le nom du fichier EPUB."],
     workbenchResetFilename: ["Réinitialiser", "Restaure le nom de fichier par défaut."],
-    workbenchChooseFromPage: [
-        "Choisir depuis la page",
-        "Choisit l'image de couverture depuis la page.",
-    ],
     workbenchRemoveCover: ["Retirer la couverture", "Retire l'image de couverture."],
     workbenchIncludeAuthorNotes: [
         "Inclure les notes de l'auteur",
@@ -74,7 +68,6 @@ export default {
         "Explique que ces interrupteurs modifient les réglages.",
     ],
     workbenchMoreOptions: ["Plus d'options", "Ouvre la page complète des paramètres."],
-    workbenchNoCover: ["Aucune couverture", "Affiché quand il n'y a pas d'image de couverture."],
     workbenchCoverUrl: ["Adresse de l'image de couverture", "L'adresse de l'image de couverture."],
     workbenchNoStoryHere: [
         "Aucune histoire trouvée sur cette page",
@@ -84,13 +77,6 @@ export default {
         "Vérifiez qu’il s’agit bien de la liste des chapitres, ou montrez à Kintsugi où se trouvent les chapitres.",
         "Sous la liste de chapitres vide.",
     ],
-    workbenchTryAnyway: ["Essayer quand même", "Ouvre l'atelier malgré tout."],
-    workbenchUnsupportedSite: [
-        "Ce site n'est pas encore pris en charge",
-        "Quand aucun analyseur ne correspond.",
-    ],
-    workbenchUseSelectorBuilder: ["Créer un sélecteur", "Ouvre le créateur de sélecteurs."],
-    workbenchReloadPage: ["Recharger la page", "Recharge l'onglet."],
     workbenchFieldUrl: [
         "Adresse de l'histoire",
         "Le champ qui contient l'adresse de la page de l'histoire.",
@@ -133,7 +119,6 @@ export default {
     phaseFailed: ["Échec", "Affiché quand le téléchargement a échoué."],
     phaseCancelled: ["Annulé", "Affiché quand le téléchargement a été arrêté."],
     popupOpenWorkbench: ["Ouvrir l'atelier", "Le bouton principal du popup."],
-    popupAddToLibrary: ["Ajouter à la bibliothèque", "Le bouton de bibliothèque du popup."],
     popupLibraryShort: ["Bibliothèque", "Le libellé visible du bouton de bibliothèque."],
     popupWorkbenchShort: ["Atelier", "Le libellé visible du bouton d'atelier."],
     popupSettings: ["Paramètres", "Le bouton de paramètres du popup."],
@@ -146,10 +131,6 @@ export default {
         "À la première ouverture, avant la présentation.",
     ],
     popupGetStarted: ["Configurer Kintsugi", "Le bouton du popup qui ouvre la présentation."],
-    popupUnsupported: [
-        "Ce site n'est pas encore pris en charge.",
-        "Quand aucun analyseur ne correspond.",
-    ],
     popupSaved: ["Votre livre est prêt.", "Affiché quand un téléchargement se termine."],
     popupTryAgain: ["Réessayer", "Le bouton de réessai du popup."],
     popupChecking: [
@@ -407,7 +388,6 @@ export default {
     onboardingStep1: ["Étape 1 sur 3", "L'étiquette de la première étape d'introduction."],
     onboardingStep2: ["Étape 2 sur 3", "L'étiquette de la deuxième étape d'introduction."],
     onboardingStep3: ["Étape 3 sur 3", "L'étiquette de la troisième étape d'introduction."],
-    onboardingNext: ["Suivant", "Le bouton qui passe à l'étape suivante."],
     onboardingBack: ["Retour", "Le bouton qui revient à l'étape précédente."],
     onboardingFinish: ["Terminer", "Le bouton qui termine l'introduction."],
     onboardingSkip: ["Passer", "Le bouton qui passe l'introduction."],
@@ -447,14 +427,33 @@ export default {
     ],
     errorNetwork: ["Impossible de joindre le site.", "Un échec réseau."],
     errorNoParser: ["Kintsugi ne connaît pas encore ce site.", "Aucun analyseur ne correspond."],
-    errorTimeout: ["Le site a mis trop de temps à répondre.", "Un délai dépassé."],
     errorCancelled: ["Annulé.", "L'utilisateur a annulé l'opération."],
-    errorForbidden: ["Le site a refusé la requête.", "Une erreur HTTP 403."],
-    errorParse: ["La page n'a pas pu être lue.", "La page n'a pas pu être analysée."],
-    errorNoChapters: [
-        "Aucun chapitre trouvé sur cette page.",
-        "La liste des chapitres était vide.",
+    errorHttpStatus: ["Le site a répondu par une erreur.", "Le serveur a renvoyé une erreur HTTP."],
+    errorRateLimited: [
+        "Le site limite les requêtes. Patientez un instant, puis réessayez.",
+        "Le serveur a répondu 429.",
     ],
+    errorChallenge: [
+        "Le site veut vérifier que vous êtes une personne. Ouvrez la page, puis réessayez.",
+        "Le site a présenté une vérification, comme un captcha.",
+    ],
+    errorEmptyChapter: [
+        "Le chapitre est revenu vide. Il est peut-être verrouillé, ou le site a changé.",
+        "Une page de chapitre sans texte.",
+    ],
+    errorStorageFull: [
+        "Il n’y a pas assez de place pour enregistrer ce livre.",
+        "Le stockage du navigateur est plein.",
+    ],
+    errorPermission: [
+        "Kintsugi n’est pas autorisé à lire ce site.",
+        "Le site n’a pas été autorisé.",
+    ],
+    errorBusy: [
+        "Un autre livre est en cours de création. Attendez qu’il se termine, ou annulez-le.",
+        "Un second téléchargement a été lancé.",
+    ],
+    errorParse: ["La page n'a pas pu être lue.", "La page n'a pas pu être analysée."],
     filterSearch: ["Rechercher", "Le champ de recherche du filtre."],
     filterUseRegex: ["Utiliser une expression régulière", "Si la recherche est une regex."],
     filterInclude: ["Inclure", "Ne garde que les chapitres correspondants."],

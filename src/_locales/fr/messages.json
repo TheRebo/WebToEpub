@@ -45,10 +45,6 @@
     "message": "Créer l'EPUB",
     "description": "Le bouton qui crée le livre."
   },
-  "workbenchSave": {
-    "message": "Enregistrer",
-    "description": "Le bouton qui enregistre les métadonnées."
-  },
   "workbenchCancel": {
     "message": "Annuler",
     "description": "Le bouton qui arrête un téléchargement."
@@ -157,10 +153,6 @@
     "message": "Recherche des chapitres…",
     "description": "Affiché pendant le chargement."
   },
-  "workbenchDetected": {
-    "message": "Détecté",
-    "description": "Affiché quand un analyseur a reconnu le site."
-  },
   "workbenchFieldTitle": {
     "message": "Titre",
     "description": "Le titre de l'histoire."
@@ -180,10 +172,6 @@
   "workbenchResetFilename": {
     "message": "Réinitialiser",
     "description": "Restaure le nom de fichier par défaut."
-  },
-  "workbenchChooseFromPage": {
-    "message": "Choisir depuis la page",
-    "description": "Choisit l'image de couverture depuis la page."
   },
   "workbenchRemoveCover": {
     "message": "Retirer la couverture",
@@ -205,10 +193,6 @@
     "message": "Cela s’applique à chaque livre que vous créez.",
     "description": "Explique que ces interrupteurs modifient les réglages."
   },
-  "workbenchNoCover": {
-    "message": "Aucune couverture",
-    "description": "Affiché quand il n'y a pas d'image de couverture."
-  },
   "workbenchCoverUrl": {
     "message": "Adresse de l'image de couverture",
     "description": "L'adresse de l'image de couverture."
@@ -217,25 +201,9 @@
     "message": "Aucune histoire trouvée sur cette page",
     "description": "Quand la page n'est pas une histoire."
   },
-  "workbenchTryAnyway": {
-    "message": "Essayer quand même",
-    "description": "Ouvre l'atelier malgré tout."
-  },
   "workbenchNoStoryHint": {
     "message": "Vérifiez qu’il s’agit bien de la liste des chapitres, ou montrez à Kintsugi où se trouvent les chapitres.",
     "description": "Sous la liste de chapitres vide."
-  },
-  "workbenchUnsupportedSite": {
-    "message": "Ce site n'est pas encore pris en charge",
-    "description": "Quand aucun analyseur ne correspond."
-  },
-  "workbenchUseSelectorBuilder": {
-    "message": "Créer un sélecteur",
-    "description": "Ouvre le créateur de sélecteurs."
-  },
-  "workbenchReloadPage": {
-    "message": "Recharger la page",
-    "description": "Recharge l'onglet."
   },
   "workbenchFieldUrl": {
     "message": "Adresse de l'histoire",
@@ -333,10 +301,6 @@
     "message": "Ouvrir l'atelier",
     "description": "Le bouton principal du popup."
   },
-  "popupAddToLibrary": {
-    "message": "Ajouter à la bibliothèque",
-    "description": "Le bouton de bibliothèque du popup."
-  },
   "popupLibraryShort": {
     "message": "Bibliothèque",
     "description": "Le libellé visible du bouton de bibliothèque."
@@ -360,10 +324,6 @@
   "popupGetStarted": {
     "message": "Configurer Kintsugi",
     "description": "Le bouton du popup qui ouvre la présentation."
-  },
-  "popupUnsupported": {
-    "message": "Ce site n'est pas encore pris en charge.",
-    "description": "Quand aucun analyseur ne correspond."
   },
   "popupSaved": {
     "message": "Votre livre est prêt.",
@@ -789,10 +749,6 @@
     "message": "Étape 3 sur 3",
     "description": "L'étiquette de la troisième étape d'introduction."
   },
-  "onboardingNext": {
-    "message": "Suivant",
-    "description": "Le bouton qui passe à l'étape suivante."
-  },
   "onboardingBack": {
     "message": "Retour",
     "description": "Le bouton qui revient à l'étape précédente."
@@ -853,25 +809,41 @@
     "message": "Kintsugi ne connaît pas encore ce site.",
     "description": "Aucun analyseur ne correspond."
   },
-  "errorTimeout": {
-    "message": "Le site a mis trop de temps à répondre.",
-    "description": "Un délai dépassé."
-  },
   "errorCancelled": {
     "message": "Annulé.",
     "description": "L'utilisateur a annulé l'opération."
   },
-  "errorForbidden": {
-    "message": "Le site a refusé la requête.",
-    "description": "Une erreur HTTP 403."
+  "errorHttpStatus": {
+    "message": "Le site a répondu par une erreur.",
+    "description": "Le serveur a renvoyé une erreur HTTP."
+  },
+  "errorRateLimited": {
+    "message": "Le site limite les requêtes. Patientez un instant, puis réessayez.",
+    "description": "Le serveur a répondu 429."
+  },
+  "errorChallenge": {
+    "message": "Le site veut vérifier que vous êtes une personne. Ouvrez la page, puis réessayez.",
+    "description": "Le site a présenté une vérification, comme un captcha."
+  },
+  "errorEmptyChapter": {
+    "message": "Le chapitre est revenu vide. Il est peut-être verrouillé, ou le site a changé.",
+    "description": "Une page de chapitre sans texte."
+  },
+  "errorStorageFull": {
+    "message": "Il n’y a pas assez de place pour enregistrer ce livre.",
+    "description": "Le stockage du navigateur est plein."
+  },
+  "errorPermission": {
+    "message": "Kintsugi n’est pas autorisé à lire ce site.",
+    "description": "Le site n’a pas été autorisé."
+  },
+  "errorBusy": {
+    "message": "Un autre livre est en cours de création. Attendez qu’il se termine, ou annulez-le.",
+    "description": "Un second téléchargement a été lancé."
   },
   "errorParse": {
     "message": "La page n'a pas pu être lue.",
     "description": "La page n'a pas pu être analysée."
-  },
-  "errorNoChapters": {
-    "message": "Aucun chapitre trouvé sur cette page.",
-    "description": "La liste des chapitres était vide."
   },
   "filterSearch": {
     "message": "Rechercher",

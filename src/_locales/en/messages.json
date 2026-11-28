@@ -45,10 +45,6 @@
     "message": "Build EPUB",
     "description": "The button that builds the book."
   },
-  "workbenchSave": {
-    "message": "Save",
-    "description": "The button that saves the metadata."
-  },
   "workbenchCancel": {
     "message": "Cancel",
     "description": "The button that stops a download."
@@ -157,10 +153,6 @@
     "message": "Looking for chapters…",
     "description": "Shown while the chapter list loads."
   },
-  "workbenchDetected": {
-    "message": "Detected",
-    "description": "Shown when a parser recognised the site."
-  },
   "workbenchFieldTitle": {
     "message": "Title",
     "description": "The story's title."
@@ -180,10 +172,6 @@
   "workbenchResetFilename": {
     "message": "Reset",
     "description": "Restores the default file name."
-  },
-  "workbenchChooseFromPage": {
-    "message": "Choose from page",
-    "description": "Picks the cover image from the page."
   },
   "workbenchRemoveCover": {
     "message": "Remove cover",
@@ -205,10 +193,6 @@
     "message": "These apply to every book you make.",
     "description": "Explains that the workbench's switches change the settings."
   },
-  "workbenchNoCover": {
-    "message": "No cover",
-    "description": "Shown when there is no cover image."
-  },
   "workbenchCoverUrl": {
     "message": "Cover image address",
     "description": "The address of the cover image."
@@ -217,25 +201,9 @@
     "message": "No story found on this page",
     "description": "Shown when the page is not a story."
   },
-  "workbenchTryAnyway": {
-    "message": "Try anyway",
-    "description": "Opens the workbench regardless."
-  },
   "workbenchNoStoryHint": {
     "message": "Check that this is the story's chapter list, or show Kintsugi where the chapters are.",
     "description": "Shown under the empty chapter list."
-  },
-  "workbenchUnsupportedSite": {
-    "message": "This site is not supported yet",
-    "description": "Shown when no parser matched."
-  },
-  "workbenchUseSelectorBuilder": {
-    "message": "Build a selector",
-    "description": "Opens the selector builder."
-  },
-  "workbenchReloadPage": {
-    "message": "Reload the page",
-    "description": "Reloads the tab."
   },
   "workbenchFieldUrl": {
     "message": "Story address",
@@ -333,10 +301,6 @@
     "message": "Open workbench",
     "description": "The popup's main button."
   },
-  "popupAddToLibrary": {
-    "message": "Add to library",
-    "description": "The popup's library button."
-  },
   "popupLibraryShort": {
     "message": "Library",
     "description": "The popup's library button's visible label."
@@ -360,10 +324,6 @@
   "popupGetStarted": {
     "message": "Set up Kintsugi",
     "description": "The popup's button that opens the onboarding."
-  },
-  "popupUnsupported": {
-    "message": "This site is not supported yet.",
-    "description": "Shown when no parser matched."
   },
   "popupSaved": {
     "message": "Your book is ready.",
@@ -789,10 +749,6 @@
     "message": "Step 3 of 3",
     "description": "The third onboarding step's label."
   },
-  "onboardingNext": {
-    "message": "Next",
-    "description": "The button that moves to the next step."
-  },
   "onboardingBack": {
     "message": "Back",
     "description": "The button that moves to the previous step."
@@ -853,25 +809,41 @@
     "message": "Kintsugi does not know this site yet.",
     "description": "No parser matched the URL."
   },
-  "errorTimeout": {
-    "message": "The site took too long to answer.",
-    "description": "A timeout."
-  },
   "errorCancelled": {
     "message": "Cancelled.",
     "description": "The user cancelled the operation."
   },
-  "errorForbidden": {
-    "message": "The site refused the request.",
-    "description": "An HTTP 403."
+  "errorHttpStatus": {
+    "message": "The site answered with an error.",
+    "description": "The server returned an HTTP error status."
+  },
+  "errorRateLimited": {
+    "message": "The site is limiting requests. Wait a moment, then try again.",
+    "description": "The server answered 429, too many requests."
+  },
+  "errorChallenge": {
+    "message": "The site wants to check that you are a person. Open the page, then try again.",
+    "description": "The site served a challenge such as a captcha."
+  },
+  "errorEmptyChapter": {
+    "message": "The chapter came back empty. It may be locked, or the site may have changed.",
+    "description": "A chapter page with no text in it."
+  },
+  "errorStorageFull": {
+    "message": "There is not enough space to save this book.",
+    "description": "The browser's storage is full."
+  },
+  "errorPermission": {
+    "message": "Kintsugi is not allowed to read this site.",
+    "description": "The site has not been allowed."
+  },
+  "errorBusy": {
+    "message": "Another book is still being made. Wait for it to finish, or cancel it.",
+    "description": "A second download was started while one is running."
   },
   "errorParse": {
     "message": "The page could not be read.",
     "description": "The page could not be parsed."
-  },
-  "errorNoChapters": {
-    "message": "No chapters were found on this page.",
-    "description": "The chapter list was empty."
   },
   "filterSearch": {
     "message": "Search",
