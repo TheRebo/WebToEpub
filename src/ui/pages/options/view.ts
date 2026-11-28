@@ -907,7 +907,7 @@ export function renderStatus(
     if (state === "loading") {
         const label = document.createElement("p");
         label.className = "options-status-label";
-        label.textContent = t("phasePreparing");
+        label.textContent = t("commonLoading");
         panel.appendChild(label);
 
         for (const width of ["100%", "92%", "78%"]) {
@@ -1048,7 +1048,7 @@ export function renderLibraryLoading(elements: OptionsElements): void {
 
     const label = document.createElement("p");
     label.className = "options-status-label";
-    label.textContent = t("phasePreparing");
+    label.textContent = t("commonLoading");
     panel.appendChild(label);
 
     for (const width of ["100%", "88%"]) {
@@ -1258,7 +1258,7 @@ export function renderSiteAccessLoading(elements: OptionsElements): void {
 
     const label = document.createElement("p");
     label.className = "options-status-label";
-    label.textContent = t("phasePreparing");
+    label.textContent = t("commonLoading");
     panel.appendChild(label);
 
     for (const width of ["100%", "80%"]) {
@@ -1333,7 +1333,7 @@ export function renderSiteSelectorsLoading(elements: OptionsElements): void {
 
     const label = document.createElement("p");
     label.className = "options-status-label";
-    label.textContent = t("phasePreparing");
+    label.textContent = t("commonLoading");
     panel.appendChild(label);
 
     for (const width of ["100%", "80%"]) {

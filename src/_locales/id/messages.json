@@ -182,7 +182,7 @@
     "description": "Mempertahankan catatan di akhir bab."
   },
   "workbenchIncludeTocPage": {
-    "message": "Sertakan daftar isi",
+    "message": "Sertakan daftar isi sebagai bab",
     "description": "Menambahkan daftar isi sebagai satu bab."
   },
   "workbenchMoreOptions": {
@@ -448,11 +448,11 @@
     "description": "Daftar situs yang boleh dibaca ekstensi."
   },
   "optionsRevoke": {
-    "message": "Cabut",
+    "message": "Cabut akses",
     "description": "Menghapus akses ke sebuah situs."
   },
   "optionsRevokeAll": {
-    "message": "Cabut semua",
+    "message": "Cabut semua akses",
     "description": "Menghapus akses ke semua situs."
   },
   "optionsRevokeAllConfirm": {
@@ -1004,6 +1004,18 @@
   "commonDismiss": {
     "message": "Tutup",
     "description": "Label tombol yang menutup notifikasi."
+  },
+  "commonLoading": {
+    "message": "Memuat…",
+    "description": "Saat halaman memuat."
+  },
+  "siteSelectorSuggesting": {
+    "message": "Membaca halaman…",
+    "description": "Saat halaman diperiksa."
+  },
+  "siteSelectorTesting": {
+    "message": "Mencoba selector di halaman…",
+    "description": "Saat selector diuji."
   },
   "commonCancel": {
     "message": "Batal",

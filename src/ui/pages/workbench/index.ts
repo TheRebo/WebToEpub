@@ -845,7 +845,7 @@ export class WorkbenchController {
         const url = this.#store.state.story.sourceUrl;
         if (!url) return;
 
-        this.#setSelectorStatus(t("workbenchWaitingForChapters"));
+        this.#setSelectorStatus(t("siteSelectorSuggesting"));
         try {
             const suggestion = await sendRequest(
                 { sendMessage: (message) => sendMessageToWorker(message) },
@@ -880,7 +880,7 @@ export class WorkbenchController {
             return;
         }
 
-        this.#setSelectorStatus(t("workbenchWaitingForChapters"));
+        this.#setSelectorStatus(t("siteSelectorTesting"));
         try {
             const result = await sendRequest(
                 { sendMessage: (message) => sendMessageToWorker(message) },

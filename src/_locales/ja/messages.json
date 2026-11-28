@@ -182,7 +182,7 @@
     "description": "章の末尾にある注記を残します。"
   },
   "workbenchIncludeTocPage": {
-    "message": "目次ページを含める",
+    "message": "目次を1つの章として含める",
     "description": "目次を1つの章として追加します。"
   },
   "workbenchMoreOptions": {
@@ -448,11 +448,11 @@
     "description": "拡張機能が読み取れるサイトの一覧。"
   },
   "optionsRevoke": {
-    "message": "取り消す",
+    "message": "アクセスを外す",
     "description": "サイトへのアクセスを削除します。"
   },
   "optionsRevokeAll": {
-    "message": "すべて取り消す",
+    "message": "すべてのアクセスを外す",
     "description": "すべてのサイトへのアクセスを削除します。"
   },
   "optionsRevokeAllConfirm": {
@@ -1004,6 +1004,18 @@
   "commonDismiss": {
     "message": "閉じる",
     "description": "通知を閉じるボタンのラベル。"
+  },
+  "commonLoading": {
+    "message": "読み込み中…",
+    "description": "ページの読み込み中。"
+  },
+  "siteSelectorSuggesting": {
+    "message": "ページを読んでいます…",
+    "description": "ページを調べているとき。"
+  },
+  "siteSelectorTesting": {
+    "message": "ページでセレクターを試しています…",
+    "description": "セレクターのテスト中。"
   },
   "commonCancel": {
     "message": "キャンセル",

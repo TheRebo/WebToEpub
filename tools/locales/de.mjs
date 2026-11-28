@@ -72,7 +72,7 @@ export default {
         "Behält die Notizen am Ende eines Kapitels.",
     ],
     workbenchIncludeTocPage: [
-        "Inhaltsverzeichnis einfügen",
+        "Inhaltsverzeichnis als Kapitel einfügen",
         "Fügt das Inhaltsverzeichnis als Kapitel hinzu.",
     ],
     workbenchOptionsHint: [
@@ -178,8 +178,8 @@ export default {
     optionsDensityCompact: ["Kompakt", "Die kompakte Dichte-Option."],
     optionsSearchSettings: ["Einstellungen durchsuchen", "Das Suchfeld für die Einstellungen."],
     optionsSiteAccess: ["Seitenzugriff", "Die Liste der Seiten, die die Erweiterung lesen darf."],
-    optionsRevoke: ["Widerrufen", "Entfernt den Zugriff auf eine Seite."],
-    optionsRevokeAll: ["Alle widerrufen", "Entfernt den Zugriff auf jede Seite."],
+    optionsRevoke: ["Zugriff entfernen", "Entfernt den Zugriff auf eine Seite."],
+    optionsRevokeAll: ["Allen Zugriff entfernen", "Entfernt den Zugriff auf jede Seite."],
     optionsRevokeAllConfirm: [
         "Kintsugi kann keine dieser Seiten mehr lesen, bis Sie jede wieder erlauben.",
         "Erklärung im Dialog, der den Zugriff auf alle Seiten entfernt.",
@@ -571,6 +571,12 @@ export default {
     commonDismiss: [
         "Ausblenden",
         "Die Beschriftung einer Schaltfläche, die eine Meldung ausblendet.",
+    ],
+    commonLoading: ["Wird geladen…", "Während eine Seite lädt."],
+    siteSelectorSuggesting: ["Die Seite wird gelesen…", "Während die Seite untersucht wird."],
+    siteSelectorTesting: [
+        "Die Selektoren werden auf der Seite ausprobiert…",
+        "Während die Selektoren getestet werden.",
     ],
     commonCancel: ["Abbrechen", "Die Beschriftung einer Schaltfläche, die eine Aktion abbricht."],
 };

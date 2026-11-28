@@ -107,6 +107,9 @@ export const MESSAGES = {
     commonClose: "commonClose",
     commonDismiss: "commonDismiss",
     commonCancel: "commonCancel",
+    commonLoading: "commonLoading",
+    siteSelectorSuggesting: "siteSelectorSuggesting",
+    siteSelectorTesting: "siteSelectorTesting",
 
     // Options
     optionsAppearance: "optionsAppearance",

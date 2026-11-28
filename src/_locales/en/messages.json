@@ -182,7 +182,7 @@
     "description": "Keeps the notes at the end of a chapter."
   },
   "workbenchIncludeTocPage": {
-    "message": "Include the contents page",
+    "message": "Include the table of contents as a chapter",
     "description": "Adds the table of contents as a chapter."
   },
   "workbenchMoreOptions": {
@@ -448,11 +448,11 @@
     "description": "The list of sites the extension may read."
   },
   "optionsRevoke": {
-    "message": "Revoke",
+    "message": "Remove access",
     "description": "Removes access to a site."
   },
   "optionsRevokeAll": {
-    "message": "Revoke all",
+    "message": "Remove all access",
     "description": "Removes access to every site."
   },
   "optionsRevokeAllConfirm": {
@@ -468,11 +468,11 @@
     "description": "The hint under the site access heading."
   },
   "optionsRevoked": {
-    "message": "The site's access was taken back.",
+    "message": "Kintsugi can no longer read that site.",
     "description": "Shown after a site's access is revoked."
   },
   "optionsRevokedAll": {
-    "message": "Access to every site was taken back.",
+    "message": "Kintsugi can no longer read any site until you allow it again.",
     "description": "Shown after access to every site is revoked."
   },
   "optionsExportSettings": {
@@ -1004,6 +1004,18 @@
   "commonDismiss": {
     "message": "Dismiss",
     "description": "The label of a button that dismisses a notification."
+  },
+  "commonLoading": {
+    "message": "Loading…",
+    "description": "Shown while a page reads what it needs."
+  },
+  "siteSelectorSuggesting": {
+    "message": "Looking at the page…",
+    "description": "Shown while the scanner reads the page."
+  },
+  "siteSelectorTesting": {
+    "message": "Trying the selectors on the page…",
+    "description": "Shown while the selectors are tested."
   },
   "commonCancel": {
     "message": "Cancel",

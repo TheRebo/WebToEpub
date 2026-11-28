@@ -62,7 +62,10 @@ export default {
         "Inclure les notes de l'auteur",
         "Conserve les notes à la fin d'un chapitre.",
     ],
-    workbenchIncludeTocPage: ["Inclure le sommaire", "Ajoute le sommaire comme chapitre."],
+    workbenchIncludeTocPage: [
+        "Inclure le sommaire comme chapitre",
+        "Ajoute le sommaire comme chapitre.",
+    ],
     workbenchOptionsHint: [
         "Cela s’applique à chaque livre que vous créez.",
         "Explique que ces interrupteurs modifient les réglages.",
@@ -169,8 +172,8 @@ export default {
         "Le champ de recherche des paramètres.",
     ],
     optionsSiteAccess: ["Accès aux sites", "La liste des sites que l'extension peut lire."],
-    optionsRevoke: ["Révoquer", "Retire l'accès à un site."],
-    optionsRevokeAll: ["Tout révoquer", "Retire l'accès à tous les sites."],
+    optionsRevoke: ["Retirer l’accès", "Retire l'accès à un site."],
+    optionsRevokeAll: ["Retirer tous les accès", "Retire l'accès à tous les sites."],
     optionsRevokeAllConfirm: [
         "Kintsugi ne pourra plus lire aucun de ces sites tant que vous ne les aurez pas autorisés de nouveau, un par un.",
         "L’explication du dialogue qui retire l’accès à tous les sites.",
@@ -542,5 +545,8 @@ export default {
     ],
     commonClose: ["Fermer", "Le libellé d'un bouton qui ferme une boîte de dialogue."],
     commonDismiss: ["Ignorer", "Le libellé d'un bouton qui ferme une notification."],
+    commonLoading: ["Chargement…", "Pendant qu’une page se charge."],
+    siteSelectorSuggesting: ["Lecture de la page…", "Pendant l’analyse de la page."],
+    siteSelectorTesting: ["Essai des sélecteurs sur la page…", "Pendant le test des sélecteurs."],
     commonCancel: ["Annuler", "Le libellé d'un bouton qui annule une action."],
 };

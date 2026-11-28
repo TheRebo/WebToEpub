@@ -47,7 +47,7 @@ export default {
     workbenchResetFilename: ["リセット", "既定のファイル名に戻します。"],
     workbenchRemoveCover: ["表紙を削除", "表紙画像を削除します。"],
     workbenchIncludeAuthorNotes: ["作者のあとがきを含める", "章の末尾にある注記を残します。"],
-    workbenchIncludeTocPage: ["目次ページを含める", "目次を1つの章として追加します。"],
+    workbenchIncludeTocPage: ["目次を1つの章として含める", "目次を1つの章として追加します。"],
     workbenchOptionsHint: [
         "これは作成するすべての本に適用されます。",
         "スイッチが設定そのものを変えることの説明。",
@@ -138,8 +138,8 @@ export default {
     optionsDensityCompact: ["コンパクト", "コンパクトな密度の選択肢。"],
     optionsSearchSettings: ["設定を検索", "設定の検索欄。"],
     optionsSiteAccess: ["サイトへのアクセス", "拡張機能が読み取れるサイトの一覧。"],
-    optionsRevoke: ["取り消す", "サイトへのアクセスを削除します。"],
-    optionsRevokeAll: ["すべて取り消す", "すべてのサイトへのアクセスを削除します。"],
+    optionsRevoke: ["アクセスを外す", "サイトへのアクセスを削除します。"],
+    optionsRevokeAll: ["すべてのアクセスを外す", "すべてのサイトへのアクセスを削除します。"],
     optionsRevokeAllConfirm: [
         "もう一度ひとつずつ許可するまで、Kintsugi はこれらのサイトを読めなくなります。",
         "すべてのサイトへのアクセスを外す確認ダイアログの説明。",
@@ -437,5 +437,8 @@ export default {
     ],
     commonClose: ["閉じる", "ダイアログを閉じるボタンのラベル。"],
     commonDismiss: ["閉じる", "通知を閉じるボタンのラベル。"],
+    commonLoading: ["読み込み中…", "ページの読み込み中。"],
+    siteSelectorSuggesting: ["ページを読んでいます…", "ページを調べているとき。"],
+    siteSelectorTesting: ["ページでセレクターを試しています…", "セレクターのテスト中。"],
     commonCancel: ["キャンセル", "操作を取り消すボタンのラベル。"],
 };

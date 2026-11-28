@@ -182,7 +182,7 @@
     "description": "Behält die Notizen am Ende eines Kapitels."
   },
   "workbenchIncludeTocPage": {
-    "message": "Inhaltsverzeichnis einfügen",
+    "message": "Inhaltsverzeichnis als Kapitel einfügen",
     "description": "Fügt das Inhaltsverzeichnis als Kapitel hinzu."
   },
   "workbenchMoreOptions": {
@@ -448,11 +448,11 @@
     "description": "Die Liste der Seiten, die die Erweiterung lesen darf."
   },
   "optionsRevoke": {
-    "message": "Widerrufen",
+    "message": "Zugriff entfernen",
     "description": "Entfernt den Zugriff auf eine Seite."
   },
   "optionsRevokeAll": {
-    "message": "Alle widerrufen",
+    "message": "Allen Zugriff entfernen",
     "description": "Entfernt den Zugriff auf jede Seite."
   },
   "optionsRevokeAllConfirm": {
@@ -1004,6 +1004,18 @@
   "commonDismiss": {
     "message": "Ausblenden",
     "description": "Die Beschriftung einer Schaltfläche, die eine Meldung ausblendet."
+  },
+  "commonLoading": {
+    "message": "Wird geladen…",
+    "description": "Während eine Seite lädt."
+  },
+  "siteSelectorSuggesting": {
+    "message": "Die Seite wird gelesen…",
+    "description": "Während die Seite untersucht wird."
+  },
+  "siteSelectorTesting": {
+    "message": "Die Selektoren werden auf der Seite ausprobiert…",
+    "description": "Während die Selektoren getestet werden."
   },
   "commonCancel": {
     "message": "Abbrechen",

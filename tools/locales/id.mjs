@@ -64,7 +64,10 @@ export default {
         "Sertakan catatan penulis",
         "Mempertahankan catatan di akhir bab.",
     ],
-    workbenchIncludeTocPage: ["Sertakan daftar isi", "Menambahkan daftar isi sebagai satu bab."],
+    workbenchIncludeTocPage: [
+        "Sertakan daftar isi sebagai bab",
+        "Menambahkan daftar isi sebagai satu bab.",
+    ],
     workbenchOptionsHint: [
         "Ini berlaku untuk setiap buku yang Anda buat.",
         "Menjelaskan bahwa sakelar ini mengubah pengaturan.",
@@ -170,8 +173,8 @@ export default {
     optionsDensityCompact: ["Padat", "Pilihan kepadatan padat."],
     optionsSearchSettings: ["Cari pengaturan", "Kotak pencarian pengaturan."],
     optionsSiteAccess: ["Akses situs", "Daftar situs yang boleh dibaca ekstensi."],
-    optionsRevoke: ["Cabut", "Menghapus akses ke sebuah situs."],
-    optionsRevokeAll: ["Cabut semua", "Menghapus akses ke semua situs."],
+    optionsRevoke: ["Cabut akses", "Menghapus akses ke sebuah situs."],
+    optionsRevokeAll: ["Cabut semua akses", "Menghapus akses ke semua situs."],
     optionsRevokeAllConfirm: [
         "Kintsugi tidak akan bisa membaca situs-situs ini sampai Anda mengizinkannya lagi satu per satu.",
         "Penjelasan di dialog yang mencabut akses ke semua situs.",
@@ -504,5 +507,8 @@ export default {
     ],
     commonClose: ["Tutup", "Label tombol yang menutup dialog."],
     commonDismiss: ["Tutup", "Label tombol yang menutup notifikasi."],
+    commonLoading: ["Memuat…", "Saat halaman memuat."],
+    siteSelectorSuggesting: ["Membaca halaman…", "Saat halaman diperiksa."],
+    siteSelectorTesting: ["Mencoba selector di halaman…", "Saat selector diuji."],
     commonCancel: ["Batal", "Label tombol yang membatalkan sebuah tindakan."],
 };

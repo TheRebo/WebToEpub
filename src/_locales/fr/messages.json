@@ -182,7 +182,7 @@
     "description": "Conserve les notes à la fin d'un chapitre."
   },
   "workbenchIncludeTocPage": {
-    "message": "Inclure le sommaire",
+    "message": "Inclure le sommaire comme chapitre",
     "description": "Ajoute le sommaire comme chapitre."
   },
   "workbenchMoreOptions": {
@@ -448,11 +448,11 @@
     "description": "La liste des sites que l'extension peut lire."
   },
   "optionsRevoke": {
-    "message": "Révoquer",
+    "message": "Retirer l’accès",
     "description": "Retire l'accès à un site."
   },
   "optionsRevokeAll": {
-    "message": "Tout révoquer",
+    "message": "Retirer tous les accès",
     "description": "Retire l'accès à tous les sites."
   },
   "optionsRevokeAllConfirm": {
@@ -1004,6 +1004,18 @@
   "commonDismiss": {
     "message": "Ignorer",
     "description": "Le libellé d'un bouton qui ferme une notification."
+  },
+  "commonLoading": {
+    "message": "Chargement…",
+    "description": "Pendant qu’une page se charge."
+  },
+  "siteSelectorSuggesting": {
+    "message": "Lecture de la page…",
+    "description": "Pendant l’analyse de la page."
+  },
+  "siteSelectorTesting": {
+    "message": "Essai des sélecteurs sur la page…",
+    "description": "Pendant le test des sélecteurs."
   },
   "commonCancel": {
     "message": "Annuler",

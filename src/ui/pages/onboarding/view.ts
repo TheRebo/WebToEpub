@@ -215,7 +215,7 @@ export function renderStatus(
     if (state === "loading") {
         const label = document.createElement("p");
         label.className = "onboarding-status-label";
-        label.textContent = t("phasePreparing");
+        label.textContent = t("commonLoading");
         panel.appendChild(label);
 
         for (const width of ["100%", "88%"]) {

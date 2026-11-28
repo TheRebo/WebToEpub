@@ -88,7 +88,7 @@ const SOURCE = {
         "Keeps the notes at the end of a chapter.",
     ],
     workbenchIncludeTocPage: [
-        "Include the contents page",
+        "Include the table of contents as a chapter",
         "Adds the table of contents as a chapter.",
     ],
     workbenchMoreOptions: ["More options", "Opens the full settings page."],
@@ -192,8 +192,8 @@ const SOURCE = {
     optionsDensityCompact: ["Compact", "The compact density option."],
     optionsSearchSettings: ["Search settings", "The settings search box."],
     optionsSiteAccess: ["Site access", "The list of sites the extension may read."],
-    optionsRevoke: ["Revoke", "Removes access to a site."],
-    optionsRevokeAll: ["Revoke all", "Removes access to every site."],
+    optionsRevoke: ["Remove access", "Removes access to a site."],
+    optionsRevokeAll: ["Remove all access", "Removes access to every site."],
     optionsRevokeAllConfirm: [
         "Kintsugi will not be able to read any of these sites until you allow each one again.",
         "The explanation in the dialog that confirms removing access to every site.",
@@ -207,11 +207,11 @@ const SOURCE = {
         "The hint under the site access heading.",
     ],
     optionsRevoked: [
-        "The site's access was taken back.",
+        "Kintsugi can no longer read that site.",
         "Shown after a site's access is revoked.",
     ],
     optionsRevokedAll: [
-        "Access to every site was taken back.",
+        "Kintsugi can no longer read any site until you allow it again.",
         "Shown after access to every site is revoked.",
     ],
     optionsExportSettings: ["Export settings", "Saves the settings to a file."],
@@ -534,6 +534,12 @@ const SOURCE = {
     // --- Shared across the components ---
     commonClose: ["Close", "The label of a button that closes a dialog."],
     commonDismiss: ["Dismiss", "The label of a button that dismisses a notification."],
+    commonLoading: ["Loading…", "Shown while a page reads what it needs."],
+    siteSelectorSuggesting: ["Looking at the page…", "Shown while the scanner reads the page."],
+    siteSelectorTesting: [
+        "Trying the selectors on the page…",
+        "Shown while the selectors are tested.",
+    ],
     commonCancel: ["Cancel", "The label of a button that cancels an action."],
 };
 
