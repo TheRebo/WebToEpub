@@ -11,8 +11,9 @@
  *    the baseline's `maxSimultanousFetchSize` was a constant nobody enforced.
  *  - **Cancellation is real.** Every job has an `AbortController`, so
  *    cancelling stops the in-flight request rather than shortening a sleep.
- *  - **Progress is durable.** A job's state lives in a map that survives the
- *    worker being suspended, so a page reload does not lose the run.
+ *  - **Progress lives in memory.** A job's state is kept in the worker, so a
+ *    page that reloads can pick the run up again. It does not survive the
+ *    worker itself being suspended, which the open page's polling prevents.
  *
  * See ADR-0005.
  */
