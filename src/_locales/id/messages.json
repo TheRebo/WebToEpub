@@ -887,6 +887,10 @@
     "message": "Bersihkan",
     "description": "Mengosongkan penyaring."
   },
+  "optionsNumberRequired": {
+    "message": "Masukkan angka.",
+    "description": "Ditampilkan di bawah pengaturan angka yang dikosongkan."
+  },
   "filterNoMatches": {
     "message": "Tidak ada bab yang cocok dengan filter ini",
     "description": "Ditampilkan saat filter menyembunyikan semua bab."

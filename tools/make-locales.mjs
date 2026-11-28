@@ -421,6 +421,7 @@ const SOURCE = {
     filterExclude: ["Exclude", "Matching chapters are removed."],
     filterMatchCount: ["$COUNT$ matching", "How many chapters match the filter."],
     filterClear: ["Clear", "Clears the filter."],
+    optionsNumberRequired: ["Enter a number.", "Shown under a number setting that was left empty."],
     filterNoMatches: [
         "No chapters match these filters",
         "Shown when the filter hides every chapter.",

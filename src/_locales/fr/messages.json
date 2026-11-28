@@ -887,6 +887,10 @@
     "message": "Effacer",
     "description": "Efface le filtre."
   },
+  "optionsNumberRequired": {
+    "message": "Saisissez un nombre.",
+    "description": "Sous un réglage numérique laissé vide."
+  },
   "filterNoMatches": {
     "message": "Aucun chapitre ne correspond à ces filtres",
     "description": "Quand le filtre masque tous les chapitres."

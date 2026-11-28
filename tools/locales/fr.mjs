@@ -453,6 +453,7 @@ export default {
         "Effacer les filtres",
         "Retire le filtre pour afficher de nouveau tous les chapitres.",
     ],
+    optionsNumberRequired: ["Saisissez un nombre.", "Sous un réglage numérique laissé vide."],
     filterApply: ["Appliquer", "Applique le filtre."],
     filterInvalidPattern: ["Ce motif n'est pas valide.", "Quand la regex ne compile pas."],
     siteSelectorBannerTitle: [

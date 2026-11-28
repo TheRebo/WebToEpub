@@ -434,7 +434,8 @@ export class OptionsController {
             if (!path) return;
             const value = detail.value ?? detail.checked;
             if (value === undefined) return;
-            this.#run(() => this.#write(path, value));
+            const control = event.target as HTMLElement | null;
+            this.#run(() => this.#write(path, value, control));
         });
 
         // The buttons in the status panels and the site-selector list. The
@@ -545,7 +546,7 @@ export class OptionsController {
     }
 
     /** Write one setting. */
-    async #write(path: string, value: unknown): Promise<void> {
+    async #write(path: string, value: unknown, control?: HTMLElement | null): Promise<void> {
         const settings = this.#settings;
         if (!settings) return;
 
@@ -561,6 +562,19 @@ export class OptionsController {
         if (!groupValue) return;
 
         const previous = groupValue[key];
+
+        // An emptied number field is not a request for zero. The field says
+        // what it needs, and nothing is written until it has a number.
+        const field = control?.closest<HTMLElement>("k-field") ?? null;
+        if (typeof previous === "number") {
+            const typed = typeof value === "number" ? value : Number(String(value).trim() || NaN);
+            if (!Number.isFinite(typed)) {
+                field?.setAttribute("error", t("optionsNumberRequired"));
+                return;
+            }
+            field?.removeAttribute("error");
+        }
+
         const next = coerce(previous, value);
         if (next === previous) return;
 
@@ -573,6 +587,18 @@ export class OptionsController {
             // see what they typed — but the page says the write failed.
             this.#toast(messageOf(error) || t("errorGeneric"), "error");
             return;
+        }
+
+        // A number outside the setting's range is stored as the nearest one
+        // allowed, and the field shows what was actually kept.
+        if (typeof next === "number" && control) {
+            const stored = (this.#settings as unknown as Record<string, Record<string, unknown>>)[
+                group
+            ]?.[key];
+            if (typeof stored === "number" && stored !== next) {
+                control.setAttribute("value", String(stored));
+                (control as HTMLInputElement).value = String(stored);
+            }
         }
 
         // The appearance settings take effect immediately, so the user sees
@@ -642,13 +668,19 @@ export class OptionsController {
     /** Forget the selectors for a host name. */
     async #forgetSiteSelectors(hostname: string): Promise<void> {
         if (!this.#background) return;
+        let failed: unknown;
         try {
             await this.#background.forgetSiteSelectors(hostname);
-        } catch {
-            // Nothing to do: the list is reloaded below either way.
+        } catch (error) {
+            failed = error;
         }
+        // The list is reloaded either way, so it shows what is really saved.
         this.#selectorsLoaded = false;
         await this.#loadSiteSelectors();
+        if (failed !== undefined) {
+            this.#toast(messageOf(failed) || t("errorGeneric"), "error");
+            return;
+        }
         this.#toast(t("siteSelectorForgotten"), "info");
     }
 

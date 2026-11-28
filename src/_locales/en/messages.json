@@ -887,6 +887,10 @@
     "message": "Clear",
     "description": "Clears the filter."
   },
+  "optionsNumberRequired": {
+    "message": "Enter a number.",
+    "description": "Shown under a number setting that was left empty."
+  },
   "filterNoMatches": {
     "message": "No chapters match these filters",
     "description": "Shown when the filter hides every chapter."

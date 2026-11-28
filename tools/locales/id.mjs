@@ -416,6 +416,10 @@ export default {
         "Ditampilkan saat filter menyembunyikan semua bab.",
     ],
     filterClearAll: ["Hapus filter", "Menghapus filter agar semua bab tampil lagi."],
+    optionsNumberRequired: [
+        "Masukkan angka.",
+        "Ditampilkan di bawah pengaturan angka yang dikosongkan.",
+    ],
     filterApply: ["Terapkan", "Menerapkan penyaring."],
     filterInvalidPattern: ["Pola itu tidak valid.", "Ditampilkan saat regex gagal dikompilasi."],
 

@@ -357,6 +357,7 @@ export default {
         "フィルターですべての章が隠れたときに表示されます。",
     ],
     filterClearAll: ["フィルターを解除", "フィルターを外してすべての章を表示します。"],
+    optionsNumberRequired: ["数値を入力してください。", "空のままの数値設定の下に表示されます。"],
     filterApply: ["適用", "フィルターを適用します。"],
     filterInvalidPattern: [
         "有効なパターンではありません。",

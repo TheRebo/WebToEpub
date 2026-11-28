@@ -887,6 +887,10 @@
     "message": "クリア",
     "description": "フィルターを消去します。"
   },
+  "optionsNumberRequired": {
+    "message": "数値を入力してください。",
+    "description": "空のままの数値設定の下に表示されます。"
+  },
   "filterNoMatches": {
     "message": "このフィルターに一致する章はありません",
     "description": "フィルターですべての章が隠れたときに表示されます。"

@@ -887,6 +887,10 @@
     "message": "Löschen",
     "description": "Leert den Filter."
   },
+  "optionsNumberRequired": {
+    "message": "Gib eine Zahl ein.",
+    "description": "Unter einer leer gelassenen Zahleneinstellung."
+  },
   "filterNoMatches": {
     "message": "Kein Kapitel passt zu diesen Filtern",
     "description": "Wenn der Filter alle Kapitel ausblendet."

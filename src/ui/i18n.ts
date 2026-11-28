@@ -241,6 +241,7 @@ export const MESSAGES = {
     filterExclude: "filterExclude",
     filterMatchCount: "filterMatchCount",
     filterClear: "filterClear",
+    optionsNumberRequired: "optionsNumberRequired",
     filterNoMatches: "filterNoMatches",
     filterClearAll: "filterClearAll",
     filterApply: "filterApply",

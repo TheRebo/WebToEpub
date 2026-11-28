@@ -462,6 +462,7 @@ export default {
         "Filter entfernen",
         "Entfernt den Filter, damit alle Kapitel wieder erscheinen.",
     ],
+    optionsNumberRequired: ["Gib eine Zahl ein.", "Unter einer leer gelassenen Zahleneinstellung."],
     filterApply: ["Anwenden", "Wendet den Filter an."],
     filterInvalidPattern: ["Das ist kein gültiges Muster.", "Wenn der Regex nicht kompiliert."],
     siteSelectorBannerTitle: [
