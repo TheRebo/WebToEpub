@@ -9,7 +9,7 @@
  *
  * See ADR-0005.
  */
-import { DownloadManager } from "./download-manager";
+import { cleanAuthor, DownloadManager } from "./download-manager";
 import { FetchClient } from "./net/fetch-client";
 import { CookieBridge } from "./net/cookie-bridge";
 import { createCookieApi } from "./net/browser-cookie-api";
@@ -589,7 +589,7 @@ class BackgroundWorker {
                 parserName: parser.constructor.name,
                 usedDefaultParser: parser instanceof DefaultParser,
                 title: title?.trim() || undefined,
-                author: safely(() => parser.extractAuthor(dom))?.trim() || undefined,
+                author: cleanAuthor(safely(() => parser.extractAuthor(dom))),
                 language: safely(() => parser.extractLanguage(dom))?.trim() || undefined,
                 coverUrl: safely(() => parser.findCoverImageUrl(dom)) ?? undefined,
                 description: safely(() => parser.extractDescription(dom))?.trim() || undefined,
@@ -688,6 +688,9 @@ class BackgroundWorker {
 
         const jobId = this.#downloads.start(payload.url, payload.title, chapters, {
             fileName: payload.fileName,
+            author: payload.author,
+            language: payload.language,
+            coverUrl: payload.coverUrl,
         });
         diagnostic("Started a download job", jobId, chapters.length, "chapters");
         return { jobId };

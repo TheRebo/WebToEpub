@@ -72,9 +72,23 @@ interface DownloadChapter {
 export type ChapterFetchState = "queued" | "fetching" | "loaded" | "failed";
 
 /** A running job. */
+/** What the user changed in the workbench, which wins over the parser. */
+export interface StoryOverrides {
+    /** The file name the user asked for. */
+    fileName?: string;
+    /** The author. */
+    author?: string;
+    /** The language. */
+    language?: string;
+    /** The cover's address. */
+    coverUrl?: string;
+}
+
 interface Job {
     /** The job's ID. */
     id: string;
+    /** What the user changed in the workbench. */
+    overrides: StoryOverrides;
     /** The story's URL. */
     sourceUrl: string;
     /** The story's title. */
@@ -244,7 +258,7 @@ export function buildBookMetadata(
         }
     };
 
-    const author = read(() => parser.extractAuthor(storyDom));
+    const author = cleanAuthor(read(() => parser.extractAuthor(storyDom)));
     if (author) metadata.author = author;
 
     const language = read(() => parser.extractLanguage(storyDom));
@@ -588,7 +602,7 @@ export class DownloadManager {
         sourceUrl: string,
         title: string,
         chapters: DownloadChapter[],
-        options: { fileName?: string } = {},
+        options: StoryOverrides = {},
     ): string {
         // One book at a time: two jobs would double the request rate on the
         // site, and each one's cookie cleanup would pull cookies from under
@@ -608,6 +622,7 @@ export class DownloadManager {
             sourceUrl,
             title,
             requestedFileName: options.fileName,
+            overrides: options,
             // A chapter the caller did not give a state for is waiting.
             chapters: chapters.map((chapter) => ({ ...chapter, state: chapter.state ?? "queued" })),
             phase: "preparing",
@@ -955,7 +970,9 @@ export class DownloadManager {
         // lives only on the story page would be built without one.
         let coverUrl: string | null = null;
         try {
-            coverUrl = parser && storyDom ? parser.findCoverImageUrl(storyDom) : null;
+            coverUrl =
+                job.overrides.coverUrl?.trim() ||
+                (parser && storyDom ? parser.findCoverImageUrl(storyDom) : null);
         } catch {
             // A parser that cannot find its cover leaves the book without one.
         }
@@ -1209,7 +1226,24 @@ export class DownloadManager {
         images: Map<string, ImageData>,
         book: DownloadBook,
     ): BookMetadata {
-        return buildBookMetadata(job.title, job.sourceUrl, storyDom, parser, images, book);
+        const metadata = buildBookMetadata(
+            job.title,
+            job.sourceUrl,
+            storyDom,
+            parser,
+            images,
+            book,
+        );
+        // What the user typed in the workbench wins over what the parser found.
+        const { author, language, coverUrl } = job.overrides;
+        if (author?.trim()) metadata.author = author.trim();
+        if (language?.trim()) metadata.language = language.trim();
+        if (coverUrl?.trim()) {
+            const absolute = resolveUrl(coverUrl.trim(), job.sourceUrl);
+            const cover = absolute ? images.get(absolute) : undefined;
+            if (cover) metadata.cover = cover;
+        }
+        return metadata;
     }
 
     /**
@@ -1640,4 +1674,18 @@ function hostOf(url: string): string {
     } catch {
         return url;
     }
+}
+
+/**
+ * An author's name without the label a page puts in front of it.
+ *
+ * Many story pages write "by A. Writer" or "Author: A. Writer", and a parser
+ * that reads the line whole hands the label over with the name.
+ *
+ * @param author The name the parser found.
+ * @returns The name, or `undefined` when there is none.
+ */
+export function cleanAuthor(author: string | undefined | null): string | undefined {
+    const cleaned = (author ?? "").replace(/^\s*(?:by|author\s*:|written by)\s+/i, "").trim();
+    return cleaned || undefined;
 }

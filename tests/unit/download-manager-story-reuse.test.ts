@@ -176,3 +176,42 @@ describe("a cover that could not be downloaded", () => {
         expect(saved[0]?.cover).toBeUndefined();
     });
 });
+
+describe("an author's name", () => {
+    it("loses the label the page put in front of it", async () => {
+        const { cleanAuthor } = await import("../../src/core/download-manager");
+        expect(cleanAuthor("by A. Fixture")).toBe("A. Fixture");
+        expect(cleanAuthor("Author: Jane Roe")).toBe("Jane Roe");
+        expect(cleanAuthor("Byron")).toBe("Byron");
+        expect(cleanAuthor("  ")).toBeUndefined();
+    });
+});
+
+describe("what the user changed in the workbench", () => {
+    it("wins over what the parser found", async () => {
+        const saved: Array<{ author?: string }> = [];
+        const manager = new DownloadManager({
+            ...dependencies(
+                {
+                    parserFor: () =>
+                        ({
+                            ...fakeParser("story", []),
+                            extractAuthor: () => "by Somebody",
+                        }) as unknown as Parser,
+                },
+                [],
+            ),
+            saveToLibrary: async (entry) => {
+                saved.push(entry);
+            },
+        });
+        const id = manager.start(
+            "https://example.com/story",
+            "Story",
+            [{ sourceUrl: "https://example.com/1", title: "One" }],
+            { author: "The Real Author" },
+        );
+        await settle(manager, id);
+        expect(saved[0]?.author).toBe("The Real Author");
+    });
+});

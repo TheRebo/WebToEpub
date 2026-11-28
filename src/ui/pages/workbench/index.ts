@@ -1009,6 +1009,11 @@ export class WorkbenchController {
                     // The name the user chose, if they chose one. Without it the
                     // worker falls back to the filename template.
                     fileName: state.story.fileNameEdited ? state.story.fileName : undefined,
+                    // The fields the user can correct, so the book says what
+                    // the workbench showed.
+                    author: state.story.author,
+                    language: state.story.language,
+                    coverUrl: state.story.coverUrl,
                     chapters: selected.map((entry) => ({
                         sourceUrl: entry.chapter.sourceUrl,
                         title: entry.chapter.title,
