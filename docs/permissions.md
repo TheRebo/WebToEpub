@@ -82,6 +82,15 @@ is run returns the page's markup and nothing else. It does not modify the
 page, does not inject UI into the page, does not read other tabs, and does
 not observe navigation.
 
+**The exception: migrated parsers that open tabs.** Some of the original's
+parsers drive tabs themselves, and they run unchanged. Wuxiaworld, Noveli,
+Fenrirealm and Lunarx open a background tab on the chapter's address, call
+`chrome.scripting.executeScript` in it to read the rendered chapter, listen to
+`tabs.onUpdated` (Fenrirealm also to `runtime.onMessage`), and close the tab.
+MangaHere and ReadComicOnline open a tab through `util.createChapterTab`
+(MangaHere closes it again). This happens only when the user downloads from
+one of those sites. These parsers are not yet tested under the rewrite.
+
 **Without it.** The extension would only work on server-rendered sites — a
 small fraction of the 434 supported sites.
 
