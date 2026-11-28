@@ -26,6 +26,7 @@ export type ErrorCode =
     | "UNSUPPORTED_CONTENT"
     | "CANCELLED"
     | "PERMISSION_DENIED"
+    | "BUSY"
     | "UNKNOWN";
 
 /** An action the UI may offer in response to an error. */

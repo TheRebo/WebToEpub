@@ -37,7 +37,12 @@ import { buildFileName, DEFAULT_FILENAME_TEMPLATE } from "./util/file-name";
 import { normaliseUrlForCompare } from "./util/dom";
 import { diagnostic } from "./util/diagnostics";
 import type { Parser } from "./parsers/parser";
-import { isAbortError, toUserFacingError, type UserFacingError } from "./util/errors";
+import {
+    isAbortError,
+    toUserFacingError,
+    UserFacingErrorError,
+    type UserFacingError,
+} from "./util/errors";
 import type { LibraryEntry } from "./storage/library-store";
 
 /** A chapter being downloaded. */
@@ -584,6 +589,18 @@ export class DownloadManager {
         chapters: DownloadChapter[],
         options: { fileName?: string } = {},
     ): string {
+        // One book at a time: two jobs would double the request rate on the
+        // site, and each one's cookie cleanup would pull cookies from under
+        // the other. A second start for the same story joins the running job.
+        const active = this.activeJob;
+        if (active) {
+            if (active.sourceUrl === sourceUrl) return active.id;
+            throw new UserFacingErrorError(
+                "Another book is still being made. Wait for it to finish, or cancel it.",
+                "BUSY",
+            );
+        }
+
         const id = crypto.randomUUID();
         const job: Job = {
             id,
@@ -653,6 +670,10 @@ export class DownloadManager {
         // The worker refreshes the user's preferences here, so the parser
         // built below sees the settings the user has right now.
         await this.#dependencies.prepare?.();
+
+        // The user may have cancelled while the settings were being read.
+        // The job is already reported as cancelled, and must stay that way.
+        if (signal.aborted) return;
 
         job.phase = "fetching-chapters";
         this.#report(job);

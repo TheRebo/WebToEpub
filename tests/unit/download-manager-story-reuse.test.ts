@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+    DEFAULT_BEHAVIOUR,
     DownloadManager,
     type DownloadManagerDependencies,
     type JobProgress,
@@ -100,5 +101,54 @@ describe("a download of a listed story", () => {
             "story:https://www.example.com/1",
             "other:https://chapters.example.org/2",
         ]);
+    });
+});
+
+describe("one download at a time", () => {
+    it("joins the running job for the same story and refuses another story", () => {
+        let release: () => void = () => {};
+        const manager = new DownloadManager(
+            dependencies(
+                {
+                    behaviour: () =>
+                        new Promise((resolve) => {
+                            release = () => resolve({ ...DEFAULT_BEHAVIOUR });
+                        }),
+                },
+                [],
+            ),
+        );
+        const chapters = [{ sourceUrl: "https://example.com/1", title: "One" }];
+        const first = manager.start("https://example.com/story", "Story", chapters);
+        expect(manager.start("https://example.com/story", "Story", chapters)).toBe(first);
+        expect(() => manager.start("https://other.example/story", "Other", chapters)).toThrow(
+            /Another book/,
+        );
+        release();
+    });
+
+    it("stays cancelled when it is cancelled while it is still preparing", async () => {
+        let release: () => void = () => {};
+        const phases: string[] = [];
+        const manager = new DownloadManager(
+            dependencies(
+                {
+                    behaviour: () =>
+                        new Promise((resolve) => {
+                            release = () => resolve({ ...DEFAULT_BEHAVIOUR });
+                        }),
+                    onProgress: (progress) => phases.push(progress.phase),
+                },
+                [],
+            ),
+        );
+        const id = manager.start("https://example.com/story", "Story", [
+            { sourceUrl: "https://example.com/1", title: "One" },
+        ]);
+        manager.cancel(id);
+        release();
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        expect(phases).toEqual(["cancelled"]);
+        expect(manager.progress(id)?.phase).toBe("cancelled");
     });
 });
