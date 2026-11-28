@@ -140,7 +140,7 @@ export function buildOptions(root: HTMLElement): OptionsElements {
 
     const wordmark = document.createElement("span");
     wordmark.className = "options-wordmark";
-    wordmark.textContent = "Kintsugi";
+    wordmark.textContent = t("appName");
 
     const searchWrap = document.createElement("div");
     searchWrap.className = "options-search";
@@ -173,6 +173,14 @@ export function buildOptions(root: HTMLElement): OptionsElements {
 
     const content = document.createElement("main");
     content.className = "options-content";
+    // The page's one top-level heading. It is read, not seen: the header
+    // already shows where the user is. Focus can land on it when the button
+    // that had it is gone.
+    const pageHeading = document.createElement("h1");
+    pageHeading.className = "k-visually-hidden";
+    pageHeading.tabIndex = -1;
+    pageHeading.textContent = t("popupSettings");
+    content.appendChild(pageHeading);
 
     // The status region sits inside the content column: it is what the page
     // shows while the settings are being read, and what it shows when they

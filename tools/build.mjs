@@ -30,9 +30,11 @@ const isDev = process.argv.includes("--dev");
 
 /** The entry points that produce an extension page. */
 const PAGES = [
-    { name: "workbench", title: "Kintsugi — Workbench" },
+    // The titles are replaced in the user's language as soon as the page
+    // runs; these are what a tab shows before then.
+    { name: "workbench", title: "Workbench · Kintsugi" },
     { name: "popup", title: "Kintsugi" },
-    { name: "options", title: "Kintsugi — Settings" },
+    { name: "options", title: "Settings · Kintsugi" },
     { name: "onboarding", title: "Welcome to Kintsugi" },
 ];
 

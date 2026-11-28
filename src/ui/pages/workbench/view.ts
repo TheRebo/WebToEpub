@@ -218,14 +218,16 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const appBar = el("header", "k-app-bar");
 
     const mark = el("div", "k-app-bar__mark");
-    const markIcon = createIcon("sparkle", 20);
+    const markIcon = createIcon("book", 20);
     mark.appendChild(markIcon);
     const markText = el("span", "");
     markText.textContent = t("appName");
     mark.appendChild(markText);
 
     const titleWrap = el("div", "workbench-title");
-    const title = el("span", "workbench-title__name");
+    // The story is what this page is about, so its title is the page's
+    // one top-level heading.
+    const title = el("h1", "workbench-title__name");
     const author = el("span", "workbench-title__author");
     titleWrap.append(title, author);
 

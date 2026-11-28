@@ -1239,7 +1239,7 @@ async function sendMessageToWorker(message: unknown): Promise<unknown> {
 
 /** Start the page. */
 async function main(): Promise<void> {
-    installI18n();
+    installI18n("workbenchTitle");
     const root = document.body;
     const controller = new WorkbenchController(root);
     await controller.start();

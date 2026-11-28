@@ -26,6 +26,8 @@
 }
 
 .workbench-title__name {
+    margin: 0;
+    line-height: var(--leading-snug);
     font-size: var(--text-md);
     font-weight: var(--weight-medium);
     color: var(--text);

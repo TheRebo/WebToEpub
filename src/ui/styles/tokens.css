@@ -15,6 +15,11 @@
  */
 
 :root {
+    /* Native controls (scrollbars, checkboxes, number spinners, a select's
+       menu) follow the theme, and pick up the accent. */
+    color-scheme: light;
+    accent-color: var(--accent);
+
     /* ------------------------------------------------------------------
      * Layer 1 — primitives
      * ------------------------------------------------------------------ */
@@ -236,6 +241,8 @@
  * "gray-900".
  */
 [data-theme="dark"] {
+    color-scheme: dark;
+
     /* The reversed ramp. */
     --gray-0: #14120f;
     --gray-50: #1c1915;

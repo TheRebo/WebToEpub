@@ -56,7 +56,7 @@ export interface OnboardingElements {
 export function buildOnboarding(root: HTMLElement): OnboardingElements {
     root.replaceChildren();
 
-    const shell = document.createElement("div");
+    const shell = document.createElement("main");
     shell.className = "onboarding-shell";
 
     // --- The progress dots ---

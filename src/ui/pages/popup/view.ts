@@ -114,7 +114,7 @@ export function buildPopup(root: HTMLElement): PopupElements {
     mark.setAttribute("aria-hidden", "true");
     mark.appendChild(createIcon("book", 20));
 
-    const wordmark = document.createElement("span");
+    const wordmark = document.createElement("h1");
     wordmark.className = "popup-wordmark";
     wordmark.textContent = t("appName");
 
@@ -301,7 +301,7 @@ export function buildPopup(root: HTMLElement): PopupElements {
     actions.appendChild(library);
     actions.appendChild(workbench);
 
-    const body = document.createElement("div");
+    const body = document.createElement("main");
     body.className = "popup-body";
     body.appendChild(card);
     body.appendChild(empty);

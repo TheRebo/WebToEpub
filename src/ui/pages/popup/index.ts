@@ -472,7 +472,7 @@ function requestedUrl(): string | undefined {
 
 /** Start the popup. */
 async function main(): Promise<void> {
-    installI18n();
+    installI18n("appName");
     const controller = new PopupController(document.body);
     await controller.start();
 }
