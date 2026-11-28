@@ -276,13 +276,14 @@ export class WorkbenchStore {
     /**
      * Toggle a chapter's selection.
      *
-     * A chapter that cannot be included is never selectable — the user can
-     * still tick it in the baseline, but the download then fails on it.
+     * A locked chapter starts unticked, but the user can tick it by hand: a
+     * reader who bought it can download it. The bulk actions leave locked
+     * chapters alone, so "Select all" never sweeps in a paywalled page.
      */
     toggleChapter(index: number): void {
         this.update((state) => {
             const chapter = state.chapters[index];
-            if (!chapter || !chapter.isIncludeable) return;
+            if (!chapter) return;
             chapter.selected = !chapter.selected;
         });
     }
