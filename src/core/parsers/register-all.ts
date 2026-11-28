@@ -12,6 +12,9 @@
  * See ADR-0002.
  */
 import "./legacy-parsers.js";
+// Loaded after the migrated parsers, so a new parser for a host they cover
+// fails loudly as a duplicate rather than silently taking it over.
+import "./site-parsers";
 import type { ParserRegistry } from "./registry";
 import { legacyRegistry } from "./compat/legacy-factory";
 

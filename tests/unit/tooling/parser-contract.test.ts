@@ -83,6 +83,17 @@ describe("the migrated parsers", () => {
         expect(missing).toEqual([]);
     });
 
+    it("loads every new site parser written since the migration", () => {
+        const sites = join(__dirname, "../../../src/core/parsers/sites");
+        const files = readdirSync(sites).filter((name) => name.endsWith(".js"));
+        const imports = readFileSync(
+            join(__dirname, "../../../src/core/parsers/site-parsers.ts"),
+            "utf8",
+        );
+        const missing = files.filter((name) => !imports.includes(`./sites/${name}"`));
+        expect(missing).toEqual([]);
+    });
+
     it("registers every host in lower case, as lookups expect", () => {
         const upper = legacyRegistry.registeredHosts.filter((host) => host !== host.toLowerCase());
         expect(upper).toEqual([]);
