@@ -814,11 +814,11 @@
     "description": "対応サイトから見た目の手順へ。"
   },
   "onboardingWelcomeText": {
-    "message": "どんなウェブ小説も、永く残したい一冊の本に変えます。章リストを指定するだけで、表紙と目次を備えた整整った EPUB が完成します。",
+    "message": "どんなウェブ小説も、永く残したい一冊の本に変えます。章リストを指定するだけで、表紙と目次を備えた整った EPUB が完成します。",
     "description": "最初のステップの説明。"
   },
   "onboardingWelcomeFootnote": {
-    "message": "アカウント不要。追跡なし。オフラインでも使えます。",
+    "message": "アカウント不要、追跡なし。Kintsugi が通信するのは、読んでいるサイトだけです。",
     "description": "最初のステップの脚注。"
   },
   "onboardingWhichSite": {
@@ -830,7 +830,7 @@
     "description": "2 番目のステップの説明。"
   },
   "onboardingWhichSiteFootnote": {
-    "message": "一覧にないサイトでも読み取れます。セレクターは自分で作成することもできます。",
+    "message": "一覧にないサイトでも、章の場所を教えれば読み取れます。",
     "description": "2 番目のステップの脚注。"
   },
   "onboardingMakeItYours": {

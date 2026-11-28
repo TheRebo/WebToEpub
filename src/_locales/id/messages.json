@@ -814,11 +814,11 @@
     "description": "Dari langkah situs ke langkah tampilan."
   },
   "onboardingWelcomeText": {
-    "message": "Ubah novel web mana pun menjadi buku yang layak disimpan. Arahkan ke daftar bab, dan Kintsugi akan menyusun EPUB yang rapi — lengkap dengan sampul dan daftar isi.",
+    "message": "Ubah novel web mana pun menjadi buku yang layak disimpan. Arahkan ke daftar bab, dan Kintsugi akan menyusun EPUB yang rapi, lengkap dengan sampul dan daftar isi.",
     "description": "Penjelasan langkah pertama orientasi."
   },
   "onboardingWelcomeFootnote": {
-    "message": "Tanpa akun. Tanpa pelacakan. Bisa dipakai luring.",
+    "message": "Tanpa akun dan tanpa pelacakan. Kintsugi hanya terhubung ke situs yang Anda baca.",
     "description": "Catatan kaki langkah pertama orientasi."
   },
   "onboardingWhichSite": {
@@ -830,7 +830,7 @@
     "description": "Penjelasan langkah kedua orientasi."
   },
   "onboardingWhichSiteFootnote": {
-    "message": "Tidak ada dalam daftar? Kintsugi tetap bisa membacanya — Anda bisa membuat selector sendiri.",
+    "message": "Tidak ada dalam daftar? Kintsugi tetap bisa membacanya setelah Anda menunjukkan letak bab-babnya.",
     "description": "Catatan kaki langkah kedua orientasi."
   },
   "onboardingMakeItYours": {

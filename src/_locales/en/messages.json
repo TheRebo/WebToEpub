@@ -814,11 +814,11 @@
     "description": "Moves from the sites step to the appearance step."
   },
   "onboardingWelcomeText": {
-    "message": "Turn any web novel into a book worth keeping. Point it at a chapter list, and it builds a clean EPUB — cover, table of contents, and all.",
+    "message": "Turn any web novel into a book worth keeping. Point it at a chapter list and it builds a clean EPUB, with a cover and a table of contents.",
     "description": "The first onboarding step's explanation."
   },
   "onboardingWelcomeFootnote": {
-    "message": "No account. No tracking. Works offline.",
+    "message": "No account, and nothing is tracked. Kintsugi talks only to the sites you read.",
     "description": "The first onboarding step's footnote."
   },
   "onboardingWhichSite": {
@@ -830,7 +830,7 @@
     "description": "The second onboarding step's explanation."
   },
   "onboardingWhichSiteFootnote": {
-    "message": "Not listed? Kintsugi can still read it — you can build a selector yourself.",
+    "message": "Not listed? Kintsugi can still read it once you show it where the chapters are.",
     "description": "The second onboarding step's footnote."
   },
   "onboardingMakeItYours": {

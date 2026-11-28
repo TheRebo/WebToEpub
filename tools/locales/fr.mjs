@@ -417,11 +417,11 @@ export default {
     ],
     onboardingNextLook: ["Suivant : choisir l’apparence", "De l’étape des sites à l’apparence."],
     onboardingWelcomeText: [
-        "Transformez n'importe quel roman en ligne en un livre à garder. Pointez-le sur une liste de chapitres, et il crée un EPUB soigné — couverture, sommaire et tout le reste.",
+        "Transformez n'importe quel roman en ligne en un livre à garder. Pointez-le sur une liste de chapitres, et il crée un EPUB soigné, avec couverture et sommaire.",
         "L'explication de la première étape d'introduction.",
     ],
     onboardingWelcomeFootnote: [
-        "Pas de compte. Pas de suivi. Fonctionne hors ligne.",
+        "Pas de compte, aucun suivi. Kintsugi ne parle qu’aux sites que vous lisez.",
         "La note de la première étape d'introduction.",
     ],
     onboardingWhichSite: [
@@ -433,7 +433,7 @@ export default {
         "L'explication de la deuxième étape d'introduction.",
     ],
     onboardingWhichSiteFootnote: [
-        "Pas dans la liste ? Kintsugi peut quand même le lire — vous pouvez créer un sélecteur vous-même.",
+        "Pas dans la liste ? Kintsugi peut quand même le lire si vous lui montrez où sont les chapitres.",
         "La note de la deuxième étape d'introduction.",
     ],
     onboardingMakeItYours: ["Personnalisez-le", "Le titre de la troisième étape d'introduction."],

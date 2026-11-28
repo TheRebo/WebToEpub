@@ -398,11 +398,11 @@ const SOURCE = {
         "Moves from the sites step to the appearance step.",
     ],
     onboardingWelcomeText: [
-        "Turn any web novel into a book worth keeping. Point it at a chapter list, and it builds a clean EPUB — cover, table of contents, and all.",
+        "Turn any web novel into a book worth keeping. Point it at a chapter list and it builds a clean EPUB, with a cover and a table of contents.",
         "The first onboarding step's explanation.",
     ],
     onboardingWelcomeFootnote: [
-        "No account. No tracking. Works offline.",
+        "No account, and nothing is tracked. Kintsugi talks only to the sites you read.",
         "The first onboarding step's footnote.",
     ],
     onboardingWhichSite: ["Which site are you reading?", "The second onboarding step's heading."],
@@ -411,7 +411,7 @@ const SOURCE = {
         "The second onboarding step's explanation.",
     ],
     onboardingWhichSiteFootnote: [
-        "Not listed? Kintsugi can still read it — you can build a selector yourself.",
+        "Not listed? Kintsugi can still read it once you show it where the chapters are.",
         "The second onboarding step's footnote.",
     ],
     onboardingMakeItYours: ["Make it yours", "The third onboarding step's heading."],

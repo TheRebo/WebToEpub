@@ -382,11 +382,11 @@ export default {
     ],
     onboardingNextLook: ["Berikutnya: pilih tampilan", "Dari langkah situs ke langkah tampilan."],
     onboardingWelcomeText: [
-        "Ubah novel web mana pun menjadi buku yang layak disimpan. Arahkan ke daftar bab, dan Kintsugi akan menyusun EPUB yang rapi — lengkap dengan sampul dan daftar isi.",
+        "Ubah novel web mana pun menjadi buku yang layak disimpan. Arahkan ke daftar bab, dan Kintsugi akan menyusun EPUB yang rapi, lengkap dengan sampul dan daftar isi.",
         "Penjelasan langkah pertama orientasi.",
     ],
     onboardingWelcomeFootnote: [
-        "Tanpa akun. Tanpa pelacakan. Bisa dipakai luring.",
+        "Tanpa akun dan tanpa pelacakan. Kintsugi hanya terhubung ke situs yang Anda baca.",
         "Catatan kaki langkah pertama orientasi.",
     ],
     onboardingWhichSite: ["Situs mana yang sedang Anda baca?", "Judul langkah kedua orientasi."],
@@ -395,7 +395,7 @@ export default {
         "Penjelasan langkah kedua orientasi.",
     ],
     onboardingWhichSiteFootnote: [
-        "Tidak ada dalam daftar? Kintsugi tetap bisa membacanya — Anda bisa membuat selector sendiri.",
+        "Tidak ada dalam daftar? Kintsugi tetap bisa membacanya setelah Anda menunjukkan letak bab-babnya.",
         "Catatan kaki langkah kedua orientasi.",
     ],
     onboardingMakeItYours: ["Jadikan milik Anda", "Judul langkah ketiga orientasi."],

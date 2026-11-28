@@ -7,7 +7,7 @@
 export default {
     appName: ["Kintsugi", "Der Name der Erweiterung."],
     appTagline: [
-        "Verwandle jeden Webroman in ein Buch, das du behalten willst.",
+        "Verwandeln Sie jeden Webroman in ein Buch, das Sie behalten wollen.",
         "Eine einzeilige Beschreibung der Erweiterung.",
     ],
     workbenchTitle: ["Werkbank", "Der Titel der Hauptseite."],
@@ -79,7 +79,7 @@ export default {
         "Fügt das Inhaltsverzeichnis als Kapitel hinzu.",
     ],
     workbenchOptionsHint: [
-        "Das gilt für jedes Buch, das du erstellst.",
+        "Das gilt für jedes Buch, das Sie erstellen.",
         "Erklärt, dass die Schalter die Einstellungen ändern.",
     ],
     workbenchMoreOptions: ["Weitere Optionen", "Öffnet die vollständige Einstellungsseite."],
@@ -90,7 +90,7 @@ export default {
         "Wenn die Seite keine Story ist.",
     ],
     workbenchNoStoryHint: [
-        "Prüfe, ob dies die Kapitelliste der Geschichte ist, oder zeig Kintsugi, wo die Kapitel stehen.",
+        "Prüfen Sie, ob dies die Kapitelliste der Geschichte ist, oder zeigen Sie Kintsugi, wo die Kapitel stehen.",
         "Unter der leeren Kapitelliste.",
     ],
     workbenchTryAnyway: ["Trotzdem versuchen", "Öffnet die Werkbank trotzdem."],
@@ -112,7 +112,7 @@ export default {
     ],
     accessTitle: ["Zugriff auf diese Seite erlauben", "Die Überschrift der Zugriffsfrage."],
     accessText: [
-        "Kintsugi kann nur eine Seite lesen, die du erlaubt hast. Die Seiten werden auf deinem Rechner gelesen, und nichts wird verschickt.",
+        "Kintsugi kann nur eine Seite lesen, die Sie erlaubt haben. Die Seiten werden auf Ihrem Rechner gelesen, und nichts wird verschickt.",
         "Der Text unter der Zugriffsfrage.",
     ],
     accessGrant: ["Zugriff erlauben", "Die Schaltfläche, die den Browser um Zugriff bittet."],
@@ -194,11 +194,11 @@ export default {
     optionsRevoke: ["Widerrufen", "Entfernt den Zugriff auf eine Seite."],
     optionsRevokeAll: ["Alle widerrufen", "Entfernt den Zugriff auf jede Seite."],
     optionsRevokeAllConfirm: [
-        "Kintsugi kann keine dieser Seiten mehr lesen, bis du jede wieder erlaubst.",
+        "Kintsugi kann keine dieser Seiten mehr lesen, bis Sie jede wieder erlauben.",
         "Erklärung im Dialog, der den Zugriff auf alle Seiten entfernt.",
     ],
     optionsSiteAccessEmpty: [
-        "Noch keine Seiten. Kintsugi fragt, wenn du eine Story öffnest.",
+        "Noch keine Seiten. Kintsugi fragt, wenn Sie eine Geschichte öffnen.",
         "Der leere Zustand der Zugriffsliste.",
     ],
     optionsSiteAccessHint: [
@@ -423,11 +423,11 @@ export default {
     ],
     onboardingNextLook: ["Weiter: Aussehen wählen", "Vom Seitenschritt zum Aussehensschritt."],
     onboardingWelcomeText: [
-        "Verwandeln Sie jeden Webroman in ein Buch, das sich lohnt. Richten Sie Kintsugi auf eine Kapitelliste, und es erstellt ein sauberes EPUB – mit Cover, Inhaltsverzeichnis und allem Drum und Dran.",
+        "Verwandeln Sie jeden Webroman in ein Buch, das sich lohnt. Richten Sie Kintsugi auf eine Kapitelliste, und es erstellt ein sauberes EPUB mit Cover und Inhaltsverzeichnis.",
         "Die Erklärung des ersten Einführungsschritts.",
     ],
     onboardingWelcomeFootnote: [
-        "Kein Konto. Kein Tracking. Funktioniert offline.",
+        "Kein Konto, kein Tracking. Kintsugi spricht nur mit den Seiten, die Sie lesen.",
         "Die Fußnote des ersten Einführungsschritts.",
     ],
     onboardingWhichSite: [
@@ -439,7 +439,7 @@ export default {
         "Die Erklärung des zweiten Einführungsschritts.",
     ],
     onboardingWhichSiteFootnote: [
-        "Nicht dabei? Kintsugi kann die Seite trotzdem lesen – Sie können sich einen Selektor selbst zusammenstellen.",
+        "Nicht dabei? Kintsugi kann die Seite trotzdem lesen, wenn Sie ihm zeigen, wo die Kapitel stehen.",
         "Die Fußnote des zweiten Einführungsschritts.",
     ],
     onboardingMakeItYours: [
@@ -481,7 +481,10 @@ export default {
         "Filter entfernen",
         "Entfernt den Filter, damit alle Kapitel wieder erscheinen.",
     ],
-    optionsNumberRequired: ["Gib eine Zahl ein.", "Unter einer leer gelassenen Zahleneinstellung."],
+    optionsNumberRequired: [
+        "Geben Sie eine Zahl ein.",
+        "Unter einer leer gelassenen Zahleneinstellung.",
+    ],
     filterApply: ["Anwenden", "Wendet den Filter an."],
     filterInvalidPattern: ["Das ist kein gültiges Muster.", "Wenn der Regex nicht kompiliert."],
     siteSelectorBannerTitle: [
