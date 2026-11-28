@@ -109,6 +109,11 @@ export interface FetchOptions {
      * encoding supplies its own.
      */
     decoder?: (response: Response) => TextDecoder;
+    /**
+     * The custom-error handler for this request only. A parser's handler
+     * judges that parser's requests, never an image fetch running beside it.
+     */
+    customErrorHandler?: CustomErrorHandler;
 }
 
 /** A successful response. */
@@ -291,7 +296,12 @@ export class FetchClient {
                         `${text.length} characters`,
                     );
 
-                    const custom = this.#evaluateCustomError(url, response, text);
+                    const custom = this.#evaluateCustomError(
+                        url,
+                        response,
+                        text,
+                        options.customErrorHandler,
+                    );
                     if (custom?.status === 999) {
                         // The parser asked for an automatic retry. On the last
                         // attempt there is nothing left to retry *into*, so
@@ -413,7 +423,12 @@ export class FetchClient {
                     });
                     const { text } = await this.#readText(response, options);
 
-                    const custom = this.#evaluateCustomError(url, response, text);
+                    const custom = this.#evaluateCustomError(
+                        url,
+                        response,
+                        text,
+                        options.customErrorHandler,
+                    );
                     if (custom?.status === 999) {
                         // The parser asked for an automatic retry. The last
                         // attempt has to fail, or the broken body would be
@@ -863,8 +878,9 @@ export class FetchClient {
         url: string,
         response: Response,
         bodyText: string,
+        scoped?: CustomErrorHandler,
     ): { status: number; retryDelay?: number } | undefined {
-        const handler = this.#customErrorHandler;
+        const handler = scoped ?? this.#customErrorHandler;
         if (!handler) return undefined;
         try {
             if (!handler.isCustomError(response, bodyText)) return undefined;

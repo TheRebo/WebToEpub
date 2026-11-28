@@ -809,14 +809,16 @@ async function wrapFetch(
     const bridge = new LegacyParserBridge(options.parser, options);
 
     return withClientLock(async () => {
-        client.setCustomErrorHandler(bridge);
-        try {
-            const decoder =
-                typeof options.makeTextDecoder === "function" ? options.makeTextDecoder : undefined;
-            return await runLegacyFetch(client, url, fetchOptions, retry, bridge, decoder);
-        } finally {
-            client.setCustomErrorHandler(undefined);
-        }
+        const decoder =
+            typeof options.makeTextDecoder === "function" ? options.makeTextDecoder : undefined;
+        return runLegacyFetch(
+            client,
+            url,
+            { ...fetchOptions, customErrorHandler: bridge },
+            retry,
+            bridge,
+            decoder,
+        );
     });
 }
 
@@ -835,27 +837,25 @@ async function fetchJson(
     const bridge = new LegacyParserBridge(parser, { parser });
 
     return withClientLock(async () => {
-        client.setCustomErrorHandler(bridge);
-        try {
-            const result = await client.fetchJson(url, fetchOptions);
-            const custom = bridge.customError;
-            if (custom) {
-                throw new FetchError(custom.message ?? `Custom error for ${url}`, {
-                    status: custom.status,
-                    url,
-                    attempts: 1,
-                    isChallenge: custom.status === 403,
-                });
-            }
-            return {
-                json: result.json,
-                response: result.response,
-                url: result.url,
-                contentType: result.response.headers.get("content-type") ?? "",
-            };
-        } finally {
-            client.setCustomErrorHandler(undefined);
+        const result = await client.fetchJson(url, {
+            ...fetchOptions,
+            customErrorHandler: bridge,
+        });
+        const custom = bridge.customError;
+        if (custom) {
+            throw new FetchError(custom.message ?? `Custom error for ${url}`, {
+                status: custom.status,
+                url,
+                attempts: 1,
+                isChallenge: custom.status === 403,
+            });
         }
+        return {
+            json: result.json,
+            response: result.response,
+            url: result.url,
+            contentType: result.response.headers.get("content-type") ?? "",
+        };
     });
 }
 
