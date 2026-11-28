@@ -13,7 +13,7 @@ import { DownloadManager } from "./download-manager";
 import { FetchClient } from "./net/fetch-client";
 import { CookieBridge } from "./net/cookie-bridge";
 import { createCookieApi } from "./net/browser-cookie-api";
-import { installOriginStripRule } from "./net/dnr-rules";
+import { installOriginStripRule, installPrivateNetworkRules } from "./net/dnr-rules";
 import { legacyRegistry } from "./parsers/compat/legacy-factory";
 import { installFetchClient } from "./parsers/compat/legacy-http-client";
 import { setParserServices } from "./parsers/services-context";
@@ -32,6 +32,8 @@ import { scanDocument } from "./parsers/heuristic-scanner";
 import { toUserFacingError, type UserFacingError } from "./util/errors";
 import { diagnostic, diagnosticUrl, setDiagnosticsEnabled } from "./util/diagnostics";
 import { mayFetchUrl } from "./net/fetch-policy";
+import { listHostAccess } from "./host-access";
+import { isPrivateHost } from "./util/sanitize";
 import { DefaultParser } from "./parsers/default-parser";
 import { registerAllParsers } from "./parsers/register-all";
 import type { ParserServices } from "./parsers/parser";
@@ -324,8 +326,37 @@ class BackgroundWorker {
         // listener. It is reinstalled on every worker start, because a
         // dynamic rule does not survive the worker being torn down.
         await installOriginStripRule(getNamespace()?.declarativeNetRequest);
+        await this.#refreshPrivateNetworkRules();
+        this.#watchHostGrants();
 
         this.#watchSettings();
+    }
+
+    /**
+     * Rebuild the rules that keep redirects out of the user's network, so a
+     * private host the user granted by name stays reachable (ADR-0045).
+     */
+    async #refreshPrivateNetworkRules(): Promise<void> {
+        const granted = (await listHostAccess()).filter((pattern) => {
+            const host = /^[^:]+:\/\/([^/]+)\//.exec(pattern)?.[1];
+            return host !== undefined && isPrivateHost(host);
+        });
+        await installPrivateNetworkRules(getNamespace()?.declarativeNetRequest, granted);
+    }
+
+    /** Rebuild the private-network rules whenever a host grant changes. */
+    #watchHostGrants(): void {
+        const permissions = getNamespace()?.permissions as
+            | {
+                  onAdded?: { addListener(listener: () => void): void };
+                  onRemoved?: { addListener(listener: () => void): void };
+              }
+            | undefined;
+        const refresh = (): void => {
+            void this.#refreshPrivateNetworkRules();
+        };
+        permissions?.onAdded?.addListener(refresh);
+        permissions?.onRemoved?.addListener(refresh);
     }
 
     /**

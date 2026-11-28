@@ -609,10 +609,10 @@ export class FetchClient {
      *    allowed when — and only when — the user has given the extension
      *    access to it, which is what makes a story served from a home server
      *    work without opening the door to the rest of the network.
-     *  - **Redirects are followed by hand.** The browser's own redirect
-     *    handling would follow a redirect to a private address without
-     *    telling us, and by the time we saw the final URL the request had
-     *    already been made.
+     *  - **Redirects are checked.** The browser follows them, because a
+     *    manual redirect is opaque to an extension. A hop to a private
+     *    address is blocked by a network rule before it is made, and the
+     *    final address is checked again before the body is read.
      *  - **The request has a deadline.** A server that never answers cannot
      *    hold the job open for ever.
      */
@@ -639,8 +639,23 @@ export class FetchClient {
 
             const response = await this.#request(validated.href, headers, options, method, body);
 
-            // The browser's own redirect handling is not used, so a redirect is
-            // a response with a location rather than a followed request.
+            // The browser follows redirects itself: a manual redirect comes back
+            // opaque, with no status and no location to follow. A private hop
+            // is blocked in the network stack (`installPrivateNetworkRules`), and
+            // the address the response finally came from is checked here too.
+            if (response.redirected && response.url && response.url !== validated.href) {
+                if (!(await mayFetchUrl(response.url))) {
+                    await response.body?.cancel().catch(() => undefined);
+                    throw new FetchError(`Refused to fetch ${response.url}`, {
+                        url: response.url,
+                        attempts: 1,
+                        code: "PERMISSION_DENIED",
+                    });
+                }
+            }
+
+            // An environment that hands a redirect back unfollowed is still
+            // walked hop by hop, each hop checked above.
             const location = response.headers.get("location");
             if (!location || response.status < 300 || response.status >= 400) {
                 return response;
@@ -704,9 +719,7 @@ export class FetchClient {
                 body,
                 signal,
                 credentials: options.credentials ?? "include",
-                // The redirects are followed by hand, so the browser must not
-                // follow them as well.
-                redirect: "manual",
+                redirect: "follow",
             });
         } catch (error) {
             // A timeout is reported as a timeout rather than as a transport

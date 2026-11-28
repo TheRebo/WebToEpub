@@ -56,6 +56,8 @@ export interface DnrCondition {
     urlFilter?: string;
     /** Only requests to these domains match. */
     requestDomains?: string[];
+    /** Only requests whose URL matches this RE2 pattern match. */
+    regexFilter?: string;
     /** Only requests with these methods match. */
     requestMethods?: string[];
 }
@@ -212,4 +214,129 @@ export async function installOriginStripRule(api: DnrApi | undefined): Promise<b
         // extension still works, it just sends an `Origin` header.
         return false;
     }
+}
+
+/** The ID of the rule that blocks the extension's requests to private hosts. */
+export const PRIVATE_NETWORK_BLOCK_RULE_ID = 2;
+
+/** The first ID of the rules that let a private host the user named through. */
+const PRIVATE_NETWORK_ALLOW_RULE_BASE = 100;
+
+/**
+ * The hosts `isPrivateHost` treats as private, as one RE2 pattern.
+ *
+ * The fetch layer checks the first address itself, but the browser follows
+ * redirects, so this rule is what stops a public page redirecting the
+ * extension into the user's own network (ADR-0045).
+ */
+export const PRIVATE_HOST_URL_PATTERN =
+    "^https?://(" +
+    "localhost|ip6-localhost|ip6-loopback|[^/:?#]*\\.localhost|[^/:?#]*\\.local" +
+    "|0\\.[0-9]+\\.[0-9]+\\.[0-9]+" +
+    "|10\\.[0-9]+\\.[0-9]+\\.[0-9]+" +
+    "|100\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\.[0-9]+\\.[0-9]+" +
+    "|127\\.[0-9]+\\.[0-9]+\\.[0-9]+" +
+    "|169\\.254\\.[0-9]+\\.[0-9]+" +
+    "|172\\.(1[6-9]|2[0-9]|3[01])\\.[0-9]+\\.[0-9]+" +
+    "|192\\.168\\.[0-9]+\\.[0-9]+" +
+    "|\\[(::1?|::ffff:[^\\]]*|f[cd][0-9a-f]*:[^\\]]*|fe[89ab][0-9a-f]*:[^\\]]*|ff[0-9a-f]*:[^\\]]*)\\]" +
+    ")\\.?(:[0-9]+)?([/?#]|$)";
+
+/** Every resource type the extension's own requests can have. */
+const ALL_RESOURCE_TYPES = ["xmlhttprequest", "image", "media", "other", "main_frame", "sub_frame"];
+
+/**
+ * The rules that keep the extension's redirects out of the user's network.
+ *
+ * One rule blocks every private host; one higher-priority rule per origin the
+ * user granted by name lets that host through, so a story on a home server
+ * still works.
+ *
+ * @param grantedPrivatePatterns The private host patterns the user granted by name, such as `http://nas.local/*`.
+ * @returns The rules, or none when they cannot be scoped to this extension.
+ */
+export function createPrivateNetworkRules(grantedPrivatePatterns: string[]): DnrRule[] {
+    const domain = initiatorDomain();
+    if (!domain) return [];
+    const block: DnrRule = {
+        id: PRIVATE_NETWORK_BLOCK_RULE_ID,
+        priority: 1,
+        action: { type: "block" },
+        condition: {
+            initiatorDomains: [domain],
+            resourceTypes: ALL_RESOURCE_TYPES,
+            regexFilter: PRIVATE_HOST_URL_PATTERN,
+        },
+    };
+    const allows = grantedPrivatePatterns
+        .flatMap((pattern) => {
+            const regex = patternToRegex(pattern);
+            return regex ? [regex] : [];
+        })
+        .map(
+            (regex, index): DnrRule => ({
+                id: PRIVATE_NETWORK_ALLOW_RULE_BASE + index,
+                priority: 2,
+                action: { type: "allow" },
+                condition: {
+                    initiatorDomains: [domain],
+                    resourceTypes: ALL_RESOURCE_TYPES,
+                    regexFilter: regex,
+                },
+            }),
+        );
+    return [block, ...allows];
+}
+
+/**
+ * Install the private-network rules, replacing any installed before.
+ *
+ * @param api The browser's DNR API.
+ * @param grantedPrivatePatterns The private host patterns the user granted by name, such as `http://nas.local/*`.
+ * @returns Whether the rules were installed.
+ */
+export async function installPrivateNetworkRules(
+    api: DnrApi | undefined,
+    grantedPrivatePatterns: string[],
+): Promise<boolean> {
+    if (!api) return false;
+    const rules = createPrivateNetworkRules(grantedPrivatePatterns);
+    if (rules.length === 0) return false;
+    try {
+        const existing = await api.getDynamicRules();
+        await api.updateDynamicRules({
+            removeRuleIds: existing
+                .map((rule) => rule.id)
+                .filter(
+                    (id) =>
+                        id === PRIVATE_NETWORK_BLOCK_RULE_ID ||
+                        id >= PRIVATE_NETWORK_ALLOW_RULE_BASE,
+                ),
+            addRules: rules,
+        });
+        return true;
+    } catch (error) {
+        console.warn("[kintsugi] The private-network rules could not be installed:", error);
+        return false;
+    }
+}
+
+/**
+ * The RE2 pattern for a granted host pattern.
+ *
+ * A match pattern ignores the port, so the pattern accepts any port.
+ *
+ * @param pattern A host pattern, such as `http://nas.local/*`.
+ * @returns The regular expression, or `undefined` for a pattern of another shape.
+ */
+export function patternToRegex(pattern: string): string | undefined {
+    const match = /^(\*|https?):\/\/([^/]+)\/\*$/.exec(pattern);
+    if (!match) return undefined;
+    const scheme = match[1] === "*" ? "https?" : (match[1] as string);
+    return `^${scheme}://${escapeRegex(match[2] as string)}(:[0-9]+)?([/?#]|$)`;
+}
+
+/** Escape a string for use inside a regular expression. */
+function escapeRegex(text: string): string {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

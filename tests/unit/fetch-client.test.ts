@@ -315,6 +315,30 @@ describe("the fetch client's URL checks", () => {
         expect(second?.body).toBe("a=1");
     });
 
+    it("asks the browser to follow redirects, since a manual redirect is opaque", async () => {
+        const { client, fetchMock } = clientReturning("<html>ok</html>");
+        await client.fetchHtml("https://example.com/chapter");
+        const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];
+        expect(init.redirect).toBe("follow");
+    });
+
+    it("refuses a response the browser followed into the local network", async () => {
+        const fetchMock = vi.fn(async () => {
+            const response = new Response("<html>secret</html>", {
+                status: 200,
+                headers: { "content-type": "text/html" },
+            });
+            Object.defineProperty(response, "redirected", { value: true });
+            Object.defineProperty(response, "url", { value: "http://169.254.169.254/latest/" });
+            return response;
+        });
+        const client = new FetchClient({ fetch: fetchMock as never, sleep: async () => {} });
+
+        await expect(
+            client.fetchHtml("https://example.com/chapter", { retry: { maxAttempts: 1 } }),
+        ).rejects.toThrow(/Refused to fetch/);
+    });
+
     it("gives up on a redirect loop", async () => {
         const fetchMock = vi.fn(
             async () =>
