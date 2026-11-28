@@ -690,7 +690,7 @@
     "description": "Le réglage d'ignorance des chapitres en échec."
   },
   "settingSkipFailedChaptersHint": {
-    "message": "Un chapitre en échec devient une note dans le livre au lieu d'arrêter le traitement.",
+    "message": "Activé, un chapitre en échec est retiré du livre. Désactivé, il reste à sa place sous forme de note qui explique le problème.",
     "description": "Explique le réglage d'ignorance des chapitres en échec."
   },
   "settingRetryOnEmptyPage": {

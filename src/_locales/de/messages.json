@@ -690,7 +690,7 @@
     "description": "Die Einstellung zum Überspringen fehlgeschlagener Kapitel."
   },
   "settingSkipFailedChaptersHint": {
-    "message": "Ein fehlgeschlagenes Kapitel wird zu einer Notiz im Buch, statt den Lauf abzubrechen.",
+    "message": "Wenn aktiv, wird ein fehlgeschlagenes Kapitel aus dem Buch weggelassen. Wenn aus, bleibt es an seinem Platz als Notiz, die sagt, was schiefging.",
     "description": "Erklärt die Einstellung zum Überspringen fehlgeschlagener Kapitel."
   },
   "settingRetryOnEmptyPage": {

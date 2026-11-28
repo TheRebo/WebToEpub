@@ -340,15 +340,18 @@ export interface LegacyUserPreferences {
 /**
  * The default preferences.
  *
- * Every flag is off, which is the safest default: the baseline's defaults
- * were also off, and a parser that reads a flag the rewrite does not set
- * still sees a sane value.
+ * The flags the settings store owns are overwritten by
+ * `toLegacyUserPreferences`. The rest have no setting, so the value here is
+ * what every user gets: the original extension's default for each.
  */
 export function makeLegacyUserPreferences(): LegacyUserPreferences {
     const flag = (value = false): { value: boolean } => ({ value });
     return {
         removeAuthorNotes: flag(),
-        removeOriginal: flag(),
+        // The original extension removed the untranslated text from the
+        // machine-translation sites by default, and the rewrite has no
+        // setting for it, so its default is the one users get (ADR-0047).
+        removeOriginal: flag(true),
         unSuperScriptAlternateTranslations: flag(),
         skipChaptersThatFailFetch: flag(),
         removeTranslated: flag(),

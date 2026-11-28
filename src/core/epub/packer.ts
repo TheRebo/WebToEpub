@@ -112,6 +112,8 @@ export interface PackMetadata {
     version?: 2 | 3;
     /** Whether to include an information page. */
     includeInfoPage?: boolean;
+    /** The story's address, shown on the information page. */
+    sourceUrl?: string;
 }
 
 /** The result of packing. */
@@ -530,6 +532,7 @@ function startsWithHeading(contentHtml: string): boolean {
 function buildInfoPage(metadata: PackMetadata): string {
     const parts: string[] = [];
     parts.push("    <h1>About this book</h1>");
+    parts.push(`    <p><strong>Title:</strong> ${escapeText(metadata.title)}</p>`);
     if (metadata.author) {
         parts.push(`    <p><strong>Author:</strong> ${escapeText(metadata.author)}</p>`);
     }
@@ -538,6 +541,14 @@ function buildInfoPage(metadata: PackMetadata): string {
     }
     if (metadata.date) {
         parts.push(`    <p><strong>Published:</strong> ${escapeText(metadata.date)}</p>`);
+    }
+    // The source is written without its query string, which can carry a
+    // session token: a book is a file people pass around.
+    const source = metadata.sourceUrl ? redactUrl(metadata.sourceUrl) : undefined;
+    if (source) {
+        parts.push(
+            `    <p><strong>Source:</strong> <a href="${escapeText(source)}">${escapeText(source)}</a></p>`,
+        );
     }
     if (metadata.description) {
         parts.push(`    <p>${escapeText(metadata.description)}</p>`);
@@ -557,14 +568,21 @@ function buildInfoPage(metadata: PackMetadata): string {
  * with it is a secret that leaks. The path is enough to say which chapter it
  * was.
  */
-export function buildPlaceholderChapter(url: string, reason: string): ChapterToPack {
+export function buildPlaceholderChapter(
+    url: string,
+    reason: string,
+    title?: string,
+): ChapterToPack {
     const safeUrl = redactUrl(url) ?? url;
-    const body = `    <h1>Chapter unavailable</h1>
+    // The chapter keeps its own title, so the table of contents still says
+    // which chapter is missing.
+    const heading = title?.trim() || "Chapter unavailable";
+    const body = `    <h1>${escapeText(heading)}</h1>
     <p class="placeholder">${escapeText(reason)}</p>
     <p class="placeholder"><a href="${escapeText(safeUrl)}">${escapeText(safeUrl)}</a></p>`;
     return {
         sourceUrl: url,
-        title: "Chapter unavailable",
+        title: heading,
         contentHtml: body,
         isPlaceholder: true,
     };

@@ -132,6 +132,21 @@ describe("packEpub", () => {
         expect(result.document.toc.some((point) => point.src === "text/cover.xhtml")).toBe(false);
     });
 
+    it("names the title and the source on the information page, without secrets", () => {
+        const result = packEpub([chapter("One")], {
+            title: "A & Story",
+            author: "An Author",
+            includeInfoPage: true,
+            sourceUrl: "https://example.com/story?token=secret",
+        });
+        const page = result.files.find((file) => file.path === "OEBPS/text/info.xhtml");
+        const text = typeof page?.content === "string" ? page.content : "";
+        const xml = parseXml(text);
+        expect(xml.body.textContent).toContain("A & Story");
+        expect(xml.querySelector("a")?.getAttribute("href")).toBe("https://example.com/story");
+        expect(text).not.toContain("secret");
+    });
+
     it("puts each creator on its own line in the package document", () => {
         for (const version of [2, 3] as const) {
             const result = packEpub([chapter("One")], {
@@ -203,6 +218,19 @@ describe("buildPlaceholderChapter", () => {
         expect(placeholder.isPlaceholder).toBe(true);
         expect(placeholder.contentHtml).toContain("The site refused the request.");
         expect(placeholder.contentHtml).toContain("https://example.com/c/1");
+    });
+
+    it("keeps the chapter's title, so the contents say which chapter is missing", () => {
+        const placeholder = buildPlaceholderChapter(
+            "https://example.com/c/1",
+            "The site refused the request.",
+            "Chapter 7: <Return>",
+        );
+        expect(placeholder.title).toBe("Chapter 7: <Return>");
+        expect(placeholder.contentHtml).toContain("<h1>Chapter 7: &lt;Return&gt;</h1>");
+        expect(buildPlaceholderChapter("https://example.com/c/1", "x").title).toBe(
+            "Chapter unavailable",
+        );
     });
 
     it("escapes the reason", () => {

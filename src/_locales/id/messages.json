@@ -690,7 +690,7 @@
     "description": "Pengaturan melewati bab yang gagal."
   },
   "settingSkipFailedChaptersHint": {
-    "message": "Bab yang gagal menjadi catatan di dalam buku, bukan menghentikan proses.",
+    "message": "Jika aktif, bab yang gagal tidak dimasukkan ke buku. Jika mati, bab itu tetap di tempatnya sebagai catatan yang menjelaskan masalahnya.",
     "description": "Penjelasan pengaturan melewati bab yang gagal."
   },
   "settingRetryOnEmptyPage": {

@@ -690,7 +690,7 @@
     "description": "失敗した章をスキップする設定。"
   },
   "settingSkipFailedChaptersHint": {
-    "message": "失敗した章は処理を止めずに、本の中に注記として残ります。",
+    "message": "オンにすると、失敗した章は本から外されます。オフにすると、その章の位置に何が起きたかを記した注記が残ります。",
     "description": "失敗した章をスキップする設定の説明。"
   },
   "settingRetryOnEmptyPage": {

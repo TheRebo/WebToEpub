@@ -45,6 +45,7 @@ import {
     type UserFacingError,
 } from "./util/errors";
 import type { LibraryEntry } from "./storage/library-store";
+import { DEFAULT_SETTINGS } from "./storage/settings-store";
 
 /** A chapter being downloaded. */
 interface DownloadChapter {
@@ -177,11 +178,11 @@ export interface DownloadBehaviour {
  * same way whether or not the settings have been read yet.
  */
 export const DEFAULT_BEHAVIOUR: DownloadBehaviour = {
-    skipFailedChapters: true,
-    retryOnEmptyPage: true,
-    minimumDelay: 500,
-    maxChapters: 5000,
-    delayPerChapter: 0,
+    skipFailedChapters: DEFAULT_SETTINGS.behaviour.skipFailedChapters,
+    retryOnEmptyPage: DEFAULT_SETTINGS.behaviour.retryOnEmptyPage,
+    minimumDelay: DEFAULT_SETTINGS.behaviour.minimumDelay,
+    maxChapters: DEFAULT_SETTINGS.behaviour.maxChapters,
+    delayPerChapter: DEFAULT_SETTINGS.behaviour.delayPerChapter,
 };
 
 /**
@@ -208,6 +209,8 @@ export interface BookMetadata {
     version: 2 | 3;
     /** Whether the book carries an information page. */
     includeInfoPage: boolean;
+    /** The story's address, for the information page. */
+    sourceUrl?: string;
 }
 
 /**
@@ -244,6 +247,7 @@ export function buildBookMetadata(
         version: book.version,
         includeInfoPage: book.addInfoPage,
         language: book.defaultLanguage,
+        sourceUrl,
     };
 
     if (!parser || !storyDom) return metadata;
@@ -332,12 +336,7 @@ export interface DownloadImages {
  * These match the defaults in the settings store, so a download behaves the
  * same way whether or not the settings have been read yet.
  */
-export const DEFAULT_IMAGES: DownloadImages = {
-    skipImages: false,
-    removeDuplicates: true,
-    preferHighestResolution: true,
-    useSvg: true,
-};
+export const DEFAULT_IMAGES: DownloadImages = { ...DEFAULT_SETTINGS.images };
 
 /**
  * The book settings the download pipeline honours.
@@ -362,9 +361,9 @@ export interface DownloadBook {
  * same way whether or not the settings have been read yet.
  */
 export const DEFAULT_BOOK: DownloadBook = {
-    version: 3,
-    addInfoPage: false,
-    defaultLanguage: "en",
+    version: DEFAULT_SETTINGS.epub.version,
+    addInfoPage: DEFAULT_SETTINGS.epub.addInfoPage,
+    defaultLanguage: DEFAULT_SETTINGS.story.defaultLanguage,
 };
 
 /** The dependencies the manager needs. */
@@ -807,6 +806,7 @@ export class DownloadManager {
                             buildPlaceholderChapter(
                                 chapter.sourceUrl,
                                 "The chapter could not be read.",
+                                chapter.title,
                             ),
                         );
                     }
@@ -834,6 +834,7 @@ export class DownloadManager {
                                 buildPlaceholderChapter(
                                     chapter.sourceUrl,
                                     "The chapter could not be read.",
+                                    chapter.title,
                                 ),
                             );
                         }
@@ -910,6 +911,7 @@ export class DownloadManager {
                                     buildPlaceholderChapter(
                                         chapter.sourceUrl,
                                         "The chapter could not be read.",
+                                        chapter.title,
                                     ),
                                 );
                             }
@@ -941,6 +943,7 @@ export class DownloadManager {
                         buildPlaceholderChapter(
                             chapter.sourceUrl,
                             toUserFacingError(error, { url: chapter.sourceUrl }).message,
+                            chapter.title,
                         ),
                     );
                 }

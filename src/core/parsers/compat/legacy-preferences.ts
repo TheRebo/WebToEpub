@@ -18,7 +18,7 @@
  * See ADR-0026.
  */
 
-import type { Settings } from "../../storage/settings-store";
+import { DEFAULT_SETTINGS, type Settings } from "../../storage/settings-store";
 import { makeLegacyUserPreferences, type LegacyUserPreferences } from "./legacy-image-collector";
 
 /**
@@ -87,5 +87,5 @@ export function toLegacyUserPreferences(settings: Settings): LegacyUserPreferenc
  * the run behaves the way the user would expect.
  */
 export function defaultLegacyUserPreferences(): LegacyUserPreferences {
-    return makeLegacyUserPreferences();
+    return toLegacyUserPreferences(DEFAULT_SETTINGS);
 }

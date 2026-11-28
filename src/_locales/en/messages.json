@@ -690,7 +690,7 @@
     "description": "The skip-failed-chapters setting."
   },
   "settingSkipFailedChaptersHint": {
-    "message": "A failed chapter becomes a note in the book instead of stopping the run.",
+    "message": "When on, a chapter that fails is left out of the book. When off, it stays in its place as a note saying what went wrong.",
     "description": "Explains the skip-failed-chapters setting."
   },
   "settingRetryOnEmptyPage": {

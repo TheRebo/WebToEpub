@@ -88,8 +88,21 @@ describe("the legacy preferences", () => {
 
     it("fall back to the defaults when the settings cannot be read", () => {
         const preferences = defaultLegacyUserPreferences();
-        expect(preferences.removeAuthorNotes.value).toBe(false);
-        expect(preferences.addInformationPage.value).toBe(false);
+        // The same defaults the settings store has, so a download behaves
+        // the same whether or not the settings could be read.
+        expect(preferences.removeAuthorNotes.value).toBe(DEFAULT_SETTINGS.story.removeAuthorNotes);
+        expect(preferences.addInformationPage.value).toBe(DEFAULT_SETTINGS.epub.addInfoPage);
+        expect(preferences.skipChaptersThatFailFetch.value).toBe(
+            DEFAULT_SETTINGS.behaviour.skipFailedChapters,
+        );
+        expect(preferences.highestResolutionImages.value).toBe(
+            DEFAULT_SETTINGS.images.preferHighestResolution,
+        );
+    });
+
+    it("removes the untranslated text by default, as the original extension did", () => {
+        expect(defaultLegacyUserPreferences().removeOriginal.value).toBe(true);
+        expect(toLegacyUserPreferences(DEFAULT_SETTINGS).removeOriginal.value).toBe(true);
     });
 });
 

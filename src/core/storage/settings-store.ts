@@ -140,7 +140,10 @@ export const DEFAULT_SETTINGS: Settings = {
     },
     epub: {
         version: 3,
-        addInfoPage: false,
+        // The information page carries the synopsis and where the story came
+        // from, which the chapters do not. The original extension added it by
+        // default (ADR-0047).
+        addInfoPage: true,
         removeNextPrevLinks: true,
         includeSourceUrl: false,
     },
@@ -151,10 +154,14 @@ export const DEFAULT_SETTINGS: Settings = {
         useSvg: true,
     },
     behaviour: {
-        skipFailedChapters: true,
+        // A chapter that fails is kept as a note that says so, in its place
+        // and under its title, rather than silently left out (ADR-0047).
+        skipFailedChapters: false,
         retryOnEmptyPage: true,
         minimumDelay: 500,
-        maxChapters: 5000,
+        // The original extension's limit. The longest serials run past five
+        // thousand chapters, and a job over the limit is refused outright.
+        maxChapters: 10000,
         delayPerChapter: 0,
         emptyPageIsError: false,
     },
