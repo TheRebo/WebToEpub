@@ -113,6 +113,41 @@ describe("packEpub", () => {
         expect(result.document.package.metadata.coverId).toBe(item?.id);
     });
 
+    it("opens the book on a cover page that shows the cover", () => {
+        const result = packEpub([chapter("One")], {
+            title: "A & Story",
+            cover: { data: new Uint8Array([1, 2, 3]), mediaType: "image/png", url: "cover.png" },
+            includeInfoPage: true,
+        });
+        const page = result.files.find((file) => file.path === "OEBPS/text/cover.xhtml");
+        const xml = parseXml(typeof page?.content === "string" ? page.content : "");
+        expect(xml.querySelector("img")?.getAttribute("src")).toBe("../images/cover.png");
+        expect(xml.querySelector("img")?.getAttribute("alt")).toBe("A & Story");
+
+        // First in the spine, ahead of the information page, and not in the
+        // table of contents.
+        const { manifest, spine } = result.document.package;
+        const first = manifest.find((item) => item.id === spine[0]?.idRef);
+        expect(first?.href).toBe("text/cover.xhtml");
+        expect(result.document.toc.some((point) => point.src === "text/cover.xhtml")).toBe(false);
+    });
+
+    it("puts each creator on its own line in the package document", () => {
+        for (const version of [2, 3] as const) {
+            const result = packEpub([chapter("One")], {
+                title: "A Story",
+                author: "An Author",
+                publisher: "A Publisher",
+                version,
+            });
+            const opf = result.files.find((file) => file.path === OPF_PATH);
+            const text = typeof opf?.content === "string" ? opf.content : "";
+            const line = text.split("\n").find((entry) => entry.includes("<dc:creator"));
+            expect(line?.trim()).toMatch(/^<dc:creator[^>]*>An Author<\/dc:creator>$/);
+            expect(line?.startsWith("    ")).toBe(true);
+        }
+    });
+
     it("does not add a cover when there is none", () => {
         const result = packEpub([chapter("One")], { title: "A Story" });
         expect(
@@ -120,6 +155,7 @@ describe("packEpub", () => {
                 entry.properties?.includes("cover-image"),
             ),
         ).toBe(false);
+        expect(result.files.some((file) => file.path === "OEBPS/text/cover.xhtml")).toBe(false);
     });
 
     it("does not repeat a title the content already carries", () => {

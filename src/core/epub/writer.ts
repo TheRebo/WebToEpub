@@ -83,6 +83,14 @@ nav#toc ol {
 nav#toc > ol {
     padding-left: 0;
 }
+.cover {
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+.cover img {
+    max-height: 100%;
+}
 `;
 
 /** The container document. */
@@ -109,11 +117,11 @@ export function buildPackageXml(document: EpubDocument): string {
         .map((creator, index) => {
             const id = `creator-${index + 1}`;
             const role = isEpub3
-                ? `<dc:creator id="${escapeXmlAttribute(id)}">${escapeXml(creator)}</dc:creator>`
-                : `<dc:creator opf:role="aut">${escapeXml(creator)}</dc:creator>`;
+                ? `    <dc:creator id="${escapeXmlAttribute(id)}">${escapeXml(creator)}</dc:creator>\n`
+                : `    <dc:creator opf:role="aut">${escapeXml(creator)}</dc:creator>\n`;
             return role;
         })
-        .join("\n");
+        .join("");
 
     // The refinement that gives the creator its role in an EPUB 3 book.
     const creatorRoles = isEpub3

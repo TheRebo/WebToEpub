@@ -203,7 +203,9 @@ describe("a packed chapter", () => {
         expect(body).toContain("\t");
     });
 
-    it("is well-formed XML when the author has an ampersand", () => {
+    it("does not repeat the author above the chapter", () => {
+        // The metadata names the author; a byline on every chapter is the
+        // same line as many times as there are chapters (ADR-0046).
         const packed = packEpub(
             [{ sourceUrl: "https://example.com/one", title: "One", contentHtml: "<p>Hello</p>" }],
             { title: "A Story", author: "A & B" },
@@ -211,7 +213,8 @@ describe("a packed chapter", () => {
         const file = packed.files.find((entry) => entry.path.endsWith("chapter-0001.xhtml"));
         const body = typeof file?.content === "string" ? file.content : "";
         expect(() => parseXml(body)).not.toThrow();
-        expect(body).toContain("A &amp; B");
+        expect(body).not.toContain("A &amp; B");
+        expect(body).not.toContain("chapter-author");
     });
 
     it("keeps the chapter's text", () => {

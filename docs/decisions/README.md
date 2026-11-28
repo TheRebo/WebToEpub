@@ -51,6 +51,7 @@ consequences — positive _and_ negative.
 | [0043](./ADR-0043-a-blocked-database-is-a-wait.md)                   | A blocked database is a wait, not a failure                                  | Accepted | Two tabs of the extension no longer break each other's library                                |
 | [0044](./ADR-0044-a-namespace-declaration-is-part-of-the-element.md) | A namespace declaration is part of the element                               | Accepted | The public serialiser cannot produce a document that is not well-formed XML                   |
 | [0045](./ADR-0045-the-browser-follows-redirects.md)                  | The browser follows redirects, and a rule keeps them public                  | Accepted | Redirected chapters load, and a redirect into the user's network is blocked before it is sent |
+| [0046](./ADR-0046-the-book-opens-on-its-cover.md)                    | The book opens on its cover, and the author is named once                    | Accepted | Every reader shows the cover, and chapters start with their heading                           |
 
 ---
 

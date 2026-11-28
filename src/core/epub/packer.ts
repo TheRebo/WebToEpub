@@ -204,6 +204,9 @@ function chapterPath(index: number): string {
 /** The path of the information page within the container. */
 const INFO_PATH = "OEBPS/text/info.xhtml";
 
+/** The path of the cover page within the container. */
+const COVER_PAGE_PATH = "OEBPS/text/cover.xhtml";
+
 /**
  * The relative reference a file uses to link the stylesheet.
  *
@@ -286,7 +289,7 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
             chapter.sourceUrl,
         );
 
-        const body = buildChapterBody({ ...chapter, contentHtml }, metadata.author);
+        const body = buildChapterBody({ ...chapter, contentHtml });
 
         // The chapter's images are packaged alongside it, and the chapter's
         // markup points at them. The manifest entries are added here, before
@@ -338,6 +341,32 @@ export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): Pac
         manifest.push({ id, href: "text/info.xhtml", mediaType: "application/xhtml+xml" });
         spine.unshift({ idRef: id });
         toc.unshift({ label: "About this book", src: "text/info.xhtml", children: [] });
+    }
+
+    // The cover page.
+    //
+    // The cover image is flagged in the manifest, which is enough for some
+    // readers, but others (and the Kindle conversion) show a cover only when
+    // the book opens on a page that holds it. It goes first in the spine,
+    // ahead of the information page, and stays out of the table of contents:
+    // it is a picture, not a section (ADR-0046).
+    if (coverPath) {
+        const path = COVER_PAGE_PATH;
+        const imageHref = `../${coverPath.replace(/^OEBPS\//, "")}`;
+        files.set(path, {
+            path,
+            content: buildXhtml(
+                metadata.title || "Cover",
+                `    <div class="cover"><img src="${escapeText(imageHref)}" alt="${escapeText(metadata.title || "Cover")}"/></div>`,
+                language,
+                stylesheetHref(path),
+                version,
+            ),
+            mediaType: "application/xhtml+xml",
+        });
+        const id = nextId(path);
+        manifest.push({ id, href: "text/cover.xhtml", mediaType: "application/xhtml+xml" });
+        spine.unshift({ idRef: id });
     }
 
     // The navigation document, for EPUB 3.
@@ -448,12 +477,11 @@ function packageChapterImages(
 }
 
 /** The body of a chapter. */
-function buildChapterBody(chapter: ChapterToPack, author?: string): string {
+function buildChapterBody(chapter: ChapterToPack): string {
+    // The author is not repeated here. The book's metadata names the author,
+    // and a byline above every chapter is the same line, unstyled, as many
+    // times as there are chapters (ADR-0046).
     const parts: string[] = [];
-
-    if (author) {
-        parts.push(`    <p class="chapter-author">${escapeText(author)}</p>`);
-    }
 
     // A parser that puts the chapter's own title into the content has already
     // written it. Adding it again would show the reader the same heading
