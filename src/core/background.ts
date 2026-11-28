@@ -29,7 +29,12 @@ import { LibraryStore, mergeLibraryEntry, type LibraryEntry } from "./storage/li
 import { parseLibraryExport } from "./storage/library-import";
 import { siteSelectors } from "./storage/site-selectors";
 import { scanDocument } from "./parsers/heuristic-scanner";
-import { toUserFacingError, type UserFacingError } from "./util/errors";
+import {
+    redactUrlsIn,
+    toUserFacingError,
+    UserFacingErrorError,
+    type UserFacingError,
+} from "./util/errors";
 import { diagnostic, diagnosticUrl, setDiagnosticsEnabled } from "./util/diagnostics";
 import { mayFetchUrl } from "./net/fetch-policy";
 import { listHostAccess } from "./host-access";
@@ -135,11 +140,23 @@ class BackgroundWorker {
                 const url = URL.createObjectURL(blob);
                 try {
                     if (api) {
-                        await api.downloads.download({
-                            url,
-                            filename: fileName,
-                            conflictAction: "uniquify",
-                        });
+                        try {
+                            await api.downloads.download({
+                                url,
+                                filename: fileName,
+                                conflictAction: "uniquify",
+                            });
+                        } catch (error) {
+                            // Closing the "Save as" dialog rejects the download.
+                            // That is the user's choice, not a network failure.
+                            if (/cancel/i.test(String(error))) {
+                                throw new UserFacingErrorError(
+                                    "The book was not saved, because the save dialog was closed.",
+                                    "CANCELLED",
+                                );
+                            }
+                            throw error;
+                        }
                     }
                     return { fileName, fileSize: bytes.length };
                 } finally {
@@ -704,7 +721,7 @@ class BackgroundWorker {
                 ok: false,
                 contentChars: 0,
                 titleText: "",
-                error: error instanceof Error ? error.message : String(error),
+                error: redactUrlsIn(error instanceof Error ? error.message : String(error)),
             };
         }
     }
@@ -739,7 +756,7 @@ class BackgroundWorker {
                 status: "failed",
                 contentCss: "",
                 titleCss: "",
-                error: error instanceof Error ? error.message : String(error),
+                error: redactUrlsIn(error instanceof Error ? error.message : String(error)),
             };
         }
     }

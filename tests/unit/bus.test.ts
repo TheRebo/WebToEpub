@@ -299,7 +299,9 @@ describe("handleRequests", () => {
         const { api, send } = captureListener();
         await handleRequests(api, {
             "page:analyze": () => {
-                throw new Error("the site refused");
+                throw new TypeError(
+                    "NetworkError when attempting to fetch resource: the site refused",
+                );
             },
         });
 

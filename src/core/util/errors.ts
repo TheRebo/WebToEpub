@@ -69,6 +69,8 @@ export interface ErrorContext {
     code?: ErrorCode;
     /** The media type the server sent, when it was the wrong one. */
     mediaType?: string;
+    /** Whether the failure happened on the way to or from a server. */
+    transport?: boolean;
 }
 
 /** The host part of a URL, for a message that mentions the site. */
@@ -170,6 +172,15 @@ function describe(context: ErrorContext): {
         return {
             message: `The server returned ${context.status}.`,
             code: "HTTP_STATUS",
+            actions: [{ id: "retry", label: "Retry" }],
+        };
+    }
+
+    if (!context.transport) {
+        return {
+            message:
+                "Something went wrong. Try again, and turn on diagnostics if it keeps happening.",
+            code: "UNKNOWN",
             actions: [{ id: "retry", label: "Retry" }],
         };
     }
@@ -302,6 +313,7 @@ export function toUserFacingError(error: unknown, context: ErrorContext = {}): U
         challenge: context.challenge ?? facts.challenge,
         code: context.code ?? facts.code,
         mediaType: context.mediaType ?? facts.mediaType,
+        transport: context.transport ?? isTransportFailure(error),
     });
     const result: UserFacingError = {
         message: described.message,
@@ -313,11 +325,34 @@ export function toUserFacingError(error: unknown, context: ErrorContext = {}): U
     if (safeUrl) result.url = safeUrl;
     if (described.actions) result.actions = described.actions;
     if (error instanceof Error && error.message) {
-        result.detail = `${error.name}: ${error.message}`;
+        result.detail = redactUrlsIn(`${error.name}: ${error.message}`);
     } else if (error !== undefined && error !== null) {
-        result.detail = String(error);
+        result.detail = redactUrlsIn(String(error));
     }
     return result;
+}
+
+/**
+ * Whether a failure came from the network rather than from the extension.
+ *
+ * A failed `fetch` rejects with a `TypeError`, a timeout with a
+ * `TimeoutError`, and the fetch layer throws a `FetchError`. Anything else (a
+ * packing failure, a closed save dialog, a file that is not a library) is
+ * not "could not reach the site", and saying so sends the user the wrong way.
+ */
+function isTransportFailure(error: unknown): boolean {
+    if (!(error instanceof Error)) return false;
+    if (error instanceof TypeError) return /network|fetch/i.test(error.message);
+    if (["FetchError", "TimeoutError", "NetworkError"].includes(error.name)) return true;
+    return typeof (error as { status?: unknown }).status === "number";
+}
+
+/**
+ * A message with every URL in it redacted, because a fetch error's message
+ * names the URL and its query string can carry a session token (ADR-0023).
+ */
+export function redactUrlsIn(text: string): string {
+    return text.replace(/https?:\/\/[^\s"'<>)]+/g, (url) => redactUrl(url) ?? url);
 }
 
 /** True when the error is an abort, from a cancelled fetch. */
