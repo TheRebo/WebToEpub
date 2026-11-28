@@ -89,7 +89,7 @@ dialog::backdrop {
 }
 
 .close:hover { background: var(--bg-subtle); color: var(--text); }
-.close:focus-visible { outline: none; box-shadow: var(--ring); }
+.close:focus-visible { outline: 2px solid transparent; box-shadow: var(--ring); }
 
 .body {
     flex: 1;

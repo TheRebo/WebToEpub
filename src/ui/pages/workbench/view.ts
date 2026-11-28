@@ -485,7 +485,6 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
 
     const list = document.createElement("k-list") as KList;
     list.className = "chapters-list";
-    list.setAttribute("row-height", "32");
     list.setAttribute("aria-label", t("workbenchChapters"));
 
     const loadingState = el("div", "workbench-state");

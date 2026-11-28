@@ -128,7 +128,7 @@ button:disabled { cursor: not-allowed; }
 
 /* The focus ring lives on the inner button so it follows the shape. */
 button:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--ring);
 }
 

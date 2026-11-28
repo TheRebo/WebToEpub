@@ -67,7 +67,7 @@ const STYLES = `
 }
 
 .action:hover { background: var(--accent-subtle); }
-.action:focus-visible { outline: none; box-shadow: var(--ring); }
+.action:focus-visible { outline: 2px solid transparent; box-shadow: var(--ring); }
 
 .close {
     flex-shrink: 0;
@@ -84,7 +84,7 @@ const STYLES = `
 }
 
 .close:hover { background: var(--bg-subtle); color: var(--text); }
-.close:focus-visible { outline: none; box-shadow: var(--ring); }
+.close:focus-visible { outline: 2px solid transparent; box-shadow: var(--ring); }
 
 .timer {
     position: absolute;

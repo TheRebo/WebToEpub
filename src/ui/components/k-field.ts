@@ -104,7 +104,7 @@ select {
 input::placeholder, textarea::placeholder { color: var(--text-muted); }
 
 input:focus-visible, select:focus-visible, textarea:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     border-color: var(--accent);
     box-shadow: var(--ring);
 }

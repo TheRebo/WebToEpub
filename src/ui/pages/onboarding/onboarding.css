@@ -241,7 +241,7 @@
 }
 
 .onboarding-options input[type="radio"]:focus-visible + .onboarding-option-label {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--ring);
 }
 

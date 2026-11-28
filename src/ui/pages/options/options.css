@@ -81,7 +81,7 @@
 }
 
 .options-search-input:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     border-color: var(--accent);
     box-shadow: var(--ring);
 }
@@ -145,7 +145,7 @@
 }
 
 .options-nav-link:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--ring);
 }
 

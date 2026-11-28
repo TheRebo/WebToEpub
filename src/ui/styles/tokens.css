@@ -210,7 +210,9 @@
     --shadow-2: 0 6px 16px -4px rgb(16 12 4 / 12%), 0 2px 6px -2px rgb(16 12 4 / 6%);
     --shadow-3: 0 24px 48px -12px rgb(16 12 4 / 28%);
 
-    --ring: 0 0 0 var(--focus-ring-width) var(--focus-ring);
+    /* A gap in the page's own colour, then the ring, so the ring stays
+       visible on a button filled with the same accent. */
+    --ring: 0 0 0 2px var(--bg), 0 0 0 calc(2px + var(--focus-ring-width)) var(--focus-ring);
 
     /* Density. Comfortable by default; the compact theme overrides these. */
     --density-scale: 1;
