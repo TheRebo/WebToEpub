@@ -69,6 +69,10 @@ export default {
         "Conserve les notes à la fin d'un chapitre.",
     ],
     workbenchIncludeTocPage: ["Inclure le sommaire", "Ajoute le sommaire comme chapitre."],
+    workbenchOptionsHint: [
+        "Cela s’applique à chaque livre que vous créez.",
+        "Explique que ces interrupteurs modifient les réglages.",
+    ],
     workbenchMoreOptions: ["Plus d'options", "Ouvre la page complète des paramètres."],
     workbenchNoCover: ["Aucune couverture", "Affiché quand il n'y a pas d'image de couverture."],
     workbenchCoverUrl: ["Adresse de l'image de couverture", "L'adresse de l'image de couverture."],
@@ -441,6 +445,14 @@ export default {
     filterExclude: ["Exclure", "Retire les chapitres correspondants."],
     filterMatchCount: ["$COUNT$ correspondants", "Combien de chapitres correspondent."],
     filterClear: ["Effacer", "Efface le filtre."],
+    filterNoMatches: [
+        "Aucun chapitre ne correspond à ces filtres",
+        "Quand le filtre masque tous les chapitres.",
+    ],
+    filterClearAll: [
+        "Effacer les filtres",
+        "Retire le filtre pour afficher de nouveau tous les chapitres.",
+    ],
     filterApply: ["Appliquer", "Applique le filtre."],
     filterInvalidPattern: ["Ce motif n'est pas valide.", "Quand la regex ne compile pas."],
     siteSelectorBannerTitle: [

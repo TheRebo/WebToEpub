@@ -78,7 +78,6 @@ function initialState(): WorkbenchState {
         chapters: [],
         loadingChapters: false,
         filter: { query: "", useRegex: false, include: [], exclude: [] },
-        dirty: false,
         usedDefaultParser: false,
         accessOrigin: undefined,
         progress: undefined,
@@ -438,15 +437,12 @@ export class WorkbenchController {
                 // book a name of its own.
                 ...this.#derivedFileName(elements.titleField.value),
             });
-            this.#store.markDirty(true);
         });
         elements.authorField.addEventListener("input", () => {
             this.#store.setStory({ author: elements.authorField.value });
-            this.#store.markDirty(true);
         });
         elements.languageField.addEventListener("change", () => {
             this.#store.setStory({ language: elements.languageField.value });
-            this.#store.markDirty(true);
         });
         elements.filenameField.addEventListener("input", () => {
             // What the user typed is what the book is saved as. It used to be
@@ -456,25 +452,21 @@ export class WorkbenchController {
                 fileName: elements.filenameField.value,
                 fileNameEdited: true,
             });
-            this.#store.markDirty(true);
         });
         elements.resetFilename.addEventListener("click", () => {
             this.#store.setStory({
                 ...this.#derivedFileName(this.#store.state.story.title),
                 fileNameEdited: false,
             });
-            this.#store.markDirty(true);
         });
 
         // --- Cover ---
         elements.coverUrlField.addEventListener("input", () => {
             this.#store.setStory({ coverUrl: elements.coverUrlField.value });
-            this.#store.markDirty(true);
         });
         elements.removeCover.addEventListener("click", () => {
             elements.coverUrlField.value = "";
             this.#store.setStory({ coverUrl: "" });
-            this.#store.markDirty(true);
         });
 
         // --- Options ---
@@ -489,14 +481,6 @@ export class WorkbenchController {
             const detail = (event as CustomEvent<{ checked: boolean }>).detail;
             this.#run(
                 () => this.#saveStoryOption("includeTocPage", detail.checked),
-                (error) => this.#toast(caughtErrorMessage(error), "error"),
-            );
-        });
-
-        // --- Save ---
-        elements.saveButton.addEventListener("k-click", () => {
-            this.#run(
-                () => this.#save(),
                 (error) => this.#toast(caughtErrorMessage(error), "error"),
             );
         });
@@ -574,6 +558,10 @@ export class WorkbenchController {
         }
 
         // --- The site-selector dialog ---
+        elements.noMatchesClear.addEventListener("k-click", () => {
+            this.#clearFilter();
+        });
+
         elements.emptyAction.addEventListener("k-click", () => {
             this.#run(
                 () => this.#openSelectorDialog(),
@@ -705,7 +693,14 @@ export class WorkbenchController {
 
     /** Apply the draft filter. */
     #applyFilter(): void {
-        this.#store.setFilter(this.#filterDraft());
+        const draft = this.#filterDraft();
+        // An invalid pattern would match nothing and leave the user staring
+        // at an empty list; the dialog stays open with the error instead.
+        if (draft.useRegex && draft.query.trim() && !compilePattern(draft.query)) {
+            this.#previewFilter();
+            return;
+        }
+        this.#store.setFilter(draft);
         (this.#elements.filterDialog as unknown as { close(): void }).close();
     }
 
@@ -1014,22 +1009,9 @@ export class WorkbenchController {
         // and the snapshot is exactly what goes stale when the user changes
         // two things in a row.
         const next = await this.#settings.update({ story: { [key]: value } });
-        // The snapshot has to be kept in step with the write: `#save` reads
-        // the filename template from it.
+        // The snapshot has to be kept in step with the write: the file name
+        // is derived from the template it holds.
         this.#settingsValue = next;
-    }
-
-    /** Save the metadata. */
-    async #save(): Promise<void> {
-        const state = this.#store.state;
-        // Only the language is written. The rest of the story settings belong
-        // to the options page, and writing them from this page's snapshot
-        // would undo any change made there in the meantime.
-        const next = await this.#settings.update({
-            story: { defaultLanguage: state.story.language },
-        });
-        this.#settingsValue = next;
-        this.#store.markDirty(false);
     }
 
     /** Start the download. */

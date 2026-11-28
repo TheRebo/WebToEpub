@@ -201,6 +201,10 @@
     "message": "Plus d'options",
     "description": "Ouvre la page complète des paramètres."
   },
+  "workbenchOptionsHint": {
+    "message": "Cela s’applique à chaque livre que vous créez.",
+    "description": "Explique que ces interrupteurs modifient les réglages."
+  },
   "workbenchNoCover": {
     "message": "Aucune couverture",
     "description": "Affiché quand il n'y a pas d'image de couverture."
@@ -882,6 +886,14 @@
   "filterClear": {
     "message": "Effacer",
     "description": "Efface le filtre."
+  },
+  "filterNoMatches": {
+    "message": "Aucun chapitre ne correspond à ces filtres",
+    "description": "Quand le filtre masque tous les chapitres."
+  },
+  "filterClearAll": {
+    "message": "Effacer les filtres",
+    "description": "Retire le filtre pour afficher de nouveau tous les chapitres."
   },
   "filterApply": {
     "message": "Appliquer",

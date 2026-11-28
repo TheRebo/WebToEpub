@@ -201,6 +201,10 @@
     "message": "Pilihan lainnya",
     "description": "Membuka halaman pengaturan lengkap."
   },
+  "workbenchOptionsHint": {
+    "message": "Ini berlaku untuk setiap buku yang Anda buat.",
+    "description": "Menjelaskan bahwa sakelar ini mengubah pengaturan."
+  },
   "workbenchNoCover": {
     "message": "Tanpa sampul",
     "description": "Ditampilkan saat tidak ada gambar sampul."
@@ -882,6 +886,14 @@
   "filterClear": {
     "message": "Bersihkan",
     "description": "Mengosongkan penyaring."
+  },
+  "filterNoMatches": {
+    "message": "Tidak ada bab yang cocok dengan filter ini",
+    "description": "Ditampilkan saat filter menyembunyikan semua bab."
+  },
+  "filterClearAll": {
+    "message": "Hapus filter",
+    "description": "Menghapus filter agar semua bab tampil lagi."
   },
   "filterApply": {
     "message": "Terapkan",

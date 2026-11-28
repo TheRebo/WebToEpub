@@ -95,6 +95,10 @@ const SOURCE = {
         "Adds the table of contents as a chapter.",
     ],
     workbenchMoreOptions: ["More options", "Opens the full settings page."],
+    workbenchOptionsHint: [
+        "These apply to every book you make.",
+        "Explains that the workbench's switches change the settings.",
+    ],
     workbenchNoCover: ["No cover", "Shown when there is no cover image."],
     workbenchCoverUrl: ["Cover image address", "The address of the cover image."],
     workbenchNoStoryHere: ["No story found on this page", "Shown when the page is not a story."],
@@ -417,6 +421,11 @@ const SOURCE = {
     filterExclude: ["Exclude", "Matching chapters are removed."],
     filterMatchCount: ["$COUNT$ matching", "How many chapters match the filter."],
     filterClear: ["Clear", "Clears the filter."],
+    filterNoMatches: [
+        "No chapters match these filters",
+        "Shown when the filter hides every chapter.",
+    ],
+    filterClearAll: ["Clear filters", "Removes the filter so every chapter shows again."],
     filterApply: ["Apply", "Applies the filter."],
     filterInvalidPattern: [
         "That is not a valid pattern.",

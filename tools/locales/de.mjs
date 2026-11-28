@@ -78,6 +78,10 @@ export default {
         "Inhaltsverzeichnis einfügen",
         "Fügt das Inhaltsverzeichnis als Kapitel hinzu.",
     ],
+    workbenchOptionsHint: [
+        "Das gilt für jedes Buch, das du erstellst.",
+        "Erklärt, dass die Schalter die Einstellungen ändern.",
+    ],
     workbenchMoreOptions: ["Weitere Optionen", "Öffnet die vollständige Einstellungsseite."],
     workbenchNoCover: ["Kein Cover", "Wird angezeigt, wenn es kein Coverbild gibt."],
     workbenchCoverUrl: ["Adresse des Coverbilds", "Die Adresse des Coverbilds."],
@@ -450,6 +454,14 @@ export default {
     filterExclude: ["Ausschließen", "Entfernt passende Kapitel."],
     filterMatchCount: ["$COUNT$ passende", "Wie viele Kapitel zum Filter passen."],
     filterClear: ["Löschen", "Leert den Filter."],
+    filterNoMatches: [
+        "Kein Kapitel passt zu diesen Filtern",
+        "Wenn der Filter alle Kapitel ausblendet.",
+    ],
+    filterClearAll: [
+        "Filter entfernen",
+        "Entfernt den Filter, damit alle Kapitel wieder erscheinen.",
+    ],
     filterApply: ["Anwenden", "Wendet den Filter an."],
     filterInvalidPattern: ["Das ist kein gültiges Muster.", "Wenn der Regex nicht kompiliert."],
     siteSelectorBannerTitle: [

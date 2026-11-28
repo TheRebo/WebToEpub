@@ -57,8 +57,6 @@ export interface WorkbenchElements {
     authorNotesSwitch: KSwitch;
     /** The toc-page switch. */
     tocPageSwitch: KSwitch;
-    /** The Save button. */
-    saveButton: KButton;
     /** The Pack button. */
     packButton: KButton;
     /** The select-all checkbox. */
@@ -95,6 +93,10 @@ export interface WorkbenchElements {
     emptyState: HTMLElement;
     /** The loading state. */
     loadingState: HTMLElement;
+    /** The state shown when the filter matches nothing. */
+    noMatchesState: HTMLElement;
+    /** The button that clears the filter from that state. */
+    noMatchesClear: KButton;
     /** The empty state's action, which opens the site setup. */
     emptyAction: KButton;
     /** The link to the full settings. */
@@ -228,11 +230,6 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     titleWrap.append(title, author);
 
     const actions = el("div", "workbench-actions");
-    const saveButton = document.createElement("k-button") as KButton;
-    saveButton.setAttribute("variant", "ghost");
-    saveButton.setAttribute("size", "md");
-    saveButton.textContent = t("workbenchSave");
-    saveButton.hidden = true;
 
     const packButton = document.createElement("k-button") as KButton;
     packButton.setAttribute("variant", "primary");
@@ -240,7 +237,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     packButton.setAttribute("icon", "download");
     packButton.textContent = t("workbenchPack");
 
-    actions.append(saveButton, packButton);
+    actions.append(packButton);
     appBar.append(mark, titleWrap, actions);
     shell.appendChild(appBar);
 
@@ -429,7 +426,12 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     moreOptions.textContent = t("workbenchMoreOptions");
     moreOptions.appendChild(createIcon("arrow-right", 14));
 
-    optionRows.append(authorNotesRow, tocPageRow, moreOptions);
+    // These switches are the settings themselves, not a one-off for this
+    // book, so the panel says so.
+    const optionsHint = el("p", "option-rows__hint");
+    optionsHint.textContent = t("workbenchOptionsHint");
+
+    optionRows.append(authorNotesRow, tocPageRow, optionsHint, moreOptions);
     optionsBody.appendChild(optionRows);
     optionsPanel.append(optionsSummary, optionsBody);
     sidebar.appendChild(optionsPanel);
@@ -507,8 +509,20 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     emptyAction.textContent = t("siteSelectorOpen");
     emptyState.append(emptyIcon, emptyTitle, emptyBody, emptyAction);
 
+    // A filter that matches nothing is not an empty story: it says so, and
+    // offers the way back.
+    const noMatchesState = el("div", "workbench-state");
+    noMatchesState.hidden = true;
+    const noMatchesTitle = el("p", "workbench-state__title");
+    noMatchesTitle.textContent = t("filterNoMatches");
+    const noMatchesClear = document.createElement("k-button") as KButton;
+    noMatchesClear.setAttribute("variant", "secondary");
+    noMatchesClear.setAttribute("size", "md");
+    noMatchesClear.textContent = t("filterClearAll");
+    noMatchesState.append(noMatchesTitle, noMatchesClear);
+
     const chaptersBody = el("div", "chapters-body");
-    chaptersBody.append(loadingState, emptyState, list);
+    chaptersBody.append(loadingState, emptyState, noMatchesState, list);
 
     const toolbar = el("div", "chapters-toolbar");
     const allButton = makeToolbarButton(t("workbenchSelectAll")) as KButton;
@@ -753,7 +767,6 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         removeCover,
         authorNotesSwitch,
         tocPageSwitch,
-        saveButton,
         packButton,
         selectAll,
         selectAllButton: allButton,
@@ -773,6 +786,8 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         emptyState,
         emptyAction,
         moreOptions,
+        noMatchesState,
+        noMatchesClear,
         loadingState,
         statusBar,
         statusLabel,
@@ -873,7 +888,6 @@ export function renderWorkbench(
     elements.errorText.textContent = state.error ?? "";
 
     // --- Buttons ---
-    elements.saveButton.hidden = !state.dirty;
     // A second Pack while a book is being made would only be refused.
     const busy = state.progress !== undefined && state.progress.outcome === undefined;
     const packable = selectedCount > 0 && !state.loadingChapters && !busy;
@@ -905,7 +919,9 @@ export function renderWorkbench(
     elements.emptyState.hidden = state.loadingChapters || total > 0;
     // Setting up a site needs a page to set it up from.
     elements.emptyAction.hidden = !state.story.sourceUrl;
-    elements.list.hidden = state.loadingChapters || total === 0;
+    const noMatches = !state.loadingChapters && total > 0 && visibleChapters.length === 0;
+    elements.noMatchesState.hidden = !noMatches;
+    elements.list.hidden = state.loadingChapters || total === 0 || noMatches;
 
     if (!state.loadingChapters && total > 0) {
         const items = visibleChapters.map((index) => {

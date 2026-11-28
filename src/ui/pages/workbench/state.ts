@@ -84,8 +84,6 @@ export interface WorkbenchState {
     loadingChapters: boolean;
     /** The filter. */
     filter: FilterState;
-    /** Whether the metadata has unsaved edits. */
-    dirty: boolean;
     /**
      * Whether the fallback parser was used.
      *
@@ -232,13 +230,6 @@ export class WorkbenchStore {
     setLoading(loading: boolean): void {
         this.update((state) => {
             state.loadingChapters = loading;
-        });
-    }
-
-    /** Mark the metadata as edited. */
-    markDirty(dirty: boolean): void {
-        this.update((state) => {
-            state.dirty = dirty;
         });
     }
 

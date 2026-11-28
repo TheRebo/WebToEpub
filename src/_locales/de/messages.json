@@ -201,6 +201,10 @@
     "message": "Weitere Optionen",
     "description": "Öffnet die vollständige Einstellungsseite."
   },
+  "workbenchOptionsHint": {
+    "message": "Das gilt für jedes Buch, das du erstellst.",
+    "description": "Erklärt, dass die Schalter die Einstellungen ändern."
+  },
   "workbenchNoCover": {
     "message": "Kein Cover",
     "description": "Wird angezeigt, wenn es kein Coverbild gibt."
@@ -882,6 +886,14 @@
   "filterClear": {
     "message": "Löschen",
     "description": "Leert den Filter."
+  },
+  "filterNoMatches": {
+    "message": "Kein Kapitel passt zu diesen Filtern",
+    "description": "Wenn der Filter alle Kapitel ausblendet."
+  },
+  "filterClearAll": {
+    "message": "Filter entfernen",
+    "description": "Entfernt den Filter, damit alle Kapitel wieder erscheinen."
   },
   "filterApply": {
     "message": "Anwenden",

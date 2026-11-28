@@ -57,6 +57,7 @@ export const MESSAGES = {
     workbenchIncludeAuthorNotes: "workbenchIncludeAuthorNotes",
     workbenchIncludeTocPage: "workbenchIncludeTocPage",
     workbenchMoreOptions: "workbenchMoreOptions",
+    workbenchOptionsHint: "workbenchOptionsHint",
     workbenchNoCover: "workbenchNoCover",
     workbenchCoverUrl: "workbenchCoverUrl",
     workbenchNoStoryHere: "workbenchNoStoryHere",
@@ -240,6 +241,8 @@ export const MESSAGES = {
     filterExclude: "filterExclude",
     filterMatchCount: "filterMatchCount",
     filterClear: "filterClear",
+    filterNoMatches: "filterNoMatches",
+    filterClearAll: "filterClearAll",
     filterApply: "filterApply",
     filterInvalidPattern: "filterInvalidPattern",
 

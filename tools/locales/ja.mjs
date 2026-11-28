@@ -51,6 +51,10 @@ export default {
     workbenchRemoveCover: ["表紙を削除", "表紙画像を削除します。"],
     workbenchIncludeAuthorNotes: ["作者のあとがきを含める", "章の末尾にある注記を残します。"],
     workbenchIncludeTocPage: ["目次ページを含める", "目次を1つの章として追加します。"],
+    workbenchOptionsHint: [
+        "これは作成するすべての本に適用されます。",
+        "スイッチが設定そのものを変えることの説明。",
+    ],
     workbenchMoreOptions: ["その他のオプション", "設定ページ全体を開くボタン。"],
     workbenchNoCover: ["表紙なし", "表紙画像がないときに表示。"],
     workbenchCoverUrl: ["表紙画像の URL", "表紙画像のアドレス。"],
@@ -348,6 +352,11 @@ export default {
     filterExclude: ["除外する", "一致する章を取り除きます。"],
     filterMatchCount: ["$COUNT$ 件が一致", "フィルターに一致する章の数。"],
     filterClear: ["クリア", "フィルターを消去します。"],
+    filterNoMatches: [
+        "このフィルターに一致する章はありません",
+        "フィルターですべての章が隠れたときに表示されます。",
+    ],
+    filterClearAll: ["フィルターを解除", "フィルターを外してすべての章を表示します。"],
     filterApply: ["適用", "フィルターを適用します。"],
     filterInvalidPattern: [
         "有効なパターンではありません。",

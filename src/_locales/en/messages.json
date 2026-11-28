@@ -201,6 +201,10 @@
     "message": "More options",
     "description": "Opens the full settings page."
   },
+  "workbenchOptionsHint": {
+    "message": "These apply to every book you make.",
+    "description": "Explains that the workbench's switches change the settings."
+  },
   "workbenchNoCover": {
     "message": "No cover",
     "description": "Shown when there is no cover image."
@@ -882,6 +886,14 @@
   "filterClear": {
     "message": "Clear",
     "description": "Clears the filter."
+  },
+  "filterNoMatches": {
+    "message": "No chapters match these filters",
+    "description": "Shown when the filter hides every chapter."
+  },
+  "filterClearAll": {
+    "message": "Clear filters",
+    "description": "Removes the filter so every chapter shows again."
   },
   "filterApply": {
     "message": "Apply",

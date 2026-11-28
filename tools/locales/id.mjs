@@ -68,6 +68,10 @@ export default {
         "Mempertahankan catatan di akhir bab.",
     ],
     workbenchIncludeTocPage: ["Sertakan daftar isi", "Menambahkan daftar isi sebagai satu bab."],
+    workbenchOptionsHint: [
+        "Ini berlaku untuk setiap buku yang Anda buat.",
+        "Menjelaskan bahwa sakelar ini mengubah pengaturan.",
+    ],
     workbenchMoreOptions: ["Pilihan lainnya", "Membuka halaman pengaturan lengkap."],
     workbenchNoCover: ["Tanpa sampul", "Ditampilkan saat tidak ada gambar sampul."],
     workbenchCoverUrl: ["Alamat gambar sampul", "Alamat gambar sampul."],
@@ -407,6 +411,11 @@ export default {
     filterExclude: ["Kecualikan", "Bab yang cocok dihapus."],
     filterMatchCount: ["$COUNT$ cocok", "Berapa banyak bab yang cocok dengan penyaring."],
     filterClear: ["Bersihkan", "Mengosongkan penyaring."],
+    filterNoMatches: [
+        "Tidak ada bab yang cocok dengan filter ini",
+        "Ditampilkan saat filter menyembunyikan semua bab.",
+    ],
+    filterClearAll: ["Hapus filter", "Menghapus filter agar semua bab tampil lagi."],
     filterApply: ["Terapkan", "Menerapkan penyaring."],
     filterInvalidPattern: ["Pola itu tidak valid.", "Ditampilkan saat regex gagal dikompilasi."],
 

@@ -201,6 +201,10 @@
     "message": "その他のオプション",
     "description": "設定ページ全体を開くボタン。"
   },
+  "workbenchOptionsHint": {
+    "message": "これは作成するすべての本に適用されます。",
+    "description": "スイッチが設定そのものを変えることの説明。"
+  },
   "workbenchNoCover": {
     "message": "表紙なし",
     "description": "表紙画像がないときに表示。"
@@ -882,6 +886,14 @@
   "filterClear": {
     "message": "クリア",
     "description": "フィルターを消去します。"
+  },
+  "filterNoMatches": {
+    "message": "このフィルターに一致する章はありません",
+    "description": "フィルターですべての章が隠れたときに表示されます。"
+  },
+  "filterClearAll": {
+    "message": "フィルターを解除",
+    "description": "フィルターを外してすべての章を表示します。"
   },
   "filterApply": {
     "message": "適用",
