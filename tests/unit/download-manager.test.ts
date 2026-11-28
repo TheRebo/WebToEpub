@@ -49,6 +49,8 @@ function harness(
         body?: string;
         /** The body the story's page returns. */
         storyBody?: string;
+        /** The rate limit the story's parser asks for. */
+        parserDelay?: number;
     } = {},
 ): Harness {
     const delays: number[] = [];
@@ -70,7 +72,14 @@ function harness(
             saved.push(fileName);
             return { fileName, fileSize: 1 };
         },
-        parserFor: () => null,
+        parserFor: () =>
+            options.parserDelay === undefined
+                ? null
+                : ({
+                      getRateLimit: () => options.parserDelay,
+                      fetchChapter: async () => new DOMParser().parseFromString(body, "text/html"),
+                      extractChapterContent: (dom: Document) => dom.body,
+                  } as unknown as Parser),
         throttle: async (ms) => {
             delays.push(ms);
         },
@@ -171,6 +180,18 @@ describe("the download manager's behaviour settings", () => {
 
         await settle(manager, jobId);
         expect(delays[0]).toBe(1400);
+    });
+
+    it("does not add the per-chapter delay twice when the parser already counts it", async () => {
+        const { manager, delays } = harness({
+            behaviour: { minimumDelay: 500, delayPerChapter: 3000 },
+            // A legacy parser's rate limit is max(its minimum, the user's delay).
+            parserDelay: 3000,
+        });
+        const jobId = manager.start("https://example.com/story", "The Story", CHAPTERS);
+
+        await settle(manager, jobId);
+        expect(delays[0]).toBe(3500);
     });
 
     it("keeps a chapter that failed when the user asked to skip them", async () => {

@@ -686,7 +686,9 @@ export class DownloadManager {
         // own minimum is a floor, not a ceiling: a site that asks for a
         // longer pause always gets it.
         const parserDelay = parser ? Math.max(parser.getRateLimit(), 0) : 0;
-        const delay = Math.max(parserDelay, behaviour.minimumDelay) + behaviour.delayPerChapter;
+        // The legacy parsers' rate limit already includes the user's
+        // per-chapter delay, so it is not added on top a second time.
+        const delay = Math.max(parserDelay, behaviour.minimumDelay + behaviour.delayPerChapter);
 
         // The chapter limit is the user's safety net. A book with tens of
         // thousands of chapters would take days and fill the disk, so the
