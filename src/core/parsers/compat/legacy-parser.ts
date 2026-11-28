@@ -1,7 +1,7 @@
 /**
  * The legacy parser base class.
  *
- * The 437 site parsers are the product's core asset, and every one of them
+ * The 434 site parsers are the product's core asset, and every one of them
  * was written against the baseline's `Parser` class. This module is that
  * class, reimplemented.
  *

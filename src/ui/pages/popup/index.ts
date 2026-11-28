@@ -6,7 +6,7 @@
  * user one card and one button.
  *
  * It never fetches a page and never loads a parser: the worker owns both.
- * That is what keeps the popup opening instantly, even with 437 parsers in
+ * That is what keeps the popup opening instantly, even with 434 parsers in
  * the extension.
  *
  * See ADR-0005.
