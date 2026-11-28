@@ -874,15 +874,19 @@ export function renderWorkbench(
 
     // --- Buttons ---
     elements.saveButton.hidden = !state.dirty;
-    const packable = selectedCount > 0 && !state.loadingChapters;
+    // A second Pack while a book is being made would only be refused.
+    const busy = state.progress !== undefined && state.progress.outcome === undefined;
+    const packable = selectedCount > 0 && !state.loadingChapters && !busy;
     elements.packButton.toggleAttribute("disabled", !packable);
     elements.packButton.setAttribute(
         "title",
-        state.loadingChapters
-            ? t("workbenchWaitingForChapters")
-            : selectedCount > 0
-              ? ""
-              : t("workbenchNoChaptersSelected"),
+        busy
+            ? t("workbenchBusy")
+            : state.loadingChapters
+              ? t("workbenchWaitingForChapters")
+              : selectedCount > 0
+                ? ""
+                : t("workbenchNoChaptersSelected"),
     );
 
     // --- Chapters ---

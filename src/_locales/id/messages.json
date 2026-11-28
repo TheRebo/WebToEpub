@@ -149,6 +149,10 @@
     "message": "Tidak ada bab yang dipilih",
     "description": "Ditampilkan saat tidak ada yang dicentang."
   },
+  "workbenchBusy": {
+    "message": "Sebuah buku sedang dibuat",
+    "description": "Alasan tombol Buat tidak tersedia saat unduhan berjalan."
+  },
   "workbenchWaitingForChapters": {
     "message": "Mencari bab…",
     "description": "Ditampilkan saat daftar bab sedang dimuat."
@@ -261,9 +265,9 @@
     "message": "Akses tidak diizinkan, jadi cerita tidak dapat dibaca.",
     "description": "Ditampilkan ketika permintaan peramban ditolak."
   },
-  "accessAlreadyGranted": {
-    "message": "Akses ke situs ini sudah diizinkan.",
-    "description": "Ditampilkan ketika situs sudah boleh dibaca."
+  "accessGranted": {
+    "message": "Kintsugi sekarang bisa membaca situs ini.",
+    "description": "Ditampilkan setelah situs baru saja diizinkan."
   },
   "chapterStateQueued": {
     "message": "Antre",

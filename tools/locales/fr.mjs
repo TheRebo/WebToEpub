@@ -47,6 +47,10 @@ export default {
         "Affiché quand la plage est inutilisable.",
     ],
     workbenchFilter: ["Filtrer", "Le bouton qui ouvre le filtre."],
+    workbenchBusy: [
+        "Un livre est en cours de création",
+        "Pourquoi Créer est indisponible pendant un téléchargement.",
+    ],
     workbenchNoChaptersSelected: ["Aucun chapitre sélectionné", "Affiché quand rien n'est coché."],
     workbenchWaitingForChapters: ["Recherche des chapitres…", "Affiché pendant le chargement."],
     workbenchDetected: ["Détecté", "Affiché quand un analyseur a reconnu le site."],
@@ -106,9 +110,9 @@ export default {
         "L'accès n'a pas été autorisé, l'histoire ne peut pas être lue.",
         "Affiché quand la boîte de dialogue du navigateur est refusée.",
     ],
-    accessAlreadyGranted: [
-        "L'accès à ce site est déjà autorisé.",
-        "Affiché quand le site peut déjà être lu.",
+    accessGranted: [
+        "Kintsugi peut maintenant lire ce site.",
+        "Affiché quand le site vient d’être autorisé.",
     ],
     chapterStateQueued: ["En attente", "Un chapitre qui attend d'être récupéré."],
     chapterStateFetching: ["Récupération", "Un chapitre en cours de récupération."],

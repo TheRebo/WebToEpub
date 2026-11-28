@@ -235,7 +235,7 @@ class PopupController {
             return;
         }
 
-        this.#toast(t("accessAlreadyGranted"), "success");
+        this.#toast(t("accessGranted"), "success");
         await this.#analyse(url);
     }
 

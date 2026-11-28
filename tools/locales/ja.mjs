@@ -38,6 +38,7 @@ export default {
         "範囲を使用できないときに表示。",
     ],
     workbenchFilter: ["フィルター", "フィルターを開くボタン。"],
+    workbenchBusy: ["本を作成しています", "ダウンロード中に作成ボタンが使えない理由。"],
     workbenchNoChaptersSelected: ["章が選択されていません", "何もチェックされていないときに表示。"],
     workbenchWaitingForChapters: ["章を探しています…", "章リストを読み込み中に表示。"],
     workbenchDetected: ["検出済み", "パーサーがサイトを認識できたときに表示。"],
@@ -79,9 +80,9 @@ export default {
         "アクセスが許可されなかったため、物語を読み込めません。",
         "ブラウザーのダイアログを拒否したときに表示。",
     ],
-    accessAlreadyGranted: [
-        "このサイトへのアクセスはすでに許可されています。",
-        "すでに読めるiedade表示。",
+    accessGranted: [
+        "Kintsugi がこのサイトを読めるようになりました。",
+        "サイトが許可された直後に表示されます。",
     ],
 
     // --- Chapter states ---

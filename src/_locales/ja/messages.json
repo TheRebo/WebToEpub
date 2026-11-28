@@ -149,6 +149,10 @@
     "message": "章が選択されていません",
     "description": "何もチェックされていないときに表示。"
   },
+  "workbenchBusy": {
+    "message": "本を作成しています",
+    "description": "ダウンロード中に作成ボタンが使えない理由。"
+  },
   "workbenchWaitingForChapters": {
     "message": "章を探しています…",
     "description": "章リストを読み込み中に表示。"
@@ -261,9 +265,9 @@
     "message": "アクセスが許可されなかったため、物語を読み込めません。",
     "description": "ブラウザーのダイアログを拒否したときに表示。"
   },
-  "accessAlreadyGranted": {
-    "message": "このサイトへのアクセスはすでに許可されています。",
-    "description": "すでに読めるiedade表示。"
+  "accessGranted": {
+    "message": "Kintsugi がこのサイトを読めるようになりました。",
+    "description": "サイトが許可された直後に表示されます。"
   },
   "chapterStateQueued": {
     "message": "待機中",

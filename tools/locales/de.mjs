@@ -50,6 +50,10 @@ export default {
         "Wird angezeigt, wenn der Bereich nicht verwendet werden kann.",
     ],
     workbenchFilter: ["Filter", "Die Schaltfläche, die den Filter öffnet."],
+    workbenchBusy: [
+        "Ein Buch wird gerade erstellt",
+        "Warum Erstellen während eines Downloads nicht geht.",
+    ],
     workbenchNoChaptersSelected: [
         "Keine Kapitel ausgewählt",
         "Wird angezeigt, wenn nichts angehakt ist.",
@@ -112,9 +116,9 @@ export default {
         "Der Zugriff wurde nicht erlaubt, die Story kann nicht gelesen werden.",
         "Wenn der Browserdialog abgelehnt wird.",
     ],
-    accessAlreadyGranted: [
-        "Der Zugriff auf diese Seite ist bereits erlaubt.",
-        "Wenn die Seite bereits gelesen werden darf.",
+    accessGranted: [
+        "Kintsugi darf diese Seite jetzt lesen.",
+        "Wenn die Seite gerade erlaubt wurde.",
     ],
     chapterStateQueued: ["In Warteschlange", "Ein Kapitel, das auf den Abruf wartet."],
     chapterStateFetching: ["Wird abgerufen", "Ein Kapitel, das gerade abgerufen wird."],

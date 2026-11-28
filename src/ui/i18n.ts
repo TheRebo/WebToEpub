@@ -44,6 +44,7 @@ export const MESSAGES = {
     workbenchRangeInvalid: "workbenchRangeInvalid",
     workbenchFilter: "workbenchFilter",
     workbenchNoChaptersSelected: "workbenchNoChaptersSelected",
+    workbenchBusy: "workbenchBusy",
     workbenchWaitingForChapters: "workbenchWaitingForChapters",
     workbenchDetected: "workbenchDetected",
     workbenchFieldTitle: "workbenchFieldTitle",
@@ -74,7 +75,7 @@ export const MESSAGES = {
     accessText: "accessText",
     accessGrant: "accessGrant",
     accessDenied: "accessDenied",
-    accessAlreadyGranted: "accessAlreadyGranted",
+    accessGranted: "accessGranted",
 
     // Chapter states
     chapterStateQueued: "chapterStateQueued",

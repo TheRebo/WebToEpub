@@ -149,6 +149,10 @@
     "message": "Keine Kapitel ausgewählt",
     "description": "Wird angezeigt, wenn nichts angehakt ist."
   },
+  "workbenchBusy": {
+    "message": "Ein Buch wird gerade erstellt",
+    "description": "Warum Erstellen während eines Downloads nicht geht."
+  },
   "workbenchWaitingForChapters": {
     "message": "Suche nach Kapiteln…",
     "description": "Wird beim Laden der Kapitelliste angezeigt."
@@ -261,9 +265,9 @@
     "message": "Der Zugriff wurde nicht erlaubt, die Story kann nicht gelesen werden.",
     "description": "Wenn der Browserdialog abgelehnt wird."
   },
-  "accessAlreadyGranted": {
-    "message": "Der Zugriff auf diese Seite ist bereits erlaubt.",
-    "description": "Wenn die Seite bereits gelesen werden darf."
+  "accessGranted": {
+    "message": "Kintsugi darf diese Seite jetzt lesen.",
+    "description": "Wenn die Seite gerade erlaubt wurde."
   },
   "chapterStateQueued": {
     "message": "In Warteschlange",

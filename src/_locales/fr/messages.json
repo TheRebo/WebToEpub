@@ -149,6 +149,10 @@
     "message": "Aucun chapitre sélectionné",
     "description": "Affiché quand rien n'est coché."
   },
+  "workbenchBusy": {
+    "message": "Un livre est en cours de création",
+    "description": "Pourquoi Créer est indisponible pendant un téléchargement."
+  },
   "workbenchWaitingForChapters": {
     "message": "Recherche des chapitres…",
     "description": "Affiché pendant le chargement."
@@ -261,9 +265,9 @@
     "message": "L'accès n'a pas été autorisé, l'histoire ne peut pas être lue.",
     "description": "Affiché quand la boîte de dialogue du navigateur est refusée."
   },
-  "accessAlreadyGranted": {
-    "message": "L'accès à ce site est déjà autorisé.",
-    "description": "Affiché quand le site peut déjà être lu."
+  "accessGranted": {
+    "message": "Kintsugi peut maintenant lire ce site.",
+    "description": "Affiché quand le site vient d’être autorisé."
   },
   "chapterStateQueued": {
     "message": "En attente",

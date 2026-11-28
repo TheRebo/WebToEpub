@@ -99,6 +99,8 @@ export class WorkbenchController {
     #settings: SettingsStore = new SettingsStore(localStorageAdapter);
     #settingsValue: Settings | undefined;
     #jobId: string | undefined;
+    /** The story the running job is making. */
+    #jobStoryUrl: string | undefined;
     /**
      * The workbench's indexes of the chapters the running job is fetching.
      *
@@ -213,6 +215,14 @@ export class WorkbenchController {
         this.#store.setError(undefined);
         this.#elements.urlField.value = url;
 
+        // Another story's title and chapters must not stay on screen while
+        // this one loads, or if it fails: Pack would build the wrong book.
+        if (url !== this.#store.state.story.sourceUrl) {
+            this.#store.setStory({ ...initialState().story });
+            this.#store.setChapters([]);
+            this.#store.setUsedDefaultParser(false);
+        }
+
         const origin = originOf(url);
         if (origin && !(await hasHostAccess(origin))) {
             // The answer can arrive after the user has moved on to another
@@ -270,7 +280,7 @@ export class WorkbenchController {
 
         const url = this.#elements.urlField.value;
         this.#store.setAccessOrigin(undefined);
-        this.#toast(t("accessAlreadyGranted"), "success");
+        this.#toast(t("accessGranted"), "success");
         await this.#loadStory(url);
     }
 
@@ -305,7 +315,11 @@ export class WorkbenchController {
             // on screen.
             if (!this.#loads.isCurrent(loadNumber)) return;
             if (!analysis.supported) {
-                this.#store.setError(t("errorNoParser"));
+                // The worker says why: a site it does not know, a network
+                // failure, a challenge. Each needs different advice.
+                this.#store.setError(
+                    analysis.error ? errorMessage(analysis.error) : t("errorNoParser"),
+                );
                 return;
             }
             this.#store.setStory({
@@ -1029,6 +1043,7 @@ export class WorkbenchController {
         // The job counts its own chapters, so the mapping back to the
         // workbench's list is kept for the progress poll.
         this.#jobChapterIndexes = selected.map((entry) => entry.index);
+        this.#jobStoryUrl = state.story.sourceUrl;
 
         try {
             const { jobId } = await sendRequest(
@@ -1126,6 +1141,9 @@ export class WorkbenchController {
      * that never stop.
      */
     #applyChapterState(progress: DownloadProgress): void {
+        // The user may have moved on to another story while this one is
+        // still being made; its rows are not this job's rows.
+        if (this.#store.state.story.sourceUrl !== this.#jobStoryUrl) return;
         const finished = progress.finished;
         if (finished) {
             for (const change of finishedChapterStates(finished, this.#jobChapterIndexes)) {

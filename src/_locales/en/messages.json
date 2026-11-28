@@ -149,6 +149,10 @@
     "message": "No chapters selected",
     "description": "Shown when nothing is ticked."
   },
+  "workbenchBusy": {
+    "message": "A book is being made",
+    "description": "Why Pack is unavailable while a download runs."
+  },
   "workbenchWaitingForChapters": {
     "message": "Looking for chapters…",
     "description": "Shown while the chapter list loads."
@@ -261,9 +265,9 @@
     "message": "Access was not allowed, so the story cannot be read.",
     "description": "Shown when the user declines the browser's permission prompt."
   },
-  "accessAlreadyGranted": {
-    "message": "Access to this site has already been allowed.",
-    "description": "Shown when the site is already readable."
+  "accessGranted": {
+    "message": "Kintsugi can now read this site.",
+    "description": "Shown when the user has just allowed the site."
   },
   "chapterStateQueued": {
     "message": "Queued",

@@ -46,6 +46,10 @@ export default {
         "Ditampilkan saat rentang tidak dapat dipakai.",
     ],
     workbenchFilter: ["Saring", "Tombol untuk membuka penyaring."],
+    workbenchBusy: [
+        "Sebuah buku sedang dibuat",
+        "Alasan tombol Buat tidak tersedia saat unduhan berjalan.",
+    ],
     workbenchNoChaptersSelected: [
         "Tidak ada bab yang dipilih",
         "Ditampilkan saat tidak ada yang dicentang.",
@@ -99,9 +103,9 @@ export default {
         "Akses tidak diizinkan, jadi cerita tidak dapat dibaca.",
         "Ditampilkan ketika permintaan peramban ditolak.",
     ],
-    accessAlreadyGranted: [
-        "Akses ke situs ini sudah diizinkan.",
-        "Ditampilkan ketika situs sudah boleh dibaca.",
+    accessGranted: [
+        "Kintsugi sekarang bisa membaca situs ini.",
+        "Ditampilkan setelah situs baru saja diizinkan.",
     ],
 
     // --- Chapter states ---

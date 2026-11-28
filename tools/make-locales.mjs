@@ -76,6 +76,7 @@ const SOURCE = {
     ],
     workbenchFilter: ["Filter", "The button that opens the filter."],
     workbenchNoChaptersSelected: ["No chapters selected", "Shown when nothing is ticked."],
+    workbenchBusy: ["A book is being made", "Why Pack is unavailable while a download runs."],
     workbenchWaitingForChapters: ["Looking for chapters…", "Shown while the chapter list loads."],
     workbenchDetected: ["Detected", "Shown when a parser recognised the site."],
     workbenchFieldTitle: ["Title", "The story's title."],
@@ -127,9 +128,9 @@ const SOURCE = {
         "Access was not allowed, so the story cannot be read.",
         "Shown when the user declines the browser's permission prompt.",
     ],
-    accessAlreadyGranted: [
-        "Access to this site has already been allowed.",
-        "Shown when the site is already readable.",
+    accessGranted: [
+        "Kintsugi can now read this site.",
+        "Shown when the user has just allowed the site.",
     ],
 
     // --- Chapter states ---
