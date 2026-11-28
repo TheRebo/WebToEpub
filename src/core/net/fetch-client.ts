@@ -100,6 +100,12 @@ export interface FetchOptions {
     useCookies?: boolean;
     /** The page URL the request is made on behalf of, for the `Referer`. */
     referer?: string;
+    /**
+     * The decoder for a text body. Defaults to the one the response names
+     * (see {@link decoderFor}); a parser for a site that lies about its
+     * encoding supplies its own.
+     */
+    decoder?: (response: Response) => TextDecoder;
 }
 
 /** A successful response. */
@@ -108,6 +114,8 @@ export interface FetchResult {
     response: Response;
     /** The body, parsed as text. */
     text: string;
+    /** The body's bytes, before decoding. */
+    bytes: Uint8Array;
     /** The body, parsed as an HTML document. */
     dom: Document;
     /** The final URL, after redirects. */
@@ -272,7 +280,7 @@ export class FetchClient {
 
                 try {
                     const response = await this.#performRequest(url, options);
-                    const text = await this.#readText(response, options.signal);
+                    const { text, bytes } = await this.#readText(response, options);
                     diagnosticUrl(
                         `Fetched (attempt ${attempt})`,
                         url,
@@ -348,6 +356,7 @@ export class FetchClient {
                     return {
                         response,
                         text,
+                        bytes,
                         dom: parseHtml(text, response.url || url),
                         url: response.url || url,
                     };
@@ -399,7 +408,7 @@ export class FetchClient {
                         ...options,
                         headers: { Accept: "application/json", ...options.headers },
                     });
-                    const text = await this.#readText(response, options.signal);
+                    const { text } = await this.#readText(response, options);
 
                     const custom = this.#evaluateCustomError(url, response, text);
                     if (custom?.status === 999) {
@@ -739,12 +748,16 @@ export class FetchClient {
      * Read a response's body as text, refusing one that is too large.
      *
      * @param response The response.
-     * @param signal The signal that stops the read, when there is one.
-     * @returns The body's text.
+     * @param options The fetch's options, for the signal and the decoder.
+     * @returns The body's text and its bytes.
      */
-    async #readText(response: Response, signal?: AbortSignal): Promise<string> {
-        const bytes = await this.#readBody(response, MAX_RESPONSE_BYTES, signal);
-        return new TextDecoder().decode(bytes);
+    async #readText(
+        response: Response,
+        options: FetchOptions,
+    ): Promise<{ text: string; bytes: Uint8Array }> {
+        const bytes = await this.#readBody(response, MAX_RESPONSE_BYTES, options.signal);
+        const decoder = options.decoder?.(response) ?? decoderFor(response, bytes);
+        return { text: decoder.decode(bytes), bytes };
     }
 
     /**
@@ -937,4 +950,35 @@ export function parseHtml(html: string, url: string): Document {
         // A document with no head is unusual but not fatal.
     }
     return dom;
+}
+
+/**
+ * The decoder for a text body.
+ *
+ * The `charset` of the `Content-Type` wins, then a `<meta charset>` or
+ * `http-equiv` in the first kilobyte, then UTF-8. Many Chinese and Japanese
+ * novel sites are served in GBK or Shift_JIS, and decoding them as UTF-8
+ * turns every chapter into mojibake.
+ *
+ * @param response The response.
+ * @param bytes The body.
+ * @returns The decoder.
+ */
+export function decoderFor(response: Response, bytes: Uint8Array): TextDecoder {
+    const declared = /charset\s*=\s*["']?([\w.:-]+)/i.exec(
+        response.headers.get("content-type") ?? "",
+    )?.[1];
+    const sniffed =
+        declared ??
+        /<meta[^>]+charset\s*=\s*["']?([\w.:-]+)/i.exec(
+            new TextDecoder("latin1").decode(bytes.subarray(0, 1024)),
+        )?.[1];
+    if (sniffed) {
+        try {
+            return new TextDecoder(sniffed);
+        } catch {
+            // An encoding the browser does not know falls back to UTF-8.
+        }
+    }
+    return new TextDecoder();
 }
