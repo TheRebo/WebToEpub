@@ -39,7 +39,13 @@ import { pollUntilDone } from "../../poll";
 import { themeController } from "../../styles/theme-controller";
 import { t, tCount, tDynamic } from "../../i18n";
 import { installI18n } from "../../i18n-bootstrap";
-import { buildWorkbench, deriveFilename, renderWorkbench, type WorkbenchElements } from "./view";
+import {
+    buildWorkbench,
+    deriveFilename,
+    formatSize,
+    renderWorkbench,
+    type WorkbenchElements,
+} from "./view";
 import {
     WorkbenchStore,
     compilePattern,
@@ -49,6 +55,7 @@ import {
     storyOptionSwitches,
     type Chapter,
     type ChapterRange,
+    type DownloadProgressState,
     type FilterState,
     type StoryMeta,
     type WorkbenchState,
@@ -584,14 +591,24 @@ export class WorkbenchController {
             );
         });
 
-        // The Cancel button lives in the status bar and is rebuilt each time
-        // the bar is rendered, so it never carries stale state.
+        // The status bar's buttons are rebuilt each time the bar is rendered,
+        // so each one says what it does in `data-action`.
         elements.statusActions.addEventListener("k-click", (event) => {
-            if ((event.target as HTMLElement)?.closest?.("k-button")) {
+            const action = (event.target as HTMLElement)?.closest?.<HTMLElement>("k-button")
+                ?.dataset.action;
+            if (action === "cancel") {
                 this.#run(
                     () => this.#cancel(),
                     (error) => this.#toast(caughtErrorMessage(error), "error"),
                 );
+            } else if (action === "retry") {
+                this.#store.setProgress(undefined);
+                this.#run(
+                    () => this.#pack(),
+                    (error) => this.#toast(caughtErrorMessage(error), "error"),
+                );
+            } else if (action === "dismiss") {
+                this.#store.setProgress(undefined);
             }
         });
     }
@@ -1050,6 +1067,7 @@ export class WorkbenchController {
                     // it in its own locale.
                     message: tDynamic(progress.message),
                     succeeded: progress.phase === "complete",
+                    ...progressOutcome(progress),
                 });
 
                 this.#applyChapterState(progress);
@@ -1131,6 +1149,17 @@ export class WorkbenchController {
         } catch {
             // The job may already have finished; nothing to cancel.
         }
+        // The poll has stopped, so the bar is told the job ended here.
+        const progress = this.#store.state.progress;
+        if (progress) {
+            this.#store.setProgress({
+                ...progress,
+                phase: "cancelled",
+                message: t("phaseCancelled"),
+                outcome: "cancelled",
+                detail: undefined,
+            });
+        }
     }
 
     /** Render, coalescing multiple state changes into one frame. */
@@ -1205,3 +1234,25 @@ async function main(): Promise<void> {
 void main().catch((error) => {
     console.error("[kintsugi] The workbench failed to start:", error);
 });
+
+/**
+ * How a job ended, and the line to show under the status label.
+ *
+ * @param progress The job's progress, as the worker reported it.
+ * @returns The outcome and the detail, or nothing while the job runs.
+ */
+export function progressOutcome(
+    progress: DownloadProgress,
+): Pick<DownloadProgressState, "outcome" | "detail"> {
+    if (progress.phase === "complete") {
+        const detail = progress.fileName
+            ? t("workbenchSavedAs", [progress.fileName, formatSize(progress.fileSize ?? 0)])
+            : undefined;
+        return { outcome: "success", detail };
+    }
+    if (progress.phase === "failed") {
+        return { outcome: "failed", detail: errorMessage(progress.error) || undefined };
+    }
+    if (progress.phase === "cancelled") return { outcome: "cancelled" };
+    return {};
+}

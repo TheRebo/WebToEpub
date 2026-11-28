@@ -53,6 +53,28 @@
     "message": "Cancel",
     "description": "The button that stops a download."
   },
+  "workbenchRetry": {
+    "message": "Try again",
+    "description": "The button that starts a failed or cancelled download again."
+  },
+  "workbenchDismiss": {
+    "message": "Dismiss",
+    "description": "The button that hides a finished download's status."
+  },
+  "workbenchSavedAs": {
+    "message": "Saved as $FILE$ ($SIZE$)",
+    "description": "Shown when the book has been saved, with its file name and size.",
+    "placeholders": {
+      "file": {
+        "content": "$1",
+        "example": "1"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
+  },
   "workbenchSelectAll": {
     "message": "Select all",
     "description": "The button that selects every chapter."

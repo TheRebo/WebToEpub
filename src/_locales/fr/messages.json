@@ -53,6 +53,28 @@
     "message": "Annuler",
     "description": "Le bouton qui arrête un téléchargement."
   },
+  "workbenchRetry": {
+    "message": "Réessayer",
+    "description": "Relance un téléchargement échoué ou annulé."
+  },
+  "workbenchDismiss": {
+    "message": "Masquer",
+    "description": "Masque l’état d’un téléchargement terminé."
+  },
+  "workbenchSavedAs": {
+    "message": "Enregistré sous $FILE$ ($SIZE$)",
+    "description": "Affiché quand le livre a été enregistré.",
+    "placeholders": {
+      "file": {
+        "content": "$1",
+        "example": "1"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
+  },
   "workbenchSelectAll": {
     "message": "Tout sélectionner",
     "description": "Le bouton qui sélectionne tous les chapitres."

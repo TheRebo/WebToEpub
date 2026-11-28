@@ -123,6 +123,10 @@ export interface DownloadProgressState {
     message: string;
     /** Whether the job finished successfully. */
     succeeded: boolean;
+    /** How the job ended, once it has. */
+    outcome?: "success" | "failed" | "cancelled";
+    /** The line under the label: where the book went, or what went wrong. */
+    detail?: string;
 }
 
 /**

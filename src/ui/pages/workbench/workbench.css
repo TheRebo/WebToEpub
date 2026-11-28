@@ -486,6 +486,23 @@ select.story-field__input {
 .status-bar[data-variant="danger"] .status-bar__icon {
     color: var(--danger);
 }
+.status-bar[data-variant="neutral"] .status-bar__icon {
+    color: var(--text-muted);
+}
+
+/* A finished job swaps its counters for a sentence; the counters' own
+   display rules would otherwise beat the hidden attribute. */
+.status-bar__body > [hidden] {
+    display: none;
+}
+
+.status-bar__detail {
+    color: var(--text-secondary);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 .status-bar__body {
     display: flex;

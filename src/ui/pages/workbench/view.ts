@@ -109,6 +109,8 @@ export interface WorkbenchElements {
     statusFill: HTMLElement;
     /** The status bar's percentage. */
     statusPercent: HTMLElement;
+    /** The line that says where the book went, or what went wrong. */
+    statusDetail: HTMLElement;
     /** The status bar's icon. */
     statusIcon: HTMLElement;
     /** The status bar's actions. */
@@ -527,6 +529,10 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     // --- Status bar ---
     const statusBar = el("footer", "status-bar");
     statusBar.hidden = true;
+    // The bar's text is announced as it changes, so a screen reader hears
+    // the download move on and end without having to go looking for it.
+    statusBar.setAttribute("role", "status");
+    statusBar.setAttribute("aria-live", "polite");
     const statusIcon = el("div", "status-bar__icon");
     const statusBody = el("div", "status-bar__body");
     const statusLabel = el("span", "status-bar__label");
@@ -535,7 +541,8 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const statusFill = el("div", "status-bar__fill");
     statusTrack.appendChild(statusFill);
     const statusPercent = el("span", "status-bar__percent");
-    statusBody.append(statusLabel, statusCount, statusTrack, statusPercent);
+    const statusDetail = el("span", "status-bar__detail");
+    statusBody.append(statusLabel, statusCount, statusTrack, statusPercent, statusDetail);
     const statusActions = el("div", "status-bar__actions");
     statusBar.append(statusIcon, statusBody, statusActions);
     shell.appendChild(statusBar);
@@ -772,6 +779,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         statusTrack,
         statusFill,
         statusPercent,
+        statusDetail,
         statusIcon,
         statusActions,
         filterDialog,
@@ -943,29 +951,57 @@ function renderStatus(elements: WorkbenchElements, state: WorkbenchState): void 
         return;
     }
 
+    const outcome = progress.outcome;
     elements.statusBar.hidden = false;
-    elements.statusBar.dataset.variant = progress.succeeded ? "success" : "running";
+    elements.statusBar.dataset.variant =
+        outcome === "success"
+            ? "success"
+            : outcome === "failed"
+              ? "danger"
+              : outcome === "cancelled"
+                ? "neutral"
+                : "running";
     elements.statusLabel.textContent = progress.message;
+
+    // While the job runs the bar counts; once it has ended it says what
+    // happened instead.
+    const running = outcome === undefined;
+    elements.statusCount.hidden = !running;
+    elements.statusTrack.hidden = !running;
+    elements.statusPercent.hidden = !running;
+    elements.statusDetail.hidden = running || !progress.detail;
     elements.statusCount.textContent = `${progress.done} / ${progress.total}`;
     elements.statusPercent.textContent = `${Math.round(progress.percent)}%`;
+    elements.statusDetail.textContent = progress.detail ?? "";
 
     // Only `transform` is animated, so the bar never triggers a layout pass.
     elements.statusFill.style.transform = `scaleX(${Math.max(0, Math.min(1, progress.percent / 100))})`;
 
-    elements.statusIcon.replaceChildren(
-        createIcon(progress.succeeded ? "check-circle" : "spinner", 16),
-    );
-    const spinner = elements.statusIcon.querySelector("svg");
-    if (!progress.succeeded) spinner?.setAttribute("data-spin", "true");
+    const icon =
+        outcome === "success"
+            ? "check-circle"
+            : outcome === "failed"
+              ? "alert-triangle"
+              : outcome === "cancelled"
+                ? "close"
+                : "spinner";
+    elements.statusIcon.replaceChildren(createIcon(icon, 16));
+    if (running) elements.statusIcon.querySelector("svg")?.setAttribute("data-spin", "true");
 
-    // The Cancel button only exists while a job is running.
     elements.statusActions.replaceChildren();
-    if (!progress.succeeded && progress.phase !== "failed" && progress.phase !== "cancelled") {
-        const cancel = document.createElement("k-button") as KButton;
-        cancel.setAttribute("variant", "ghost");
-        cancel.setAttribute("size", "sm");
-        cancel.textContent = t("workbenchCancel");
-        elements.statusActions.appendChild(cancel);
+    const action = (name: string, label: string, variant: string): void => {
+        const button = document.createElement("k-button") as KButton;
+        button.setAttribute("variant", variant);
+        button.setAttribute("size", "sm");
+        button.dataset.action = name;
+        button.textContent = label;
+        elements.statusActions.appendChild(button);
+    };
+    if (running) {
+        action("cancel", t("workbenchCancel"), "ghost");
+    } else {
+        if (outcome !== "success") action("retry", t("workbenchRetry"), "secondary");
+        action("dismiss", t("workbenchDismiss"), "ghost");
     }
 }
 

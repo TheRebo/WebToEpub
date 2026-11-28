@@ -22,6 +22,15 @@ export default {
     workbenchPack: ["EPUB erstellen", "Die Schaltfläche, die das Buch erstellt."],
     workbenchSave: ["Speichern", "Die Schaltfläche, die die Metadaten speichert."],
     workbenchCancel: ["Abbrechen", "Die Schaltfläche, die einen Download stoppt."],
+    workbenchRetry: [
+        "Erneut versuchen",
+        "Startet einen fehlgeschlagenen oder abgebrochenen Download neu.",
+    ],
+    workbenchDismiss: ["Ausblenden", "Blendet den Status eines beendeten Downloads aus."],
+    workbenchSavedAs: [
+        "Gespeichert als $FILE$ ($SIZE$)",
+        "Wird angezeigt, wenn das Buch gespeichert wurde.",
+    ],
     workbenchSelectAll: ["Alle auswählen", "Die Schaltfläche, die alle Kapitel auswählt."],
     workbenchSelectNone: ["Auswahl aufheben", "Die Schaltfläche, die alle Kapitel abwählt."],
     workbenchInvert: ["Umkehren", "Die Schaltfläche, die die Auswahl umkehrt."],

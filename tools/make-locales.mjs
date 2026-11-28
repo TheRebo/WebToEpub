@@ -50,6 +50,12 @@ const SOURCE = {
     workbenchPack: ["Build EPUB", "The button that builds the book."],
     workbenchSave: ["Save", "The button that saves the metadata."],
     workbenchCancel: ["Cancel", "The button that stops a download."],
+    workbenchRetry: ["Try again", "The button that starts a failed or cancelled download again."],
+    workbenchDismiss: ["Dismiss", "The button that hides a finished download's status."],
+    workbenchSavedAs: [
+        "Saved as $FILE$ ($SIZE$)",
+        "Shown when the book has been saved, with its file name and size.",
+    ],
     workbenchSelectAll: ["Select all", "The button that selects every chapter."],
     workbenchSelectNone: ["Select none", "The button that deselects every chapter."],
     workbenchInvert: ["Invert", "The button that inverts the selection."],

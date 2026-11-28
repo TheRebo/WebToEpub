@@ -53,6 +53,28 @@
     "message": "Abbrechen",
     "description": "Die Schaltfläche, die einen Download stoppt."
   },
+  "workbenchRetry": {
+    "message": "Erneut versuchen",
+    "description": "Startet einen fehlgeschlagenen oder abgebrochenen Download neu."
+  },
+  "workbenchDismiss": {
+    "message": "Ausblenden",
+    "description": "Blendet den Status eines beendeten Downloads aus."
+  },
+  "workbenchSavedAs": {
+    "message": "Gespeichert als $FILE$ ($SIZE$)",
+    "description": "Wird angezeigt, wenn das Buch gespeichert wurde.",
+    "placeholders": {
+      "file": {
+        "content": "$1",
+        "example": "1"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
+  },
   "workbenchSelectAll": {
     "message": "Alle auswählen",
     "description": "Die Schaltfläche, die alle Kapitel auswählt."

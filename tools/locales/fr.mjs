@@ -22,6 +22,12 @@ export default {
     workbenchPack: ["Créer l'EPUB", "Le bouton qui crée le livre."],
     workbenchSave: ["Enregistrer", "Le bouton qui enregistre les métadonnées."],
     workbenchCancel: ["Annuler", "Le bouton qui arrête un téléchargement."],
+    workbenchRetry: ["Réessayer", "Relance un téléchargement échoué ou annulé."],
+    workbenchDismiss: ["Masquer", "Masque l’état d’un téléchargement terminé."],
+    workbenchSavedAs: [
+        "Enregistré sous $FILE$ ($SIZE$)",
+        "Affiché quand le livre a été enregistré.",
+    ],
     workbenchSelectAll: ["Tout sélectionner", "Le bouton qui sélectionne tous les chapitres."],
     workbenchSelectNone: ["Tout désélectionner", "Le bouton qui désélectionne tous les chapitres."],
     workbenchInvert: ["Inverser", "Le bouton qui inverse la sélection."],

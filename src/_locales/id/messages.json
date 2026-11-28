@@ -53,6 +53,28 @@
     "message": "Batal",
     "description": "Tombol untuk menghentikan unduhan."
   },
+  "workbenchRetry": {
+    "message": "Coba lagi",
+    "description": "Tombol untuk memulai lagi unduhan yang gagal atau dibatalkan."
+  },
+  "workbenchDismiss": {
+    "message": "Tutup",
+    "description": "Tombol untuk menyembunyikan status unduhan yang selesai."
+  },
+  "workbenchSavedAs": {
+    "message": "Disimpan sebagai $FILE$ ($SIZE$)",
+    "description": "Ditampilkan setelah buku disimpan.",
+    "placeholders": {
+      "file": {
+        "content": "$1",
+        "example": "1"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
+  },
   "workbenchSelectAll": {
     "message": "Pilih semua",
     "description": "Tombol untuk memilih semua bab."
