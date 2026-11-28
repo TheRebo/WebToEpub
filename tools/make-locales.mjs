@@ -204,6 +204,10 @@ const SOURCE = {
     optionsSiteAccess: ["Site access", "The list of sites the extension may read."],
     optionsRevoke: ["Revoke", "Removes access to a site."],
     optionsRevokeAll: ["Revoke all", "Removes access to every site."],
+    optionsRevokeAllConfirm: [
+        "Kintsugi will not be able to read any of these sites until you allow each one again.",
+        "The explanation in the dialog that confirms removing access to every site.",
+    ],
     optionsSiteAccessEmpty: [
         "No sites yet. Kintsugi asks when you open a story.",
         "The empty state of the site access list.",
@@ -283,6 +287,11 @@ const SOURCE = {
         "Shown when the user picks a library export that is larger than Kintsugi will read.",
     ],
     libraryRemove: ["Remove", "Removes a book from the library."],
+    libraryRemoveTitle: ["Remove this book from the library?", "The heading of the remove dialog."],
+    libraryRemoveConfirm: [
+        "The EPUB you saved stays where it is. Only its entry in the library goes.",
+        "The explanation in the remove dialog.",
+    ],
     libraryRemoved: ["Removed from the library.", "Confirmation after removing a book."],
 
     // --- Options: individual settings ---

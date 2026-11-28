@@ -188,6 +188,10 @@ export default {
     optionsSiteAccess: ["Akses situs", "Daftar situs yang boleh dibaca ekstensi."],
     optionsRevoke: ["Cabut", "Menghapus akses ke sebuah situs."],
     optionsRevokeAll: ["Cabut semua", "Menghapus akses ke semua situs."],
+    optionsRevokeAllConfirm: [
+        "Kintsugi tidak akan bisa membaca situs-situs ini sampai Anda mengizinkannya lagi satu per satu.",
+        "Penjelasan di dialog yang mencabut akses ke semua situs.",
+    ],
     optionsSiteAccessEmpty: [
         "Belum ada situs. Kintsugi bertanya saat Anda membuka cerita.",
         "Keadaan kosong daftar akses.",
@@ -267,6 +271,11 @@ export default {
         "Ditampilkan ketika pengguna memilih ekspor pustaka yang lebih besar dari yang dapat dibaca Kintsugi.",
     ],
     libraryRemove: ["Hapus", "Menghapus buku dari pustaka."],
+    libraryRemoveTitle: ["Hapus buku ini dari pustaka?", "Judul dialog hapus."],
+    libraryRemoveConfirm: [
+        "EPUB yang Anda simpan tetap di tempatnya. Hanya entrinya di pustaka yang dihapus.",
+        "Penjelasan di dialog hapus.",
+    ],
     libraryRemoved: ["Dihapus dari pustaka.", "Konfirmasi setelah menghapus buku."],
 
     // --- Options: individual settings ---

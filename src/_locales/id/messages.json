@@ -495,6 +495,10 @@
     "message": "Cabut semua",
     "description": "Menghapus akses ke semua situs."
   },
+  "optionsRevokeAllConfirm": {
+    "message": "Kintsugi tidak akan bisa membaca situs-situs ini sampai Anda mengizinkannya lagi satu per satu.",
+    "description": "Penjelasan di dialog yang mencabut akses ke semua situs."
+  },
   "optionsSiteAccessEmpty": {
     "message": "Belum ada situs. Kintsugi bertanya saat Anda membuka cerita.",
     "description": "Keadaan kosong daftar akses."
@@ -624,6 +628,14 @@
   "libraryRemove": {
     "message": "Hapus",
     "description": "Menghapus buku dari pustaka."
+  },
+  "libraryRemoveTitle": {
+    "message": "Hapus buku ini dari pustaka?",
+    "description": "Judul dialog hapus."
+  },
+  "libraryRemoveConfirm": {
+    "message": "EPUB yang Anda simpan tetap di tempatnya. Hanya entrinya di pustaka yang dihapus.",
+    "description": "Penjelasan di dialog hapus."
   },
   "libraryRemoved": {
     "message": "Dihapus dari pustaka.",

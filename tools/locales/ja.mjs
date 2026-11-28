@@ -156,6 +156,10 @@ export default {
     optionsSiteAccess: ["サイトへのアクセス", "拡張機能が読み取れるサイトの一覧。"],
     optionsRevoke: ["取り消す", "サイトへのアクセスを削除します。"],
     optionsRevokeAll: ["すべて取り消す", "すべてのサイトへのアクセスを削除します。"],
+    optionsRevokeAllConfirm: [
+        "もう一度ひとつずつ許可するまで、Kintsugi はこれらのサイトを読めなくなります。",
+        "すべてのサイトへのアクセスを外す確認ダイアログの説明。",
+    ],
     optionsSiteAccessEmpty: [
         "まだサイトがありません。物語を開いたときに Kintsugi が尋ねます。",
         "アクセス一覧の空の状態。",
@@ -229,6 +233,11 @@ export default {
         "Kintsugi が読み込めるサイズより大きなライブラリ書き出しが選ばれたときに表示されます。",
     ],
     libraryRemove: ["削除", "ライブラリから本を削除します。"],
+    libraryRemoveTitle: ["この本をライブラリから外しますか？", "削除ダイアログの見出し。"],
+    libraryRemoveConfirm: [
+        "保存した EPUB はそのまま残ります。ライブラリの項目だけが消えます。",
+        "削除ダイアログの説明。",
+    ],
     libraryRemoved: ["ライブラリから削除しました。", "本を削除した後の確認。"],
 
     // --- Options: individual settings ---

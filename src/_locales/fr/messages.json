@@ -495,6 +495,10 @@
     "message": "Tout révoquer",
     "description": "Retire l'accès à tous les sites."
   },
+  "optionsRevokeAllConfirm": {
+    "message": "Kintsugi ne pourra plus lire aucun de ces sites tant que vous ne les aurez pas autorisés de nouveau, un par un.",
+    "description": "L’explication du dialogue qui retire l’accès à tous les sites."
+  },
   "optionsSiteAccessEmpty": {
     "message": "Aucun site pour l'instant. Kintsugi demande quand vous ouvrez une histoire.",
     "description": "L'état vide de la liste des accès."
@@ -624,6 +628,14 @@
   "libraryRemove": {
     "message": "Retirer",
     "description": "Retire un livre de la bibliothèque."
+  },
+  "libraryRemoveTitle": {
+    "message": "Retirer ce livre de la bibliothèque ?",
+    "description": "Le titre du dialogue de retrait."
+  },
+  "libraryRemoveConfirm": {
+    "message": "Le fichier EPUB enregistré reste où il est. Seule son entrée dans la bibliothèque disparaît.",
+    "description": "L’explication du dialogue de retrait."
   },
   "libraryRemoved": {
     "message": "Retiré de la bibliothèque.",

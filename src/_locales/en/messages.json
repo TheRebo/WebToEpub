@@ -495,6 +495,10 @@
     "message": "Revoke all",
     "description": "Removes access to every site."
   },
+  "optionsRevokeAllConfirm": {
+    "message": "Kintsugi will not be able to read any of these sites until you allow each one again.",
+    "description": "The explanation in the dialog that confirms removing access to every site."
+  },
   "optionsSiteAccessEmpty": {
     "message": "No sites yet. Kintsugi asks when you open a story.",
     "description": "The empty state of the site access list."
@@ -624,6 +628,14 @@
   "libraryRemove": {
     "message": "Remove",
     "description": "Removes a book from the library."
+  },
+  "libraryRemoveTitle": {
+    "message": "Remove this book from the library?",
+    "description": "The heading of the remove dialog."
+  },
+  "libraryRemoveConfirm": {
+    "message": "The EPUB you saved stays where it is. Only its entry in the library goes.",
+    "description": "The explanation in the remove dialog."
   },
   "libraryRemoved": {
     "message": "Removed from the library.",

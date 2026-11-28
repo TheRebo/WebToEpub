@@ -293,6 +293,10 @@ export interface OptionsControllerOptions {
 
 /** The options page's controller. */
 export class OptionsController {
+    /** What the confirmation dialog will do when the user confirms. */
+    #pendingConfirm: (() => Promise<void>) | undefined;
+    /** The element that opened the confirmation dialog. */
+    #confirmOpener: HTMLElement | null = null;
     #elements: OptionsElements;
     #store: SettingsStorePort;
     #theme: ThemePort;
@@ -468,7 +472,14 @@ export class OptionsController {
                 return;
             }
             if (action === "reset") {
-                this.#elements.resetDialog.setAttribute("open", "");
+                this.#confirm(
+                    {
+                        heading: t("optionsResetAll"),
+                        body: t("optionsResetConfirm"),
+                        action: t("optionsResetConfirmAction"),
+                    },
+                    () => this.#resetSettings(),
+                );
                 return;
             }
             if (action === "retry-library") {
@@ -487,7 +498,14 @@ export class OptionsController {
                 return;
             }
             if (action === "revoke-all-access") {
-                this.#run(() => this.#revokeAllAccess());
+                this.#confirm(
+                    {
+                        heading: t("optionsRevokeAll"),
+                        body: t("optionsRevokeAllConfirm"),
+                        action: t("optionsRevokeAll"),
+                    },
+                    () => this.#revokeAllAccess(),
+                );
                 return;
             }
             const origin = target?.dataset["origin"];
@@ -502,7 +520,16 @@ export class OptionsController {
             }
 
             const libraryId = target?.dataset["libraryId"];
-            if (libraryId) this.#run(() => this.#removeFromLibrary(libraryId));
+            if (libraryId) {
+                this.#confirm(
+                    {
+                        heading: t("libraryRemoveTitle"),
+                        body: t("libraryRemoveConfirm"),
+                        action: t("libraryRemove"),
+                    },
+                    () => this.#removeFromLibrary(libraryId),
+                );
+            }
         });
 
         // The file inputs behind the import buttons.
@@ -524,17 +551,51 @@ export class OptionsController {
             this.#run(() => this.#importSettings(file));
         });
 
-        // The reset dialog's buttons.
+        // The confirmation dialog's buttons. Whatever the dialog was opened
+        // for runs only on confirm, and focus goes back to the button that
+        // opened it, or to the page heading when that button is gone.
         this.#elements.resetConfirm.addEventListener("k-click", () => {
-            this.#elements.resetDialog.removeAttribute("open");
-            this.#run(() => this.#resetSettings());
+            const pending = this.#pendingConfirm;
+            this.#closeConfirm();
+            if (pending) this.#run(pending);
         });
         this.#elements.resetCancel.addEventListener("k-click", () => {
-            this.#elements.resetDialog.removeAttribute("open");
+            this.#closeConfirm();
         });
         this.#elements.resetDialog.addEventListener("k-close", () => {
-            this.#elements.resetDialog.removeAttribute("open");
+            this.#closeConfirm();
         });
+    }
+
+    /**
+     * Ask before something that cannot be undone.
+     *
+     * @param text The dialog's heading, explanation and confirm label.
+     * @param action What to do when the user confirms.
+     */
+    #confirm(
+        text: { heading: string; body: string; action: string },
+        action: () => Promise<void>,
+    ): void {
+        const dialog = this.#elements.resetDialog;
+        dialog.setAttribute("heading", text.heading);
+        const body = dialog.querySelector(".options-dialog-body");
+        if (body) body.textContent = text.body;
+        this.#elements.resetConfirm.setAttribute("label", text.action);
+        this.#pendingConfirm = action;
+        this.#confirmOpener =
+            document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        dialog.setAttribute("open", "");
+    }
+
+    /** Close the confirmation dialog and put focus back where it was. */
+    #closeConfirm(): void {
+        this.#elements.resetDialog.removeAttribute("open");
+        this.#pendingConfirm = undefined;
+        const opener = this.#confirmOpener;
+        this.#confirmOpener = null;
+        if (opener?.isConnected) opener.focus();
+        else document.querySelector<HTMLElement>("h1")?.focus();
     }
 
     /** The settings path a control belongs to. */

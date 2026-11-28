@@ -193,6 +193,12 @@ describe("the options actions", () => {
         };
         expect(themeControl.value).toBe("dark");
 
+        // The reset asks first; only the confirm button runs it.
+        controller.elements.root
+            .querySelector('[data-action="reset"]')
+            ?.dispatchEvent(new CustomEvent("k-click", { bubbles: true, composed: true }));
+        expect(controller.elements.resetDialog.hasAttribute("open")).toBe(true);
+
         controller.elements.resetConfirm.dispatchEvent(
             new CustomEvent("k-click", { bubbles: true, composed: true }),
         );

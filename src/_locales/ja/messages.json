@@ -495,6 +495,10 @@
     "message": "すべて取り消す",
     "description": "すべてのサイトへのアクセスを削除します。"
   },
+  "optionsRevokeAllConfirm": {
+    "message": "もう一度ひとつずつ許可するまで、Kintsugi はこれらのサイトを読めなくなります。",
+    "description": "すべてのサイトへのアクセスを外す確認ダイアログの説明。"
+  },
   "optionsSiteAccessEmpty": {
     "message": "まだサイトがありません。物語を開いたときに Kintsugi が尋ねます。",
     "description": "アクセス一覧の空の状態。"
@@ -624,6 +628,14 @@
   "libraryRemove": {
     "message": "削除",
     "description": "ライブラリから本を削除します。"
+  },
+  "libraryRemoveTitle": {
+    "message": "この本をライブラリから外しますか？",
+    "description": "削除ダイアログの見出し。"
+  },
+  "libraryRemoveConfirm": {
+    "message": "保存した EPUB はそのまま残ります。ライブラリの項目だけが消えます。",
+    "description": "削除ダイアログの説明。"
   },
   "libraryRemoved": {
     "message": "ライブラリから削除しました。",

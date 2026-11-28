@@ -495,6 +495,10 @@
     "message": "Alle widerrufen",
     "description": "Entfernt den Zugriff auf jede Seite."
   },
+  "optionsRevokeAllConfirm": {
+    "message": "Kintsugi kann keine dieser Seiten mehr lesen, bis du jede wieder erlaubst.",
+    "description": "Erklärung im Dialog, der den Zugriff auf alle Seiten entfernt."
+  },
   "optionsSiteAccessEmpty": {
     "message": "Noch keine Seiten. Kintsugi fragt, wenn du eine Story öffnest.",
     "description": "Der leere Zustand der Zugriffsliste."
@@ -624,6 +628,14 @@
   "libraryRemove": {
     "message": "Entfernen",
     "description": "Entfernt ein Buch aus der Bibliothek."
+  },
+  "libraryRemoveTitle": {
+    "message": "Dieses Buch aus der Bibliothek entfernen?",
+    "description": "Überschrift des Entfernen-Dialogs."
+  },
+  "libraryRemoveConfirm": {
+    "message": "Die gespeicherte EPUB-Datei bleibt, wo sie ist. Nur ihr Eintrag in der Bibliothek verschwindet.",
+    "description": "Erklärung im Entfernen-Dialog."
   },
   "libraryRemoved": {
     "message": "Aus der Bibliothek entfernt.",

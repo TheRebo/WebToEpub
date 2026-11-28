@@ -190,6 +190,10 @@ export default {
     optionsSiteAccess: ["Seitenzugriff", "Die Liste der Seiten, die die Erweiterung lesen darf."],
     optionsRevoke: ["Widerrufen", "Entfernt den Zugriff auf eine Seite."],
     optionsRevokeAll: ["Alle widerrufen", "Entfernt den Zugriff auf jede Seite."],
+    optionsRevokeAllConfirm: [
+        "Kintsugi kann keine dieser Seiten mehr lesen, bis du jede wieder erlaubst.",
+        "Erklärung im Dialog, der den Zugriff auf alle Seiten entfernt.",
+    ],
     optionsSiteAccessEmpty: [
         "Noch keine Seiten. Kintsugi fragt, wenn du eine Story öffnest.",
         "Der leere Zustand der Zugriffsliste.",
@@ -276,6 +280,14 @@ export default {
         "Wird gezeigt, wenn der Benutzer einen Bibliotheksexport auswählt, der größer ist als Kintsugi liest.",
     ],
     libraryRemove: ["Entfernen", "Entfernt ein Buch aus der Bibliothek."],
+    libraryRemoveTitle: [
+        "Dieses Buch aus der Bibliothek entfernen?",
+        "Überschrift des Entfernen-Dialogs.",
+    ],
+    libraryRemoveConfirm: [
+        "Die gespeicherte EPUB-Datei bleibt, wo sie ist. Nur ihr Eintrag in der Bibliothek verschwindet.",
+        "Erklärung im Entfernen-Dialog.",
+    ],
     libraryRemoved: ["Aus der Bibliothek entfernt.", "Bestätigung nach dem Entfernen eines Buchs."],
     settingReduceMotion: [
         "Bewegung immer reduzieren",

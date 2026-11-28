@@ -190,6 +190,10 @@ export default {
     optionsSiteAccess: ["Accès aux sites", "La liste des sites que l'extension peut lire."],
     optionsRevoke: ["Révoquer", "Retire l'accès à un site."],
     optionsRevokeAll: ["Tout révoquer", "Retire l'accès à tous les sites."],
+    optionsRevokeAllConfirm: [
+        "Kintsugi ne pourra plus lire aucun de ces sites tant que vous ne les aurez pas autorisés de nouveau, un par un.",
+        "L’explication du dialogue qui retire l’accès à tous les sites.",
+    ],
     optionsSiteAccessEmpty: [
         "Aucun site pour l'instant. Kintsugi demande quand vous ouvrez une histoire.",
         "L'état vide de la liste des accès.",
@@ -279,6 +283,14 @@ export default {
         "Affiché quand l'utilisateur choisit une export de bibliothèque plus grand que ce que Kintsugi lit.",
     ],
     libraryRemove: ["Retirer", "Retire un livre de la bibliothèque."],
+    libraryRemoveTitle: [
+        "Retirer ce livre de la bibliothèque ?",
+        "Le titre du dialogue de retrait.",
+    ],
+    libraryRemoveConfirm: [
+        "Le fichier EPUB enregistré reste où il est. Seule son entrée dans la bibliothèque disparaît.",
+        "L’explication du dialogue de retrait.",
+    ],
     libraryRemoved: ["Retiré de la bibliothèque.", "Confirmation après le retrait d'un livre."],
     settingReduceMotion: [
         "Toujours réduire les animations",

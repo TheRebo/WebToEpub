@@ -141,6 +141,7 @@ export const MESSAGES = {
     optionsSiteAccess: "optionsSiteAccess",
     optionsRevoke: "optionsRevoke",
     optionsRevokeAll: "optionsRevokeAll",
+    optionsRevokeAllConfirm: "optionsRevokeAllConfirm",
     optionsSiteAccessEmpty: "optionsSiteAccessEmpty",
     optionsSiteAccessHint: "optionsSiteAccessHint",
     optionsRevoked: "optionsRevoked",
@@ -169,6 +170,8 @@ export const MESSAGES = {
     optionsLibraryImportedOne: "optionsLibraryImportedOne",
     optionsLibraryTooLarge: "optionsLibraryTooLarge",
     libraryRemove: "libraryRemove",
+    libraryRemoveTitle: "libraryRemoveTitle",
+    libraryRemoveConfirm: "libraryRemoveConfirm",
     libraryRemoved: "libraryRemoved",
 
     // Options: individual settings
