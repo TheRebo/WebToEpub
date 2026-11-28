@@ -212,3 +212,65 @@ describe("the design tokens", () => {
         }
     });
 });
+
+describe("every text and control pairing the pages use", () => {
+    const SURFACES = [
+        "--bg",
+        "--bg-subtle",
+        "--surface",
+        "--surface-raised",
+        "--surface-sunken",
+        "--gray-100",
+        "--accent-subtle",
+    ];
+
+    for (const theme of ["light", "dark"] as const) {
+        for (const family of FAMILIES) {
+            describe(`in the ${theme} theme with the ${family} accent`, () => {
+                const variables = tokens(theme, family);
+
+                for (const text of ["--text", "--text-secondary", "--text-muted"]) {
+                    it(`has ${text} at 4.5:1 or better on every surface`, () => {
+                        for (const surface of SURFACES) {
+                            const ratio = contrast(
+                                resolve(variables, text),
+                                resolve(variables, surface),
+                            );
+                            expect(ratio, `${text} on ${surface}`).toBeGreaterThanOrEqual(4.5);
+                        }
+                    });
+                }
+
+                it("draws a control's edge at 3:1 or better against the surfaces it sits on", () => {
+                    for (const surface of ["--bg", "--surface", "--surface-raised"]) {
+                        const ratio = contrast(
+                            resolve(variables, "--border-strong"),
+                            resolve(variables, surface),
+                        );
+                        expect(ratio, `--border-strong on ${surface}`).toBeGreaterThanOrEqual(3);
+                    }
+                });
+
+                it("has the danger button's text at 4.5:1 or better", () => {
+                    const ratio = contrast(
+                        resolve(variables, "--text-on-danger"),
+                        resolve(variables, "--danger"),
+                    );
+                    expect(ratio).toBeGreaterThanOrEqual(4.5);
+                });
+
+                for (const status of ["--success", "--warning", "--danger", "--info"]) {
+                    it(`has ${status} text at 4.5:1 or better on its own tint and the page`, () => {
+                        for (const surface of ["--bg", "--surface", `${status}-subtle`]) {
+                            const ratio = contrast(
+                                resolve(variables, status),
+                                resolve(variables, surface),
+                            );
+                            expect(ratio, `${status} on ${surface}`).toBeGreaterThanOrEqual(4.5);
+                        }
+                    });
+                }
+            });
+        }
+    }
+});

@@ -12,10 +12,6 @@ import { createIcon, type IconName } from "./icons";
 
 const STYLES = `
 :host {
-    position: fixed;
-    right: var(--space-5);
-    bottom: var(--space-5);
-    z-index: var(--z-toast);
     display: block;
     pointer-events: none;
 }
@@ -67,7 +63,7 @@ const STYLES = `
 }
 
 .action:hover { background: var(--accent-subtle); }
-.action:focus-visible { outline: none; box-shadow: var(--ring); }
+.action:focus-visible { outline: 2px solid transparent; box-shadow: var(--ring); }
 
 .close {
     flex-shrink: 0;
@@ -84,7 +80,7 @@ const STYLES = `
 }
 
 .close:hover { background: var(--bg-subtle); color: var(--text); }
-.close:focus-visible { outline: none; box-shadow: var(--ring); }
+.close:focus-visible { outline: 2px solid transparent; box-shadow: var(--ring); }
 
 .timer {
     position: absolute;
@@ -229,14 +225,25 @@ export class KToast extends KComponent {
             timer.style.animationDuration = `${duration}ms`;
             toast.appendChild(timer);
 
-            toast.addEventListener("mouseenter", () => {
-                this.#pauseTimer(duration);
-                timer.style.animationPlayState = "paused";
-            });
-            toast.addEventListener("mouseleave", () => {
+            // The clock stops while the pointer rests on the toast or the
+            // keyboard is inside it, so neither reader loses it mid-sentence.
+            const holds = new Set<string>();
+            const hold = (reason: string): void => {
+                if (holds.size === 0) {
+                    this.#pauseTimer(duration);
+                    timer.style.animationPlayState = "paused";
+                }
+                holds.add(reason);
+            };
+            const release = (reason: string): void => {
+                if (!holds.delete(reason) || holds.size > 0) return;
                 timer.style.animationPlayState = "running";
                 this.#resumeTimer(duration);
-            });
+            };
+            toast.addEventListener("mouseenter", () => hold("pointer"));
+            toast.addEventListener("mouseleave", () => release("pointer"));
+            toast.addEventListener("focusin", () => hold("focus"));
+            toast.addEventListener("focusout", () => release("focus"));
         }
 
         this.root.appendChild(toast);
@@ -344,6 +351,22 @@ export class KToast extends KComponent {
         this.emit("k-dismiss", {});
     }
 
+    /**
+     * Join a stack before rendering.
+     *
+     * Every toast used to be fixed to the same corner, so two at once sat
+     * on top of each other and only the last could be read. A page's own
+     * toast container now lines them up; a toast dropped straight onto the
+     * body joins a shared stack instead.
+     */
+    override connectedCallback(): void {
+        if (this.parentElement === this.ownerDocument.body) {
+            toastStack(this.ownerDocument).appendChild(this);
+            return;
+        }
+        super.connectedCallback();
+    }
+
     /** Cancel the timers when the toast leaves the document. */
     override disconnectedCallback(): void {
         this.#clearTimer();
@@ -399,4 +422,35 @@ declare global {
     interface HTMLElementTagNameMap {
         "k-toast": KToast;
     }
+}
+
+/** The id of the stack the toasts line up in. */
+const STACK_ID = "k-toast-stack";
+
+/**
+ * The page's toast stack, created on first use.
+ *
+ * @param doc The document.
+ * @returns The stack.
+ */
+function toastStack(doc: Document): HTMLElement {
+    let stack = doc.getElementById(STACK_ID);
+    if (!stack) {
+        stack = doc.createElement("div");
+        stack.id = STACK_ID;
+        Object.assign(stack.style, {
+            position: "fixed",
+            right: "var(--space-5)",
+            bottom: "var(--space-5)",
+            zIndex: "var(--z-toast)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: "var(--space-3)",
+            pointerEvents: "none",
+            maxWidth: "calc(100vw - 2 * var(--space-5))",
+        });
+        doc.body.appendChild(stack);
+    }
+    return stack;
 }

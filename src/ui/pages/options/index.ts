@@ -87,7 +87,7 @@ const hostAccess: HostAccessPort = {
 
 /** Start the page. */
 async function main(): Promise<void> {
-    installI18n();
+    installI18n("popupSettings");
 
     const store = new SettingsStore(localStorageAdapter);
     const hash = createHashPort();

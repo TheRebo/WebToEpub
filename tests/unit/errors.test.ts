@@ -49,9 +49,12 @@ describe("toUserFacingError", () => {
     });
 
     it("names the host in the message", () => {
-        const error = toUserFacingError(new Error("boom"), {
-            url: "https://example.com/chapter",
-        });
+        const error = toUserFacingError(
+            new TypeError("NetworkError when attempting to fetch resource."),
+            {
+                url: "https://example.com/chapter",
+            },
+        );
         expect(error.message).toContain("example.com");
     });
 
@@ -133,6 +136,14 @@ describe("toUserFacingError", () => {
         expect(error.code).toBe("NETWORK");
     });
 
+    it("does not blame the network for a failure that did not come from it", () => {
+        const error = toUserFacingError(new Error("The zip could not be written."), {
+            url: "https://example.com/story",
+        });
+        expect(error.code).toBe("UNKNOWN");
+        expect(error.message).not.toContain("reach");
+    });
+
     it("lets the caller's own status win", () => {
         const failure = Object.assign(new Error("boom"), { status: 404 });
         const error = toUserFacingError(failure, {
@@ -154,5 +165,21 @@ describe("emptyContentError", () => {
     it("redacts its URL too", () => {
         const error = emptyContentError("https://example.com/chapter?token=secret");
         expect(error.toUserFacingError().url).toBe("https://example.com/chapter");
+    });
+});
+
+describe("the technical detail of a failure", () => {
+    it("never carries a URL's query string", async () => {
+        const { toUserFacingError } = await import("../../src/core/util/errors");
+        const failure = Object.assign(
+            new Error("HTTP 500 for https://example.com/c?token=secret"),
+            {
+                name: "FetchError",
+                status: 500,
+            },
+        );
+        const error = toUserFacingError(failure);
+        expect(error.detail).not.toContain("secret");
+        expect(error.detail).toContain("example.com/c");
     });
 });

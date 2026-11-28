@@ -10,6 +10,7 @@
 import { t } from "../../i18n";
 import { buildFileName, DEFAULT_FILENAME_TEMPLATE } from "../../../core/util/file-name";
 import { displayOrigin } from "../../../core/host-access";
+import { LANGUAGES } from "../../languages";
 import { createIcon, type IconName } from "../../components/icons";
 import { stateLabel } from "../../components/k-list";
 import type { KList } from "../../components/k-list";
@@ -53,14 +54,10 @@ export interface WorkbenchElements {
     coverUrlField: HTMLInputElement;
     /** The remove-cover button. */
     removeCover: KButton;
-    /** The choose-from-page button. */
-    chooseCover: KButton;
     /** The author-notes switch. */
     authorNotesSwitch: KSwitch;
     /** The toc-page switch. */
     tocPageSwitch: KSwitch;
-    /** The Save button. */
-    saveButton: KButton;
     /** The Pack button. */
     packButton: KButton;
     /** The select-all checkbox. */
@@ -97,6 +94,16 @@ export interface WorkbenchElements {
     emptyState: HTMLElement;
     /** The loading state. */
     loadingState: HTMLElement;
+    /** The state shown when the filter matches nothing. */
+    noMatchesState: HTMLElement;
+    /** The button that clears the filter from that state. */
+    noMatchesClear: KButton;
+    /** The reason Pack is unavailable, beside it. */
+    packHint: HTMLElement;
+    /** The empty state's action, which opens the site setup. */
+    emptyAction: KButton;
+    /** The link to the full settings. */
+    moreOptions: HTMLButtonElement;
     /** The status bar. */
     statusBar: HTMLElement;
     /** The status bar's label. */
@@ -109,6 +116,8 @@ export interface WorkbenchElements {
     statusFill: HTMLElement;
     /** The status bar's percentage. */
     statusPercent: HTMLElement;
+    /** The line that says where the book went, or what went wrong. */
+    statusDetail: HTMLElement;
     /** The status bar's icon. */
     statusIcon: HTMLElement;
     /** The status bar's actions. */
@@ -167,35 +176,6 @@ export interface WorkbenchElements {
     toastHost: HTMLElement;
 }
 
-/** The languages offered in the language field. */
-const LANGUAGES: Array<{ code: string; name: string }> = [
-    { code: "en", name: "English" },
-    { code: "zh", name: "中文" },
-    { code: "ja", name: "日本語" },
-    { code: "ko", name: "한국어" },
-    { code: "fr", name: "Français" },
-    { code: "de", name: "Deutsch" },
-    { code: "es", name: "Español" },
-    { code: "pt", name: "Português" },
-    { code: "it", name: "Italiano" },
-    { code: "ru", name: "Русский" },
-    { code: "uk", name: "Українська" },
-    { code: "pl", name: "Polski" },
-    { code: "nl", name: "Nederlands" },
-    { code: "sv", name: "Svenska" },
-    { code: "tr", name: "Türkçe" },
-    { code: "ar", name: "العربية" },
-    { code: "he", name: "עברית" },
-    { code: "hi", name: "हिन्दी" },
-    { code: "id", name: "Bahasa Indonesia" },
-    { code: "ms", name: "Bahasa Melayu" },
-    { code: "th", name: "ไทย" },
-    { code: "vi", name: "Tiếng Việt" },
-    { code: "fil", name: "Filipino" },
-    { code: "pt-BR", name: "Português (Brasil)" },
-    { code: "es-419", name: "Español (Latinoamérica)" },
-];
-
 /**
  * Build the workbench's DOM.
  *
@@ -212,23 +192,20 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const appBar = el("header", "k-app-bar");
 
     const mark = el("div", "k-app-bar__mark");
-    const markIcon = createIcon("sparkle", 20);
+    const markIcon = createIcon("book", 20);
     mark.appendChild(markIcon);
     const markText = el("span", "");
     markText.textContent = t("appName");
     mark.appendChild(markText);
 
     const titleWrap = el("div", "workbench-title");
-    const title = el("span", "workbench-title__name");
+    // The story is what this page is about, so its title is the page's
+    // one top-level heading.
+    const title = el("h1", "workbench-title__name");
     const author = el("span", "workbench-title__author");
     titleWrap.append(title, author);
 
     const actions = el("div", "workbench-actions");
-    const saveButton = document.createElement("k-button") as KButton;
-    saveButton.setAttribute("variant", "ghost");
-    saveButton.setAttribute("size", "md");
-    saveButton.textContent = t("workbenchSave");
-    saveButton.hidden = true;
 
     const packButton = document.createElement("k-button") as KButton;
     packButton.setAttribute("variant", "primary");
@@ -236,7 +213,11 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     packButton.setAttribute("icon", "download");
     packButton.textContent = t("workbenchPack");
 
-    actions.append(saveButton, packButton);
+    // Why Pack is unavailable, said where the user is looking. A disabled
+    // button cannot be focused, so a tooltip on it is never read.
+    const packHint = el("span", "workbench-actions__hint");
+    packHint.setAttribute("aria-live", "polite");
+    actions.append(packHint, packButton);
     appBar.append(mark, titleWrap, actions);
     shell.appendChild(appBar);
 
@@ -300,7 +281,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const storyPanel = el("details", "workbench-panel");
     storyPanel.open = true;
     const storySummary = el("summary", "workbench-panel__summary");
-    const storyTitle = el("span", "workbench-panel__title");
+    const storyTitle = el("h2", "workbench-panel__title");
     storyTitle.textContent = t("workbenchStoryDetails");
     const storyChevron = el("span", "workbench-panel__chevron");
     storyChevron.appendChild(createIcon("chevron-down", 16));
@@ -322,7 +303,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const urlRow = el("div", "story-field__row");
     const urlLoadButton = document.createElement("k-button") as KButton;
     urlLoadButton.setAttribute("variant", "secondary");
-    urlLoadButton.setAttribute("size", "sm");
+    urlLoadButton.setAttribute("size", "md");
     urlLoadButton.textContent = t("workbenchLoadStory");
     urlRow.append(urlField.wrapper, urlLoadButton);
     const urlHint = el("p", "story-field__hint");
@@ -366,7 +347,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     // --- Cover panel ---
     const coverPanel = el("details", "workbench-panel");
     const coverSummary = el("summary", "workbench-panel__summary");
-    const coverHeading = el("span", "workbench-panel__title");
+    const coverHeading = el("h2", "workbench-panel__title");
     coverHeading.textContent = t("workbenchCover");
     const coverBadge = el("span", "workbench-panel__badge");
     const coverChevron = el("span", "workbench-panel__chevron");
@@ -380,16 +361,12 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const coverSide = el("div", "cover-side");
     const coverUrlField = makeTextField(t("workbenchCoverUrl"), "cover-url");
     const coverActions = el("div", "cover-actions");
-    const chooseCover = document.createElement("k-button") as KButton;
-    chooseCover.setAttribute("variant", "secondary");
-    chooseCover.setAttribute("size", "sm");
-    chooseCover.textContent = t("workbenchChooseFromPage");
     const removeCover = document.createElement("k-button") as KButton;
     removeCover.setAttribute("variant", "ghost");
     removeCover.setAttribute("size", "sm");
     removeCover.textContent = t("workbenchRemoveCover");
     removeCover.hidden = true;
-    coverActions.append(chooseCover, removeCover);
+    coverActions.append(removeCover);
     coverSide.append(coverUrlField.wrapper, coverActions);
     coverRow.append(coverPreview, coverSide);
     coverBody.appendChild(coverRow);
@@ -399,7 +376,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     // --- Options panel ---
     const optionsPanel = el("details", "workbench-panel");
     const optionsSummary = el("summary", "workbench-panel__summary");
-    const optionsHeading = el("span", "workbench-panel__title");
+    const optionsHeading = el("h2", "workbench-panel__title");
     optionsHeading.textContent = t("workbenchOptions");
     const optionsChevron = el("span", "workbench-panel__chevron");
     optionsChevron.appendChild(createIcon("chevron-down", 16));
@@ -429,7 +406,12 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     moreOptions.textContent = t("workbenchMoreOptions");
     moreOptions.appendChild(createIcon("arrow-right", 14));
 
-    optionRows.append(authorNotesRow, tocPageRow, moreOptions);
+    // These switches are the settings themselves, not a one-off for this
+    // book, so the panel says so.
+    const optionsHint = el("p", "option-rows__hint");
+    optionsHint.textContent = t("workbenchOptionsHint");
+
+    optionRows.append(authorNotesRow, tocPageRow, optionsHint, moreOptions);
     optionsBody.appendChild(optionRows);
     optionsPanel.append(optionsSummary, optionsBody);
     sidebar.appendChild(optionsPanel);
@@ -445,7 +427,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
 
     const selectorBannerIcon = el("div", "selector-banner__icon");
     selectorBannerIcon.setAttribute("aria-hidden", "true");
-    selectorBannerIcon.appendChild(createIcon("sparkle", 18));
+    selectorBannerIcon.appendChild(createIcon("wrench", 18));
 
     const selectorBannerBody = el("div", "selector-banner__body");
     const selectorBannerTitle = el("p", "selector-banner__title");
@@ -483,7 +465,6 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
 
     const list = document.createElement("k-list") as KList;
     list.className = "chapters-list";
-    list.setAttribute("row-height", "32");
     list.setAttribute("aria-label", t("workbenchChapters"));
 
     const loadingState = el("div", "workbench-state");
@@ -498,15 +479,29 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const emptyTitle = el("p", "workbench-state__title");
     emptyTitle.textContent = t("workbenchNoStoryHere");
     const emptyBody = el("p", "workbench-state__body");
-    emptyBody.textContent = t("workbenchTryAnyway");
-    const emptyAction = document.createElement("k-button");
+    emptyBody.textContent = t("workbenchNoStoryHint");
+    // The one thing that helps on a page Kintsugi cannot read: showing it
+    // where the chapters are.
+    const emptyAction = document.createElement("k-button") as KButton;
     emptyAction.setAttribute("variant", "secondary");
     emptyAction.setAttribute("size", "md");
-    emptyAction.textContent = t("workbenchTryAnyway");
+    emptyAction.textContent = t("siteSelectorOpen");
     emptyState.append(emptyIcon, emptyTitle, emptyBody, emptyAction);
 
+    // A filter that matches nothing is not an empty story: it says so, and
+    // offers the way back.
+    const noMatchesState = el("div", "workbench-state");
+    noMatchesState.hidden = true;
+    const noMatchesTitle = el("p", "workbench-state__title");
+    noMatchesTitle.textContent = t("filterNoMatches");
+    const noMatchesClear = document.createElement("k-button") as KButton;
+    noMatchesClear.setAttribute("variant", "secondary");
+    noMatchesClear.setAttribute("size", "md");
+    noMatchesClear.textContent = t("filterClearAll");
+    noMatchesState.append(noMatchesTitle, noMatchesClear);
+
     const chaptersBody = el("div", "chapters-body");
-    chaptersBody.append(loadingState, emptyState, list);
+    chaptersBody.append(loadingState, emptyState, noMatchesState, list);
 
     const toolbar = el("div", "chapters-toolbar");
     const allButton = makeToolbarButton(t("workbenchSelectAll")) as KButton;
@@ -527,6 +522,10 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     // --- Status bar ---
     const statusBar = el("footer", "status-bar");
     statusBar.hidden = true;
+    // The bar's text is announced as it changes, so a screen reader hears
+    // the download move on and end without having to go looking for it.
+    statusBar.setAttribute("role", "status");
+    statusBar.setAttribute("aria-live", "polite");
     const statusIcon = el("div", "status-bar__icon");
     const statusBody = el("div", "status-bar__body");
     const statusLabel = el("span", "status-bar__label");
@@ -535,7 +534,8 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const statusFill = el("div", "status-bar__fill");
     statusTrack.appendChild(statusFill);
     const statusPercent = el("span", "status-bar__percent");
-    statusBody.append(statusLabel, statusCount, statusTrack, statusPercent);
+    const statusDetail = el("span", "status-bar__detail");
+    statusBody.append(statusLabel, statusCount, statusTrack, statusPercent, statusDetail);
     const statusActions = el("div", "status-bar__actions");
     statusBar.append(statusIcon, statusBody, statusActions);
     shell.appendChild(statusBar);
@@ -744,10 +744,8 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         coverPreview,
         coverUrlField: coverUrlField.input,
         removeCover,
-        chooseCover,
         authorNotesSwitch,
         tocPageSwitch,
-        saveButton,
         packButton,
         selectAll,
         selectAllButton: allButton,
@@ -765,6 +763,11 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         chapterCount,
         list,
         emptyState,
+        emptyAction,
+        packHint,
+        moreOptions,
+        noMatchesState,
+        noMatchesClear,
         loadingState,
         statusBar,
         statusLabel,
@@ -772,6 +775,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         statusTrack,
         statusFill,
         statusPercent,
+        statusDetail,
         statusIcon,
         statusActions,
         filterDialog,
@@ -864,17 +868,20 @@ export function renderWorkbench(
     elements.errorText.textContent = state.error ?? "";
 
     // --- Buttons ---
-    elements.saveButton.hidden = !state.dirty;
-    const packable = selectedCount > 0 && !state.loadingChapters;
+    // A second Pack while a book is being made would only be refused.
+    const busy = state.progress !== undefined && state.progress.outcome === undefined;
+    const packable = selectedCount > 0 && !state.loadingChapters && !busy;
     elements.packButton.toggleAttribute("disabled", !packable);
-    elements.packButton.setAttribute(
-        "title",
-        state.loadingChapters
-            ? t("workbenchWaitingForChapters")
-            : selectedCount > 0
-              ? ""
-              : t("workbenchNoChaptersSelected"),
-    );
+    const packReason = busy
+        ? t("workbenchBusy")
+        : state.loadingChapters
+          ? t("workbenchWaitingForChapters")
+          : selectedCount > 0
+            ? ""
+            : t("workbenchNoChaptersSelected");
+    elements.packButton.setAttribute("title", packReason);
+    // No story yet means nothing to explain: the page says how to start.
+    elements.packHint.textContent = state.story.sourceUrl ? packReason : "";
 
     // --- Chapters ---
     const total = state.chapters.length;
@@ -890,7 +897,11 @@ export function renderWorkbench(
 
     elements.loadingState.hidden = !state.loadingChapters;
     elements.emptyState.hidden = state.loadingChapters || total > 0;
-    elements.list.hidden = state.loadingChapters || total === 0;
+    // Setting up a site needs a page to set it up from.
+    elements.emptyAction.hidden = !state.story.sourceUrl;
+    const noMatches = !state.loadingChapters && total > 0 && visibleChapters.length === 0;
+    elements.noMatchesState.hidden = !noMatches;
+    elements.list.hidden = state.loadingChapters || total === 0 || noMatches;
 
     if (!state.loadingChapters && total > 0) {
         const items = visibleChapters.map((index) => {
@@ -943,29 +954,57 @@ function renderStatus(elements: WorkbenchElements, state: WorkbenchState): void 
         return;
     }
 
+    const outcome = progress.outcome;
     elements.statusBar.hidden = false;
-    elements.statusBar.dataset.variant = progress.succeeded ? "success" : "running";
+    elements.statusBar.dataset.variant =
+        outcome === "success"
+            ? "success"
+            : outcome === "failed"
+              ? "danger"
+              : outcome === "cancelled"
+                ? "neutral"
+                : "running";
     elements.statusLabel.textContent = progress.message;
+
+    // While the job runs the bar counts; once it has ended it says what
+    // happened instead.
+    const running = outcome === undefined;
+    elements.statusCount.hidden = !running;
+    elements.statusTrack.hidden = !running;
+    elements.statusPercent.hidden = !running;
+    elements.statusDetail.hidden = running || !progress.detail;
     elements.statusCount.textContent = `${progress.done} / ${progress.total}`;
     elements.statusPercent.textContent = `${Math.round(progress.percent)}%`;
+    elements.statusDetail.textContent = progress.detail ?? "";
 
     // Only `transform` is animated, so the bar never triggers a layout pass.
     elements.statusFill.style.transform = `scaleX(${Math.max(0, Math.min(1, progress.percent / 100))})`;
 
-    elements.statusIcon.replaceChildren(
-        createIcon(progress.succeeded ? "check-circle" : "spinner", 16),
-    );
-    const spinner = elements.statusIcon.querySelector("svg");
-    if (!progress.succeeded) spinner?.setAttribute("data-spin", "true");
+    const icon =
+        outcome === "success"
+            ? "check-circle"
+            : outcome === "failed"
+              ? "alert-triangle"
+              : outcome === "cancelled"
+                ? "close"
+                : "spinner";
+    elements.statusIcon.replaceChildren(createIcon(icon, 16));
+    if (running) elements.statusIcon.querySelector("svg")?.setAttribute("data-spin", "true");
 
-    // The Cancel button only exists while a job is running.
     elements.statusActions.replaceChildren();
-    if (!progress.succeeded && progress.phase !== "failed" && progress.phase !== "cancelled") {
-        const cancel = document.createElement("k-button") as KButton;
-        cancel.setAttribute("variant", "ghost");
-        cancel.setAttribute("size", "sm");
-        cancel.textContent = t("workbenchCancel");
-        elements.statusActions.appendChild(cancel);
+    const action = (name: string, label: string, variant: string): void => {
+        const button = document.createElement("k-button") as KButton;
+        button.setAttribute("variant", variant);
+        button.setAttribute("size", "sm");
+        button.dataset.action = name;
+        button.textContent = label;
+        elements.statusActions.appendChild(button);
+    };
+    if (running) {
+        action("cancel", t("workbenchCancel"), "ghost");
+    } else {
+        if (outcome !== "success") action("retry", t("workbenchRetry"), "secondary");
+        action("dismiss", t("workbenchDismiss"), "ghost");
     }
 }
 

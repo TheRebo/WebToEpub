@@ -8,6 +8,7 @@
  *
  * See ADR-0008.
  */
+import { stripIllegalXmlCharacters } from "../util/xml-characters";
 
 /** A file inside the EPUB container. */
 export interface EpubFile {
@@ -236,9 +237,15 @@ export function parseOpfVersion(value: string | null): 2 | 3 {
     return value?.trim().startsWith("2") ? 2 : 3;
 }
 
-/** Escape a string for inclusion in XML text content. */
+/**
+ * Escape a string for inclusion in XML text content.
+ *
+ * Characters XML forbids are removed first: a title or an author name from a
+ * site can carry a control character, and one of them makes the whole book
+ * malformed (ADR-0038).
+ */
 export function escapeXml(text: string): string {
-    return text
+    return stripIllegalXmlCharacters(text)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")

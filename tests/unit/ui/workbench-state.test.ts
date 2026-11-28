@@ -35,7 +35,6 @@ function emptyState(): WorkbenchState {
         chapters: [],
         loadingChapters: false,
         filter: { query: "", useRegex: false, include: [], exclude: [] },
-        dirty: false,
         usedDefaultParser: false,
         accessOrigin: undefined,
         progress: undefined,
@@ -69,12 +68,14 @@ describe("the workbench store's selection", () => {
         expect(store.selectedCount).toBe(1);
     });
 
-    it("never selects a chapter that cannot be included", () => {
+    it("lets the user tick a locked chapter by hand, which starts unticked", () => {
         const store = new WorkbenchStore(emptyState());
         store.setChapters([chapter("One", false)]);
-
-        store.toggleChapter(0);
         expect(store.state.chapters[0]?.selected).toBe(false);
+
+        // A reader who bought the chapter can still download it.
+        store.toggleChapter(0);
+        expect(store.state.chapters[0]?.selected).toBe(true);
     });
 
     it("selects and deselects everything that can be included", () => {

@@ -31,10 +31,17 @@
 import { KComponent, defineComponent } from "./base";
 
 const STYLES = `
+/* The page's own box-sizing reset does not reach into a shadow root, and
+   without it a full-width input with padding spills out of its card. */
+*, *::before, *::after { box-sizing: border-box; }
+
 :host {
     display: block;
     --_gap: var(--space-1);
 }
+
+/* A number is a few digits; a field the width of the card says otherwise. */
+input[type="number"] { max-width: 12rem; }
 
 :host([hidden]) { display: none; }
 
@@ -90,16 +97,21 @@ input, select, textarea {
 
 select {
     padding-right: 30px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c7466' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    /* Two gradients draw the chevron, so it takes the theme's colour. */
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%),
+        linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
     background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 16px;
+    background-position:
+        right 15px center,
+        right 10px center;
+    background-size: 5px 5px;
 }
 
 input::placeholder, textarea::placeholder { color: var(--text-muted); }
 
 input:focus-visible, select:focus-visible, textarea:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     border-color: var(--accent);
     box-shadow: var(--ring);
 }

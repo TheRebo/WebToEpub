@@ -10,6 +10,7 @@
  * dependencies as arguments, so that it can be exercised without a browser
  * extension runtime.
  */
+import { LANGUAGES } from "../../languages";
 import { t, tCount } from "../../i18n";
 import { runGuarded } from "../../guarded";
 import type { Settings, SettingsPatch } from "../../../core/storage/settings-store";
@@ -80,11 +81,14 @@ export const GROUPS: GroupSpec[] = [
                 placeholder: "{title}",
             },
             {
-                kind: "text",
+                kind: "select",
                 path: "story.defaultLanguage",
                 label: "settingDefaultLanguage",
                 hint: "settingDefaultLanguageHint",
-                placeholder: "en",
+                options: LANGUAGES.map((language) => ({
+                    value: language.code,
+                    label: language.name,
+                })),
             },
             {
                 kind: "switch",
@@ -293,6 +297,10 @@ export interface OptionsControllerOptions {
 
 /** The options page's controller. */
 export class OptionsController {
+    /** What the confirmation dialog will do when the user confirms. */
+    #pendingConfirm: (() => Promise<void>) | undefined;
+    /** The element that opened the confirmation dialog. */
+    #confirmOpener: HTMLElement | null = null;
     #elements: OptionsElements;
     #store: SettingsStorePort;
     #theme: ThemePort;
@@ -434,7 +442,8 @@ export class OptionsController {
             if (!path) return;
             const value = detail.value ?? detail.checked;
             if (value === undefined) return;
-            this.#run(() => this.#write(path, value));
+            const control = event.target as HTMLElement | null;
+            this.#run(() => this.#write(path, value, control));
         });
 
         // The buttons in the status panels and the site-selector list. The
@@ -467,7 +476,14 @@ export class OptionsController {
                 return;
             }
             if (action === "reset") {
-                this.#elements.resetDialog.setAttribute("open", "");
+                this.#confirm(
+                    {
+                        heading: t("optionsResetAll"),
+                        body: t("optionsResetConfirm"),
+                        action: t("optionsResetConfirmAction"),
+                    },
+                    () => this.#resetSettings(),
+                );
                 return;
             }
             if (action === "retry-library") {
@@ -486,7 +502,14 @@ export class OptionsController {
                 return;
             }
             if (action === "revoke-all-access") {
-                this.#run(() => this.#revokeAllAccess());
+                this.#confirm(
+                    {
+                        heading: t("optionsRevokeAll"),
+                        body: t("optionsRevokeAllConfirm"),
+                        action: t("optionsRevokeAll"),
+                    },
+                    () => this.#revokeAllAccess(),
+                );
                 return;
             }
             const origin = target?.dataset["origin"];
@@ -501,7 +524,16 @@ export class OptionsController {
             }
 
             const libraryId = target?.dataset["libraryId"];
-            if (libraryId) this.#run(() => this.#removeFromLibrary(libraryId));
+            if (libraryId) {
+                this.#confirm(
+                    {
+                        heading: t("libraryRemoveTitle"),
+                        body: t("libraryRemoveConfirm"),
+                        action: t("libraryRemove"),
+                    },
+                    () => this.#removeFromLibrary(libraryId),
+                );
+            }
         });
 
         // The file inputs behind the import buttons.
@@ -523,17 +555,51 @@ export class OptionsController {
             this.#run(() => this.#importSettings(file));
         });
 
-        // The reset dialog's buttons.
+        // The confirmation dialog's buttons. Whatever the dialog was opened
+        // for runs only on confirm, and focus goes back to the button that
+        // opened it, or to the page heading when that button is gone.
         this.#elements.resetConfirm.addEventListener("k-click", () => {
-            this.#elements.resetDialog.removeAttribute("open");
-            this.#run(() => this.#resetSettings());
+            const pending = this.#pendingConfirm;
+            this.#closeConfirm();
+            if (pending) this.#run(pending);
         });
         this.#elements.resetCancel.addEventListener("k-click", () => {
-            this.#elements.resetDialog.removeAttribute("open");
+            this.#closeConfirm();
         });
         this.#elements.resetDialog.addEventListener("k-close", () => {
-            this.#elements.resetDialog.removeAttribute("open");
+            this.#closeConfirm();
         });
+    }
+
+    /**
+     * Ask before something that cannot be undone.
+     *
+     * @param text The dialog's heading, explanation and confirm label.
+     * @param action What to do when the user confirms.
+     */
+    #confirm(
+        text: { heading: string; body: string; action: string },
+        action: () => Promise<void>,
+    ): void {
+        const dialog = this.#elements.resetDialog;
+        dialog.setAttribute("heading", text.heading);
+        const body = dialog.querySelector(".options-dialog-body");
+        if (body) body.textContent = text.body;
+        this.#elements.resetConfirm.setAttribute("label", text.action);
+        this.#pendingConfirm = action;
+        this.#confirmOpener =
+            document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        dialog.setAttribute("open", "");
+    }
+
+    /** Close the confirmation dialog and put focus back where it was. */
+    #closeConfirm(): void {
+        this.#elements.resetDialog.removeAttribute("open");
+        this.#pendingConfirm = undefined;
+        const opener = this.#confirmOpener;
+        this.#confirmOpener = null;
+        if (opener?.isConnected) opener.focus();
+        else document.querySelector<HTMLElement>("h1")?.focus();
     }
 
     /** The settings path a control belongs to. */
@@ -545,7 +611,7 @@ export class OptionsController {
     }
 
     /** Write one setting. */
-    async #write(path: string, value: unknown): Promise<void> {
+    async #write(path: string, value: unknown, control?: HTMLElement | null): Promise<void> {
         const settings = this.#settings;
         if (!settings) return;
 
@@ -561,6 +627,19 @@ export class OptionsController {
         if (!groupValue) return;
 
         const previous = groupValue[key];
+
+        // An emptied number field is not a request for zero. The field says
+        // what it needs, and nothing is written until it has a number.
+        const field = control?.closest<HTMLElement>("k-field") ?? null;
+        if (typeof previous === "number") {
+            const typed = typeof value === "number" ? value : Number(String(value).trim() || NaN);
+            if (!Number.isFinite(typed)) {
+                field?.setAttribute("error", t("optionsNumberRequired"));
+                return;
+            }
+            field?.removeAttribute("error");
+        }
+
         const next = coerce(previous, value);
         if (next === previous) return;
 
@@ -573,6 +652,18 @@ export class OptionsController {
             // see what they typed — but the page says the write failed.
             this.#toast(messageOf(error) || t("errorGeneric"), "error");
             return;
+        }
+
+        // A number outside the setting's range is stored as the nearest one
+        // allowed, and the field shows what was actually kept.
+        if (typeof next === "number" && control) {
+            const stored = (this.#settings as unknown as Record<string, Record<string, unknown>>)[
+                group
+            ]?.[key];
+            if (typeof stored === "number" && stored !== next) {
+                control.setAttribute("value", String(stored));
+                (control as HTMLInputElement).value = String(stored);
+            }
         }
 
         // The appearance settings take effect immediately, so the user sees
@@ -642,13 +733,19 @@ export class OptionsController {
     /** Forget the selectors for a host name. */
     async #forgetSiteSelectors(hostname: string): Promise<void> {
         if (!this.#background) return;
+        let failed: unknown;
         try {
             await this.#background.forgetSiteSelectors(hostname);
-        } catch {
-            // Nothing to do: the list is reloaded below either way.
+        } catch (error) {
+            failed = error;
         }
+        // The list is reloaded either way, so it shows what is really saved.
         this.#selectorsLoaded = false;
         await this.#loadSiteSelectors();
+        if (failed !== undefined) {
+            this.#toast(messageOf(failed) || t("errorGeneric"), "error");
+            return;
+        }
         this.#toast(t("siteSelectorForgotten"), "info");
     }
 

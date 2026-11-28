@@ -24,7 +24,7 @@ import { OnboardingController } from "./controller";
 
 /** Start the page. */
 async function main(): Promise<void> {
-    installI18n();
+    installI18n("onboardingWelcome");
 
     const store = new SettingsStore(localStorageAdapter);
     const controller = new OnboardingController({

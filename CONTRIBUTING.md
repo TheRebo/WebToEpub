@@ -122,8 +122,16 @@ therefore not a crash — but it is a gap, and the test suite will say so.
 ## Adding a site parser
 
 The original's parsers are preserved and wrapped by compatibility shims
-([ADR-0002](./docs/decisions/ADR-0002-parser-contract.md)). A **new** parser
-is written against the modern `Parser` interface.
+([ADR-0002](./docs/decisions/ADR-0002-parser-contract.md)).
+[`AGENTS.md`](./AGENTS.md) is the full guide; in short:
+
+- The 434 migrated parsers live in `src/core/parsers/legacy/sites/`.
+  `tools/migrate-parsers.mjs` generates that folder from the `legacy` branch
+  and rewrites it on every run, so do not add files there by hand.
+- A **new** parser goes in `src/core/parsers/sites/`, written against the
+  compat layer, and is imported from `src/core/parsers/site-parsers.ts` in
+  alphabetical order. A contract test fails if a file in `sites/` is not
+  imported.
 
 > **The repository's `AGENTS.md` asks that AI agents do not write unit tests or
 > mock fixtures for individual parsers.** That rule still applies. A parser is
@@ -139,7 +147,7 @@ What a new parser needs:
 
 Set `isIncludeable: false` on chapters that are paywalled, VIP, locked, or
 otherwise not part of the free text. Those rows appear in the workbench
-unchecked, so the user can pack the book without fetching them — and can check
+unchecked, so the user can pack the book without fetching them, and can check
 one by hand if they have access.
 
 ---

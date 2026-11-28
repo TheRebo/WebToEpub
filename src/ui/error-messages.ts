@@ -17,19 +17,21 @@ import { UserFacingErrorError, type ErrorCode, type UserFacingError } from "../c
 /**
  * The message key for each error code.
  *
- * A code with no key here falls back to the worker's message.
+ * A code with no key here falls back to the worker's message: the one for
+ * too many chapters names the count and the limit, which a translation
+ * without them would lose.
  */
 const ERROR_MESSAGE_KEYS: Partial<Record<ErrorCode, string>> = {
     NETWORK: "errorNetwork",
-    HTTP_STATUS: "errorForbidden",
-    RATE_LIMITED: "errorNetwork",
-    CHALLENGE: "errorForbidden",
-    EMPTY_CONTENT: "errorParse",
-    TOO_MANY_CHAPTERS: "errorGeneric",
-    STORAGE_FULL: "errorGeneric",
+    HTTP_STATUS: "errorHttpStatus",
+    RATE_LIMITED: "errorRateLimited",
+    CHALLENGE: "errorChallenge",
+    EMPTY_CONTENT: "errorEmptyChapter",
+    STORAGE_FULL: "errorStorageFull",
     PARSE_FAILED: "errorParse",
     CANCELLED: "errorCancelled",
-    PERMISSION_DENIED: "errorForbidden",
+    PERMISSION_DENIED: "errorPermission",
+    BUSY: "errorBusy",
     UNKNOWN: "errorGeneric",
 };
 

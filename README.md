@@ -97,12 +97,12 @@ Kintsugi splits that in two: a **popup that is only a launcher**, and a
 | -------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | **Where you work**         | One popup that does everything                                              | A launcher popup, plus a full workbench tab                                           |
 | **Time to first feedback** | Popup re-opens itself in a tab; the popup flashes and vanishes              | Popup answers "is this supported?" in under a second; the tab opens directly          |
-| **Parsers loaded at once** | Every parser script in the popup's document                                 | None in the popup — the background worker owns all 434                                |
+| **Parsers loaded at once** | Every parser script in the popup's document                                 | None in the popup; the background event page owns all 434                             |
 | **Theming**                | Dark mode as five inverted background rules                                 | Light, dark, and system themes, each designed, plus an accent colour                  |
 | **Keyboard support**       | Effectively none                                                            | Every action has a keyboard path; focus rings are a token, never removed              |
-| **Languages**              | English only                                                                | English, French, German, Japanese, Indonesian — 218 keys each, none partial           |
+| **Languages**              | English only                                                                | English, French, German, Japanese, Indonesian, 232 message keys each, none partial    |
 | **Permissions**            | 7, including `webRequest`, `unlimitedStorage`, and a permanent `<all_urls>` | 6, no static host permissions; `http:` and `https:` are optional and granted per site |
-| **Bundle size**            | One 1090-line HTML file plus a 461-entry hand-maintained script list        | `dist/` ≈ 1.4 MB; packaged `.xpi` ≈ 374 KB                                            |
+| **Bundle size**            | One 1090-line HTML file plus a 461-entry hand-maintained script list        | `dist/` ≈ 1.4 MB; packaged `.xpi` ≈ 397 KB                                            |
 
 The permission reduction is the part worth being precise about. The original
 held a permanent, install-time grant to every site you visit. Kintsugi holds
@@ -117,7 +117,7 @@ options page. The reasoning is written out in
 
 **Sites**
 
-- **434 site parsers**, covering **659 host names**, migrated from the original
+- **434 site parsers**, covering **646 host names**, migrated from the original
   without changing the parser contract.
 - **Teach it your own site.** When no parser matches, the workbench says so
   and offers a split-view selector builder: _Suggest_, _Test_ against the live
@@ -146,8 +146,8 @@ options page. The reasoning is written out in
 - **Themes**: light, dark, or system, each a first-class design with its own
   surfaces, elevation, and accent tuning. Plus a choice of accent colour and
   a density setting.
-- **Five languages**: English (source), French, German, Japanese, Indonesian —
-  188 keys each, complete, with a catalogue test that fails on any gap.
+- **Five languages**: English (source), French, German, Japanese, Indonesian,
+  each complete, with a catalogue test that fails on any gap.
 - **No telemetry, no remote code, no account.** No server, no sync, no update
   check. Everything stays on your machine.
 
@@ -165,8 +165,8 @@ npm run build
 npm run package
 ```
 
-That writes `release/kintsugi-2.0.0-alpha.1/kintsugi-2.0.0-alpha.1.xpi`
-(≈ 343 KB). Then:
+That writes `release/kintsugi-2.0.0-alpha.1/kintsugi-2.0.0-alpha.1.xpi`.
+Then:
 
 1. Open `about:debugging#/runtime/this-firefox`.
 2. Click **Load Temporary Add-on…**.
@@ -284,8 +284,8 @@ npm install        # install dependencies
 npm run verify     # lint + typecheck + tests + build + extension lint + e2e
 npm run build      # build dist/
 npm run web-ext:run  # launch Firefox with the extension loaded
-npm test           # 169 unit and integration tests (vitest)
-npm run test:e2e   # 14 end-to-end checks against a real Firefox (Marionette)
+npm test           # 1095 unit and integration tests in 71 files (vitest)
+npm run test:e2e   # end-to-end checks against a real Firefox (Marionette)
 ```
 
 The build is `esbuild`. The output goes to `dist/`, which is what

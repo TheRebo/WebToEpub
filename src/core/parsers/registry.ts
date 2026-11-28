@@ -9,7 +9,7 @@
  *     highest confidence.
  *  4. The default parser.
  *
- * The registry is the one place that knows about all 437 parsers, so the
+ * The registry is the one place that knows about all 434 parsers, so the
  * popup and the options page never need to load parser code at all.
  *
  * See ADR-0002.
@@ -65,7 +65,8 @@ export class ParserRegistry {
 
     /** Register a parser for an exact host. */
     register(hostName: string, constructor: ParserConstructor): void {
-        const key = stripLeadingWww(hostName);
+        // Lookups lower-case the host, so registrations must too.
+        const key = stripLeadingWww(hostName.toLowerCase());
         if (this.#parsers.has(key)) {
             throw new Error(`Duplicate parser registered for host name ${hostName}`);
         }

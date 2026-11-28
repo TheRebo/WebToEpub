@@ -45,13 +45,31 @@
     "message": "EPUB を作成",
     "description": "本を作るボタン。"
   },
-  "workbenchSave": {
-    "message": "保存",
-    "description": "メタデータを保存するボタン。"
-  },
   "workbenchCancel": {
     "message": "キャンセル",
     "description": "ダウンロードを止めるボタン。"
+  },
+  "workbenchRetry": {
+    "message": "もう一度試す",
+    "description": "失敗またはキャンセルしたダウンロードをやり直すボタン。"
+  },
+  "workbenchDismiss": {
+    "message": "閉じる",
+    "description": "終わったダウンロードの状態を隠すボタン。"
+  },
+  "workbenchSavedAs": {
+    "message": "$FILE$ として保存しました（$SIZE$）",
+    "description": "本が保存されたときに表示されます。",
+    "placeholders": {
+      "file": {
+        "content": "$1",
+        "example": "1"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
   },
   "workbenchSelectAll": {
     "message": "すべて選択",
@@ -127,13 +145,13 @@
     "message": "章が選択されていません",
     "description": "何もチェックされていないときに表示。"
   },
+  "workbenchBusy": {
+    "message": "本を作成しています",
+    "description": "ダウンロード中に作成ボタンが使えない理由。"
+  },
   "workbenchWaitingForChapters": {
     "message": "章を探しています…",
     "description": "章リストを読み込み中に表示。"
-  },
-  "workbenchDetected": {
-    "message": "検出済み",
-    "description": "パーサーがサイトを認識できたときに表示。"
   },
   "workbenchFieldTitle": {
     "message": "タイトル",
@@ -155,10 +173,6 @@
     "message": "リセット",
     "description": "既定のファイル名に戻します。"
   },
-  "workbenchChooseFromPage": {
-    "message": "ページから選択",
-    "description": "ページ内の画像から表紙を選びます。"
-  },
   "workbenchRemoveCover": {
     "message": "表紙を削除",
     "description": "表紙画像を削除します。"
@@ -168,16 +182,16 @@
     "description": "章の末尾にある注記を残します。"
   },
   "workbenchIncludeTocPage": {
-    "message": "目次ページを含める",
+    "message": "目次を1つの章として含める",
     "description": "目次を1つの章として追加します。"
   },
   "workbenchMoreOptions": {
     "message": "その他のオプション",
     "description": "設定ページ全体を開くボタン。"
   },
-  "workbenchNoCover": {
-    "message": "表紙なし",
-    "description": "表紙画像がないときに表示。"
+  "workbenchOptionsHint": {
+    "message": "これは作成するすべての本に適用されます。",
+    "description": "スイッチが設定そのものを変えることの説明。"
   },
   "workbenchCoverUrl": {
     "message": "表紙画像の URL",
@@ -187,21 +201,9 @@
     "message": "このページに物語が見つかりません",
     "description": "ページが物語ではないときに表示。"
   },
-  "workbenchTryAnyway": {
-    "message": "このまま試す",
-    "description": "検討中、通常はそのまま開きます。"
-  },
-  "workbenchUnsupportedSite": {
-    "message": "このサイトはまだ対応していません",
-    "description": "パーサーが一致しなかったときに表示。"
-  },
-  "workbenchUseSelectorBuilder": {
-    "message": "セレクターを作成",
-    "description": "セレクタービルダーを開くボタン。"
-  },
-  "workbenchReloadPage": {
-    "message": "ページを再読み込み",
-    "description": "タブを再読み込みします。"
+  "workbenchNoStoryHint": {
+    "message": "このページが作品の目次か確認するか、章の場所を Kintsugi に教えてください。",
+    "description": "空の章リストの下に表示されます。"
   },
   "workbenchFieldUrl": {
     "message": "物語のURL",
@@ -235,9 +237,9 @@
     "message": "アクセスが許可されなかったため、物語を読み込めません。",
     "description": "ブラウザーのダイアログを拒否したときに表示。"
   },
-  "accessAlreadyGranted": {
-    "message": "このサイトへのアクセスはすでに許可されています。",
-    "description": "すでに読めるiedade表示。"
+  "accessGranted": {
+    "message": "Kintsugi がこのサイトを読めるようになりました。",
+    "description": "サイトが許可された直後に表示されます。"
   },
   "chapterStateQueued": {
     "message": "待機中",
@@ -299,10 +301,6 @@
     "message": "ワークベンチを開く",
     "description": "ポップアップの主ボタン。"
   },
-  "popupAddToLibrary": {
-    "message": "ライブラリに追加",
-    "description": "ポップアップのライブラリボタン。"
-  },
   "popupLibraryShort": {
     "message": "ライブラリ",
     "description": "ポップアップのライブラリボタンのラベル。"
@@ -324,12 +322,8 @@
     "description": "初回起動時、ガイドの前に表示。"
   },
   "popupGetStarted": {
-    "message": "はじめる",
+    "message": "Kintsugi を設定",
     "description": "ガイドを開くポップアップのボタン。"
-  },
-  "popupUnsupported": {
-    "message": "このサイトはまだ対応していません。",
-    "description": "パーサーが一致しなかったときに表示。"
   },
   "popupSaved": {
     "message": "本の準備ができました。",
@@ -454,12 +448,16 @@
     "description": "拡張機能が読み取れるサイトの一覧。"
   },
   "optionsRevoke": {
-    "message": "取り消す",
+    "message": "アクセスを外す",
     "description": "サイトへのアクセスを削除します。"
   },
   "optionsRevokeAll": {
-    "message": "すべて取り消す",
+    "message": "すべてのアクセスを外す",
     "description": "すべてのサイトへのアクセスを削除します。"
+  },
+  "optionsRevokeAllConfirm": {
+    "message": "もう一度ひとつずつ許可するまで、Kintsugi はこれらのサイトを読めなくなります。",
+    "description": "すべてのサイトへのアクセスを外す確認ダイアログの説明。"
   },
   "optionsSiteAccessEmpty": {
     "message": "まだサイトがありません。物語を開いたときに Kintsugi が尋ねます。",
@@ -591,6 +589,14 @@
     "message": "削除",
     "description": "ライブラリから本を削除します。"
   },
+  "libraryRemoveTitle": {
+    "message": "この本をライブラリから外しますか？",
+    "description": "削除ダイアログの見出し。"
+  },
+  "libraryRemoveConfirm": {
+    "message": "保存した EPUB はそのまま残ります。ライブラリの項目だけが消えます。",
+    "description": "削除ダイアログの説明。"
+  },
   "libraryRemoved": {
     "message": "ライブラリから削除しました。",
     "description": "本を削除した後の確認。"
@@ -616,7 +622,7 @@
     "description": "既定の言語の設定。"
   },
   "settingDefaultLanguageHint": {
-    "message": "サイトが言語を宣言していないときに使われる ISO 639 コードです。",
+    "message": "サイトが言語を示していないときの本の言語。",
     "description": "既定の言語の設定の説明。"
   },
   "settingRemoveAuthorNotes": {
@@ -743,10 +749,6 @@
     "message": "3 ステップ中の 3 番目",
     "description": "3 番目のステップのラベル。"
   },
-  "onboardingNext": {
-    "message": "次へ",
-    "description": "次のステップへ進むボタン。"
-  },
   "onboardingBack": {
     "message": "戻る",
     "description": "前のステップへ戻るボタン。"
@@ -759,16 +761,20 @@
     "message": "スキップ",
     "description": "導入をスキップするボタン。"
   },
-  "onboardingGetStarted": {
-    "message": "はじめる",
-    "description": "導入を抜けるボタン。"
+  "onboardingNextSites": {
+    "message": "次へ：対応サイト",
+    "description": "ようこそから対応サイトの手順へ。"
+  },
+  "onboardingNextLook": {
+    "message": "次へ：見た目を選ぶ",
+    "description": "対応サイトから見た目の手順へ。"
   },
   "onboardingWelcomeText": {
-    "message": "どんなウェブ小説も、永く残したい一冊の本に変えます。章リストを指定するだけで、表紙と目次を備えた整整った EPUB が完成します。",
+    "message": "どんなウェブ小説も、永く残したい一冊の本に変えます。章リストを指定するだけで、表紙と目次を備えた整った EPUB が完成します。",
     "description": "最初のステップの説明。"
   },
   "onboardingWelcomeFootnote": {
-    "message": "アカウント不要。追跡なし。オフラインでも使えます。",
+    "message": "アカウント不要、追跡なし。Kintsugi が通信するのは、読んでいるサイトだけです。",
     "description": "最初のステップの脚注。"
   },
   "onboardingWhichSite": {
@@ -780,7 +786,7 @@
     "description": "2 番目のステップの説明。"
   },
   "onboardingWhichSiteFootnote": {
-    "message": "一覧にないサイトでも読み取れます。セレクターは自分で作成することもできます。",
+    "message": "一覧にないサイトでも、章の場所を教えれば読み取れます。",
     "description": "2 番目のステップの脚注。"
   },
   "onboardingMakeItYours": {
@@ -803,25 +809,41 @@
     "message": "Kintsugi はまだこのサイトを知りません。",
     "description": "URL に一致するパーサーがなかった。"
   },
-  "errorTimeout": {
-    "message": "サイトの応答に時間がかかりすぎました。",
-    "description": "タイムアウト。"
-  },
   "errorCancelled": {
     "message": "キャンセルしました。",
     "description": "ユーザーが操作を取り消した。"
   },
-  "errorForbidden": {
-    "message": "サイトがリクエストを拒否しました。",
-    "description": "HTTP 403。"
+  "errorHttpStatus": {
+    "message": "サイトがエラーを返しました。",
+    "description": "サーバーが HTTP エラーを返しました。"
+  },
+  "errorRateLimited": {
+    "message": "サイトがリクエストを制限しています。少し待ってからやり直してください。",
+    "description": "サーバーが 429 を返しました。"
+  },
+  "errorChallenge": {
+    "message": "サイトが人間かどうかを確認しようとしています。ページを開いてから、やり直してください。",
+    "description": "サイトが captcha などの確認を表示しました。"
+  },
+  "errorEmptyChapter": {
+    "message": "章が空でした。ロックされているか、サイトが変わった可能性があります。",
+    "description": "本文のない章ページ。"
+  },
+  "errorStorageFull": {
+    "message": "この本を保存する空き容量がありません。",
+    "description": "ブラウザーのストレージがいっぱいです。"
+  },
+  "errorPermission": {
+    "message": "Kintsugi はこのサイトを読むことを許可されていません。",
+    "description": "サイトが許可されていません。"
+  },
+  "errorBusy": {
+    "message": "別の本を作成中です。終わるまで待つか、キャンセルしてください。",
+    "description": "実行中に 2 つ目のダウンロードが開始されました。"
   },
   "errorParse": {
     "message": "ページを読み取れませんでした。",
     "description": "ページを解析できなかった。"
-  },
-  "errorNoChapters": {
-    "message": "このページに章は見つかりませんでした。",
-    "description": "章リストが空だった。"
   },
   "filterSearch": {
     "message": "検索",
@@ -852,6 +874,18 @@
   "filterClear": {
     "message": "クリア",
     "description": "フィルターを消去します。"
+  },
+  "optionsNumberRequired": {
+    "message": "数値を入力してください。",
+    "description": "空のままの数値設定の下に表示されます。"
+  },
+  "filterNoMatches": {
+    "message": "このフィルターに一致する章はありません",
+    "description": "フィルターですべての章が隠れたときに表示されます。"
+  },
+  "filterClearAll": {
+    "message": "フィルターを解除",
+    "description": "フィルターを外してすべての章を表示します。"
   },
   "filterApply": {
     "message": "適用",
@@ -970,6 +1004,18 @@
   "commonDismiss": {
     "message": "閉じる",
     "description": "通知を閉じるボタンのラベル。"
+  },
+  "commonLoading": {
+    "message": "読み込み中…",
+    "description": "ページの読み込み中。"
+  },
+  "siteSelectorSuggesting": {
+    "message": "ページを読んでいます…",
+    "description": "ページを調べているとき。"
+  },
+  "siteSelectorTesting": {
+    "message": "ページでセレクターを試しています…",
+    "description": "セレクターのテスト中。"
   },
   "commonCancel": {
     "message": "キャンセル",

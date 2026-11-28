@@ -170,11 +170,22 @@ describe("convertPreTagToPTags", () => {
         expect(paragraphs[1]?.textContent).toBe("second line");
     });
 
-    it("removes a pre block that holds nothing", () => {
+    it("empties a pre block that holds nothing", () => {
         const dom = parse("<div><pre>   \n  </pre></div>");
         const pre = dom.querySelector("pre") as Element;
         convertPreTagToPTags(dom, pre);
-        expect(dom.querySelector("pre")).toBeNull();
+        expect(pre.childNodes).toHaveLength(0);
+    });
+
+    it("keeps the element the caller holds, so the caller can still use it", () => {
+        const dom = parse("<div id='content'>first\r\n\r\nsecond</div>");
+        const content = dom.querySelector("#content") as Element;
+        convertPreTagToPTags(dom, content, "\n\n");
+        expect(content.isConnected).toBe(true);
+        expect(Array.from(content.querySelectorAll("p"), (p) => p.textContent)).toEqual([
+            "first",
+            "second",
+        ]);
     });
 });
 

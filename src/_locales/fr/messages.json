@@ -45,13 +45,31 @@
     "message": "Créer l'EPUB",
     "description": "Le bouton qui crée le livre."
   },
-  "workbenchSave": {
-    "message": "Enregistrer",
-    "description": "Le bouton qui enregistre les métadonnées."
-  },
   "workbenchCancel": {
     "message": "Annuler",
     "description": "Le bouton qui arrête un téléchargement."
+  },
+  "workbenchRetry": {
+    "message": "Réessayer",
+    "description": "Relance un téléchargement échoué ou annulé."
+  },
+  "workbenchDismiss": {
+    "message": "Masquer",
+    "description": "Masque l’état d’un téléchargement terminé."
+  },
+  "workbenchSavedAs": {
+    "message": "Enregistré sous $FILE$ ($SIZE$)",
+    "description": "Affiché quand le livre a été enregistré.",
+    "placeholders": {
+      "file": {
+        "content": "$1",
+        "example": "1"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
   },
   "workbenchSelectAll": {
     "message": "Tout sélectionner",
@@ -127,13 +145,13 @@
     "message": "Aucun chapitre sélectionné",
     "description": "Affiché quand rien n'est coché."
   },
+  "workbenchBusy": {
+    "message": "Un livre est en cours de création",
+    "description": "Pourquoi Créer est indisponible pendant un téléchargement."
+  },
   "workbenchWaitingForChapters": {
     "message": "Recherche des chapitres…",
     "description": "Affiché pendant le chargement."
-  },
-  "workbenchDetected": {
-    "message": "Détecté",
-    "description": "Affiché quand un analyseur a reconnu le site."
   },
   "workbenchFieldTitle": {
     "message": "Titre",
@@ -155,10 +173,6 @@
     "message": "Réinitialiser",
     "description": "Restaure le nom de fichier par défaut."
   },
-  "workbenchChooseFromPage": {
-    "message": "Choisir depuis la page",
-    "description": "Choisit l'image de couverture depuis la page."
-  },
   "workbenchRemoveCover": {
     "message": "Retirer la couverture",
     "description": "Retire l'image de couverture."
@@ -168,16 +182,16 @@
     "description": "Conserve les notes à la fin d'un chapitre."
   },
   "workbenchIncludeTocPage": {
-    "message": "Inclure le sommaire",
+    "message": "Inclure le sommaire comme chapitre",
     "description": "Ajoute le sommaire comme chapitre."
   },
   "workbenchMoreOptions": {
     "message": "Plus d'options",
     "description": "Ouvre la page complète des paramètres."
   },
-  "workbenchNoCover": {
-    "message": "Aucune couverture",
-    "description": "Affiché quand il n'y a pas d'image de couverture."
+  "workbenchOptionsHint": {
+    "message": "Cela s’applique à chaque livre que vous créez.",
+    "description": "Explique que ces interrupteurs modifient les réglages."
   },
   "workbenchCoverUrl": {
     "message": "Adresse de l'image de couverture",
@@ -187,21 +201,9 @@
     "message": "Aucune histoire trouvée sur cette page",
     "description": "Quand la page n'est pas une histoire."
   },
-  "workbenchTryAnyway": {
-    "message": "Essayer quand même",
-    "description": "Ouvre l'atelier malgré tout."
-  },
-  "workbenchUnsupportedSite": {
-    "message": "Ce site n'est pas encore pris en charge",
-    "description": "Quand aucun analyseur ne correspond."
-  },
-  "workbenchUseSelectorBuilder": {
-    "message": "Créer un sélecteur",
-    "description": "Ouvre le créateur de sélecteurs."
-  },
-  "workbenchReloadPage": {
-    "message": "Recharger la page",
-    "description": "Recharge l'onglet."
+  "workbenchNoStoryHint": {
+    "message": "Vérifiez qu’il s’agit bien de la liste des chapitres, ou montrez à Kintsugi où se trouvent les chapitres.",
+    "description": "Sous la liste de chapitres vide."
   },
   "workbenchFieldUrl": {
     "message": "Adresse de l'histoire",
@@ -235,9 +237,9 @@
     "message": "L'accès n'a pas été autorisé, l'histoire ne peut pas être lue.",
     "description": "Affiché quand la boîte de dialogue du navigateur est refusée."
   },
-  "accessAlreadyGranted": {
-    "message": "L'accès à ce site est déjà autorisé.",
-    "description": "Affiché quand le site peut déjà être lu."
+  "accessGranted": {
+    "message": "Kintsugi peut maintenant lire ce site.",
+    "description": "Affiché quand le site vient d’être autorisé."
   },
   "chapterStateQueued": {
     "message": "En attente",
@@ -299,10 +301,6 @@
     "message": "Ouvrir l'atelier",
     "description": "Le bouton principal du popup."
   },
-  "popupAddToLibrary": {
-    "message": "Ajouter à la bibliothèque",
-    "description": "Le bouton de bibliothèque du popup."
-  },
   "popupLibraryShort": {
     "message": "Bibliothèque",
     "description": "Le libellé visible du bouton de bibliothèque."
@@ -324,12 +322,8 @@
     "description": "À la première ouverture, avant la présentation."
   },
   "popupGetStarted": {
-    "message": "Commencer",
+    "message": "Configurer Kintsugi",
     "description": "Le bouton du popup qui ouvre la présentation."
-  },
-  "popupUnsupported": {
-    "message": "Ce site n'est pas encore pris en charge.",
-    "description": "Quand aucun analyseur ne correspond."
   },
   "popupSaved": {
     "message": "Votre livre est prêt.",
@@ -454,12 +448,16 @@
     "description": "La liste des sites que l'extension peut lire."
   },
   "optionsRevoke": {
-    "message": "Révoquer",
+    "message": "Retirer l’accès",
     "description": "Retire l'accès à un site."
   },
   "optionsRevokeAll": {
-    "message": "Tout révoquer",
+    "message": "Retirer tous les accès",
     "description": "Retire l'accès à tous les sites."
+  },
+  "optionsRevokeAllConfirm": {
+    "message": "Kintsugi ne pourra plus lire aucun de ces sites tant que vous ne les aurez pas autorisés de nouveau, un par un.",
+    "description": "L’explication du dialogue qui retire l’accès à tous les sites."
   },
   "optionsSiteAccessEmpty": {
     "message": "Aucun site pour l'instant. Kintsugi demande quand vous ouvrez une histoire.",
@@ -570,7 +568,7 @@
     "description": "Le bouton qui importe une bibliothèque exportée par WebToEpub 1.x."
   },
   "optionsLibraryImported": {
-    "message": "$1 livre importé.",
+    "message": "$1 livres importés.",
     "description": "Confirmation après l'import d'une bibliothèque de plusieurs livres."
   },
   "optionsLibraryImportedOne": {
@@ -590,6 +588,14 @@
   "libraryRemove": {
     "message": "Retirer",
     "description": "Retire un livre de la bibliothèque."
+  },
+  "libraryRemoveTitle": {
+    "message": "Retirer ce livre de la bibliothèque ?",
+    "description": "Le titre du dialogue de retrait."
+  },
+  "libraryRemoveConfirm": {
+    "message": "Le fichier EPUB enregistré reste où il est. Seule son entrée dans la bibliothèque disparaît.",
+    "description": "L’explication du dialogue de retrait."
   },
   "libraryRemoved": {
     "message": "Retiré de la bibliothèque.",
@@ -616,7 +622,7 @@
     "description": "Le réglage de langue par défaut."
   },
   "settingDefaultLanguageHint": {
-    "message": "Le code ISO 639 utilisé quand un site n'en déclare pas.",
+    "message": "La langue du livre quand le site ne l’indique pas.",
     "description": "Explique le réglage de langue par défaut."
   },
   "settingRemoveAuthorNotes": {
@@ -743,10 +749,6 @@
     "message": "Étape 3 sur 3",
     "description": "L'étiquette de la troisième étape d'introduction."
   },
-  "onboardingNext": {
-    "message": "Suivant",
-    "description": "Le bouton qui passe à l'étape suivante."
-  },
   "onboardingBack": {
     "message": "Retour",
     "description": "Le bouton qui revient à l'étape précédente."
@@ -759,16 +761,20 @@
     "message": "Passer",
     "description": "Le bouton qui passe l'introduction."
   },
-  "onboardingGetStarted": {
-    "message": "Commencer",
-    "description": "Le bouton qui quitte l'introduction."
+  "onboardingNextSites": {
+    "message": "Suivant : les sites pris en charge",
+    "description": "De l’accueil à l’étape des sites."
+  },
+  "onboardingNextLook": {
+    "message": "Suivant : choisir l’apparence",
+    "description": "De l’étape des sites à l’apparence."
   },
   "onboardingWelcomeText": {
-    "message": "Transformez n'importe quel roman en ligne en un livre à garder. Pointez-le sur une liste de chapitres, et il crée un EPUB soigné — couverture, sommaire et tout le reste.",
+    "message": "Transformez n'importe quel roman en ligne en un livre à garder. Pointez-le sur une liste de chapitres, et il crée un EPUB soigné, avec couverture et sommaire.",
     "description": "L'explication de la première étape d'introduction."
   },
   "onboardingWelcomeFootnote": {
-    "message": "Pas de compte. Pas de suivi. Fonctionne hors ligne.",
+    "message": "Pas de compte, aucun suivi. Kintsugi ne parle qu’aux sites que vous lisez.",
     "description": "La note de la première étape d'introduction."
   },
   "onboardingWhichSite": {
@@ -780,7 +786,7 @@
     "description": "L'explication de la deuxième étape d'introduction."
   },
   "onboardingWhichSiteFootnote": {
-    "message": "Pas dans la liste ? Kintsugi peut quand même le lire — vous pouvez créer un sélecteur vous-même.",
+    "message": "Pas dans la liste ? Kintsugi peut quand même le lire si vous lui montrez où sont les chapitres.",
     "description": "La note de la deuxième étape d'introduction."
   },
   "onboardingMakeItYours": {
@@ -803,25 +809,41 @@
     "message": "Kintsugi ne connaît pas encore ce site.",
     "description": "Aucun analyseur ne correspond."
   },
-  "errorTimeout": {
-    "message": "Le site a mis trop de temps à répondre.",
-    "description": "Un délai dépassé."
-  },
   "errorCancelled": {
     "message": "Annulé.",
     "description": "L'utilisateur a annulé l'opération."
   },
-  "errorForbidden": {
-    "message": "Le site a refusé la requête.",
-    "description": "Une erreur HTTP 403."
+  "errorHttpStatus": {
+    "message": "Le site a répondu par une erreur.",
+    "description": "Le serveur a renvoyé une erreur HTTP."
+  },
+  "errorRateLimited": {
+    "message": "Le site limite les requêtes. Patientez un instant, puis réessayez.",
+    "description": "Le serveur a répondu 429."
+  },
+  "errorChallenge": {
+    "message": "Le site veut vérifier que vous êtes une personne. Ouvrez la page, puis réessayez.",
+    "description": "Le site a présenté une vérification, comme un captcha."
+  },
+  "errorEmptyChapter": {
+    "message": "Le chapitre est revenu vide. Il est peut-être verrouillé, ou le site a changé.",
+    "description": "Une page de chapitre sans texte."
+  },
+  "errorStorageFull": {
+    "message": "Il n’y a pas assez de place pour enregistrer ce livre.",
+    "description": "Le stockage du navigateur est plein."
+  },
+  "errorPermission": {
+    "message": "Kintsugi n’est pas autorisé à lire ce site.",
+    "description": "Le site n’a pas été autorisé."
+  },
+  "errorBusy": {
+    "message": "Un autre livre est en cours de création. Attendez qu’il se termine, ou annulez-le.",
+    "description": "Un second téléchargement a été lancé."
   },
   "errorParse": {
     "message": "La page n'a pas pu être lue.",
     "description": "La page n'a pas pu être analysée."
-  },
-  "errorNoChapters": {
-    "message": "Aucun chapitre trouvé sur cette page.",
-    "description": "La liste des chapitres était vide."
   },
   "filterSearch": {
     "message": "Rechercher",
@@ -852,6 +874,18 @@
   "filterClear": {
     "message": "Effacer",
     "description": "Efface le filtre."
+  },
+  "optionsNumberRequired": {
+    "message": "Saisissez un nombre.",
+    "description": "Sous un réglage numérique laissé vide."
+  },
+  "filterNoMatches": {
+    "message": "Aucun chapitre ne correspond à ces filtres",
+    "description": "Quand le filtre masque tous les chapitres."
+  },
+  "filterClearAll": {
+    "message": "Effacer les filtres",
+    "description": "Retire le filtre pour afficher de nouveau tous les chapitres."
   },
   "filterApply": {
     "message": "Appliquer",
@@ -970,6 +1004,18 @@
   "commonDismiss": {
     "message": "Ignorer",
     "description": "Le libellé d'un bouton qui ferme une notification."
+  },
+  "commonLoading": {
+    "message": "Chargement…",
+    "description": "Pendant qu’une page se charge."
+  },
+  "siteSelectorSuggesting": {
+    "message": "Lecture de la page…",
+    "description": "Pendant l’analyse de la page."
+  },
+  "siteSelectorTesting": {
+    "message": "Essai des sélecteurs sur la page…",
+    "description": "Pendant le test des sélecteurs."
   },
   "commonCancel": {
     "message": "Annuler",

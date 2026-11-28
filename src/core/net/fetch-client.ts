@@ -54,6 +54,9 @@ export const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504, 520, 522, 52
  */
 export const REQUEST_TIMEOUT_MS = 30_000;
 
+/** How long a response's body may take to arrive once the headers have. */
+export const BODY_TIMEOUT_MS = 120_000;
+
 /**
  * The largest response body the extension will read, in bytes.
  *
@@ -100,6 +103,22 @@ export interface FetchOptions {
     useCookies?: boolean;
     /** The page URL the request is made on behalf of, for the `Referer`. */
     referer?: string;
+    /**
+     * The decoder for a text body. Defaults to the one the response names
+     * (see {@link decoderFor}); a parser for a site that lies about its
+     * encoding supplies its own.
+     */
+    decoder?: (response: Response) => TextDecoder;
+    /**
+     * The custom-error handler for this request only. A parser's handler
+     * judges that parser's requests, never an image fetch running beside it.
+     */
+    customErrorHandler?: CustomErrorHandler;
+    /**
+     * Accept a body of any type. The legacy `wrapFetch` served JSON and
+     * binary responses as well as pages, and parsers rely on that.
+     */
+    anyType?: boolean;
 }
 
 /** A successful response. */
@@ -108,6 +127,8 @@ export interface FetchResult {
     response: Response;
     /** The body, parsed as text. */
     text: string;
+    /** The body's bytes, before decoding. */
+    bytes: Uint8Array;
     /** The body, parsed as an HTML document. */
     dom: Document;
     /** The final URL, after redirects. */
@@ -272,7 +293,7 @@ export class FetchClient {
 
                 try {
                     const response = await this.#performRequest(url, options);
-                    const text = await this.#readText(response, options.signal);
+                    const { text, bytes } = await this.#readText(response, options);
                     diagnosticUrl(
                         `Fetched (attempt ${attempt})`,
                         url,
@@ -280,7 +301,12 @@ export class FetchClient {
                         `${text.length} characters`,
                     );
 
-                    const custom = this.#evaluateCustomError(url, response, text);
+                    const custom = this.#evaluateCustomError(
+                        url,
+                        response,
+                        text,
+                        options.customErrorHandler,
+                    );
                     if (custom?.status === 999) {
                         // The parser asked for an automatic retry. On the last
                         // attempt there is nothing left to retry *into*, so
@@ -333,7 +359,10 @@ export class FetchClient {
                     // with a 200, and telling the user that the server
                     // returned 200 would be true and useless.
                     const contentType = response.headers.get("content-type");
-                    if (!isAcceptablePageType(contentType)) {
+                    const acceptable = options.anyType
+                        ? !isDocumentNoParserReads(contentType)
+                        : isAcceptablePageType(contentType);
+                    if (!acceptable) {
                         throw new FetchError(
                             `Expected an HTML page from ${url} but got ${mediaTypeOf(contentType)}`,
                             {
@@ -348,6 +377,7 @@ export class FetchClient {
                     return {
                         response,
                         text,
+                        bytes,
                         dom: parseHtml(text, response.url || url),
                         url: response.url || url,
                     };
@@ -399,9 +429,14 @@ export class FetchClient {
                         ...options,
                         headers: { Accept: "application/json", ...options.headers },
                     });
-                    const text = await this.#readText(response, options.signal);
+                    const { text } = await this.#readText(response, options);
 
-                    const custom = this.#evaluateCustomError(url, response, text);
+                    const custom = this.#evaluateCustomError(
+                        url,
+                        response,
+                        text,
+                        options.customErrorHandler,
+                    );
                     if (custom?.status === 999) {
                         // The parser asked for an automatic retry. The last
                         // attempt has to fail, or the broken body would be
@@ -609,10 +644,10 @@ export class FetchClient {
      *    allowed when — and only when — the user has given the extension
      *    access to it, which is what makes a story served from a home server
      *    work without opening the door to the rest of the network.
-     *  - **Redirects are followed by hand.** The browser's own redirect
-     *    handling would follow a redirect to a private address without
-     *    telling us, and by the time we saw the final URL the request had
-     *    already been made.
+     *  - **Redirects are checked.** The browser follows them, because a
+     *    manual redirect is opaque to an extension. A hop to a private
+     *    address is blocked by a network rule before it is made, and the
+     *    final address is checked again before the body is read.
      *  - **The request has a deadline.** A server that never answers cannot
      *    hold the job open for ever.
      */
@@ -639,8 +674,23 @@ export class FetchClient {
 
             const response = await this.#request(validated.href, headers, options, method, body);
 
-            // The browser's own redirect handling is not used, so a redirect is
-            // a response with a location rather than a followed request.
+            // The browser follows redirects itself: a manual redirect comes back
+            // opaque, with no status and no location to follow. A private hop
+            // is blocked in the network stack (`installPrivateNetworkRules`), and
+            // the address the response finally came from is checked here too.
+            if (response.redirected && response.url && response.url !== validated.href) {
+                if (!(await mayFetchUrl(response.url))) {
+                    await response.body?.cancel().catch(() => undefined);
+                    throw new FetchError(`Refused to fetch ${response.url}`, {
+                        url: response.url,
+                        attempts: 1,
+                        code: "PERMISSION_DENIED",
+                    });
+                }
+            }
+
+            // An environment that hands a redirect back unfollowed is still
+            // walked hop by hop, each hop checked above.
             const location = response.headers.get("location");
             if (!location || response.status < 300 || response.status >= 400) {
                 return response;
@@ -694,29 +744,34 @@ export class FetchClient {
         method: string,
         body: BodyInit | null,
     ): Promise<Response> {
-        const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
-        const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+        // The deadline covers the wait for the headers. The body then gets a
+        // longer one of its own, so a large image on a slow link can finish.
+        const deadline = new AbortController();
+        let timer = setTimeout(() => deadline.abort(), REQUEST_TIMEOUT_MS);
+        const signal = options.signal
+            ? AbortSignal.any([options.signal, deadline.signal])
+            : deadline.signal;
 
         try {
-            return await this.#environment.fetch(url, {
+            const response = await this.#environment.fetch(url, {
                 method,
                 headers,
                 body,
                 signal,
                 credentials: options.credentials ?? "include",
-                // The redirects are followed by hand, so the browser must not
-                // follow them as well.
-                redirect: "manual",
+                redirect: "follow",
             });
+            clearTimeout(timer);
+            timer = setTimeout(() => deadline.abort(), BODY_TIMEOUT_MS);
+            return response;
         } catch (error) {
-            // A timeout is reported as a timeout rather than as a transport
-            // failure, so the user is told what actually happened.
-            if (timeout.aborted && !options.signal?.aborted) {
-                throw new FetchError(`The request to ${url} timed out.`, {
-                    status: 0,
-                    url,
-                    attempts: 1,
-                });
+            clearTimeout(timer);
+            // A timeout is a transport failure like any other, so it is
+            // retried; its name says what happened.
+            if (deadline.signal.aborted && !options.signal?.aborted) {
+                const timedOut = new Error(`The request to ${url} timed out.`);
+                timedOut.name = "TimeoutError";
+                throw timedOut;
             }
             throw error;
         }
@@ -726,12 +781,16 @@ export class FetchClient {
      * Read a response's body as text, refusing one that is too large.
      *
      * @param response The response.
-     * @param signal The signal that stops the read, when there is one.
-     * @returns The body's text.
+     * @param options The fetch's options, for the signal and the decoder.
+     * @returns The body's text and its bytes.
      */
-    async #readText(response: Response, signal?: AbortSignal): Promise<string> {
-        const bytes = await this.#readBody(response, MAX_RESPONSE_BYTES, signal);
-        return new TextDecoder().decode(bytes);
+    async #readText(
+        response: Response,
+        options: FetchOptions,
+    ): Promise<{ text: string; bytes: Uint8Array }> {
+        const bytes = await this.#readBody(response, MAX_RESPONSE_BYTES, options.signal);
+        const decoder = options.decoder?.(response) ?? decoderFor(response, bytes);
+        return { text: decoder.decode(bytes), bytes };
     }
 
     /**
@@ -827,8 +886,9 @@ export class FetchClient {
         url: string,
         response: Response,
         bodyText: string,
+        scoped?: CustomErrorHandler,
     ): { status: number; retryDelay?: number } | undefined {
-        const handler = this.#customErrorHandler;
+        const handler = scoped ?? this.#customErrorHandler;
         if (!handler) return undefined;
         try {
             if (!handler.isCustomError(response, bodyText)) return undefined;
@@ -924,4 +984,50 @@ export function parseHtml(html: string, url: string): Document {
         // A document with no head is unusual but not fatal.
     }
     return dom;
+}
+
+/**
+ * The decoder for a text body.
+ *
+ * The `charset` of the `Content-Type` wins, then a `<meta charset>` or
+ * `http-equiv` in the first kilobyte, then UTF-8. Many Chinese and Japanese
+ * novel sites are served in GBK or Shift_JIS, and decoding them as UTF-8
+ * turns every chapter into mojibake.
+ *
+ * @param response The response.
+ * @param bytes The body.
+ * @returns The decoder.
+ */
+export function decoderFor(response: Response, bytes: Uint8Array): TextDecoder {
+    const declared = /charset\s*=\s*["']?([\w.:-]+)/i.exec(
+        response.headers.get("content-type") ?? "",
+    )?.[1];
+    const sniffed =
+        declared ??
+        /<meta[^>]+charset\s*=\s*["']?([\w.:-]+)/i.exec(
+            new TextDecoder("latin1").decode(bytes.subarray(0, 1024)),
+        )?.[1];
+    if (sniffed) {
+        try {
+            return new TextDecoder(sniffed);
+        } catch {
+            // An encoding the browser does not know falls back to UTF-8.
+        }
+    }
+    return new TextDecoder();
+}
+
+/**
+ * Whether a response is a document no parser can read as text (a PDF, an
+ * archive, a video), so it is refused even when any type is accepted
+ * (ADR-0024): a chapter link to a PDF must say so, not become garbage.
+ */
+function isDocumentNoParserReads(contentType: string | null): boolean {
+    const type = mediaTypeOf(contentType);
+    return (
+        type === "application/pdf" ||
+        type === "application/zip" ||
+        type.startsWith("video/") ||
+        type.startsWith("audio/")
+    );
 }

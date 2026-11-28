@@ -140,7 +140,7 @@ export function buildOptions(root: HTMLElement): OptionsElements {
 
     const wordmark = document.createElement("span");
     wordmark.className = "options-wordmark";
-    wordmark.textContent = "Kintsugi";
+    wordmark.textContent = t("appName");
 
     const searchWrap = document.createElement("div");
     searchWrap.className = "options-search";
@@ -173,6 +173,14 @@ export function buildOptions(root: HTMLElement): OptionsElements {
 
     const content = document.createElement("main");
     content.className = "options-content";
+    // The page's one top-level heading. It is read, not seen: the header
+    // already shows where the user is. Focus can land on it when the button
+    // that had it is gone.
+    const pageHeading = document.createElement("h1");
+    pageHeading.className = "k-visually-hidden";
+    pageHeading.tabIndex = -1;
+    pageHeading.textContent = t("popupSettings");
+    content.appendChild(pageHeading);
 
     // The status region sits inside the content column: it is what the page
     // shows while the settings are being read, and what it shows when they
@@ -646,7 +654,14 @@ function buildControl(
             field.setAttribute("name", control.path);
             field.dataset["path"] = control.path;
             if (control.hint) field.setAttribute("hint", tDynamic(control.hint));
-            for (const option of control.options) {
+            const options = [...control.options];
+            // A stored value the list does not offer (an older free-text
+            // setting) is kept as an option, so it is shown, not lost.
+            const current = String(value ?? "");
+            if (current && !options.some((option) => option.value === current)) {
+                options.push({ value: current, label: current });
+            }
+            for (const option of options) {
                 const element = document.createElement("option");
                 element.value = option.value;
                 element.textContent = option.label;
@@ -699,10 +714,10 @@ function buildChoice(control: ControlSpec, value: string): HTMLElement {
         // The swatches show the *other* accents, so the picker cannot be
         // rendered with `var(--accent-500)` for every row: the current
         // accent would make all four swatches look the same.
-        group.addOption("gold", t("optionsAccentGold"), "#d99224");
-        group.addOption("ink", t("optionsAccentInk"), "#5568c4");
-        group.addOption("verdigris", t("optionsAccentVerdigris"), "#359c8b");
-        group.addOption("plum", t("optionsAccentPlum"), "#b0529c");
+        group.addOption("gold", t("optionsAccentGold"), "var(--swatch-gold)");
+        group.addOption("ink", t("optionsAccentInk"), "var(--swatch-ink)");
+        group.addOption("verdigris", t("optionsAccentVerdigris"), "var(--swatch-verdigris)");
+        group.addOption("plum", t("optionsAccentPlum"), "var(--swatch-plum)");
     } else {
         group.setAttribute("legend", tDynamic(control.label));
         group.addOption("comfortable", t("optionsDensityComfortable"));
@@ -892,7 +907,7 @@ export function renderStatus(
     if (state === "loading") {
         const label = document.createElement("p");
         label.className = "options-status-label";
-        label.textContent = t("phasePreparing");
+        label.textContent = t("commonLoading");
         panel.appendChild(label);
 
         for (const width of ["100%", "92%", "78%"]) {
@@ -1033,7 +1048,7 @@ export function renderLibraryLoading(elements: OptionsElements): void {
 
     const label = document.createElement("p");
     label.className = "options-status-label";
-    label.textContent = t("phasePreparing");
+    label.textContent = t("commonLoading");
     panel.appendChild(label);
 
     for (const width of ["100%", "88%"]) {
@@ -1243,7 +1258,7 @@ export function renderSiteAccessLoading(elements: OptionsElements): void {
 
     const label = document.createElement("p");
     label.className = "options-status-label";
-    label.textContent = t("phasePreparing");
+    label.textContent = t("commonLoading");
     panel.appendChild(label);
 
     for (const width of ["100%", "80%"]) {
@@ -1318,7 +1333,7 @@ export function renderSiteSelectorsLoading(elements: OptionsElements): void {
 
     const label = document.createElement("p");
     label.className = "options-status-label";
-    label.textContent = t("phasePreparing");
+    label.textContent = t("commonLoading");
     panel.appendChild(label);
 
     for (const width of ["100%", "80%"]) {

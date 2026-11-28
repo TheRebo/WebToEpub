@@ -38,7 +38,7 @@ summary {
 
 summary::-webkit-details-marker { display: none; }
 summary:hover { background: var(--bg-subtle); }
-summary:focus-visible { outline: none; box-shadow: var(--ring); }
+summary:focus-visible { outline: 2px solid transparent; box-shadow: var(--ring); }
 
 .title {
     flex: 1;

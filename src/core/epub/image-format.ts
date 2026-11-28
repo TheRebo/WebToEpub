@@ -109,24 +109,19 @@ function isSvg(data: Uint8Array): boolean {
     const head = new TextDecoder("utf-8", { fatal: false }).decode(data.subarray(0, 512));
     const trimmed = head.trimStart().toLowerCase();
     if (!trimmed.startsWith("<")) return false;
-    return (
-        trimmed.startsWith("<?xml") ||
-        trimmed.startsWith("<svg") ||
-        trimmed.startsWith("<!doctype svg") ||
-        trimmed.startsWith("<!--") ||
-        trimmed.startsWith("<g") ||
-        trimmed.startsWith("<path") ||
-        trimmed.startsWith("<rect")
+    // An XML declaration or a comment can open an XHTML error page as easily
+    // as an SVG, so the first real element has to be `<svg>`.
+    const element = /<(?![?!])([a-z][\w:-]*)/.exec(
+        trimmed.replace(/<!--[\s\S]*?-->/g, "").replace(/<!doctype[^>]*>/g, ""),
     );
+    return element?.[1] === "svg" || element?.[1] === "svg:svg";
 }
 
 /**
  * The format the bytes are in.
  *
- * The media type the server declared is preferred when it is one the
- * extension accepts, because a server that says `image/jpeg` is right far
- * more often than a signature check is. The bytes are the fallback, and the
- * tie-breaker when the two disagree.
+ * The bytes decide when their signature is definite (ADR-0037); the media
+ * type the server declared is used only when the bytes say nothing.
  *
  * @param data The bytes.
  * @param declared The media type the server declared, if any.

@@ -1,4 +1,4 @@
-// Ai generated + Claude Opus 4.6
+// Ai generated + Copilot
 // Migrated from `plugin/js/parsers/NoveliParser.js` on the `legacy` branch.
 // The parser's logic is unchanged; only the module wiring is new.
 "use strict";
@@ -8,8 +8,6 @@ import { util } from "../../compat/legacy-util.js";
 import { HttpClient } from "../../compat/legacy-http-client.js";
 import { parserFactory } from "../../compat/legacy-factory.js";
 import { main } from "../../compat/legacy-globals.js";
-
-// Ai generated + Copilot
 
 parserFactory.register("noveli.to", () => new NoveliParser());
 

@@ -363,6 +363,7 @@ async function readEntry(
     }
 
     const writer = new CappedWriter(limits.maxEntryBytes, budget);
+    let failed = false;
     try {
         await entry.getData(writer);
     } catch {
@@ -370,10 +371,13 @@ async function readEntry(
         // of its own, so the reason is taken from the writer rather than from
         // the exception: a limit that was reached is never mistaken for a
         // file that cannot be read.
+        failed = true;
     }
     if (writer.refused) {
         throw new ImportLimitError(writer.reason);
     }
+    // A truncated or corrupt entry is unreadable, not a shorter file.
+    if (failed) return undefined;
     return writer.getData();
 }
 

@@ -25,8 +25,10 @@ export const MESSAGES = {
     workbenchChapters: "workbenchChapters",
     workbenchChapterCount: "workbenchChapterCount",
     workbenchPack: "workbenchPack",
-    workbenchSave: "workbenchSave",
     workbenchCancel: "workbenchCancel",
+    workbenchRetry: "workbenchRetry",
+    workbenchDismiss: "workbenchDismiss",
+    workbenchSavedAs: "workbenchSavedAs",
     workbenchSelectAll: "workbenchSelectAll",
     workbenchSelectNone: "workbenchSelectNone",
     workbenchInvert: "workbenchInvert",
@@ -41,25 +43,21 @@ export const MESSAGES = {
     workbenchRangeInvalid: "workbenchRangeInvalid",
     workbenchFilter: "workbenchFilter",
     workbenchNoChaptersSelected: "workbenchNoChaptersSelected",
+    workbenchBusy: "workbenchBusy",
     workbenchWaitingForChapters: "workbenchWaitingForChapters",
-    workbenchDetected: "workbenchDetected",
     workbenchFieldTitle: "workbenchFieldTitle",
     workbenchFieldAuthor: "workbenchFieldAuthor",
     workbenchFieldLanguage: "workbenchFieldLanguage",
     workbenchFieldFilename: "workbenchFieldFilename",
     workbenchResetFilename: "workbenchResetFilename",
-    workbenchChooseFromPage: "workbenchChooseFromPage",
     workbenchRemoveCover: "workbenchRemoveCover",
     workbenchIncludeAuthorNotes: "workbenchIncludeAuthorNotes",
     workbenchIncludeTocPage: "workbenchIncludeTocPage",
     workbenchMoreOptions: "workbenchMoreOptions",
-    workbenchNoCover: "workbenchNoCover",
+    workbenchOptionsHint: "workbenchOptionsHint",
     workbenchCoverUrl: "workbenchCoverUrl",
     workbenchNoStoryHere: "workbenchNoStoryHere",
-    workbenchTryAnyway: "workbenchTryAnyway",
-    workbenchUnsupportedSite: "workbenchUnsupportedSite",
-    workbenchUseSelectorBuilder: "workbenchUseSelectorBuilder",
-    workbenchReloadPage: "workbenchReloadPage",
+    workbenchNoStoryHint: "workbenchNoStoryHint",
     workbenchFieldUrl: "workbenchFieldUrl",
     workbenchFieldUrlHint: "workbenchFieldUrlHint",
     workbenchLoadStory: "workbenchLoadStory",
@@ -70,7 +68,7 @@ export const MESSAGES = {
     accessText: "accessText",
     accessGrant: "accessGrant",
     accessDenied: "accessDenied",
-    accessAlreadyGranted: "accessAlreadyGranted",
+    accessGranted: "accessGranted",
 
     // Chapter states
     chapterStateQueued: "chapterStateQueued",
@@ -92,14 +90,12 @@ export const MESSAGES = {
 
     // Popup
     popupOpenWorkbench: "popupOpenWorkbench",
-    popupAddToLibrary: "popupAddToLibrary",
     popupLibraryShort: "popupLibraryShort",
     popupWorkbenchShort: "popupWorkbenchShort",
     popupSettings: "popupSettings",
     popupNoStory: "popupNoStory",
     popupWelcome: "popupWelcome",
     popupGetStarted: "popupGetStarted",
-    popupUnsupported: "popupUnsupported",
     popupSaved: "popupSaved",
     popupTryAgain: "popupTryAgain",
     popupChecking: "popupChecking",
@@ -111,6 +107,9 @@ export const MESSAGES = {
     commonClose: "commonClose",
     commonDismiss: "commonDismiss",
     commonCancel: "commonCancel",
+    commonLoading: "commonLoading",
+    siteSelectorSuggesting: "siteSelectorSuggesting",
+    siteSelectorTesting: "siteSelectorTesting",
 
     // Options
     optionsAppearance: "optionsAppearance",
@@ -135,6 +134,7 @@ export const MESSAGES = {
     optionsSiteAccess: "optionsSiteAccess",
     optionsRevoke: "optionsRevoke",
     optionsRevokeAll: "optionsRevokeAll",
+    optionsRevokeAllConfirm: "optionsRevokeAllConfirm",
     optionsSiteAccessEmpty: "optionsSiteAccessEmpty",
     optionsSiteAccessHint: "optionsSiteAccessHint",
     optionsRevoked: "optionsRevoked",
@@ -163,6 +163,8 @@ export const MESSAGES = {
     optionsLibraryImportedOne: "optionsLibraryImportedOne",
     optionsLibraryTooLarge: "optionsLibraryTooLarge",
     libraryRemove: "libraryRemove",
+    libraryRemoveTitle: "libraryRemoveTitle",
+    libraryRemoveConfirm: "libraryRemoveConfirm",
     libraryRemoved: "libraryRemoved",
 
     // Options: individual settings
@@ -205,11 +207,11 @@ export const MESSAGES = {
     onboardingStep1: "onboardingStep1",
     onboardingStep2: "onboardingStep2",
     onboardingStep3: "onboardingStep3",
-    onboardingNext: "onboardingNext",
     onboardingBack: "onboardingBack",
     onboardingFinish: "onboardingFinish",
     onboardingSkip: "onboardingSkip",
-    onboardingGetStarted: "onboardingGetStarted",
+    onboardingNextSites: "onboardingNextSites",
+    onboardingNextLook: "onboardingNextLook",
     onboardingWelcomeText: "onboardingWelcomeText",
     onboardingWelcomeFootnote: "onboardingWelcomeFootnote",
     onboardingWhichSite: "onboardingWhichSite",
@@ -222,11 +224,15 @@ export const MESSAGES = {
     errorGeneric: "errorGeneric",
     errorNetwork: "errorNetwork",
     errorNoParser: "errorNoParser",
-    errorTimeout: "errorTimeout",
     errorCancelled: "errorCancelled",
-    errorForbidden: "errorForbidden",
+    errorHttpStatus: "errorHttpStatus",
+    errorRateLimited: "errorRateLimited",
+    errorChallenge: "errorChallenge",
+    errorEmptyChapter: "errorEmptyChapter",
+    errorStorageFull: "errorStorageFull",
+    errorPermission: "errorPermission",
+    errorBusy: "errorBusy",
     errorParse: "errorParse",
-    errorNoChapters: "errorNoChapters",
 
     // Filter
     filterSearch: "filterSearch",
@@ -235,6 +241,9 @@ export const MESSAGES = {
     filterExclude: "filterExclude",
     filterMatchCount: "filterMatchCount",
     filterClear: "filterClear",
+    optionsNumberRequired: "optionsNumberRequired",
+    filterNoMatches: "filterNoMatches",
+    filterClearAll: "filterClearAll",
     filterApply: "filterApply",
     filterInvalidPattern: "filterInvalidPattern",
 
@@ -402,8 +411,23 @@ export type CountedName = keyof typeof COUNTED;
  * @returns The translated string, in the right number.
  */
 export function tCount(key: CountedName, count: number, substitutions: string[] = []): string {
-    const name = count === 1 ? COUNTED[key] : key;
-    return t(name, [String(count), ...substitutions]);
+    // The language's own rules decide the form: French counts 0 as
+    // singular, and Japanese has no singular at all.
+    const language = uiLanguage();
+    let category: string;
+    try {
+        category = new Intl.PluralRules(language).select(count);
+    } catch {
+        category = count === 1 ? "one" : "other";
+    }
+    const name = category === "one" ? COUNTED[key] : key;
+    let shown: string;
+    try {
+        shown = count.toLocaleString(language);
+    } catch {
+        shown = String(count);
+    }
+    return t(name, [shown, ...substitutions]);
 }
 
 /** Clear the memoisation cache. */

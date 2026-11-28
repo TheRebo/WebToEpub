@@ -23,8 +23,8 @@ const PAGE_MEDIA_TYPES = new Set([
 /**
  * The media types an image may have.
  *
- * `image/svg+xml` is here because the extension builds its own SVG
- * placeholders; a remote SVG is only fetched when the user allows it.
+ * `image/svg+xml` is here so a remote SVG can be packed when the user allows
+ * SVG images; otherwise it is replaced by the PNG placeholder.
  */
 const IMAGE_MEDIA_TYPES = new Set([
     "image/png",

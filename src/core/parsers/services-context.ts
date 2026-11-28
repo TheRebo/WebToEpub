@@ -7,7 +7,7 @@
  *
  * The legacy parsers were not written that way. Their constructors call
  * `super()` with no arguments, because in the baseline the services were
- * globals. Rather than rewrite 437 constructors, the compat base class
+ * globals. Rather than rewrite 434 constructors, the compat base class
  * resolves its services from this module when the constructor was given
  * none.
  *

@@ -255,11 +255,18 @@ describe("k-list", () => {
             const spacer = shadow(list).querySelector(".spacer");
             const rows = shadow(list).querySelector(".rows");
 
-            // A `listitem` that is not a child of the `list` is owned by
+            // An `option` that is not a child of the `listbox` is owned by
             // nothing, and a screen reader announces the list as empty.
-            expect(viewport?.getAttribute("role")).toBe("list");
+            expect(viewport?.getAttribute("role")).toBe("listbox");
             expect(spacer?.getAttribute("role")).toBe("presentation");
             expect(rows?.getAttribute("role")).toBe("presentation");
+        });
+
+        it("tells the screen reader which chapters are selected", () => {
+            const list = buildList(3);
+            const row = shadow(list).querySelector(".row");
+            expect(row?.getAttribute("role")).toBe("option");
+            expect(row?.getAttribute("aria-selected")).toMatch(/^(true|false)$/);
         });
 
         it("tells the screen reader how big the whole list is", () => {

@@ -49,10 +49,9 @@ jobs:
         run: npm run test:e2e:install-firefox
 
       - name: Verify
+        # `verify` ends by packaging and checking the package, so the release
+        # signs the very file that was verified rather than a second build.
         run: npm run verify
-
-      - name: Package
-        run: npm run package
 
       - name: Sign the package
         # The signing secrets are absent on a fork, and the release should

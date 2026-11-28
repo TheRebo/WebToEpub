@@ -8,6 +8,72 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 The extension itself is published to Firefox with a simplified `major.minor.patch` version: `tools/build.mjs` (`manifestVersion()`) strips any pre-release suffix from the `package.json` version before writing `manifest.json`, so `2.0.0-alpha.1` ships in the browser as `2.0.0`. The full Semantic Version — including the pre-release suffix — lives in `package.json` and on the GitHub release tag, so alpha builds are distinguishable from the final release in the tag history, in CI artefacts, and in this changelog.
 
+## Unreleased: audit round 2
+
+The second internal audit: the parsers' compat layer, the network and
+download paths, the copy, and accessibility.
+
+### Fixed
+
+- Redirected chapters and images load: the browser follows the redirect, and
+  a dynamic declarativeNetRequest rule blocks the extension's requests to
+  private hosts. See
+  [ADR-0045](docs/decisions/ADR-0045-the-browser-follows-redirects.md).
+- Pages are decoded in their declared encoding, so GBK and Shift_JIS sites
+  are readable.
+- The download reuses the page and parser the chapter list was built from,
+  so a parser's own state and a script-built table of contents survive.
+- The compat layer runs the hooks the original ran before reading a story
+  (`disabled()`, `loadEpubMetaInfo`), gives the parsers that read the old
+  popup's controls stand-ins to read, keeps `convertPreTagToPTags` editing in
+  place, and lets `wrapFetch` return JSON and text again.
+- A parser's error handler judges only its own requests.
+- Timeouts are retried, and a response body has its own deadline.
+- The cookie bridge reads partitioned cookies and never overwrites one the
+  user already had.
+- One book is made at a time, a cancelled job stays cancelled, and the
+  per-chapter delay is waited once, not twice.
+- A failed cover is left out instead of saved as the book's cover, and a
+  chapter with nothing left after sanitising is not packed.
+- Forbidden characters and invalid ids are kept out of every file in the
+  EPUB, not only chapter bodies.
+- Failures are reported as what they are, not all as network failures, and
+  URLs in error details are redacted.
+- A truncated library entry is treated as unreadable.
+- The workbench packs the author, language and cover the user set, shows why
+  a story failed, ends a download in the status bar with a way on, and lets
+  the user tick a locked chapter by hand.
+- The popup offers Cancel during a download and recovers from a failed or
+  finished one.
+- Settings ask before removing a book or every site's access, and never store
+  an emptied number field as zero.
+- Migrated parsers no longer carry an AI authorship line they did not have in
+  the original.
+
+### Changed
+
+- CI runs on every pull request and runs the same checks as `npm run verify`.
+- Plural forms follow each language's rules, counts are formatted for the
+  locale, each error code has its own message, and messages no page shows are
+  removed.
+- Copy says only what is true (no "works offline"), uses one name for each
+  setting, and drops em dashes.
+- `AGENTS.md` describes where parsers live in `src/`.
+- Code with no callers is removed.
+
+### Accessibility
+
+- Text and control colours meet WCAG AA in both themes, with a test for every
+  pairing.
+- The focus ring stays visible everywhere, including Windows High Contrast.
+- The chapter list is a multi-select listbox.
+- Each page has landmarks, one `h1`, its UI language and a translated title.
+- Onboarding buttons name the step they lead to, and focus moves to the new
+  step.
+- Toasts stack instead of overlapping, and pause while focused.
+- Pack's reason for being unavailable is written beside it, in a live
+  region.
+
 ## [Unreleased]
 
 The first internal audit of the alpha. Every fix below was found by reading
@@ -116,7 +182,8 @@ user report — which is why several of them are severe.
   themselves wrong — the settings search counted hidden groups, and the
   onboarding looked for a custom element where the design uses native radio
   inputs — and were corrected.
-- The test suite has grown from 169 to **866 tests across 59 files**, with new
+- The test suite has grown from 169 tests; it now has **1095 tests across 71
+  files**, with new
   coverage for the archiver, the fetch client's error handling, the cookie
   bridge, the network rules, the image packaging, the message bus, the URL
   and origin validators, the stylesheet references, the EPUB round trip, the
@@ -198,7 +265,8 @@ user report — which is why several of them are severe.
   host is fetched only when the user has granted access to it, and the grant
   is checked per host. See
   [ADR-0032](docs/decisions/ADR-0032-what-the-extension-may-fetch.md).
-- The extension injects **no content script**. It reads the story tab's DOM
+- The content script that 2.0.0-alpha.1 shipped is gone: the extension
+  injects **no content script**. It reads the story tab's DOM
   through the browser's scripting API, for one tab, and takes the markup
   only.
 - Every message's payload is validated at the bus, and every URL and origin a
@@ -234,8 +302,8 @@ The first alpha of the revamp: a full rewrite of WebToEpub on a modern MV3 / Typ
 ### Changed
 
 - **Parser registry.** 434 site parsers were migrated into `src/core/parsers/legacy/sites/`, registering 659 host names in total.
-- **Background service worker.** Fetching, EPUB assembly, saving and library persistence moved into the MV3 background worker (`src/core/background.ts`). Pages are clients, not workers.
-- **Content script** is now a read-only "reader" that reports a page summary; it no longer injects UI or performs fetches.
+- **Background event page.** Fetching, EPUB assembly, saving and library persistence moved into the background event page (`src/core/background.ts`, loaded through the manifest's `background.scripts`). Pages are clients, not workers.
+- **Content script** is now a read-only "reader" that reports a page summary; it no longer injects UI or performs fetches. (It was removed after this release; see the Security section under [Unreleased].)
 - **Storage moved from `localStorage` to `browser.storage.local`** with a typed, schema-validated store (`src/core/storage/settings-store.ts`). Settings are grouped into `appearance`, `story`, `epub`, `images`, `behaviour`, `privacy` and `advanced` sections, with booleans stored as real booleans rather than the string `"true"` / `"false"`.
 - **Chapter listings** honour `isIncludeable`: a chapter a parser marks as locked, paid or non-story starts unchecked, and it cannot be selected by the bulk actions.
 - **Throttling and concurrency** are enforced centrally: concurrent chapter fetches stay at 1 and the default minimum delay between requests is 500 ms.
@@ -254,7 +322,7 @@ The first alpha of the revamp: a full rewrite of WebToEpub on a modern MV3 / Typ
 ### Removed
 
 - **The original popup-as-whole-UI workflow.** The old sequence — open the popup, check the details tab, pick a cover, tick chapters, press pack — is gone. The popup stays a small launcher, and the workbench opens as its own titled page in a tab. There is no "the popup flashes and closes" dance, no native `beforeunload` confirmation when you close the tab, and no UI parked at an internal `popup.html?id=…` URL.
-- **Closing the tab no longer kills the download.** The work runs in the background service worker, so the download survives the workbench being closed or the popup being dismissed, and re-opening the workbench re-attaches to the running job and shows its progress.
+- **Closing the tab no longer kills the download.** The work runs in the background event page, so the download survives the workbench being closed or the popup being dismissed, and re-opening the workbench re-attaches to the running job and shows its progress.
 - **The ten mutually-toggling `<section>` surfaces**, replaced by four dedicated pages.
 - **`localStorage` usage** for settings, reading list and parser configs.
 - **Base64 EPUB storage** in extension storage, and the zero-byte files produced by failed image downloads (failed images are now visible placeholders in the EPUB).
@@ -270,7 +338,7 @@ The first alpha of the revamp: a full rewrite of WebToEpub on a modern MV3 / Typ
 - **The dark theme is dark.** The dark theme mapped `--bg` to the lightest step of the neutral ramp and `--text` to the darkest, which is the light theme's mapping. The ramp is now reversed inside the dark theme, so `--bg` means "the background" in both themes ([ADR-0014](docs/decisions/ADR-0014-dark-theme-token-ramp.md)).
 - **`[hidden]` is honoured.** The user agent's `[hidden]` rule loses to any author `display` rule, so the workbench's empty state stayed in the layout and pushed the chapter list out of the panel. A global rule puts the attribute back in charge (`src/ui/styles/base.css`).
 - **The chapter list fills its panel.** `contain: strict` implies `contain: size`, which made the list's height independent of its contents and stopped the flex algorithm from sizing it at all. It now uses `contain: content` (`src/ui/components/k-list.ts`).
-- **The content script runs.** It was bundled as an ES module, which Firefox does not support in the page's world; the browser rejected it with a syntax error and the content script silently never ran. It is now bundled as a classic script (`tools/build.mjs`).
+- **The content script runs.** It was bundled as an ES module, which Firefox does not support in the page's world; the browser rejected it with a syntax error and the content script silently never ran. It is now bundled as a classic script (`tools/build.mjs`). (The content script was removed after this release.)
 - **The settings validator no longer crashes.** Reading settings with a partially-written or older shape threw, which left the settings page unusable.
 - **The popup honours the user's theme.** It ignored the theme, accent, and density settings entirely, so a user who configured a dark interface got a light popup.
 - **The theme control works.** Changing the theme in the settings page did not change anything.
@@ -380,7 +448,7 @@ request that has no user gesture behind it. Full rationale is in
 
 All 434 site parsers were migrated into `src/core/parsers/legacy/sites/` and still work. The parser contract was preserved verbatim, so the migration is a code-motion exercise rather than a rewrite: `getChapterUrls` and `findContent` remain required, `extractTitleImpl` and `extractAuthor` keep their original meaning and return types, `isIncludeable` defaults to `true`, concurrent chapter fetches must stay at 1, the default minimum throttle is 500 ms, and the chapter shape remains `{ sourceUrl, title, isIncludeable?, previousDownload? }`.
 
-A compatibility shim provides the legacy globals (`util`, `HttpClient`, `UIText`, `ErrorLog`, `parserFactory`, `ChapterUrlsUI` and the `Parser` base class) to the migrated parsers, so the original parser source continues to run unchanged — including base-class helpers such as `makeEmptyDocForContent`, `findConstructedContent`, `addTextToChapterContent`, `walkTocPages` and `getChaptersFromAllTocPages`. A contract test in `tests/integration/parser-contract.test.ts` constructs every registered parser and asserts the contract, so breakage is caught in CI rather than at runtime.
+A compatibility shim provides the legacy globals (`util`, `HttpClient`, `UIText`, `ErrorLog`, `parserFactory`, `ChapterUrlsUI` and the `Parser` base class) to the migrated parsers, so the original parser source continues to run unchanged, including base-class helpers such as `makeEmptyDocForContent`, `findConstructedContent`, `addTextToChapterContent`, `walkTocPages` and `getChaptersFromAllTocPages`. A contract test in `tests/unit/tooling/parser-contract.test.ts` constructs every registered parser and asserts the contract, so breakage is caught in CI rather than at runtime.
 
 What _has_ changed is the plumbing around the parsers, not the parsers themselves: fetching, retrying, throttling and error classification are handled centrally by the background worker, so a parser no longer owns its own HTTP concerns. See [ADR-0002](docs/decisions/ADR-0002-parser-contract.md) and [ADR-0005](docs/decisions/ADR-0005-background-worker.md).
 

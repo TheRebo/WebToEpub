@@ -11,8 +11,9 @@
  *    the baseline's `maxSimultanousFetchSize` was a constant nobody enforced.
  *  - **Cancellation is real.** Every job has an `AbortController`, so
  *    cancelling stops the in-flight request rather than shortening a sleep.
- *  - **Progress is durable.** A job's state lives in a map that survives the
- *    worker being suspended, so a page reload does not lose the run.
+ *  - **Progress lives in memory.** A job's state is kept in the worker, so a
+ *    page that reloads can pick the run up again. It does not survive the
+ *    worker itself being suspended, which the open page's polling prevents.
  *
  * See ADR-0005.
  */
@@ -37,7 +38,12 @@ import { buildFileName, DEFAULT_FILENAME_TEMPLATE } from "./util/file-name";
 import { normaliseUrlForCompare } from "./util/dom";
 import { diagnostic } from "./util/diagnostics";
 import type { Parser } from "./parsers/parser";
-import { isAbortError, toUserFacingError, type UserFacingError } from "./util/errors";
+import {
+    isAbortError,
+    toUserFacingError,
+    UserFacingErrorError,
+    type UserFacingError,
+} from "./util/errors";
 import type { LibraryEntry } from "./storage/library-store";
 
 /** A chapter being downloaded. */
@@ -66,9 +72,23 @@ interface DownloadChapter {
 export type ChapterFetchState = "queued" | "fetching" | "loaded" | "failed";
 
 /** A running job. */
+/** What the user changed in the workbench, which wins over the parser. */
+export interface StoryOverrides {
+    /** The file name the user asked for. */
+    fileName?: string;
+    /** The author. */
+    author?: string;
+    /** The language. */
+    language?: string;
+    /** The cover's address. */
+    coverUrl?: string;
+}
+
 interface Job {
     /** The job's ID. */
     id: string;
+    /** What the user changed in the workbench. */
+    overrides: StoryOverrides;
     /** The story's URL. */
     sourceUrl: string;
     /** The story's title. */
@@ -157,7 +177,7 @@ export interface DownloadBehaviour {
  * same way whether or not the settings have been read yet.
  */
 export const DEFAULT_BEHAVIOUR: DownloadBehaviour = {
-    skipFailedChapters: false,
+    skipFailedChapters: true,
     retryOnEmptyPage: true,
     minimumDelay: 500,
     maxChapters: 5000,
@@ -228,27 +248,37 @@ export function buildBookMetadata(
 
     if (!parser || !storyDom) return metadata;
 
-    const author = parser.extractAuthor(storyDom);
+    // A parser that throws on one field must not cost the book the others,
+    // or the whole download.
+    const read = <T>(extract: () => T): T | undefined => {
+        try {
+            return extract();
+        } catch {
+            return undefined;
+        }
+    };
+
+    const author = cleanAuthor(read(() => parser.extractAuthor(storyDom)));
     if (author) metadata.author = author;
 
-    const language = parser.extractLanguage(storyDom);
+    const language = read(() => parser.extractLanguage(storyDom));
     if (language) metadata.language = language;
 
-    const publisher = parser.extractPublisher(storyDom);
+    const publisher = read(() => parser.extractPublisher(storyDom));
     if (publisher) metadata.publisher = publisher;
 
-    const description = parser.extractDescription(storyDom);
+    const description = read(() => parser.extractDescription(storyDom));
     if (description) metadata.description = description;
 
-    const subject = parser.extractSubject(storyDom);
+    const subject = read(() => parser.extractSubject(storyDom));
     if (subject) metadata.subjects = [subject];
 
-    const date = parser.extractDatePublished(storyDom);
+    const date = read(() => parser.extractDatePublished(storyDom));
     if (date) metadata.date = date;
 
     // The cover is one of the images the chapters referenced, if the parser
     // named one that was downloaded.
-    const coverUrl = parser.findCoverImageUrl(storyDom);
+    const coverUrl = read(() => parser.findCoverImageUrl(storyDom));
     if (coverUrl) {
         const absolute = resolveUrl(coverUrl, sourceUrl);
         const cover = absolute ? images.get(absolute) : undefined;
@@ -353,6 +383,22 @@ export interface DownloadManagerDependencies {
     saveFile(fileName: string, bytes: Uint8Array): Promise<{ fileName: string; fileSize: number }>;
     /** The parser for a URL. */
     parserFor(url: string, dom: Document): Parser | null;
+    /**
+     * The page and the parser the chapter list was built from, when the
+     * worker still has them.
+     *
+     * A parser keeps state while it lists chapters (an API id, a slug, a map
+     * of page URLs), and a table of contents built by script is only in the
+     * live tab. Reusing both means the download reads the story the user saw.
+     */
+    storyFor?(url: string): { dom: Document; parser: Parser | null } | undefined;
+    /**
+     * The parser registered for a chapter's own host, or `null`.
+     *
+     * A table of contents on one site can link to chapters on another, and
+     * the original gave each host its own parser.
+     */
+    parserForHost?(url: string, storyParser: Parser | null): Parser | null;
     /** Wait between requests, honouring the abort signal. */
     throttle(ms: number, signal: AbortSignal): Promise<void>;
     /**
@@ -556,14 +602,27 @@ export class DownloadManager {
         sourceUrl: string,
         title: string,
         chapters: DownloadChapter[],
-        options: { fileName?: string } = {},
+        options: StoryOverrides = {},
     ): string {
+        // One book at a time: two jobs would double the request rate on the
+        // site, and each one's cookie cleanup would pull cookies from under
+        // the other. A second start for the same story joins the running job.
+        const active = this.activeJob;
+        if (active) {
+            if (active.sourceUrl === sourceUrl) return active.id;
+            throw new UserFacingErrorError(
+                "Another book is still being made. Wait for it to finish, or cancel it.",
+                "BUSY",
+            );
+        }
+
         const id = crypto.randomUUID();
         const job: Job = {
             id,
             sourceUrl,
             title,
             requestedFileName: options.fileName,
+            overrides: options,
             // A chapter the caller did not give a state for is waiting.
             chapters: chapters.map((chapter) => ({ ...chapter, state: chapter.state ?? "queued" })),
             phase: "preparing",
@@ -628,6 +687,10 @@ export class DownloadManager {
         // built below sees the settings the user has right now.
         await this.#dependencies.prepare?.();
 
+        // The user may have cancelled while the settings were being read.
+        // The job is already reported as cancelled, and must stay that way.
+        if (signal.aborted) return;
+
         job.phase = "fetching-chapters";
         this.#report(job);
         diagnostic("Fetching chapters", job.id, job.chapters.length, "chapters");
@@ -638,9 +701,10 @@ export class DownloadManager {
         // parser, no cover and no metadata, and every chapter would become a
         // placeholder. Failing loudly is better than saving a book that
         // looks complete but is empty.
+        const listed = this.#dependencies.storyFor?.(job.sourceUrl);
         let storyDom: Document;
         try {
-            storyDom = await this.#fetchStoryDom(job.sourceUrl, signal);
+            storyDom = listed?.dom ?? (await this.#fetchStoryDom(job.sourceUrl, signal));
         } catch (error) {
             if (signal.aborted) {
                 job.phase = "cancelled";
@@ -652,14 +716,16 @@ export class DownloadManager {
             this.#report(job);
             return;
         }
-        const parser = parserFor(job.sourceUrl, storyDom);
+        const parser = listed ? listed.parser : parserFor(job.sourceUrl, storyDom);
 
         // The parser owns the politeness budget. Some sites need seconds
         // between requests, and the baseline's parsers said so. The user's
         // own minimum is a floor, not a ceiling: a site that asks for a
         // longer pause always gets it.
         const parserDelay = parser ? Math.max(parser.getRateLimit(), 0) : 0;
-        const delay = Math.max(parserDelay, behaviour.minimumDelay) + behaviour.delayPerChapter;
+        // The legacy parsers' rate limit already includes the user's
+        // per-chapter delay, so it is not added on top a second time.
+        const delay = Math.max(parserDelay, behaviour.minimumDelay + behaviour.delayPerChapter);
 
         // The chapter limit is the user's safety net. A book with tens of
         // thousands of chapters would take days and fill the disk, so the
@@ -692,6 +758,18 @@ export class DownloadManager {
          */
         const chapterBases = new Map<string, string>();
 
+        // One parser per chapter host, chosen once.
+        const storyHost = hostOf(job.sourceUrl);
+        const hostParsers = new Map<string, Parser | null>();
+        const chapterParserFor = (url: string): Parser | null => {
+            const host = hostOf(url);
+            if (host === storyHost || !this.#dependencies.parserForHost) return parser;
+            if (!hostParsers.has(host)) {
+                hostParsers.set(host, this.#dependencies.parserForHost(url, parser) ?? parser);
+            }
+            return hostParsers.get(host) ?? parser;
+        };
+
         for (const [chapterIndex, chapter] of job.chapters.entries()) {
             if (signal.aborted) {
                 job.phase = "cancelled";
@@ -706,9 +784,10 @@ export class DownloadManager {
             job.current = { index: chapterIndex, state: "fetching" };
             this.#report(job);
 
+            const chapterParser = chapterParserFor(chapter.sourceUrl);
             try {
                 const dom = await this.#fetchChapterWithRetry(
-                    parser,
+                    chapterParser,
                     chapter.sourceUrl,
                     signal,
                     behaviour,
@@ -737,8 +816,8 @@ export class DownloadManager {
                     // that a parser can remove the links to the previous and
                     // the next chapter — the setting that asks for it would
                     // otherwise have nothing to compare the links against.
-                    const content = parser
-                        ? parser.extractChapterContent(dom, {
+                    const content = chapterParser
+                        ? chapterParser.extractChapterContent(dom, {
                               sourceUrl: chapter.sourceUrl,
                               title: chapter.title,
                               nextPrevChapters: neighbourUrls(job.chapters, chapterIndex),
@@ -774,7 +853,12 @@ export class DownloadManager {
                         // page's relative image URLs with it, and resolving
                         // them against the address that was asked for would
                         // point every one of them at the wrong place.
-                        const base = dom.baseURI || chapter.sourceUrl;
+                        // A document a parser built itself has the
+                        // extension's own address as its base, which no image
+                        // on the site is relative to.
+                        const base = /^https?:/i.test(dom.baseURI)
+                            ? dom.baseURI
+                            : chapter.sourceUrl;
                         const referenced = imageSettings.skipImages
                             ? new Set<string>()
                             : collectImageUrls(content, base, {
@@ -884,7 +968,14 @@ export class DownloadManager {
         // The cover is usually *not* in any chapter, so it is added to the
         // set of images to fetch here. Without this, a book whose cover
         // lives only on the story page would be built without one.
-        const coverUrl = parser && storyDom ? parser.findCoverImageUrl(storyDom) : null;
+        let coverUrl: string | null = null;
+        try {
+            coverUrl =
+                job.overrides.coverUrl?.trim() ||
+                (parser && storyDom ? parser.findCoverImageUrl(storyDom) : null);
+        } catch {
+            // A parser that cannot find its cover leaves the book without one.
+        }
         if (coverUrl) {
             const absolute = resolveUrl(coverUrl, job.sourceUrl);
             if (absolute && !images.has(absolute)) {
@@ -897,6 +988,9 @@ export class DownloadManager {
         }
 
         const downloaded = new Map<string, ImageData>();
+        // The images that stand in for a failed download. A chapter keeps its
+        // placeholder, but a placeholder is never the book's cover.
+        const failedImages = new Set<string>();
         for (const url of images.keys()) {
             if (signal.aborted) {
                 job.phase = "cancelled";
@@ -914,6 +1008,7 @@ export class DownloadManager {
                 // A failed image becomes a visible placeholder rather than a
                 // zero-byte file, which would corrupt the EPUB.
                 downloaded.set(url, buildPlaceholderImage());
+                failedImages.add(url);
             }
             await throttle(100, signal);
         }
@@ -932,6 +1027,7 @@ export class DownloadManager {
             for (const [url, image] of downloaded) {
                 if (image.mediaType === SVG_MEDIA_TYPE) {
                     downloaded.set(url, buildPlaceholderImage());
+                    failedImages.add(url);
                 }
             }
         }
@@ -984,7 +1080,8 @@ export class DownloadManager {
         this.#report(job);
         diagnostic("Building the EPUB", job.id, packed.length, "chapters");
 
-        const metadata = this.#buildMetadata(job, storyDom, parser, downloaded, bookSettings);
+        const usable = new Map([...downloaded].filter(([url]) => !failedImages.has(url)));
+        const metadata = this.#buildMetadata(job, storyDom, parser, usable, bookSettings);
         const result = packEpub(packed, metadata);
 
         // --- Save ---
@@ -1129,7 +1226,24 @@ export class DownloadManager {
         images: Map<string, ImageData>,
         book: DownloadBook,
     ): BookMetadata {
-        return buildBookMetadata(job.title, job.sourceUrl, storyDom, parser, images, book);
+        const metadata = buildBookMetadata(
+            job.title,
+            job.sourceUrl,
+            storyDom,
+            parser,
+            images,
+            book,
+        );
+        // What the user typed in the workbench wins over what the parser found.
+        const { author, language, coverUrl } = job.overrides;
+        if (author?.trim()) metadata.author = author.trim();
+        if (language?.trim()) metadata.language = language.trim();
+        if (coverUrl?.trim()) {
+            const absolute = resolveUrl(coverUrl.trim(), job.sourceUrl);
+            const cover = absolute ? images.get(absolute) : undefined;
+            if (cover) metadata.cover = cover;
+        }
+        return metadata;
     }
 
     /**
@@ -1531,7 +1645,9 @@ function isEmptyDocument(dom: Document): boolean {
  * real chapter.
  */
 function hasVisibleText(element: Element): boolean {
-    if (element.querySelector("img, svg, image, video, audio, embed, object")) return true;
+    // Only an image survives the sanitiser; a chapter that is nothing but a
+    // video or an embedded SVG would be packed empty (ADR-0041).
+    if (element.querySelector("img")) return true;
     const text = element.textContent?.replace(/\s+/g, " ").trim() ?? "";
     return text.length > 0;
 }
@@ -1549,4 +1665,27 @@ function tooManyChaptersError(count: number, limit: number): UserFacingError {
         code: "TOO_MANY_CHAPTERS",
         actions: [{ id: "raise-limit", label: "Raise the limit" }],
     };
+}
+
+/** A URL's host without a leading `www.`, or the URL itself when it does not parse. */
+function hostOf(url: string): string {
+    try {
+        return new URL(url).hostname.replace(/^www\./, "");
+    } catch {
+        return url;
+    }
+}
+
+/**
+ * An author's name without the label a page puts in front of it.
+ *
+ * Many story pages write "by A. Writer" or "Author: A. Writer", and a parser
+ * that reads the line whole hands the label over with the name.
+ *
+ * @param author The name the parser found.
+ * @returns The name, or `undefined` when there is none.
+ */
+export function cleanAuthor(author: string | undefined | null): string | undefined {
+    const cleaned = (author ?? "").replace(/^\s*(?:by|author\s*:|written by)\s+/i, "").trim();
+    return cleaned || undefined;
 }

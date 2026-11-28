@@ -45,13 +45,31 @@
     "message": "Build EPUB",
     "description": "The button that builds the book."
   },
-  "workbenchSave": {
-    "message": "Save",
-    "description": "The button that saves the metadata."
-  },
   "workbenchCancel": {
     "message": "Cancel",
     "description": "The button that stops a download."
+  },
+  "workbenchRetry": {
+    "message": "Try again",
+    "description": "The button that starts a failed or cancelled download again."
+  },
+  "workbenchDismiss": {
+    "message": "Dismiss",
+    "description": "The button that hides a finished download's status."
+  },
+  "workbenchSavedAs": {
+    "message": "Saved as $FILE$ ($SIZE$)",
+    "description": "Shown when the book has been saved, with its file name and size.",
+    "placeholders": {
+      "file": {
+        "content": "$1",
+        "example": "1"
+      },
+      "size": {
+        "content": "$2",
+        "example": "1.2 MB"
+      }
+    }
   },
   "workbenchSelectAll": {
     "message": "Select all",
@@ -127,13 +145,13 @@
     "message": "No chapters selected",
     "description": "Shown when nothing is ticked."
   },
+  "workbenchBusy": {
+    "message": "A book is being made",
+    "description": "Why Pack is unavailable while a download runs."
+  },
   "workbenchWaitingForChapters": {
     "message": "Looking for chapters…",
     "description": "Shown while the chapter list loads."
-  },
-  "workbenchDetected": {
-    "message": "Detected",
-    "description": "Shown when a parser recognised the site."
   },
   "workbenchFieldTitle": {
     "message": "Title",
@@ -155,10 +173,6 @@
     "message": "Reset",
     "description": "Restores the default file name."
   },
-  "workbenchChooseFromPage": {
-    "message": "Choose from page",
-    "description": "Picks the cover image from the page."
-  },
   "workbenchRemoveCover": {
     "message": "Remove cover",
     "description": "Removes the cover image."
@@ -168,16 +182,16 @@
     "description": "Keeps the notes at the end of a chapter."
   },
   "workbenchIncludeTocPage": {
-    "message": "Include the contents page",
+    "message": "Include the table of contents as a chapter",
     "description": "Adds the table of contents as a chapter."
   },
   "workbenchMoreOptions": {
     "message": "More options",
     "description": "Opens the full settings page."
   },
-  "workbenchNoCover": {
-    "message": "No cover",
-    "description": "Shown when there is no cover image."
+  "workbenchOptionsHint": {
+    "message": "These apply to every book you make.",
+    "description": "Explains that the workbench's switches change the settings."
   },
   "workbenchCoverUrl": {
     "message": "Cover image address",
@@ -187,21 +201,9 @@
     "message": "No story found on this page",
     "description": "Shown when the page is not a story."
   },
-  "workbenchTryAnyway": {
-    "message": "Try anyway",
-    "description": "Opens the workbench regardless."
-  },
-  "workbenchUnsupportedSite": {
-    "message": "This site is not supported yet",
-    "description": "Shown when no parser matched."
-  },
-  "workbenchUseSelectorBuilder": {
-    "message": "Build a selector",
-    "description": "Opens the selector builder."
-  },
-  "workbenchReloadPage": {
-    "message": "Reload the page",
-    "description": "Reloads the tab."
+  "workbenchNoStoryHint": {
+    "message": "Check that this is the story's chapter list, or show Kintsugi where the chapters are.",
+    "description": "Shown under the empty chapter list."
   },
   "workbenchFieldUrl": {
     "message": "Story address",
@@ -235,9 +237,9 @@
     "message": "Access was not allowed, so the story cannot be read.",
     "description": "Shown when the user declines the browser's permission prompt."
   },
-  "accessAlreadyGranted": {
-    "message": "Access to this site has already been allowed.",
-    "description": "Shown when the site is already readable."
+  "accessGranted": {
+    "message": "Kintsugi can now read this site.",
+    "description": "Shown when the user has just allowed the site."
   },
   "chapterStateQueued": {
     "message": "Queued",
@@ -299,10 +301,6 @@
     "message": "Open workbench",
     "description": "The popup's main button."
   },
-  "popupAddToLibrary": {
-    "message": "Add to library",
-    "description": "The popup's library button."
-  },
   "popupLibraryShort": {
     "message": "Library",
     "description": "The popup's library button's visible label."
@@ -324,12 +322,8 @@
     "description": "Shown on the first run, before the onboarding."
   },
   "popupGetStarted": {
-    "message": "Get started",
+    "message": "Set up Kintsugi",
     "description": "The popup's button that opens the onboarding."
-  },
-  "popupUnsupported": {
-    "message": "This site is not supported yet.",
-    "description": "Shown when no parser matched."
   },
   "popupSaved": {
     "message": "Your book is ready.",
@@ -454,12 +448,16 @@
     "description": "The list of sites the extension may read."
   },
   "optionsRevoke": {
-    "message": "Revoke",
+    "message": "Remove access",
     "description": "Removes access to a site."
   },
   "optionsRevokeAll": {
-    "message": "Revoke all",
+    "message": "Remove all access",
     "description": "Removes access to every site."
+  },
+  "optionsRevokeAllConfirm": {
+    "message": "Kintsugi will not be able to read any of these sites until you allow each one again.",
+    "description": "The explanation in the dialog that confirms removing access to every site."
   },
   "optionsSiteAccessEmpty": {
     "message": "No sites yet. Kintsugi asks when you open a story.",
@@ -470,11 +468,11 @@
     "description": "The hint under the site access heading."
   },
   "optionsRevoked": {
-    "message": "The site's access was taken back.",
+    "message": "Kintsugi can no longer read that site.",
     "description": "Shown after a site's access is revoked."
   },
   "optionsRevokedAll": {
-    "message": "Access to every site was taken back.",
+    "message": "Kintsugi can no longer read any site until you allow it again.",
     "description": "Shown after access to every site is revoked."
   },
   "optionsExportSettings": {
@@ -570,7 +568,7 @@
     "description": "The button that imports a library exported by WebToEpub 1.x."
   },
   "optionsLibraryImported": {
-    "message": "Imported $1 book.",
+    "message": "Imported $1 books.",
     "description": "Confirmation after importing a library, when it held several books."
   },
   "optionsLibraryImportedOne": {
@@ -590,6 +588,14 @@
   "libraryRemove": {
     "message": "Remove",
     "description": "Removes a book from the library."
+  },
+  "libraryRemoveTitle": {
+    "message": "Remove this book from the library?",
+    "description": "The heading of the remove dialog."
+  },
+  "libraryRemoveConfirm": {
+    "message": "The EPUB you saved stays where it is. Only its entry in the library goes.",
+    "description": "The explanation in the remove dialog."
   },
   "libraryRemoved": {
     "message": "Removed from the library.",
@@ -616,7 +622,7 @@
     "description": "The default-language setting."
   },
   "settingDefaultLanguageHint": {
-    "message": "The ISO 639 code used when a site does not declare one.",
+    "message": "The language a book is marked as when its site does not say.",
     "description": "Explains the default-language setting."
   },
   "settingRemoveAuthorNotes": {
@@ -743,10 +749,6 @@
     "message": "Step 3 of 3",
     "description": "The third onboarding step's label."
   },
-  "onboardingNext": {
-    "message": "Next",
-    "description": "The button that moves to the next step."
-  },
   "onboardingBack": {
     "message": "Back",
     "description": "The button that moves to the previous step."
@@ -759,16 +761,20 @@
     "message": "Skip",
     "description": "The button that skips the onboarding."
   },
-  "onboardingGetStarted": {
-    "message": "Get started",
-    "description": "The button that leaves the onboarding."
+  "onboardingNextSites": {
+    "message": "Next: which sites work",
+    "description": "Moves from the welcome step to the sites step."
+  },
+  "onboardingNextLook": {
+    "message": "Next: choose a look",
+    "description": "Moves from the sites step to the appearance step."
   },
   "onboardingWelcomeText": {
-    "message": "Turn any web novel into a book worth keeping. Point it at a chapter list, and it builds a clean EPUB — cover, table of contents, and all.",
+    "message": "Turn any web novel into a book worth keeping. Point it at a chapter list and it builds a clean EPUB, with a cover and a table of contents.",
     "description": "The first onboarding step's explanation."
   },
   "onboardingWelcomeFootnote": {
-    "message": "No account. No tracking. Works offline.",
+    "message": "No account, and nothing is tracked. Kintsugi talks only to the sites you read.",
     "description": "The first onboarding step's footnote."
   },
   "onboardingWhichSite": {
@@ -780,7 +786,7 @@
     "description": "The second onboarding step's explanation."
   },
   "onboardingWhichSiteFootnote": {
-    "message": "Not listed? Kintsugi can still read it — you can build a selector yourself.",
+    "message": "Not listed? Kintsugi can still read it once you show it where the chapters are.",
     "description": "The second onboarding step's footnote."
   },
   "onboardingMakeItYours": {
@@ -803,25 +809,41 @@
     "message": "Kintsugi does not know this site yet.",
     "description": "No parser matched the URL."
   },
-  "errorTimeout": {
-    "message": "The site took too long to answer.",
-    "description": "A timeout."
-  },
   "errorCancelled": {
     "message": "Cancelled.",
     "description": "The user cancelled the operation."
   },
-  "errorForbidden": {
-    "message": "The site refused the request.",
-    "description": "An HTTP 403."
+  "errorHttpStatus": {
+    "message": "The site answered with an error.",
+    "description": "The server returned an HTTP error status."
+  },
+  "errorRateLimited": {
+    "message": "The site is limiting requests. Wait a moment, then try again.",
+    "description": "The server answered 429, too many requests."
+  },
+  "errorChallenge": {
+    "message": "The site wants to check that you are a person. Open the page, then try again.",
+    "description": "The site served a challenge such as a captcha."
+  },
+  "errorEmptyChapter": {
+    "message": "The chapter came back empty. It may be locked, or the site may have changed.",
+    "description": "A chapter page with no text in it."
+  },
+  "errorStorageFull": {
+    "message": "There is not enough space to save this book.",
+    "description": "The browser's storage is full."
+  },
+  "errorPermission": {
+    "message": "Kintsugi is not allowed to read this site.",
+    "description": "The site has not been allowed."
+  },
+  "errorBusy": {
+    "message": "Another book is still being made. Wait for it to finish, or cancel it.",
+    "description": "A second download was started while one is running."
   },
   "errorParse": {
     "message": "The page could not be read.",
     "description": "The page could not be parsed."
-  },
-  "errorNoChapters": {
-    "message": "No chapters were found on this page.",
-    "description": "The chapter list was empty."
   },
   "filterSearch": {
     "message": "Search",
@@ -852,6 +874,18 @@
   "filterClear": {
     "message": "Clear",
     "description": "Clears the filter."
+  },
+  "optionsNumberRequired": {
+    "message": "Enter a number.",
+    "description": "Shown under a number setting that was left empty."
+  },
+  "filterNoMatches": {
+    "message": "No chapters match these filters",
+    "description": "Shown when the filter hides every chapter."
+  },
+  "filterClearAll": {
+    "message": "Clear filters",
+    "description": "Removes the filter so every chapter shows again."
   },
   "filterApply": {
     "message": "Apply",
@@ -970,6 +1004,18 @@
   "commonDismiss": {
     "message": "Dismiss",
     "description": "The label of a button that dismisses a notification."
+  },
+  "commonLoading": {
+    "message": "Loading…",
+    "description": "Shown while a page reads what it needs."
+  },
+  "siteSelectorSuggesting": {
+    "message": "Looking at the page…",
+    "description": "Shown while the scanner reads the page."
+  },
+  "siteSelectorTesting": {
+    "message": "Trying the selectors on the page…",
+    "description": "Shown while the selectors are tested."
   },
   "commonCancel": {
     "message": "Cancel",

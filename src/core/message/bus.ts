@@ -39,6 +39,12 @@ export interface RequestMap {
              * options page is used.
              */
             fileName?: string;
+            /** The author, as the user corrected it. */
+            author?: string;
+            /** The language, as the user chose it. */
+            language?: string;
+            /** The cover's address, as the user chose it. */
+            coverUrl?: string;
         };
         response: { jobId: string };
     };
@@ -436,7 +442,10 @@ const PAYLOAD_RULES: {
         ) &&
         // The file name is optional, but when it is there it has to be a
         // string: a caller that sends something else meant to send a name.
-        (!hasProperty(payload, "fileName") || hasString(payload, "fileName")),
+        (!hasProperty(payload, "fileName") || hasString(payload, "fileName")) &&
+        (!hasProperty(payload, "author") || hasString(payload, "author")) &&
+        (!hasProperty(payload, "language") || hasString(payload, "language")) &&
+        (!hasProperty(payload, "coverUrl") || hasString(payload, "coverUrl")),
     "download:cancel": (payload) => hasString(payload, "jobId"),
     "download:progress": (payload) => hasString(payload, "jobId"),
     "download:list": () => true,

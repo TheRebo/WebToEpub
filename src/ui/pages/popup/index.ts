@@ -6,7 +6,7 @@
  * user one card and one button.
  *
  * It never fetches a page and never loads a parser: the worker owns both.
- * That is what keeps the popup opening instantly, even with 437 parsers in
+ * That is what keeps the popup opening instantly, even with 434 parsers in
  * the extension.
  *
  * See ADR-0005.
@@ -34,7 +34,7 @@ import {
 import { SettingsStore } from "../../../core/storage/settings-store";
 import { themeController } from "../../styles/theme-controller";
 import { t, tDynamic } from "../../i18n";
-import { caughtErrorMessage } from "../../error-messages";
+import { caughtErrorMessage, errorMessage } from "../../error-messages";
 import { runGuarded } from "../../guarded";
 import type { UserFacingError } from "../../../core/util/errors";
 import { pollUntilDone } from "../../poll";
@@ -104,23 +104,25 @@ class PopupController {
             return;
         }
 
-        // A running download is the most valuable thing the popup can show,
-        // so it is checked first: it needs no network at all. When one is
-        // running the popup follows it instead of analysing the page — a
-        // second analysis would replace the progress with a story card.
-        if (await this.#checkRunningJob()) return;
-
         // The popup normally looks at the tab the user is on. A URL on the
         // query string overrides that, which is what makes the popup
         // linkable: a site can offer "add this chapter to your library"
-        // without sending the user to the workbench first.
+        // without sending the user to the workbench first. It is read before
+        // anything else, so every later state can go back to the page.
         const url = requestedUrl() ?? (await activePageUrl());
+        this.#url = url;
+
+        // A running download is the most valuable thing the popup can show,
+        // so it is checked first: it needs no network at all. When one is
+        // running the popup follows it instead of analysing the page, since a
+        // second analysis would replace the progress with a story card.
+        if (await this.#checkRunningJob()) return;
+
         if (!url) {
             this.#set({ state: "no-story", error: t("popupNoStory") });
             return;
         }
 
-        this.#url = url;
         this.#set({ hostName: hostOf(url) });
         await this.#analyse(url);
     }
@@ -235,7 +237,7 @@ class PopupController {
             return;
         }
 
-        this.#toast(t("accessAlreadyGranted"), "success");
+        this.#toast(t("accessGranted"), "success");
         await this.#analyse(url);
     }
 
@@ -263,7 +265,7 @@ class PopupController {
             this.#jobId = running.jobId;
             this.#set({
                 state: "running",
-                phase: running.message,
+                phase: tDynamic(running.message),
                 done: running.chaptersDone,
                 total: running.chaptersTotal,
                 percent: running.percent,
@@ -306,9 +308,21 @@ class PopupController {
                     progress.phase === "cancelled"
                 ) {
                     this.#jobId = undefined;
-                    if (progress.phase === "complete") {
-                        this.#toast(t("popupSaved"), "success");
-                        this.#set({ state: "story" });
+                    if (progress.phase === "failed") {
+                        this.#set({
+                            state: "error",
+                            error: errorMessage(progress.error) || t("errorGeneric"),
+                        });
+                        return undefined;
+                    }
+                    if (progress.phase === "complete") this.#toast(t("popupSaved"), "success");
+                    // The job is over, so the popup goes back to the page the
+                    // user is on: a popup opened mid-job never analysed it.
+                    if (this.#url) {
+                        this.#set({ state: "loading" });
+                        await this.#analyse(this.#url);
+                    } else {
+                        this.#set({ state: "no-story", error: t("popupNoStory") });
                     }
                     return undefined;
                 }
@@ -340,7 +354,7 @@ class PopupController {
                 // A failure inside an action is the user's problem to know
                 // about: the popup shows it rather than the browser logging
                 // an unhandled rejection to a console nobody is watching.
-                (error) => this.#toast(caughtErrorMessage(error), "danger"),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
             );
         });
     }
@@ -377,7 +391,22 @@ class PopupController {
                 return;
             }
             case "retry": {
-                if (this.#url) await this.#analyse(this.#url);
+                if (this.#url) {
+                    this.#set({ state: "loading" });
+                    await this.#analyse(this.#url);
+                } else {
+                    await this.start();
+                }
+                return;
+            }
+            case "cancel": {
+                const jobId = this.#jobId;
+                if (!jobId) return;
+                await sendRequest(
+                    { sendMessage: (message) => sendMessage(message) },
+                    "download:cancel",
+                    { jobId },
+                );
                 return;
             }
             case "grant-access": {
@@ -390,7 +419,7 @@ class PopupController {
     }
 
     /** Show a toast. */
-    #toast(message: string, variant: "info" | "success" | "warning" | "danger"): void {
+    #toast(message: string, variant: "info" | "success" | "warning" | "error"): void {
         const toast = document.createElement("k-toast");
         toast.setAttribute("message", message);
         toast.setAttribute("variant", variant);
@@ -443,7 +472,7 @@ function requestedUrl(): string | undefined {
 
 /** Start the popup. */
 async function main(): Promise<void> {
-    installI18n();
+    installI18n("appName");
     const controller = new PopupController(document.body);
     await controller.start();
 }

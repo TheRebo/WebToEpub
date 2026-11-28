@@ -173,27 +173,22 @@ export function getFirstImgSrc(dom: Document, containerSelector: string): string
 }
 
 /**
- * Convert a `<pre>` block into `<p>` elements.
+ * Convert a `<pre>` block's text into `<p>` elements.
  *
- * Some sites render a chapter's paragraphs inside a `<pre>` for
- * whitespace preservation. Keeping the `<pre>` produces a monospaced block
- * in the EPUB that does not reflow, so the paragraphs are split out.
+ * The element is emptied and refilled in place, as the original did: callers
+ * pass the chapter's own content element and keep using it afterwards, so
+ * replacing it would leave them holding a detached, empty node.
  */
 export function convertPreTagToPTags(dom: Document, preElement: Element, delimiter = "\n"): void {
-    const text = preElement.textContent ?? "";
+    const text = (preElement.textContent ?? "").replace(/\r\n?/g, "\n");
     const lines = text.split(delimiter);
-    const fragment = dom.createDocumentFragment();
+    preElement.replaceChildren();
     for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed) continue;
         const p = dom.createElement("p");
         p.textContent = trimmed;
-        fragment.appendChild(p);
-    }
-    if (fragment.childNodes.length > 0) {
-        preElement.replaceWith(fragment);
-    } else {
-        preElement.remove();
+        preElement.appendChild(p);
     }
 }
 

@@ -4,16 +4,16 @@
  * Owns the parser registry, the network layer, and the download manager. The
  * extension pages never fetch anything themselves; they ask the worker.
  *
- * This is the only place that holds the 437 parsers, which is what keeps the
+ * This is the only place that holds the 434 parsers, which is what keeps the
  * popup small: the popup ships no parser code at all.
  *
  * See ADR-0005.
  */
-import { DownloadManager } from "./download-manager";
+import { cleanAuthor, DownloadManager } from "./download-manager";
 import { FetchClient } from "./net/fetch-client";
 import { CookieBridge } from "./net/cookie-bridge";
 import { createCookieApi } from "./net/browser-cookie-api";
-import { installOriginStripRule } from "./net/dnr-rules";
+import { installOriginStripRule, installPrivateNetworkRules } from "./net/dnr-rules";
 import { legacyRegistry } from "./parsers/compat/legacy-factory";
 import { installFetchClient } from "./parsers/compat/legacy-http-client";
 import { setParserServices } from "./parsers/services-context";
@@ -29,17 +29,29 @@ import { LibraryStore, mergeLibraryEntry, type LibraryEntry } from "./storage/li
 import { parseLibraryExport } from "./storage/library-import";
 import { siteSelectors } from "./storage/site-selectors";
 import { scanDocument } from "./parsers/heuristic-scanner";
-import { toUserFacingError, type UserFacingError } from "./util/errors";
+import {
+    redactUrlsIn,
+    toUserFacingError,
+    UserFacingErrorError,
+    type UserFacingError,
+} from "./util/errors";
 import { diagnostic, diagnosticUrl, setDiagnosticsEnabled } from "./util/diagnostics";
 import { mayFetchUrl } from "./net/fetch-policy";
+import { listHostAccess } from "./host-access";
+import { isPrivateHost } from "./util/sanitize";
 import { DefaultParser } from "./parsers/default-parser";
 import { registerAllParsers } from "./parsers/register-all";
-import type { ParserServices } from "./parsers/parser";
+import type { Parser, ParserServices } from "./parsers/parser";
 import { listChapterUrls } from "./parsers/parser";
 import { removeChapterNumber } from "./util/chapter-title";
 import { readLivePageDom } from "./live-page";
+import { LegacyParser, type LegacyChapter } from "./parsers/compat/legacy-parser";
+import { syncLegacyControls } from "./parsers/compat/legacy-controls";
 
 /** The worker. */
+/** How many listed stories the worker keeps for their downloads. */
+const REMEMBERED_STORIES = 4;
+
 class BackgroundWorker {
     /**
      * The registry.
@@ -59,12 +71,28 @@ class BackgroundWorker {
         diagnostic("The library is waiting for another tab to let go of it");
     });
     /**
+     * Keep the page and the parser a chapter list was built from, so the
+     * download reuses them. Only the last few stories are kept.
+     */
+    #rememberStory(url: string, dom: Document, parser: Parser): void {
+        this.#stories.delete(url);
+        this.#stories.set(url, { dom, parser });
+        while (this.#stories.size > REMEMBERED_STORIES) {
+            const oldest = this.#stories.keys().next().value;
+            if (oldest === undefined) break;
+            this.#stories.delete(oldest);
+        }
+    }
+
+    /**
      * The user's preferences, in the shape the legacy parsers read them.
      *
      * The preferences are a snapshot: a parser is built for one run, and
      * that run uses the settings the user had when they started it.
      */
     #preferences = defaultLegacyUserPreferences();
+    /** The page and parser each recent chapter list came from, by story URL. */
+    #stories = new Map<string, { dom: Document; parser: Parser }>();
 
     /**
      * The startup promise.
@@ -112,11 +140,23 @@ class BackgroundWorker {
                 const url = URL.createObjectURL(blob);
                 try {
                     if (api) {
-                        await api.downloads.download({
-                            url,
-                            filename: fileName,
-                            conflictAction: "uniquify",
-                        });
+                        try {
+                            await api.downloads.download({
+                                url,
+                                filename: fileName,
+                                conflictAction: "uniquify",
+                            });
+                        } catch (error) {
+                            // Closing the "Save as" dialog rejects the download.
+                            // That is the user's choice, not a network failure.
+                            if (/cancel/i.test(String(error))) {
+                                throw new UserFacingErrorError(
+                                    "The book was not saved, because the save dialog was closed.",
+                                    "CANCELLED",
+                                );
+                            }
+                            throw error;
+                        }
                     }
                     return { fileName, fileSize: bytes.length };
                 } finally {
@@ -126,6 +166,14 @@ class BackgroundWorker {
                 }
             },
             parserFor: (url, dom) => this.#registry.fetch(url, dom),
+            storyFor: (url) => this.#stories.get(url),
+            parserForHost: (url, storyParser) => {
+                const parser = this.#registry.fetchByUrl(url);
+                if (parser instanceof LegacyParser && storyParser instanceof LegacyParser) {
+                    parser.copyState(storyParser);
+                }
+                return parser;
+            },
             throttle: async (ms, signal) => {
                 await sleep(ms, signal);
             },
@@ -257,6 +305,9 @@ class BackgroundWorker {
         try {
             const settings = await this.#settings.get();
             this.#preferences = toLegacyUserPreferences(settings);
+            syncLegacyControls(globalThis.document, {
+                removeChapterNumbers: settings.story.removeChapterNumbers,
+            });
             setDiagnosticsEnabled(settings.advanced.diagnostics);
         } catch {
             // A failure to read the settings must not stop the worker: the
@@ -300,7 +351,7 @@ class BackgroundWorker {
      */
     async #prepare(): Promise<void> {
         try {
-            await registerAllParsers(this.#registry);
+            await registerAllParsers();
         } catch (error) {
             console.error("[kintsugi] The parsers could not be registered:", error);
         }
@@ -324,8 +375,37 @@ class BackgroundWorker {
         // listener. It is reinstalled on every worker start, because a
         // dynamic rule does not survive the worker being torn down.
         await installOriginStripRule(getNamespace()?.declarativeNetRequest);
+        await this.#refreshPrivateNetworkRules();
+        this.#watchHostGrants();
 
         this.#watchSettings();
+    }
+
+    /**
+     * Rebuild the rules that keep redirects out of the user's network, so a
+     * private host the user granted by name stays reachable (ADR-0045).
+     */
+    async #refreshPrivateNetworkRules(): Promise<void> {
+        const granted = (await listHostAccess()).filter((pattern) => {
+            const host = /^[^:]+:\/\/([^/]+)\//.exec(pattern)?.[1];
+            return host !== undefined && isPrivateHost(host);
+        });
+        await installPrivateNetworkRules(getNamespace()?.declarativeNetRequest, granted);
+    }
+
+    /** Rebuild the private-network rules whenever a host grant changes. */
+    #watchHostGrants(): void {
+        const permissions = getNamespace()?.permissions as
+            | {
+                  onAdded?: { addListener(listener: () => void): void };
+                  onRemoved?: { addListener(listener: () => void): void };
+              }
+            | undefined;
+        const refresh = (): void => {
+            void this.#refreshPrivateNetworkRules();
+        };
+        permissions?.onAdded?.addListener(refresh);
+        permissions?.onRemoved?.addListener(refresh);
     }
 
     /**
@@ -491,25 +571,28 @@ class BackgroundWorker {
             if (!parser) {
                 return { supported: false, error: unsupportedSiteError() };
             }
+            const disabled = disabledMessage(parser);
+            if (disabled) return { supported: false, error: disabledSiteError(disabled) };
+            await loadMetadata(parser, dom);
             diagnosticUrl("Analysed the page with", url, parser.constructor.name);
 
-            const title = parser.extractTitleImpl(dom);
-            const titleText =
-                typeof title === "string"
-                    ? title
-                    : title && "textContent" in title
-                      ? (title.textContent ?? "")
-                      : "";
+            // One parser that throws on a page it did not expect must not
+            // turn the whole analysis into "unsupported".
+            const title = safely(() => {
+                if (parser instanceof LegacyParser) return parser.extractTitle(dom);
+                const found = parser.extractTitleImpl(dom);
+                return typeof found === "string" ? found : (found?.textContent ?? "");
+            });
 
             return {
                 supported: true,
                 parserName: parser.constructor.name,
                 usedDefaultParser: parser instanceof DefaultParser,
-                title: titleText.trim() || undefined,
-                author: parser.extractAuthor(dom)?.trim() || undefined,
-                language: parser.extractLanguage(dom)?.trim() || undefined,
-                coverUrl: parser.findCoverImageUrl(dom) ?? undefined,
-                description: parser.extractDescription(dom)?.trim() || undefined,
+                title: title?.trim() || undefined,
+                author: cleanAuthor(safely(() => parser.extractAuthor(dom))),
+                language: safely(() => parser.extractLanguage(dom))?.trim() || undefined,
+                coverUrl: safely(() => parser.findCoverImageUrl(dom)) ?? undefined,
+                description: safely(() => parser.extractDescription(dom))?.trim() || undefined,
             };
         } catch (error) {
             return { supported: false, error: toUserFacingError(error, { url }) };
@@ -532,8 +615,21 @@ class BackgroundWorker {
             if (!parser) {
                 return { chapters: [], error: unsupportedSiteError() };
             }
+            const disabled = disabledMessage(parser);
+            if (disabled) return { chapters: [], error: disabledSiteError(disabled) };
+            syncLegacyControls(globalThis.document, { storyUrl: url });
+            await loadMetadata(parser, dom);
 
+            // The original pipeline told the parser which page the list came
+            // from before asking for it, and nine parsers read that back.
+            const legacy = parser instanceof LegacyParser ? parser : undefined;
+            if (legacy) {
+                legacy.state.chapterListUrl = url;
+                legacy.state.firstPageDom = dom;
+            }
             const chapters = await listChapterUrls(parser, dom);
+            legacy?.setPagesToFetch(chapters as LegacyChapter[]);
+            this.#rememberStory(url, dom, parser);
             diagnosticUrl("Found chapters with", url, parser.constructor.name, chapters.length);
 
             // The chapter numbers are stripped here rather than in the
@@ -592,6 +688,9 @@ class BackgroundWorker {
 
         const jobId = this.#downloads.start(payload.url, payload.title, chapters, {
             fileName: payload.fileName,
+            author: payload.author,
+            language: payload.language,
+            coverUrl: payload.coverUrl,
         });
         diagnostic("Started a download job", jobId, chapters.length, "chapters");
         return { jobId };
@@ -625,7 +724,7 @@ class BackgroundWorker {
                 ok: false,
                 contentChars: 0,
                 titleText: "",
-                error: error instanceof Error ? error.message : String(error),
+                error: redactUrlsIn(error instanceof Error ? error.message : String(error)),
             };
         }
     }
@@ -660,7 +759,7 @@ class BackgroundWorker {
                 status: "failed",
                 contentCss: "",
                 titleCss: "",
-                error: error instanceof Error ? error.message : String(error),
+                error: redactUrlsIn(error instanceof Error ? error.message : String(error)),
             };
         }
     }
@@ -674,6 +773,44 @@ class BackgroundWorker {
  * other means the network or the site let us down. Telling them apart matters,
  * because "try again" is useless advice for a site nobody has a parser for.
  */
+/**
+ * The message a parser gives when its site asked not to be scraped, or
+ * `null`. The original refused such a site, and so does the worker.
+ */
+function disabledMessage(parser: Parser): string | null {
+    if (!(parser instanceof LegacyParser)) return null;
+    const message = safely(() => parser.disabled() as unknown);
+    if (typeof message === "function") return String((message as () => unknown)());
+    return typeof message === "string" && message ? message : null;
+}
+
+/** The error for a site whose parser is disabled. */
+function disabledSiteError(message: string): UserFacingError {
+    return { message, code: "UNSUPPORTED" };
+}
+
+/**
+ * Let a parser fetch the metadata that needs a request of its own (a cover
+ * from an API, an author from another page). A failure keeps what the page has.
+ */
+async function loadMetadata(parser: Parser, dom: Document): Promise<void> {
+    if (!(parser instanceof LegacyParser)) return;
+    try {
+        await parser.loadEpubMetaInfo(dom);
+    } catch (error) {
+        diagnostic("A parser could not load its metadata:", String(error));
+    }
+}
+
+/** Call a parser's extractor, treating a throw as "nothing found". */
+function safely<T>(read: () => T): T | undefined {
+    try {
+        return read();
+    } catch {
+        return undefined;
+    }
+}
+
 function unsupportedSiteError(): UserFacingError {
     return {
         message: "Kintsugi does not know this site yet.",

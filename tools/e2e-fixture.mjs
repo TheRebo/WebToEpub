@@ -163,6 +163,30 @@ export async function startFixture() {
             }
         }
 
+        // A chapter that has moved, so a redirect is followed end to end.
+        const moved = /^\/moved\/(\d+)$/.exec(path);
+        if (moved) {
+            response.writeHead(301, { location: `/chapter/${moved[1]}` });
+            response.end();
+            return;
+        }
+
+        // A page in a legacy encoding, so the declared charset is honoured.
+        // The bytes are "中文" in GBK.
+        if (path === "/gbk") {
+            response.writeHead(200, { "content-type": "text/html; charset=gbk" });
+            response.end(
+                Buffer.concat([
+                    Buffer.from("<!doctype html><html><head><title>"),
+                    Buffer.from([0xd6, 0xd0, 0xce, 0xc4]),
+                    Buffer.from("</title></head><body><p>"),
+                    Buffer.from([0xd6, 0xd0, 0xce, 0xc4]),
+                    Buffer.from("</p></body></html>"),
+                ]),
+            );
+            return;
+        }
+
         if (path === "/cover.png") {
             response.writeHead(200, {
                 "content-type": "image/svg+xml",

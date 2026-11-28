@@ -31,7 +31,6 @@ function emptyState(): WorkbenchState {
         chapters: [],
         loadingChapters: false,
         filter: { query: "", useRegex: false, include: [], exclude: [] },
-        dirty: false,
         usedDefaultParser: false,
         accessOrigin: undefined,
         progress: undefined,

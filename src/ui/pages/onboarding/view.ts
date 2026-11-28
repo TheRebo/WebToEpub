@@ -56,7 +56,7 @@ export interface OnboardingElements {
 export function buildOnboarding(root: HTMLElement): OnboardingElements {
     root.replaceChildren();
 
-    const shell = document.createElement("div");
+    const shell = document.createElement("main");
     shell.className = "onboarding-shell";
 
     // --- The progress dots ---
@@ -162,7 +162,14 @@ export function renderStep(
     // --- The actions ---
     elements.back.hidden = step === 0;
     elements.back.textContent = t("onboardingBack");
-    elements.next.textContent = step === 2 ? t("onboardingFinish") : t("onboardingGetStarted");
+    // Each step's button says where it leads, so the three are not the same
+    // two words over and over.
+    elements.next.textContent =
+        step === 0
+            ? t("onboardingNextSites")
+            : step === 1
+              ? t("onboardingNextLook")
+              : t("onboardingFinish");
     elements.skip.hidden = step === 2;
     elements.skip.textContent = t("onboardingSkip");
 }
@@ -208,7 +215,7 @@ export function renderStatus(
     if (state === "loading") {
         const label = document.createElement("p");
         label.className = "onboarding-status-label";
-        label.textContent = t("phasePreparing");
+        label.textContent = t("commonLoading");
         panel.appendChild(label);
 
         for (const width of ["100%", "88%"]) {
@@ -393,10 +400,10 @@ function buildMakeItYours(appearance: OnboardingAppearance): HTMLElement {
                 ["plum", "optionsAccentPlum"],
             ],
             swatches: {
-                gold: "#d99224",
-                ink: "#5568c4",
-                verdigris: "#359c8b",
-                plum: "#b0529c",
+                gold: "var(--swatch-gold)",
+                ink: "var(--swatch-ink)",
+                verdigris: "var(--swatch-verdigris)",
+                plum: "var(--swatch-plum)",
             },
         }),
     );

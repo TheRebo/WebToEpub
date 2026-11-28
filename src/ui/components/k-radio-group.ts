@@ -91,7 +91,7 @@ label:has(input:checked) {
 }
 
 label:has(input:focus-visible) {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--ring);
 }
 

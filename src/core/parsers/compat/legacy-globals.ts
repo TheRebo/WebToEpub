@@ -7,7 +7,7 @@
  * `FetchErrorHandler`, `ImageCollector`, `EpubItem` and friends. Nothing
  * declared them; they simply had to be there.
  *
- * The rewrite does not have globals. It has modules. But the 437 parsers are
+ * The rewrite does not have globals. It has modules. But the 434 parsers are
  * the product's core asset and they must keep working, so this module
  * re-creates the handful of globals the parsers actually touch, as ordinary
  * exported objects that the codemod turns into imports.

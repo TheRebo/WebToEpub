@@ -84,8 +84,6 @@ export interface WorkbenchState {
     loadingChapters: boolean;
     /** The filter. */
     filter: FilterState;
-    /** Whether the metadata has unsaved edits. */
-    dirty: boolean;
     /**
      * Whether the fallback parser was used.
      *
@@ -123,6 +121,10 @@ export interface DownloadProgressState {
     message: string;
     /** Whether the job finished successfully. */
     succeeded: boolean;
+    /** How the job ended, once it has. */
+    outcome?: "success" | "failed" | "cancelled";
+    /** The line under the label: where the book went, or what went wrong. */
+    detail?: string;
 }
 
 /**
@@ -231,13 +233,6 @@ export class WorkbenchStore {
         });
     }
 
-    /** Mark the metadata as edited. */
-    markDirty(dirty: boolean): void {
-        this.update((state) => {
-            state.dirty = dirty;
-        });
-    }
-
     /** Record whether the fallback parser was used. */
     setUsedDefaultParser(used: boolean): void {
         this.update((state) => {
@@ -276,13 +271,14 @@ export class WorkbenchStore {
     /**
      * Toggle a chapter's selection.
      *
-     * A chapter that cannot be included is never selectable — the user can
-     * still tick it in the baseline, but the download then fails on it.
+     * A locked chapter starts unticked, but the user can tick it by hand: a
+     * reader who bought it can download it. The bulk actions leave locked
+     * chapters alone, so "Select all" never sweeps in a paywalled page.
      */
     toggleChapter(index: number): void {
         this.update((state) => {
             const chapter = state.chapters[index];
-            if (!chapter || !chapter.isIncludeable) return;
+            if (!chapter) return;
             chapter.selected = !chapter.selected;
         });
     }

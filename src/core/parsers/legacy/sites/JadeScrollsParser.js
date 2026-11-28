@@ -1,4 +1,3 @@
-// Ai generated + Claude Opus 4.6
 // Migrated from `plugin/js/parsers/JadeScrollsParser.js` on the `legacy` branch.
 // The parser's logic is unchanged; only the module wiring is new.
 "use strict";

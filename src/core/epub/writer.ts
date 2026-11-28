@@ -276,11 +276,13 @@ function buildNcxPoint(
 export function buildNavXml(document: EpubDocument, stylesheet = "styles.css"): string {
     const listItems = document.toc
         .map((point) => {
+            // A nested entry must sit in its own <ol>; a bare <li> inside an
+            // <li> is not a valid navigation document.
             const children =
                 point.children.length > 0
-                    ? `\n${point.children.map((child) => `      <li><a href="${escapeXmlAttribute(child.src)}">${escapeXml(child.label)}</a></li>`).join("\n")}`
+                    ? `\n      <ol>\n${point.children.map((child) => `        <li><a href="${escapeXmlAttribute(child.src)}">${escapeXml(child.label)}</a></li>`).join("\n")}\n      </ol>`
                     : "";
-            return `    <li><a href="${escapeXmlAttribute(point.src)}">${escapeXml(point.label)}</a>${children ? `\n${children}` : ""}</li>`;
+            return `    <li><a href="${escapeXmlAttribute(point.src)}">${escapeXml(point.label)}</a>${children}</li>`;
         })
         .join("\n");
 

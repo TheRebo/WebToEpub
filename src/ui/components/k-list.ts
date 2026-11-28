@@ -130,6 +130,14 @@ const LIST_STYLES = `
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: contain;
+    border-radius: var(--radius-sm);
+}
+
+/* The viewport is the list's tab stop; the document's focus rule does not
+   reach into the shadow root, so the ring is drawn here. */
+.viewport:focus-visible {
+    outline: 2px solid transparent;
+    box-shadow: inset 0 0 0 var(--focus-ring-width) var(--focus-ring);
 }
 
 .spacer {
@@ -159,14 +167,14 @@ const LIST_STYLES = `
     height: var(--row-height);
     padding: 0 var(--space-3);
     border-bottom: 1px solid var(--border-subtle);
-    cursor: default;
+    cursor: pointer;
     user-select: none;
     transition: background-color var(--dur-instant) var(--ease-out);
 }
 
-.row:hover { background: var(--surface-sunken); }
-.row[data-selected="true"] { background: var(--accent-subtle); }
-.row[data-selected="true"]:hover { background: var(--accent-subtle); filter: brightness(0.98); }
+/* A ticked row is shown by its checkbox. Tinting the whole row as well turned
+   a fully selected book (the usual case) into one block of accent colour. */
+.row:hover { background: var(--control-hover); }
 
 /*
  * The checkbox is drawn with borders and a background rather than with a
@@ -248,7 +256,7 @@ const LIST_STYLES = `
 }
 
 .row:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--ring);
     border-radius: var(--radius-xs);
 }
@@ -303,7 +311,10 @@ export class KList extends KComponent {
 
             this.viewport = document.createElement("div");
             this.viewport.className = "viewport";
-            this.viewport.setAttribute("role", "list");
+            // A list the user picks rows from is a listbox: each row then
+            // says whether it is selected, which a plain list cannot.
+            this.viewport.setAttribute("role", "listbox");
+            this.viewport.setAttribute("aria-multiselectable", "true");
             // The viewport is the list's one and only tab stop. The rows are
             // focused programmatically as the user arrows through them, so
             // they are never in the tab order themselves — a roving
@@ -331,7 +342,15 @@ export class KList extends KComponent {
             this.viewport.addEventListener("keydown", this.#onKeyDown);
         }
 
-        this.#rowHeight = Number(this.getAttribute("row-height") ?? 32);
+        // The rows are drawn at the density's --row-height, so they are
+        // placed at it too; an explicit attribute still wins.
+        const attribute = this.getAttribute("row-height");
+        const themed = Number.parseFloat(getComputedStyle(this).getPropertyValue("--row-height"));
+        this.#rowHeight = attribute
+            ? Number(attribute)
+            : Number.isFinite(themed) && themed > 0
+              ? themed
+              : 32;
         this.#overscan = Number(this.getAttribute("overscan") ?? 6);
 
         // The label has to reach the element that carries `role="list"`, or
@@ -467,7 +486,8 @@ export class KList extends KComponent {
     #createRow(item: ListItemData, index: number): HTMLElement {
         const row = document.createElement("div");
         row.className = "row";
-        row.setAttribute("role", "listitem");
+        row.setAttribute("role", "option");
+        row.setAttribute("aria-selected", String(item.selected ?? false));
         // The list is virtualised, so the rows in the DOM are only a window
         // of the whole. `aria-setsize` and `aria-posinset` tell the screen
         // reader how big the list really is and where this row sits in it,

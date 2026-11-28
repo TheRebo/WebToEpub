@@ -348,3 +348,24 @@ describe("the stylesheet reference", () => {
         expect(paths).toContain(target);
     });
 });
+
+describe("a chapter's ids", () => {
+    it("are made valid, unique XML names, and links follow them", async () => {
+        const { repairIds } = await import("../../src/core/epub/packer");
+        const doc = new DOMParser().parseFromString(
+            '<p id="1">a</p><p id="1">b</p><p id="note">c</p><a href="#1">to one</a>',
+            "text/html",
+        );
+        repairIds(doc.body);
+        const ids = Array.from(doc.body.querySelectorAll("[id]")).map((el) => el.id);
+        expect(ids).toEqual(["id-1", "note"]);
+        expect(doc.querySelector("a")?.getAttribute("href")).toBe("#id-1");
+    });
+});
+
+describe("text written into the book's XML", () => {
+    it("loses the characters XML forbids", async () => {
+        const { escapeXml } = await import("../../src/core/epub/document");
+        expect(escapeXml("A\u0008 title￾ & more")).toBe("A title &amp; more");
+    });
+});

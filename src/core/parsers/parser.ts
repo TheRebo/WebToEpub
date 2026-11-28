@@ -1,7 +1,7 @@
 /**
  * The parser contract.
  *
- * This is the interface every one of the 437 site parsers implements, and
+ * This is the interface every one of the 434 site parsers implements, and
  * the single most valuable asset the project owns. It is preserved
  * **verbatim** from the baseline so that every parser keeps working
  * unchanged.

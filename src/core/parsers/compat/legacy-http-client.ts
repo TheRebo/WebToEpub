@@ -1,7 +1,7 @@
 /**
  * The legacy `HttpClient` shim.
  *
- * The 437 legacy site parsers are the product's core asset, and they are
+ * The 434 legacy site parsers are the product's core asset, and they are
  * preserved verbatim in behaviour. They call a single ambient global —
  * `HttpClient` — with seven members. This module provides that global,
  * reimplemented on top of the rewrite's {@link FetchClient}.
@@ -32,6 +32,7 @@
 
 import {
     FetchError,
+    decoderFor,
     parseHtml,
     type CustomErrorHandler,
     type FetchClient,
@@ -100,6 +101,8 @@ export interface LegacyResponse {
     contentType: string;
     /** The raw bytes, when the response was not HTML. */
     arrayBuffer?: ArrayBuffer;
+    /** The decoder the body was read with, which a parser may reuse. */
+    makeTextDecoder(response: Response): TextDecoder;
     /** Whether the response was HTML. */
     isHtml(): boolean;
     /** The body text, so the object can be used where a string is expected. */
@@ -151,8 +154,8 @@ export interface LegacyWrapOptions {
     retry?: LegacyRetryBehaviour;
     /** The `fetch` options for the request. */
     fetchOptions?: LegacyFetchInit;
-    /** Accepted and ignored. */
-    makeTextDecoder?: unknown;
+    /** The decoder for the page's text, for a site that lies about its encoding. */
+    makeTextDecoder?: (response: Response) => TextDecoder;
 }
 
 /**
@@ -386,6 +389,8 @@ function createLegacyResponse(
         text,
         arrayBuffer,
         isHtml: (): boolean => contentType.startsWith("text/html"),
+        makeTextDecoder: (raw: Response): TextDecoder =>
+            decoderFor(raw, arrayBuffer ? new Uint8Array(arrayBuffer) : new Uint8Array()),
         toString: (): string => text,
     } as LegacyResponse;
 
@@ -692,43 +697,6 @@ function assertNotBlocked(url: string): void {
 /* ------------------------------------------------------------------ */
 
 /**
- * Fetch the raw bytes of a response that was not HTML.
- *
- * The legacy client read the body once and kept it as an `ArrayBuffer` when
- * the response was not HTML. The rewrite's client decodes the body as text,
- * which is lossy for a binary body, so a binary response is fetched a second
- * time to recover the exact bytes. A text body survives the round trip
- * through the decoder, so it is not fetched again.
- */
-async function fetchBytes(
-    client: FetchClient,
-    url: string,
-    fetchOptions: FetchOptions,
-    legacy: LegacyResponse,
-): Promise<ArrayBuffer | undefined> {
-    if (legacy.isHtml()) {
-        // The legacy client did not return the bytes of an HTML response.
-        return undefined;
-    }
-
-    const isText =
-        legacy.contentType.startsWith("text/") ||
-        legacy.contentType.includes("json") ||
-        legacy.contentType.includes("xml");
-    if (isText) {
-        return new TextEncoder().encode(legacy.text).buffer as ArrayBuffer;
-    }
-
-    try {
-        const binary = await client.fetchBinary(url, fetchOptions);
-        return binary.data.slice().buffer as ArrayBuffer;
-    } catch {
-        // The bytes are a convenience; the response itself already succeeded.
-        return new TextEncoder().encode(legacy.text).buffer as ArrayBuffer;
-    }
-}
-
-/**
  * Fetch a page, applying the legacy error semantics.
  */
 async function runLegacyFetch(
@@ -737,15 +705,18 @@ async function runLegacyFetch(
     fetchOptions: FetchOptions,
     retry: Partial<RetryPolicy> | undefined,
     bridge: LegacyParserBridge,
+    decoder?: (response: Response) => TextDecoder,
 ): Promise<LegacyResponse> {
     let retried403 = false;
 
     for (;;) {
         try {
-            const result = await client.fetchHtml(
-                url,
-                retry ? { ...fetchOptions, retry } : fetchOptions,
-            );
+            const result = await client.fetchHtml(url, {
+                ...fetchOptions,
+                anyType: true,
+                ...(retry ? { retry } : {}),
+                ...(decoder ? { decoder } : {}),
+            });
 
             const custom = bridge.customError;
             if (custom) {
@@ -763,7 +734,15 @@ async function runLegacyFetch(
                 });
             }
 
-            const legacy = createLegacyResponse(result.response, result.text, result.dom);
+            const legacy = createLegacyResponse(
+                result.response,
+                result.text,
+                result.dom,
+                // The legacy client gave a non-HTML response its bytes, and a
+                // parser that decodes a page itself (Fictionread) needs them.
+                result.bytes.slice().buffer as ArrayBuffer,
+            );
+            if (decoder) legacy.makeTextDecoder = decoder;
 
             if (bridge.isNoContent(legacy)) {
                 // The legacy client turned an empty page into a 403.
@@ -775,7 +754,6 @@ async function runLegacyFetch(
                 });
             }
 
-            legacy.arrayBuffer = await fetchBytes(client, url, fetchOptions, legacy);
             return legacy;
         } catch (error) {
             // The legacy client retried a 403 once, after a second, and then
@@ -832,12 +810,16 @@ async function wrapFetch(
     const bridge = new LegacyParserBridge(options.parser, options);
 
     return withClientLock(async () => {
-        client.setCustomErrorHandler(bridge);
-        try {
-            return await runLegacyFetch(client, url, fetchOptions, retry, bridge);
-        } finally {
-            client.setCustomErrorHandler(undefined);
-        }
+        const decoder =
+            typeof options.makeTextDecoder === "function" ? options.makeTextDecoder : undefined;
+        return runLegacyFetch(
+            client,
+            url,
+            { ...fetchOptions, customErrorHandler: bridge },
+            retry,
+            bridge,
+            decoder,
+        );
     });
 }
 
@@ -856,27 +838,25 @@ async function fetchJson(
     const bridge = new LegacyParserBridge(parser, { parser });
 
     return withClientLock(async () => {
-        client.setCustomErrorHandler(bridge);
-        try {
-            const result = await client.fetchJson(url, fetchOptions);
-            const custom = bridge.customError;
-            if (custom) {
-                throw new FetchError(custom.message ?? `Custom error for ${url}`, {
-                    status: custom.status,
-                    url,
-                    attempts: 1,
-                    isChallenge: custom.status === 403,
-                });
-            }
-            return {
-                json: result.json,
-                response: result.response,
-                url: result.url,
-                contentType: result.response.headers.get("content-type") ?? "",
-            };
-        } finally {
-            client.setCustomErrorHandler(undefined);
+        const result = await client.fetchJson(url, {
+            ...fetchOptions,
+            customErrorHandler: bridge,
+        });
+        const custom = bridge.customError;
+        if (custom) {
+            throw new FetchError(custom.message ?? `Custom error for ${url}`, {
+                status: custom.status,
+                url,
+                attempts: 1,
+                isChallenge: custom.status === 403,
+            });
         }
+        return {
+            json: result.json,
+            response: result.response,
+            url: result.url,
+            contentType: result.response.headers.get("content-type") ?? "",
+        };
     });
 }
 
@@ -1043,7 +1023,7 @@ function makeOptions(): LegacyFetchInit {
 /**
  * The legacy `HttpClient` object.
  *
- * The 437 legacy parsers call `HttpClient.<member>(…)`; this is that object.
+ * The 434 legacy parsers call `HttpClient.<member>(…)`; this is that object.
  */
 export const HttpClient: LegacyHttpClient = {
     wrapFetch: (url, wrapOptions) => wrapFetch(url, wrapOptions),

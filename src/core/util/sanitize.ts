@@ -152,9 +152,8 @@ function isAllowedDataUrl(value: string): boolean {
  *
  * The `data:` case needs care. DOMPurify already refuses a `data:` URL in an
  * `href`, but it lets one through in an `src` — and `data:image/svg+xml` is
- * an SVG document, which can carry a script. The extension's own placeholder
- * images are SVG, so SVG cannot simply be banned: instead only the inert
- * raster types are allowed, and everything else is removed.
+ * an SVG document, which can carry a script. Only the inert raster types are
+ * allowed, and everything else is removed.
  *
  * A `srcset` is checked candidate by candidate. DOMPurify looks at the
  * attribute as a whole, so a list whose first candidate is harmless can carry

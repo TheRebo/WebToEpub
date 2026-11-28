@@ -262,7 +262,9 @@ describe("the popup's view", () => {
         expect(elements.progress.hidden).toBe(false);
         expect(elements.progressCount.textContent).toBe("3 / 10");
         expect(elements.progressBar.style.getPropertyValue("--k-progress")).toBe("30%");
-        expect(primary(elements).hidden).toBe(true);
+        // The download can be stopped from the popup that shows it.
+        expect(primary(elements).hidden).toBe(false);
+        expect(primary(elements).dataset["action"]).toBe("cancel");
     });
 
     it("hides everything while loading", () => {

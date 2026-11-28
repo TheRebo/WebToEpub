@@ -172,12 +172,14 @@ export class OnboardingController {
         if (action === "back") {
             this.#step = Math.max(0, this.#step - 1) as OnboardingStep;
             this.#render();
+            this.#focusStep();
             return;
         }
         if (action === "next") {
             if (this.#step < 2) {
                 this.#step = (this.#step + 1) as OnboardingStep;
                 this.#render();
+                this.#focusStep();
                 return;
             }
             await this.#finish();
@@ -262,6 +264,20 @@ export class OnboardingController {
         toast.setAttribute("variant", variant);
         toast.setAttribute("duration", "4000");
         this.#elements.toastHost.appendChild(toast);
+    }
+
+    /**
+     * Move focus to the new step's heading.
+     *
+     * The button the user pressed may be hidden by the step it led to (Back
+     * on the first step), and focus left on a hidden button falls to the
+     * page itself. The heading is where a reader of the new step starts.
+     */
+    #focusStep(): void {
+        const heading = this.#elements.stage.querySelector<HTMLElement>("h1, h2");
+        if (!heading) return;
+        heading.tabIndex = -1;
+        heading.focus();
     }
 
     /** Render. */

@@ -257,7 +257,7 @@ describe("FetchClient's cookie handling", () => {
 });
 
 describe("the browser cookie adapter", () => {
-    it("asks the browser for a URL when the bridge asks for a domain", async () => {
+    it("asks the browser for every partition when the bridge asks for a domain", async () => {
         const getAll = vi.fn(async () => [
             {
                 name: "session",
@@ -277,7 +277,9 @@ describe("the browser cookie adapter", () => {
 
         const cookies = await api?.getAll({ domain: "example.com" });
 
-        expect(getAll).toHaveBeenCalledWith({ url: "https://example.com/" });
+        // Without a partition key the browser reports unpartitioned cookies
+        // only, and the bridge would never find one to copy.
+        expect(getAll).toHaveBeenCalledWith({ domain: "example.com", partitionKey: {} });
         expect(cookies?.[0]).toMatchObject({
             name: "session",
             domain: ".example.com",
@@ -331,5 +333,64 @@ describe("the browser cookie adapter", () => {
 
     it("returns nothing when the browser has no cookie API", () => {
         expect(createCookieApi(undefined)).toBeUndefined();
+    });
+});
+
+describe("the bridge and the user's own cookies", () => {
+    it("does not overwrite an unpartitioned cookie the user already has", async () => {
+        const set = vi.fn(async () => {});
+        const bridge = new CookieBridge({
+            getAll: async (details) =>
+                details.domain
+                    ? [
+                          {
+                              name: "sid",
+                              value: "copy",
+                              domain: ".example.com",
+                              path: "/",
+                              secure: true,
+                              httpOnly: true,
+                              partitionKey: "https://example.com",
+                          },
+                      ]
+                    : [
+                          {
+                              name: "sid",
+                              value: "mine",
+                              domain: ".example.com",
+                              path: "/",
+                              secure: true,
+                              httpOnly: true,
+                          },
+                      ],
+            set,
+            remove: async () => {},
+        });
+        expect(await bridge.copyForDomain("example.com")).toEqual([]);
+        expect(set).not.toHaveBeenCalled();
+    });
+
+    it("keeps a domain cookie a domain cookie", async () => {
+        const set = vi.fn(async () => {});
+        const bridge = new CookieBridge({
+            getAll: async (details) =>
+                details.domain
+                    ? [
+                          {
+                              name: "cf",
+                              value: "x",
+                              domain: ".example.com",
+                              path: "/",
+                              secure: true,
+                              httpOnly: true,
+                              partitionKey: "https://example.com",
+                          },
+                      ]
+                    : [],
+            set,
+            remove: async () => {},
+        });
+        await bridge.copyForDomain("www.example.com");
+        expect(set).toHaveBeenCalledWith(expect.objectContaining({ domain: ".example.com" }));
     });
 });

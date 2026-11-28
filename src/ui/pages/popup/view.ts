@@ -114,7 +114,7 @@ export function buildPopup(root: HTMLElement): PopupElements {
     mark.setAttribute("aria-hidden", "true");
     mark.appendChild(createIcon("book", 20));
 
-    const wordmark = document.createElement("span");
+    const wordmark = document.createElement("h1");
     wordmark.className = "popup-wordmark";
     wordmark.textContent = t("appName");
 
@@ -123,6 +123,7 @@ export function buildPopup(root: HTMLElement): PopupElements {
     settings.setAttribute("variant", "ghost");
     settings.setAttribute("size", "sm");
     settings.setAttribute("icon-only", "");
+    settings.setAttribute("icon", "settings");
     settings.setAttribute("aria-label", t("popupSettings"));
     settings.dataset["action"] = "settings";
 
@@ -169,7 +170,7 @@ export function buildPopup(root: HTMLElement): PopupElements {
     const emptyIcon = document.createElement("span");
     emptyIcon.className = "popup-empty-icon";
     emptyIcon.setAttribute("aria-hidden", "true");
-    emptyIcon.appendChild(createIcon("search", 28));
+    emptyIcon.appendChild(createIcon("book", 28));
 
     const emptyText = document.createElement("p");
     emptyText.className = "popup-empty-text";
@@ -286,7 +287,6 @@ export function buildPopup(root: HTMLElement): PopupElements {
     library.setAttribute("variant", "secondary");
     library.setAttribute("size", "sm");
     library.setAttribute("icon", "book");
-    library.setAttribute("aria-label", t("popupAddToLibrary"));
     library.dataset["action"] = "library";
     library.appendChild(document.createTextNode(t("popupLibraryShort")));
 
@@ -295,14 +295,13 @@ export function buildPopup(root: HTMLElement): PopupElements {
     workbench.setAttribute("variant", "secondary");
     workbench.setAttribute("size", "sm");
     workbench.setAttribute("icon", "list");
-    workbench.setAttribute("aria-label", t("popupOpenWorkbench"));
     workbench.dataset["action"] = "workbench";
     workbench.appendChild(document.createTextNode(t("popupWorkbenchShort")));
 
     actions.appendChild(library);
     actions.appendChild(workbench);
 
-    const body = document.createElement("div");
+    const body = document.createElement("main");
     body.className = "popup-body";
     body.appendChild(card);
     body.appendChild(empty);
@@ -411,10 +410,14 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
     elements.progressBar.style.setProperty("--k-progress", `${state.percent}%`);
 
     // --- The primary action ---
-    const showPrimary = state.state !== "running" && state.state !== "loading";
-    elements.primary.hidden = !showPrimary;
+    elements.primary.hidden = state.state === "loading";
 
-    if (state.state === "error") {
+    if (state.state === "running") {
+        // A download the user started can be stopped from where they see it.
+        elements.primary.setAttribute("variant", "secondary");
+        elements.primary.textContent = t("workbenchCancel");
+        elements.primary.dataset["action"] = "cancel";
+    } else if (state.state === "error") {
         elements.primary.setAttribute("variant", "primary");
         elements.primary.textContent = t("popupTryAgain");
         elements.primary.dataset["action"] = "retry";
@@ -424,9 +427,15 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
         elements.primary.setAttribute("variant", "primary");
         elements.primary.textContent = t("popupGetStarted");
         elements.primary.dataset["action"] = "onboarding";
-    } else if (state.state === "unsupported" || state.state === "no-story") {
+    } else if (state.state === "unsupported") {
+        // The workbench can be shown where the story is on a site it does
+        // not know yet.
         elements.primary.setAttribute("variant", "secondary");
-        elements.primary.textContent = t("workbenchTryAnyway");
+        elements.primary.textContent = t("siteSelectorOpen");
+        elements.primary.dataset["action"] = "primary";
+    } else if (state.state === "no-story") {
+        elements.primary.setAttribute("variant", "secondary");
+        elements.primary.textContent = t("popupOpenWorkbench");
         elements.primary.dataset["action"] = "primary";
     } else if (state.state === "access") {
         // The access state has its own button, so the primary action would be
@@ -452,5 +461,9 @@ export function renderPopup(elements: PopupElements, state: PopupViewState): voi
             state.state === "unsupported" ||
             state.state === "welcome";
     }
-    if (workbench) workbench.hidden = false;
+    // The primary button already opens the workbench in these states, so a
+    // second button doing the same would only be noise.
+    if (workbench) {
+        workbench.hidden = ["story", "no-story", "unsupported"].includes(state.state);
+    }
 }

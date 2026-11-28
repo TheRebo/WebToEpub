@@ -14,7 +14,7 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started
 | 0.1 | Preserve the baseline as tag `legacy/v-original` and branch `legacy`             | ✅     |
 | 0.2 | Create `main` from the baseline                                                  | ✅     |
 | 0.3 | Establish the branch strategy (`main` / `legacy` / short-lived feature branches) | ✅     |
-| 0.4 | Write the mission brief into the repository (`prompt.md`)                        | ✅     |
+| 0.4 | Write the mission brief into the repository (`docs/discovery/prompt.md`)         | ✅     |
 
 ---
 
@@ -118,13 +118,13 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started
 
 ### 3.5 The parsers
 
-| #     | Item                                                   | Status |
-| ----- | ------------------------------------------------------ | ------ |
-| 3.5.1 | The compat shim so legacy-style parsers run unmodified | ⬜     |
-| 3.5.2 | The codemod for the mechanical migration               | ⬜     |
-| 3.5.3 | The parity harness                                     | ⬜     |
-| 3.5.4 | Migrate all 437 parsers — tracked in `docs/WORKLOG.md` | ⬜     |
-| 3.5.5 | Delete the shim once migration reaches 100 %           | ⬜     |
+| #     | Item                                                                   | Status |
+| ----- | ---------------------------------------------------------------------- | ------ |
+| 3.5.1 | The compat shim so legacy-style parsers run unmodified                 | ✅     |
+| 3.5.2 | The codemod for the mechanical migration (`tools/migrate-parsers.mjs`) | ✅     |
+| 3.5.3 | The parity harness: it does not exist yet                              | ⬜     |
+| 3.5.4 | Migrate all 434 parsers into `src/core/parsers/legacy/sites/`          | ✅     |
+| 3.5.5 | Delete the shim once migration reaches 100 %                           | ⬜     |
 
 ### 3.6 Packaging and hardening
 
@@ -132,7 +132,7 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started
 | ----- | ----------------------------------------------------------------------- | ------ |
 | 3.6.1 | The manifest — the reduced permission set, the CSP, the static DNR rule | ⬜     |
 | 3.6.2 | The optional host-permission request flow + the revoke UI               | ⬜     |
-| 3.6.3 | The background service worker + the checkpoint/resume path              | ⬜     |
+| 3.6.3 | The background event page + the checkpoint/resume path                  | ⬜     |
 | 3.6.4 | The `web-ext lint` clean-up                                             | ⬜     |
 
 ---
@@ -159,7 +159,7 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started
 | **M1 — Design system complete** | Every component exists, with every state, and the token-contrast test passes                              | ⬜     |
 | **M2 — Core complete**          | The fetch layer, the EPUB pipeline, and the stores are implemented and unit-tested                        | ⬜     |
 | **M3 — A book can be produced** | A chapter page → a valid EPUB, end to end, in Firefox                                                     | ⬜     |
-| **M4 — Parser parity**          | All 437 parsers migrated and verified by the parity harness                                               | ⬜     |
+| **M4: Parser parity**           | All 434 parsers migrated (done); none verified yet, because the parity harness does not exist yet         | ⬜     |
 | **M5 — Accessible**             | axe-core reports zero critical/serious violations on every surface                                        | ⬜     |
 | **M6 — Shippable**              | `lint`, `typecheck`, `test`, `build`, and `web-ext lint` all pass; the `.xpi` installs with zero warnings | ⬜     |
 
