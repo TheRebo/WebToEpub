@@ -119,7 +119,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-5);
-    padding: var(--space-5);
+    padding: 0 var(--space-5) var(--space-5);
 }
 
 .workbench-panel__summary {
@@ -127,6 +127,9 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-3);
+    min-height: 44px;
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-lg);
     list-style: none;
     cursor: pointer;
     user-select: none;
@@ -140,12 +143,14 @@
     color: var(--accent-text);
 }
 
+/* A panel's name is a heading, in sentence case at reading size: an 11 px
+   tracked-out capital label is harder to read and says nothing more. */
 .workbench-panel__title {
-    font-size: var(--text-2xs);
+    margin: 0;
+    font-size: var(--text-sm);
     font-weight: var(--weight-semibold);
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: var(--text-muted);
+    line-height: var(--leading-snug);
+    color: var(--text);
     transition: color var(--dur-fast) var(--ease-out);
 }
 
@@ -228,9 +233,11 @@ select.story-field__input {
     cursor: not-allowed;
 }
 
+/* A field and the button that acts on it. The row holds the field's label
+   too, so the button sits on the input's line, not the middle of both. */
 .story-field__row {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
     gap: var(--space-2);
 }
@@ -260,10 +267,11 @@ select.story-field__input {
 
 .story-field__reset {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: var(--control-height-md);
+    height: var(--control-height-md);
     padding: 0;
     border: none;
     border-radius: var(--radius-sm);

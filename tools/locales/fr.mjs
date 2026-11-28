@@ -145,7 +145,7 @@ export default {
         "Bienvenue dans Kintsugi. Configurons tout avant votre premier livre.",
         "À la première ouverture, avant la présentation.",
     ],
-    popupGetStarted: ["Commencer", "Le bouton du popup qui ouvre la présentation."],
+    popupGetStarted: ["Configurer Kintsugi", "Le bouton du popup qui ouvre la présentation."],
     popupUnsupported: [
         "Ce site n'est pas encore pris en charge.",
         "Quand aucun analyseur ne correspond.",

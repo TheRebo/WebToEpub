@@ -358,7 +358,7 @@
     "description": "À la première ouverture, avant la présentation."
   },
   "popupGetStarted": {
-    "message": "Commencer",
+    "message": "Configurer Kintsugi",
     "description": "Le bouton du popup qui ouvre la présentation."
   },
   "popupUnsupported": {

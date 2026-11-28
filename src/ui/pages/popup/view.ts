@@ -170,7 +170,7 @@ export function buildPopup(root: HTMLElement): PopupElements {
     const emptyIcon = document.createElement("span");
     emptyIcon.className = "popup-empty-icon";
     emptyIcon.setAttribute("aria-hidden", "true");
-    emptyIcon.appendChild(createIcon("search", 28));
+    emptyIcon.appendChild(createIcon("book", 28));
 
     const emptyText = document.createElement("p");
     emptyText.className = "popup-empty-text";

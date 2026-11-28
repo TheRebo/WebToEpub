@@ -117,7 +117,7 @@ export default {
         "Kintsugi へようこそ。最初の書籍を作る前に設定を整えましょう。",
         "初回起動時、ガイドの前に表示。",
     ],
-    popupGetStarted: ["はじめる", "ガイドを開くポップアップのボタン。"],
+    popupGetStarted: ["Kintsugi を設定", "ガイドを開くポップアップのボタン。"],
     popupUnsupported: [
         "このサイトはまだ対応していません。",
         "パーサーが一致しなかったときに表示。",

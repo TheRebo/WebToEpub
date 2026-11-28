@@ -358,7 +358,7 @@
     "description": "Shown on the first run, before the onboarding."
   },
   "popupGetStarted": {
-    "message": "Get started",
+    "message": "Set up Kintsugi",
     "description": "The popup's button that opens the onboarding."
   },
   "popupUnsupported": {

@@ -144,7 +144,7 @@ export default {
         "Selamat datang di Kintsugi. Mari siapkan semuanya sebelum buku pertama Anda.",
         "Ditampilkan pada penggunaan pertama, sebelum panduan.",
     ],
-    popupGetStarted: ["Mulai", "Tombol popup yang membuka panduan."],
+    popupGetStarted: ["Siapkan Kintsugi", "Tombol popup yang membuka panduan."],
     popupUnsupported: [
         "Situs ini belum didukung.",
         "Ditampilkan saat tidak ada parser yang cocok.",

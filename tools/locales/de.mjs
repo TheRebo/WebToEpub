@@ -151,7 +151,10 @@ export default {
         "Willkommen bei Kintsugi. Richten wir alles ein, bevor Sie Ihr erstes Buch machen.",
         "Beim ersten Start, vor der Einführung.",
     ],
-    popupGetStarted: ["Los geht’s", "Die Schaltfläche des Popups, die die Einführung öffnet."],
+    popupGetStarted: [
+        "Kintsugi einrichten",
+        "Die Schaltfläche des Popups, die die Einführung öffnet.",
+    ],
     popupUnsupported: ["Diese Seite wird noch nicht unterstützt.", "Wenn kein Parser passt."],
     popupSaved: ["Ihr Buch ist fertig.", "Wird angezeigt, wenn ein Download endet."],
     popupTryAgain: ["Erneut versuchen", "Die Wiederholen-Schaltfläche des Popups."],

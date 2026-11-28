@@ -172,9 +172,9 @@ const LIST_STYLES = `
     transition: background-color var(--dur-instant) var(--ease-out);
 }
 
-.row:hover { background: var(--surface-sunken); }
-.row[data-selected="true"] { background: var(--accent-subtle); }
-.row[data-selected="true"]:hover { background: var(--accent-subtle); filter: brightness(0.98); }
+/* A ticked row is shown by its checkbox. Tinting the whole row as well turned
+   a fully selected book (the usual case) into one block of accent colour. */
+.row:hover { background: var(--control-hover); }
 
 /*
  * The checkbox is drawn with borders and a background rather than with a

@@ -358,7 +358,7 @@
     "description": "Beim ersten Start, vor der Einführung."
   },
   "popupGetStarted": {
-    "message": "Los geht’s",
+    "message": "Kintsugi einrichten",
     "description": "Die Schaltfläche des Popups, die die Einführung öffnet."
   },
   "popupUnsupported": {

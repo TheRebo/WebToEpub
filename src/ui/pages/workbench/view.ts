@@ -309,7 +309,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const storyPanel = el("details", "workbench-panel");
     storyPanel.open = true;
     const storySummary = el("summary", "workbench-panel__summary");
-    const storyTitle = el("span", "workbench-panel__title");
+    const storyTitle = el("h2", "workbench-panel__title");
     storyTitle.textContent = t("workbenchStoryDetails");
     const storyChevron = el("span", "workbench-panel__chevron");
     storyChevron.appendChild(createIcon("chevron-down", 16));
@@ -331,7 +331,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const urlRow = el("div", "story-field__row");
     const urlLoadButton = document.createElement("k-button") as KButton;
     urlLoadButton.setAttribute("variant", "secondary");
-    urlLoadButton.setAttribute("size", "sm");
+    urlLoadButton.setAttribute("size", "md");
     urlLoadButton.textContent = t("workbenchLoadStory");
     urlRow.append(urlField.wrapper, urlLoadButton);
     const urlHint = el("p", "story-field__hint");
@@ -375,7 +375,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     // --- Cover panel ---
     const coverPanel = el("details", "workbench-panel");
     const coverSummary = el("summary", "workbench-panel__summary");
-    const coverHeading = el("span", "workbench-panel__title");
+    const coverHeading = el("h2", "workbench-panel__title");
     coverHeading.textContent = t("workbenchCover");
     const coverBadge = el("span", "workbench-panel__badge");
     const coverChevron = el("span", "workbench-panel__chevron");
@@ -404,7 +404,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     // --- Options panel ---
     const optionsPanel = el("details", "workbench-panel");
     const optionsSummary = el("summary", "workbench-panel__summary");
-    const optionsHeading = el("span", "workbench-panel__title");
+    const optionsHeading = el("h2", "workbench-panel__title");
     optionsHeading.textContent = t("workbenchOptions");
     const optionsChevron = el("span", "workbench-panel__chevron");
     optionsChevron.appendChild(createIcon("chevron-down", 16));
@@ -455,7 +455,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
 
     const selectorBannerIcon = el("div", "selector-banner__icon");
     selectorBannerIcon.setAttribute("aria-hidden", "true");
-    selectorBannerIcon.appendChild(createIcon("sparkle", 18));
+    selectorBannerIcon.appendChild(createIcon("wrench", 18));
 
     const selectorBannerBody = el("div", "selector-banner__body");
     const selectorBannerTitle = el("p", "selector-banner__title");

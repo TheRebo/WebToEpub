@@ -358,7 +358,7 @@
     "description": "初回起動時、ガイドの前に表示。"
   },
   "popupGetStarted": {
-    "message": "はじめる",
+    "message": "Kintsugi を設定",
     "description": "ガイドを開くポップアップのボタン。"
   },
   "popupUnsupported": {

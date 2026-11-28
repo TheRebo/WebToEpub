@@ -166,7 +166,7 @@ const SOURCE = {
         "Welcome to Kintsugi. Let’s set things up before your first book.",
         "Shown on the first run, before the onboarding.",
     ],
-    popupGetStarted: ["Get started", "The popup's button that opens the onboarding."],
+    popupGetStarted: ["Set up Kintsugi", "The popup's button that opens the onboarding."],
     popupUnsupported: ["This site is not supported yet.", "Shown when no parser matched."],
     popupSaved: ["Your book is ready.", "Shown when a download finishes."],
     popupTryAgain: ["Try again", "The popup's retry button."],
