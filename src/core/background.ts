@@ -41,6 +41,7 @@ import { listChapterUrls } from "./parsers/parser";
 import { removeChapterNumber } from "./util/chapter-title";
 import { readLivePageDom } from "./live-page";
 import { LegacyParser, type LegacyChapter } from "./parsers/compat/legacy-parser";
+import { syncLegacyControls } from "./parsers/compat/legacy-controls";
 
 /** The worker. */
 /** How many listed stories the worker keeps for their downloads. */
@@ -287,6 +288,9 @@ class BackgroundWorker {
         try {
             const settings = await this.#settings.get();
             this.#preferences = toLegacyUserPreferences(settings);
+            syncLegacyControls(globalThis.document, {
+                removeChapterNumbers: settings.story.removeChapterNumbers,
+            });
             setDiagnosticsEnabled(settings.advanced.diagnostics);
         } catch {
             // A failure to read the settings must not stop the worker: the
@@ -596,6 +600,7 @@ class BackgroundWorker {
             }
             const disabled = disabledMessage(parser);
             if (disabled) return { chapters: [], error: disabledSiteError(disabled) };
+            syncLegacyControls(globalThis.document, { storyUrl: url });
             await loadMetadata(parser, dom);
 
             // The original pipeline told the parser which page the list came
