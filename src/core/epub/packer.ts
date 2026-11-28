@@ -23,6 +23,7 @@ import { buildXhtml, collectFiles, makeItemId } from "./writer";
 import { serializeAsXml } from "./xhtml";
 import { rewriteImageElements } from "../util/image-references";
 import { redactUrl } from "../util/url";
+import { stripIllegalXmlCharacters } from "../util/xml-characters";
 
 /**
  * Rewrite a chapter's image references to the packaged copies.
@@ -237,7 +238,8 @@ export function stylesheetHref(filePath: string): string {
  */
 export function packEpub(chapters: ChapterToPack[], metadata: PackMetadata): PackResult {
     const version = metadata.version ?? 3;
-    const language = metadata.language ?? "en";
+    // An empty language is as bad as none: a reader cannot guess it.
+    const language = metadata.language?.trim() || "en";
 
     const manifest: ManifestItem[] = [];
     const spine: SpineItem[] = [];
@@ -483,6 +485,7 @@ function toXhtml(html: string): string {
     if (!html.trim()) return "";
 
     const document = new DOMParser().parseFromString(html, "text/html");
+    repairIds(document.body);
     return serializeAsXml(document.body);
 }
 
@@ -594,7 +597,7 @@ export function extensionFor(mediaType: string): string {
 
 /** Escape text for XML content. */
 function escapeText(text: string): string {
-    return text
+    return stripIllegalXmlCharacters(text)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -602,3 +605,39 @@ function escapeText(text: string): string {
 }
 
 export { mediaTypeForPath };
+
+/** An XML name, which is what an `id` in an XHTML file has to be. */
+const XML_NAME = /^[\p{L}_][\p{L}\p{N}_.\-\u00B7]*$/u;
+
+/**
+ * Make every `id` in a chapter a valid, unique XML name.
+ *
+ * Web novel pages often number their paragraphs `id="1"`, and reuse an `id`
+ * across a page. Both make the chapter invalid XHTML, which strict readers
+ * and EPUBCheck reject. A bad `id` is rewritten, a duplicate is dropped, and
+ * a link to the old `id` inside the chapter follows it.
+ *
+ * @param root The chapter's body.
+ */
+export function repairIds(root: Element): void {
+    const renamed = new Map<string, string>();
+    const seen = new Set<string>();
+    for (const element of Array.from(root.querySelectorAll("[id]"))) {
+        const id = element.getAttribute("id") ?? "";
+        const next = XML_NAME.test(id) ? id : `id-${id.replace(/[^\p{L}\p{N}_.-]/gu, "_")}`;
+        if (seen.has(next)) {
+            element.removeAttribute("id");
+            continue;
+        }
+        if (next !== id) {
+            element.setAttribute("id", next);
+            if (!renamed.has(id)) renamed.set(id, next);
+        }
+        seen.add(next);
+    }
+    if (renamed.size === 0) return;
+    for (const link of Array.from(root.querySelectorAll("a[href^='#']"))) {
+        const target = renamed.get((link.getAttribute("href") ?? "").slice(1));
+        if (target) link.setAttribute("href", `#${target}`);
+    }
+}
