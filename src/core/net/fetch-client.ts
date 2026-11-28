@@ -114,6 +114,11 @@ export interface FetchOptions {
      * judges that parser's requests, never an image fetch running beside it.
      */
     customErrorHandler?: CustomErrorHandler;
+    /**
+     * Accept a body of any type. The legacy `wrapFetch` served JSON and
+     * binary responses as well as pages, and parsers rely on that.
+     */
+    anyType?: boolean;
 }
 
 /** A successful response. */
@@ -354,7 +359,10 @@ export class FetchClient {
                     // with a 200, and telling the user that the server
                     // returned 200 would be true and useless.
                     const contentType = response.headers.get("content-type");
-                    if (!isAcceptablePageType(contentType)) {
+                    const acceptable = options.anyType
+                        ? !isDocumentNoParserReads(contentType)
+                        : isAcceptablePageType(contentType);
+                    if (!acceptable) {
                         throw new FetchError(
                             `Expected an HTML page from ${url} but got ${mediaTypeOf(contentType)}`,
                             {
@@ -1007,4 +1015,19 @@ export function decoderFor(response: Response, bytes: Uint8Array): TextDecoder {
         }
     }
     return new TextDecoder();
+}
+
+/**
+ * Whether a response is a document no parser can read as text (a PDF, an
+ * archive, a video), so it is refused even when any type is accepted
+ * (ADR-0024): a chapter link to a PDF must say so, not become garbage.
+ */
+function isDocumentNoParserReads(contentType: string | null): boolean {
+    const type = mediaTypeOf(contentType);
+    return (
+        type === "application/pdf" ||
+        type === "application/zip" ||
+        type.startsWith("video/") ||
+        type.startsWith("audio/")
+    );
 }

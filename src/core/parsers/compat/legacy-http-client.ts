@@ -713,6 +713,7 @@ async function runLegacyFetch(
         try {
             const result = await client.fetchHtml(url, {
                 ...fetchOptions,
+                anyType: true,
                 ...(retry ? { retry } : {}),
                 ...(decoder ? { decoder } : {}),
             });
