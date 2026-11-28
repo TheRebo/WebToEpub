@@ -98,7 +98,7 @@ button:disabled { cursor: not-allowed; }
 
 :host([variant="danger"]) button {
     --_bg: var(--danger);
-    --_fg: #ffffff;
+    --_fg: var(--text-on-danger);
     --_border: transparent;
 }
 :host([variant="danger"]) button:hover:not(:disabled) { --_bg: var(--danger); filter: brightness(1.1); }

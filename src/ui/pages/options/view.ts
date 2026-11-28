@@ -699,10 +699,10 @@ function buildChoice(control: ControlSpec, value: string): HTMLElement {
         // The swatches show the *other* accents, so the picker cannot be
         // rendered with `var(--accent-500)` for every row: the current
         // accent would make all four swatches look the same.
-        group.addOption("gold", t("optionsAccentGold"), "#d99224");
-        group.addOption("ink", t("optionsAccentInk"), "#5568c4");
-        group.addOption("verdigris", t("optionsAccentVerdigris"), "#359c8b");
-        group.addOption("plum", t("optionsAccentPlum"), "#b0529c");
+        group.addOption("gold", t("optionsAccentGold"), "var(--swatch-gold)");
+        group.addOption("ink", t("optionsAccentInk"), "var(--swatch-ink)");
+        group.addOption("verdigris", t("optionsAccentVerdigris"), "var(--swatch-verdigris)");
+        group.addOption("plum", t("optionsAccentPlum"), "var(--swatch-plum)");
     } else {
         group.setAttribute("legend", tDynamic(control.label));
         group.addOption("comfortable", t("optionsDensityComfortable"));

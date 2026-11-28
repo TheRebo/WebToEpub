@@ -400,10 +400,10 @@ function buildMakeItYours(appearance: OnboardingAppearance): HTMLElement {
                 ["plum", "optionsAccentPlum"],
             ],
             swatches: {
-                gold: "#d99224",
-                ink: "#5568c4",
-                verdigris: "#359c8b",
-                plum: "#b0529c",
+                gold: "var(--swatch-gold)",
+                ink: "var(--swatch-ink)",
+                verdigris: "var(--swatch-verdigris)",
+                plum: "var(--swatch-plum)",
             },
         }),
     );

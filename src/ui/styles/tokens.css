@@ -33,6 +33,8 @@
     --accent-700: #8e5a14;
     --accent-800: #6b4310;
     --accent-900: #4e300c;
+    /* The dark theme's tint behind selected rows, one per family. */
+    --accent-subtle-dark: #3a2c10;
 
     /* Neutral: "Ash". A warm grey, so the interface sits in the same
        family as the gold accent. A pure grey ramp next to gold looks cheap. */
@@ -42,7 +44,8 @@
     --gray-200: #e5e0d5;
     --gray-300: #cfc8b9;
     --gray-400: #a69e8d;
-    --gray-500: #7c7466;
+    --gray-450: #8f877a;
+    --gray-500: #6e675a;
     --gray-600: #5a5348;
     --gray-700: #403b33;
     --gray-800: #2a261f;
@@ -57,6 +60,13 @@
     --danger-dark: #ff8a80;
     --info-light: #1d5fa8;
     --info-dark: #79b8ff;
+
+    /* The accent swatches in the pickers. Each one always shows its own
+       family, whichever accent is active, so they are fixed values. */
+    --swatch-gold: #d99224;
+    --swatch-ink: #5568c4;
+    --swatch-verdigris: #359c8b;
+    --swatch-plum: #b0529c;
 
     /* ------------------------------------------------------------------
      * Layer 1 — non-colour primitives
@@ -140,10 +150,19 @@
     --text-secondary: var(--gray-600);
     --text-muted: var(--gray-500);
     --text-on-accent: #ffffff;
+    --text-on-danger: #ffffff;
     --text-inverse: var(--gray-50);
 
+    /*
+     * --border draws the edge of a surface, which is decoration. The edge
+     * of a control (an input, a checkbox) is how the user finds it, so
+     * --border-strong clears the 3:1 WCAG 1.4.11 asks of it: #8f877a is
+     * 3.55:1 on white and 3.38:1 on --bg-subtle. --text-muted (#6e675a) is
+     * 4.88:1 on --gray-100 and 5.09:1 on --accent-subtle, the darkest
+     * surfaces it sits on.
+     */
     --border: var(--gray-200);
-    --border-strong: var(--gray-300);
+    --border-strong: var(--gray-450);
     --border-subtle: var(--gray-100);
 
     /*
@@ -222,6 +241,7 @@
     --gray-200: #342f25;
     --gray-300: #494236;
     --gray-400: #6b6355;
+    --gray-450: #7d7567;
     --gray-500: #8d8577;
     --gray-600: #aca493;
     --gray-700: #cbc3b2;
@@ -238,10 +258,12 @@
     --text-secondary: var(--gray-700);
     --text-muted: var(--gray-600);
     --text-on-accent: #1a1713;
+    /* White on the dark theme's light red is 2.28:1; the ink is 7.82:1. */
+    --text-on-danger: #1a1713;
     --text-inverse: var(--gray-900);
 
     --border: var(--gray-200);
-    --border-strong: var(--gray-300);
+    --border-strong: var(--gray-450);
     --border-subtle: var(--gray-100);
 
     /*
@@ -262,7 +284,7 @@
     --accent: var(--accent-400);
     --accent-hover: var(--accent-300);
     --accent-active: var(--accent-200);
-    --accent-subtle: #3a2c10;
+    --accent-subtle: var(--accent-subtle-dark);
     --accent-text: var(--accent-300);
 
     --success: var(--success-dark);
@@ -299,6 +321,7 @@
     --accent-700: #2f3d85;
     --accent-800: #243067;
     --accent-900: #1a2348;
+    --accent-subtle-dark: #1f2645;
 }
 
 [data-accent="verdigris"] {
@@ -311,6 +334,7 @@
     --accent-700: #1d6357;
     --accent-800: #164d44;
     --accent-900: #103833;
+    --accent-subtle-dark: #11312b;
 }
 
 [data-accent="plum"] {
@@ -323,6 +347,7 @@
     --accent-700: #752c66;
     --accent-800: #5c224f;
     --accent-900: #42193a;
+    --accent-subtle-dark: #35182f;
 }
 
 /*
