@@ -608,7 +608,7 @@
     "description": "The button that imports a library exported by WebToEpub 1.x."
   },
   "optionsLibraryImported": {
-    "message": "Imported $1 book.",
+    "message": "Imported $1 books.",
     "description": "Confirmation after importing a library, when it held several books."
   },
   "optionsLibraryImportedOne": {

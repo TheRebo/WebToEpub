@@ -608,7 +608,7 @@
     "description": "Die Schaltfläche, die eine von WebToEpub 1.x exportierte Bibliothek importiert."
   },
   "optionsLibraryImported": {
-    "message": "$1 Buch importiert.",
+    "message": "$1 Bücher importiert.",
     "description": "Bestätigung nach dem Import einer Bibliothek mit mehreren Büchern."
   },
   "optionsLibraryImportedOne": {

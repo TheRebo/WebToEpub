@@ -103,3 +103,25 @@ describe("a counted message", () => {
         }
     });
 });
+
+describe("a counted message, in the language's own plural rules", () => {
+    it("counts zero as singular in French and formats the number for the locale", async () => {
+        const { setI18nApi, tCount, clearI18nCache } = await import("../../../src/ui/i18n");
+        const seen: Array<[string, string[]]> = [];
+        setI18nApi({
+            getMessage: (key: string, substitutions?: string | string[]) => {
+                seen.push([key, [substitutions ?? []].flat()]);
+                return key;
+            },
+            getUILanguage: () => "fr",
+        });
+        clearI18nCache();
+        tCount("popupChapterCount", 0);
+        tCount("popupChapterCount", 1200);
+        expect(seen[0]?.[0]).toBe("popupChapterCountOne");
+        expect(seen[1]?.[0]).toBe("popupChapterCount");
+        expect(seen[1]?.[1][0]).toBe((1200).toLocaleString("fr"));
+        setI18nApi(undefined);
+        clearI18nCache();
+    });
+});

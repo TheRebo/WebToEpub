@@ -271,7 +271,7 @@ export default {
         "Die Schaltfläche, die eine von WebToEpub 1.x exportierte Bibliothek importiert.",
     ],
     optionsLibraryImported: [
-        "$1 Buch importiert.",
+        "$1 Bücher importiert.",
         "Bestätigung nach dem Import einer Bibliothek mit mehreren Büchern.",
     ],
     optionsLibraryImportedOne: [

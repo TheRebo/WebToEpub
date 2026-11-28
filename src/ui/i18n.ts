@@ -415,8 +415,23 @@ export type CountedName = keyof typeof COUNTED;
  * @returns The translated string, in the right number.
  */
 export function tCount(key: CountedName, count: number, substitutions: string[] = []): string {
-    const name = count === 1 ? COUNTED[key] : key;
-    return t(name, [String(count), ...substitutions]);
+    // The language's own rules decide the form: French counts 0 as
+    // singular, and Japanese has no singular at all.
+    const language = uiLanguage();
+    let category: string;
+    try {
+        category = new Intl.PluralRules(language).select(count);
+    } catch {
+        category = count === 1 ? "one" : "other";
+    }
+    const name = category === "one" ? COUNTED[key] : key;
+    let shown: string;
+    try {
+        shown = count.toLocaleString(language);
+    } catch {
+        shown = String(count);
+    }
+    return t(name, [shown, ...substitutions]);
 }
 
 /** Clear the memoisation cache. */

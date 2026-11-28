@@ -275,7 +275,7 @@ const SOURCE = {
         "The button that imports a library exported by WebToEpub 1.x.",
     ],
     optionsLibraryImported: [
-        "Imported $1 book.",
+        "Imported $1 books.",
         "Confirmation after importing a library, when it held several books.",
     ],
     optionsLibraryImportedOne: [
