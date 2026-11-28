@@ -59,8 +59,6 @@ function rewriteImageHrefs(html: string, images: Map<string, ImageData>, baseUrl
     return serializeAsXml(document.body);
 }
 
-/**
- * Turn a chapter's HTML into XHTML.
 /** A chapter, ready to be packed. */
 export interface ChapterToPack {
     /** The chapter's URL. */

@@ -296,12 +296,6 @@ export class LibraryStore {
         await this.#withStore("readwrite", (store) => store.clear());
     }
 
-    /** The total size of the library, in bytes. */
-    async totalSize(): Promise<number> {
-        const entries = await this.list();
-        return entries.reduce((sum, entry) => sum + entry.size, 0);
-    }
-
     /**
      * Close the database.
      *

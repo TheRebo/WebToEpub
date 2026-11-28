@@ -135,43 +135,6 @@ export function createOriginStripRule(): DnrRule {
 }
 
 /**
- * A session-scoped rule that spoofs the browser headers a protected site
- * expects.
- *
- * Some Cloudflare-protected sites reject a request that lacks a plausible
- * `Referer` and `Sec-Fetch-*` set. This rule is installed for the duration
- * of a download and removed afterwards.
- *
- * The migrated parsers install their own spoofing rules through the legacy
- * client's `setDeclarativeNetRequestRules`, which uses the browser's
- * *session* rules. This helper builds the same rule for the *dynamic* rule
- * set, which is where the origin-stripping rule lives, so that both kinds
- * of rule can be installed side by side.
- */
-export function createSpoofRule(
-    id: number,
-    options: { referer: string; requestDomains?: string[] },
-): DnrRule {
-    return {
-        id,
-        priority: 2,
-        action: {
-            type: "modifyHeaders",
-            requestHeaders: [
-                { header: "Referer", operation: "set", value: options.referer },
-                { header: "Sec-Fetch-Dest", operation: "set", value: "document" },
-                { header: "Sec-Fetch-Mode", operation: "set", value: "navigate" },
-                { header: "Sec-Fetch-Site", operation: "set", value: "same-origin" },
-            ],
-        },
-        condition: {
-            ...scopedCondition(["xmlhttprequest"]),
-            ...(options.requestDomains ? { requestDomains: options.requestDomains } : {}),
-        },
-    };
-}
-
-/**
  * Install the origin-stripping rule.
  *
  * This is the rule that replaces the baseline's `webRequest` listener. The

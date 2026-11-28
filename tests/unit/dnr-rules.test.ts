@@ -2,11 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
     ORIGIN_STRIP_RULE_ID,
     createOriginStripRule,
-    createSpoofRule,
     initiatorDomain,
     installOriginStripRule,
     type DnrApi,
-    type DnrRule,
 } from "../../src/core/net/dnr-rules";
 
 /**
@@ -184,50 +182,6 @@ describe("installOriginStripRule", () => {
                 getDynamicRules: async () => [],
             };
             expect(await installOriginStripRule(api)).toBe(false);
-        } finally {
-            restore();
-        }
-    });
-});
-
-describe("the spoofing rule", () => {
-    it("sets the headers a protected site expects", () => {
-        const rule = createSpoofRule(1000, {
-            referer: "https://example.com/",
-            requestDomains: ["example.com"],
-        });
-
-        const headers = rule.action.requestHeaders ?? [];
-        expect(headers.find((header) => header.header === "Referer")?.value).toBe(
-            "https://example.com/",
-        );
-        expect(headers.find((header) => header.header === "Sec-Fetch-Dest")?.value).toBe(
-            "document",
-        );
-        expect(headers.find((header) => header.header === "Sec-Fetch-Site")?.value).toBe(
-            "same-origin",
-        );
-        expect(rule.condition.requestDomains).toEqual(["example.com"]);
-    });
-
-    it("is scoped to the domain it was created for", () => {
-        const rule: DnrRule = createSpoofRule(1001, {
-            referer: "https://other.com/",
-            requestDomains: ["other.com"],
-        });
-        expect(rule.condition.requestDomains).toEqual(["other.com"]);
-    });
-
-    it("names a domain Firefox will accept", () => {
-        const restore = withOrigin("moz-extension://8f3a1c22-4b6d-4e2f-9a71-2c5d8e0b4f13/");
-        try {
-            const domains =
-                createSpoofRule(1002, { referer: "https://example.com/" }).condition
-                    .initiatorDomains ?? [];
-            expect(domains.length).toBeGreaterThan(0);
-            for (const domain of domains) {
-                expect(isCanonicalDomain(domain)).toBe(true);
-            }
         } finally {
             restore();
         }

@@ -396,16 +396,6 @@ export class UserFacingErrorError extends Error {
     }
 }
 
-/** Raise a `UserFacingErrorError`. */
-export function userError(
-    message: string,
-    code: ErrorCode = "UNKNOWN",
-    actions?: ErrorAction[],
-    url?: string,
-): never {
-    throw new UserFacingErrorError(message, code, actions, url);
-}
-
 /** The message for an empty chapter. */
 export function emptyContentError(url?: string): UserFacingErrorError {
     return new UserFacingErrorError(
