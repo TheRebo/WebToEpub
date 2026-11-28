@@ -72,6 +72,10 @@ export default {
         "Aucune histoire trouvée sur cette page",
         "Quand la page n'est pas une histoire.",
     ],
+    workbenchNoStoryHint: [
+        "Vérifiez qu’il s’agit bien de la liste des chapitres, ou montrez à Kintsugi où se trouvent les chapitres.",
+        "Sous la liste de chapitres vide.",
+    ],
     workbenchTryAnyway: ["Essayer quand même", "Ouvre l'atelier malgré tout."],
     workbenchUnsupportedSite: [
         "Ce site n'est pas encore pris en charge",

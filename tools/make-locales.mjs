@@ -98,6 +98,10 @@ const SOURCE = {
     workbenchCoverUrl: ["Cover image address", "The address of the cover image."],
     workbenchNoStoryHere: ["No story found on this page", "Shown when the page is not a story."],
     workbenchTryAnyway: ["Try anyway", "Opens the workbench regardless."],
+    workbenchNoStoryHint: [
+        "Check that this is the story's chapter list, or show Kintsugi where the chapters are.",
+        "Shown under the empty chapter list.",
+    ],
     workbenchUnsupportedSite: ["This site is not supported yet", "Shown when no parser matched."],
     workbenchUseSelectorBuilder: ["Build a selector", "Opens the selector builder."],
     workbenchReloadPage: ["Reload the page", "Reloads the tab."],

@@ -53,8 +53,6 @@ export interface WorkbenchElements {
     coverUrlField: HTMLInputElement;
     /** The remove-cover button. */
     removeCover: KButton;
-    /** The choose-from-page button. */
-    chooseCover: KButton;
     /** The author-notes switch. */
     authorNotesSwitch: KSwitch;
     /** The toc-page switch. */
@@ -97,6 +95,10 @@ export interface WorkbenchElements {
     emptyState: HTMLElement;
     /** The loading state. */
     loadingState: HTMLElement;
+    /** The empty state's action, which opens the site setup. */
+    emptyAction: KButton;
+    /** The link to the full settings. */
+    moreOptions: HTMLButtonElement;
     /** The status bar. */
     statusBar: HTMLElement;
     /** The status bar's label. */
@@ -382,16 +384,12 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const coverSide = el("div", "cover-side");
     const coverUrlField = makeTextField(t("workbenchCoverUrl"), "cover-url");
     const coverActions = el("div", "cover-actions");
-    const chooseCover = document.createElement("k-button") as KButton;
-    chooseCover.setAttribute("variant", "secondary");
-    chooseCover.setAttribute("size", "sm");
-    chooseCover.textContent = t("workbenchChooseFromPage");
     const removeCover = document.createElement("k-button") as KButton;
     removeCover.setAttribute("variant", "ghost");
     removeCover.setAttribute("size", "sm");
     removeCover.textContent = t("workbenchRemoveCover");
     removeCover.hidden = true;
-    coverActions.append(chooseCover, removeCover);
+    coverActions.append(removeCover);
     coverSide.append(coverUrlField.wrapper, coverActions);
     coverRow.append(coverPreview, coverSide);
     coverBody.appendChild(coverRow);
@@ -500,11 +498,13 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     const emptyTitle = el("p", "workbench-state__title");
     emptyTitle.textContent = t("workbenchNoStoryHere");
     const emptyBody = el("p", "workbench-state__body");
-    emptyBody.textContent = t("workbenchTryAnyway");
-    const emptyAction = document.createElement("k-button");
+    emptyBody.textContent = t("workbenchNoStoryHint");
+    // The one thing that helps on a page Kintsugi cannot read: showing it
+    // where the chapters are.
+    const emptyAction = document.createElement("k-button") as KButton;
     emptyAction.setAttribute("variant", "secondary");
     emptyAction.setAttribute("size", "md");
-    emptyAction.textContent = t("workbenchTryAnyway");
+    emptyAction.textContent = t("siteSelectorOpen");
     emptyState.append(emptyIcon, emptyTitle, emptyBody, emptyAction);
 
     const chaptersBody = el("div", "chapters-body");
@@ -751,7 +751,6 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         coverPreview,
         coverUrlField: coverUrlField.input,
         removeCover,
-        chooseCover,
         authorNotesSwitch,
         tocPageSwitch,
         saveButton,
@@ -772,6 +771,8 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         chapterCount,
         list,
         emptyState,
+        emptyAction,
+        moreOptions,
         loadingState,
         statusBar,
         statusLabel,
@@ -898,6 +899,8 @@ export function renderWorkbench(
 
     elements.loadingState.hidden = !state.loadingChapters;
     elements.emptyState.hidden = state.loadingChapters || total > 0;
+    // Setting up a site needs a page to set it up from.
+    elements.emptyAction.hidden = !state.story.sourceUrl;
     elements.list.hidden = state.loadingChapters || total === 0;
 
     if (!state.loadingChapters && total > 0) {

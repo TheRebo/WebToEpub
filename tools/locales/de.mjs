@@ -81,6 +81,10 @@ export default {
         "Auf dieser Seite wurde keine Story gefunden",
         "Wenn die Seite keine Story ist.",
     ],
+    workbenchNoStoryHint: [
+        "Prüfe, ob dies die Kapitelliste der Geschichte ist, oder zeig Kintsugi, wo die Kapitel stehen.",
+        "Unter der leeren Kapitelliste.",
+    ],
     workbenchTryAnyway: ["Trotzdem versuchen", "Öffnet die Werkbank trotzdem."],
     workbenchUnsupportedSite: [
         "Diese Seite wird noch nicht unterstützt",

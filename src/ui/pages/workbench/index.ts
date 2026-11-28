@@ -28,7 +28,7 @@ import { sendRequest, type DownloadProgress } from "../../../core/message/bus";
 import { isParsableSelector } from "../../../core/util/css";
 import { validateHostName } from "../../../core/storage/site-selectors-store";
 import { DEFAULT_FILENAME_TEMPLATE } from "../../../core/util/file-name";
-import { localStorageAdapter, activePageUrl } from "../../../core/browser-api";
+import { localStorageAdapter, activePageUrl, getURL, openTab } from "../../../core/browser-api";
 import { hasHostAccess, originOf, requestHostAccess } from "../../../core/host-access";
 import { normaliseStoryUrl } from "../../../core/util/url";
 import { SettingsStore, type Settings } from "../../../core/storage/settings-store";
@@ -560,6 +560,20 @@ export class WorkbenchController {
         }
 
         // --- The site-selector dialog ---
+        elements.emptyAction.addEventListener("k-click", () => {
+            this.#run(
+                () => this.#openSelectorDialog(),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
+        });
+
+        elements.moreOptions.addEventListener("click", () => {
+            this.#run(
+                () => openTab(getURL("options.html")),
+                (error) => this.#toast(caughtErrorMessage(error), "error"),
+            );
+        });
+
         elements.selectorBannerButton.addEventListener("k-click", () => {
             this.#run(
                 () => this.#openSelectorDialog(),

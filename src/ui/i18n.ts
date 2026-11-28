@@ -60,6 +60,7 @@ export const MESSAGES = {
     workbenchCoverUrl: "workbenchCoverUrl",
     workbenchNoStoryHere: "workbenchNoStoryHere",
     workbenchTryAnyway: "workbenchTryAnyway",
+    workbenchNoStoryHint: "workbenchNoStoryHint",
     workbenchUnsupportedSite: "workbenchUnsupportedSite",
     workbenchUseSelectorBuilder: "workbenchUseSelectorBuilder",
     workbenchReloadPage: "workbenchReloadPage",

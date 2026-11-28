@@ -71,6 +71,10 @@ export default {
         "Tidak ada cerita di halaman ini",
         "Ditampilkan saat halaman ini bukan cerita.",
     ],
+    workbenchNoStoryHint: [
+        "Pastikan ini halaman daftar bab cerita, atau tunjukkan pada Kintsugi letak bab-babnya.",
+        "Ditampilkan di bawah daftar bab yang kosong.",
+    ],
     workbenchTryAnyway: ["Coba saja", "Membuka meja kerja tetap saja."],
     workbenchUnsupportedSite: [
         "Situs ini belum didukung",

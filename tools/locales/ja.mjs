@@ -54,6 +54,10 @@ export default {
     workbenchNoCover: ["表紙なし", "表紙画像がないときに表示。"],
     workbenchCoverUrl: ["表紙画像の URL", "表紙画像のアドレス。"],
     workbenchNoStoryHere: ["このページに物語が見つかりません", "ページが物語ではないときに表示。"],
+    workbenchNoStoryHint: [
+        "このページが作品の目次か確認するか、章の場所を Kintsugi に教えてください。",
+        "空の章リストの下に表示されます。",
+    ],
     workbenchTryAnyway: ["このまま試す", "検討中、通常はそのまま開きます。"],
     workbenchUnsupportedSite: [
         "このサイトはまだ対応していません",

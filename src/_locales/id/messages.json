@@ -213,6 +213,10 @@
     "message": "Coba saja",
     "description": "Membuka meja kerja tetap saja."
   },
+  "workbenchNoStoryHint": {
+    "message": "Pastikan ini halaman daftar bab cerita, atau tunjukkan pada Kintsugi letak bab-babnya.",
+    "description": "Ditampilkan di bawah daftar bab yang kosong."
+  },
   "workbenchUnsupportedSite": {
     "message": "Situs ini belum didukung",
     "description": "Ditampilkan saat tidak ada parser yang cocok."

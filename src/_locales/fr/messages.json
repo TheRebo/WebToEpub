@@ -213,6 +213,10 @@
     "message": "Essayer quand même",
     "description": "Ouvre l'atelier malgré tout."
   },
+  "workbenchNoStoryHint": {
+    "message": "Vérifiez qu’il s’agit bien de la liste des chapitres, ou montrez à Kintsugi où se trouvent les chapitres.",
+    "description": "Sous la liste de chapitres vide."
+  },
   "workbenchUnsupportedSite": {
     "message": "Ce site n'est pas encore pris en charge",
     "description": "Quand aucun analyseur ne correspond."

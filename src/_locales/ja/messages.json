@@ -213,6 +213,10 @@
     "message": "このまま試す",
     "description": "検討中、通常はそのまま開きます。"
   },
+  "workbenchNoStoryHint": {
+    "message": "このページが作品の目次か確認するか、章の場所を Kintsugi に教えてください。",
+    "description": "空の章リストの下に表示されます。"
+  },
   "workbenchUnsupportedSite": {
     "message": "このサイトはまだ対応していません",
     "description": "パーサーが一致しなかったときに表示。"

@@ -213,6 +213,10 @@
     "message": "Trotzdem versuchen",
     "description": "Öffnet die Werkbank trotzdem."
   },
+  "workbenchNoStoryHint": {
+    "message": "Prüfe, ob dies die Kapitelliste der Geschichte ist, oder zeig Kintsugi, wo die Kapitel stehen.",
+    "description": "Unter der leeren Kapitelliste."
+  },
   "workbenchUnsupportedSite": {
     "message": "Diese Seite wird noch nicht unterstützt",
     "description": "Wenn kein Parser passt."

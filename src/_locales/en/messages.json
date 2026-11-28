@@ -213,6 +213,10 @@
     "message": "Try anyway",
     "description": "Opens the workbench regardless."
   },
+  "workbenchNoStoryHint": {
+    "message": "Check that this is the story's chapter list, or show Kintsugi where the chapters are.",
+    "description": "Shown under the empty chapter list."
+  },
   "workbenchUnsupportedSite": {
     "message": "This site is not supported yet",
     "description": "Shown when no parser matched."
