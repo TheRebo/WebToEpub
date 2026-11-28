@@ -253,7 +253,7 @@ export default {
     ],
     settingDefaultLanguage: ["既定の言語", "既定の言語の設定。"],
     settingDefaultLanguageHint: [
-        "サイトが言語を宣言していないときに使われる ISO 639 コードです。",
+        "サイトが言語を示していないときの本の言語。",
         "既定の言語の設定の説明。",
     ],
     settingRemoveAuthorNotes: ["作者のあとがきを削除", "作者のあとがきを削除する設定。"],

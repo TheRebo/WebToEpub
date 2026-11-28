@@ -10,6 +10,7 @@
 import { t } from "../../i18n";
 import { buildFileName, DEFAULT_FILENAME_TEMPLATE } from "../../../core/util/file-name";
 import { displayOrigin } from "../../../core/host-access";
+import { LANGUAGES } from "../../languages";
 import { createIcon, type IconName } from "../../components/icons";
 import { stateLabel } from "../../components/k-list";
 import type { KList } from "../../components/k-list";
@@ -174,35 +175,6 @@ export interface WorkbenchElements {
     /** The toast host. */
     toastHost: HTMLElement;
 }
-
-/** The languages offered in the language field. */
-const LANGUAGES: Array<{ code: string; name: string }> = [
-    { code: "en", name: "English" },
-    { code: "zh", name: "中文" },
-    { code: "ja", name: "日本語" },
-    { code: "ko", name: "한국어" },
-    { code: "fr", name: "Français" },
-    { code: "de", name: "Deutsch" },
-    { code: "es", name: "Español" },
-    { code: "pt", name: "Português" },
-    { code: "it", name: "Italiano" },
-    { code: "ru", name: "Русский" },
-    { code: "uk", name: "Українська" },
-    { code: "pl", name: "Polski" },
-    { code: "nl", name: "Nederlands" },
-    { code: "sv", name: "Svenska" },
-    { code: "tr", name: "Türkçe" },
-    { code: "ar", name: "العربية" },
-    { code: "he", name: "עברית" },
-    { code: "hi", name: "हिन्दी" },
-    { code: "id", name: "Bahasa Indonesia" },
-    { code: "ms", name: "Bahasa Melayu" },
-    { code: "th", name: "ไทย" },
-    { code: "vi", name: "Tiếng Việt" },
-    { code: "fil", name: "Filipino" },
-    { code: "pt-BR", name: "Português (Brasil)" },
-    { code: "es-419", name: "Español (Latinoamérica)" },
-];
 
 /**
  * Build the workbench's DOM.

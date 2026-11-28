@@ -654,7 +654,14 @@ function buildControl(
             field.setAttribute("name", control.path);
             field.dataset["path"] = control.path;
             if (control.hint) field.setAttribute("hint", tDynamic(control.hint));
-            for (const option of control.options) {
+            const options = [...control.options];
+            // A stored value the list does not offer (an older free-text
+            // setting) is kept as an option, so it is shown, not lost.
+            const current = String(value ?? "");
+            if (current && !options.some((option) => option.value === current)) {
+                options.push({ value: current, label: current });
+            }
+            for (const option of options) {
                 const element = document.createElement("option");
                 element.value = option.value;
                 element.textContent = option.label;

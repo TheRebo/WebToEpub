@@ -291,7 +291,7 @@ export default {
     ],
     settingDefaultLanguage: ["Bahasa bawaan", "Pengaturan bahasa bawaan."],
     settingDefaultLanguageHint: [
-        "Kode ISO 639 yang digunakan bila sebuah situs tidak menyatakannya.",
+        "Bahasa buku jika situsnya tidak menyebutkannya.",
         "Penjelasan pengaturan bahasa bawaan.",
     ],
     settingRemoveAuthorNotes: ["Hapus catatan penulis", "Pengaturan penghapusan catatan penulis."],

@@ -10,6 +10,7 @@
  * dependencies as arguments, so that it can be exercised without a browser
  * extension runtime.
  */
+import { LANGUAGES } from "../../languages";
 import { t, tCount } from "../../i18n";
 import { runGuarded } from "../../guarded";
 import type { Settings, SettingsPatch } from "../../../core/storage/settings-store";
@@ -80,11 +81,14 @@ export const GROUPS: GroupSpec[] = [
                 placeholder: "{title}",
             },
             {
-                kind: "text",
+                kind: "select",
                 path: "story.defaultLanguage",
                 label: "settingDefaultLanguage",
                 hint: "settingDefaultLanguageHint",
-                placeholder: "en",
+                options: LANGUAGES.map((language) => ({
+                    value: language.code,
+                    label: language.name,
+                })),
             },
             {
                 kind: "switch",

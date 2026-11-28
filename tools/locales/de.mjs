@@ -307,7 +307,7 @@ export default {
     ],
     settingDefaultLanguage: ["Standardsprache", "Die Einstellung der Standardsprache."],
     settingDefaultLanguageHint: [
-        "Der ISO-639-Code, der verwendet wird, wenn eine Seite keinen angibt.",
+        "Die Sprache eines Buchs, wenn die Seite keine angibt.",
         "Erklärt die Einstellung der Standardsprache.",
     ],
     settingRemoveAuthorNotes: [

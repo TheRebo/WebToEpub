@@ -662,7 +662,7 @@
     "description": "The default-language setting."
   },
   "settingDefaultLanguageHint": {
-    "message": "The ISO 639 code used when a site does not declare one.",
+    "message": "The language a book is marked as when its site does not say.",
     "description": "Explains the default-language setting."
   },
   "settingRemoveAuthorNotes": {

@@ -31,10 +31,17 @@
 import { KComponent, defineComponent } from "./base";
 
 const STYLES = `
+/* The page's own box-sizing reset does not reach into a shadow root, and
+   without it a full-width input with padding spills out of its card. */
+*, *::before, *::after { box-sizing: border-box; }
+
 :host {
     display: block;
     --_gap: var(--space-1);
 }
+
+/* A number is a few digits; a field the width of the card says otherwise. */
+input[type="number"] { max-width: 12rem; }
 
 :host([hidden]) { display: none; }
 

@@ -310,7 +310,7 @@ export default {
     ],
     settingDefaultLanguage: ["Langue par défaut", "Le réglage de langue par défaut."],
     settingDefaultLanguageHint: [
-        "Le code ISO 639 utilisé quand un site n'en déclare pas.",
+        "La langue du livre quand le site ne l’indique pas.",
         "Explique le réglage de langue par défaut.",
     ],
     settingRemoveAuthorNotes: [

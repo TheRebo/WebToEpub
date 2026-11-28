@@ -662,7 +662,7 @@
     "description": "Pengaturan bahasa bawaan."
   },
   "settingDefaultLanguageHint": {
-    "message": "Kode ISO 639 yang digunakan bila sebuah situs tidak menyatakannya.",
+    "message": "Bahasa buku jika situsnya tidak menyebutkannya.",
     "description": "Penjelasan pengaturan bahasa bawaan."
   },
   "settingRemoveAuthorNotes": {

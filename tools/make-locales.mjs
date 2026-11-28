@@ -307,7 +307,7 @@ const SOURCE = {
     ],
     settingDefaultLanguage: ["Default language", "The default-language setting."],
     settingDefaultLanguageHint: [
-        "The ISO 639 code used when a site does not declare one.",
+        "The language a book is marked as when its site does not say.",
         "Explains the default-language setting.",
     ],
     settingRemoveAuthorNotes: ["Remove author notes", "The remove-author-notes setting."],

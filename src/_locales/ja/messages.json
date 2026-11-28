@@ -662,7 +662,7 @@
     "description": "既定の言語の設定。"
   },
   "settingDefaultLanguageHint": {
-    "message": "サイトが言語を宣言していないときに使われる ISO 639 コードです。",
+    "message": "サイトが言語を示していないときの本の言語。",
     "description": "既定の言語の設定の説明。"
   },
   "settingRemoveAuthorNotes": {
