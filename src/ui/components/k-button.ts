@@ -44,6 +44,8 @@ const STYLES = `
 
 button {
     position: relative;
+    /* Fills the host, so a page that sizes the element sizes the button. */
+    flex: 1 1 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -66,7 +68,6 @@ button {
     appearance: none;
 }
 
-button:hover:not(:disabled) { --_bg-hover: var(--bg-subtle); }
 button:active:not(:disabled) { transform: scale(0.98); }
 button:disabled { cursor: not-allowed; }
 
@@ -84,7 +85,10 @@ button:disabled { cursor: not-allowed; }
     --_fg: var(--text);
     --_border: var(--border-strong);
 }
-:host([variant="secondary"]) button:hover:not(:disabled) { --_bg: var(--bg-subtle); }
+:host([variant="secondary"]) button:hover:not(:disabled) {
+    --_bg: var(--control-hover);
+    --_border: var(--text-muted);
+}
 
 :host([variant="ghost"]) button {
     --_bg: transparent;
@@ -92,7 +96,7 @@ button:disabled { cursor: not-allowed; }
     --_border: transparent;
 }
 :host([variant="ghost"]) button:hover:not(:disabled) {
-    --_bg: var(--bg-subtle);
+    --_bg: var(--control-hover);
     --_fg: var(--text);
 }
 

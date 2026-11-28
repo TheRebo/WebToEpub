@@ -97,6 +97,8 @@ export interface WorkbenchElements {
     noMatchesState: HTMLElement;
     /** The button that clears the filter from that state. */
     noMatchesClear: KButton;
+    /** The reason Pack is unavailable, beside it. */
+    packHint: HTMLElement;
     /** The empty state's action, which opens the site setup. */
     emptyAction: KButton;
     /** The link to the full settings. */
@@ -239,7 +241,11 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
     packButton.setAttribute("icon", "download");
     packButton.textContent = t("workbenchPack");
 
-    actions.append(packButton);
+    // Why Pack is unavailable, said where the user is looking. A disabled
+    // button cannot be focused, so a tooltip on it is never read.
+    const packHint = el("span", "workbench-actions__hint");
+    packHint.setAttribute("aria-live", "polite");
+    actions.append(packHint, packButton);
     appBar.append(mark, titleWrap, actions);
     shell.appendChild(appBar);
 
@@ -786,6 +792,7 @@ export function buildWorkbench(root: HTMLElement): WorkbenchElements {
         list,
         emptyState,
         emptyAction,
+        packHint,
         moreOptions,
         noMatchesState,
         noMatchesClear,
@@ -893,16 +900,16 @@ export function renderWorkbench(
     const busy = state.progress !== undefined && state.progress.outcome === undefined;
     const packable = selectedCount > 0 && !state.loadingChapters && !busy;
     elements.packButton.toggleAttribute("disabled", !packable);
-    elements.packButton.setAttribute(
-        "title",
-        busy
-            ? t("workbenchBusy")
-            : state.loadingChapters
-              ? t("workbenchWaitingForChapters")
-              : selectedCount > 0
-                ? ""
-                : t("workbenchNoChaptersSelected"),
-    );
+    const packReason = busy
+        ? t("workbenchBusy")
+        : state.loadingChapters
+          ? t("workbenchWaitingForChapters")
+          : selectedCount > 0
+            ? ""
+            : t("workbenchNoChaptersSelected");
+    elements.packButton.setAttribute("title", packReason);
+    // No story yet means nothing to explain: the page says how to start.
+    elements.packHint.textContent = state.story.sourceUrl ? packReason : "";
 
     // --- Chapters ---
     const total = state.chapters.length;

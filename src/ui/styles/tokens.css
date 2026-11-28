@@ -169,6 +169,9 @@
     --border: var(--gray-200);
     --border-strong: var(--gray-450);
     --border-subtle: var(--gray-100);
+    /* The fill a quiet control takes under the pointer. It has to differ
+       from every surface a control sits on, --bg-subtle included. */
+    --control-hover: var(--gray-200);
 
     /*
      * The accent.
@@ -273,6 +276,7 @@
 
     --border: var(--gray-200);
     --border-strong: var(--gray-450);
+    --control-hover: var(--gray-200);
     --border-subtle: var(--gray-100);
 
     /*

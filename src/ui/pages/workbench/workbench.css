@@ -942,3 +942,9 @@ select.story-field__input {
     font-size: var(--text-xs);
     color: var(--text-secondary);
 }
+
+.workbench-actions__hint {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
