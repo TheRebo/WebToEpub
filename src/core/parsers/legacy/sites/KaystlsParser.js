@@ -1,4 +1,4 @@
-// Ai generated + Claude Opus 4.6
+// Ai generated + Gemini 3.8 Flash
 // Migrated from `plugin/js/parsers/KaystlsParser.js` on the `legacy` branch.
 // The parser's logic is unchanged; only the module wiring is new.
 "use strict";
@@ -7,8 +7,6 @@ import { LegacyParser as Parser } from "../../compat/legacy-parser.js";
 import { util } from "../../compat/legacy-util.js";
 import { HttpClient } from "../../compat/legacy-http-client.js";
 import { parserFactory } from "../../compat/legacy-factory.js";
-
-// Ai generated + Gemini 3.8 Flash
 
 parserFactory.register("kaystls.site", () => new KaystlsParser());
 

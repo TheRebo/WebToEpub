@@ -1,7 +1,7 @@
 /**
  * The user's preferences, in the shape the legacy parsers read them.
  *
- * The 437 migrated parsers were written against the baseline's
+ * The 434 migrated parsers were written against the baseline's
  * `UserPreferences`: a bag of `{ value }` boxes, read directly by the parser.
  * The rewrite keeps its settings in a typed, validated store, so the two
  * shapes have to meet somewhere.

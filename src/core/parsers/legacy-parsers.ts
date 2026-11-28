@@ -12,7 +12,7 @@
  * kept its priority.
  *
  * These modules are plain JavaScript on purpose. They are the baseline's
- * code, unchanged; annotating 437 untyped files would be churn, and the
+ * code, unchanged; annotating 434 untyped files would be churn, and the
  * contract they implement is already described by the compat layer.
  *
  * See ADR-0002.

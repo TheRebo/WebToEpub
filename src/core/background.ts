@@ -4,7 +4,7 @@
  * Owns the parser registry, the network layer, and the download manager. The
  * extension pages never fetch anything themselves; they ask the worker.
  *
- * This is the only place that holds the 437 parsers, which is what keeps the
+ * This is the only place that holds the 434 parsers, which is what keeps the
  * popup small: the popup ships no parser code at all.
  *
  * See ADR-0005.

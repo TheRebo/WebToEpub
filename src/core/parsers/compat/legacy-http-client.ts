@@ -1,7 +1,7 @@
 /**
  * The legacy `HttpClient` shim.
  *
- * The 437 legacy site parsers are the product's core asset, and they are
+ * The 434 legacy site parsers are the product's core asset, and they are
  * preserved verbatim in behaviour. They call a single ambient global —
  * `HttpClient` — with seven members. This module provides that global,
  * reimplemented on top of the rewrite's {@link FetchClient}.
@@ -1022,7 +1022,7 @@ function makeOptions(): LegacyFetchInit {
 /**
  * The legacy `HttpClient` object.
  *
- * The 437 legacy parsers call `HttpClient.<member>(…)`; this is that object.
+ * The 434 legacy parsers call `HttpClient.<member>(…)`; this is that object.
  */
 export const HttpClient: LegacyHttpClient = {
     wrapFetch: (url, wrapOptions) => wrapFetch(url, wrapOptions),

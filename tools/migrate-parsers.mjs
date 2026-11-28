@@ -1,7 +1,7 @@
 /**
  * The parser migration.
  *
- * Converts the baseline's 437 site parsers into ES modules.
+ * Converts the baseline's 434 site parsers into ES modules.
  *
  * The baseline's parsers were plain scripts that relied on a dozen ambient
  * globals — `Parser`, `util`, `HttpClient`, `parserFactory` and so on. The
@@ -21,10 +21,11 @@
  *
  * Usage:
  *   node tools/migrate-parsers.mjs           migrate the parsers
- *   node tools/migrate-parsers.mjs --check   report what would change
+ *   node tools/migrate-parsers.mjs --check   list the files that differ from what
+ *                                            the tool would write, and fail if any do
  */
 import { execFileSync } from "node:child_process";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -343,6 +344,7 @@ function stripDeadBranches(fileName, source) {
  */
 function stripPrologue(source) {
     return source
+        .replace(/^\/\/ Ai generated[^\n]*\n/, "")
         .replace(/^\s*"use strict";\s*$/m, "")
         .replace(/\n{3,}/g, "\n\n")
         .trimStart();
@@ -401,8 +403,10 @@ function transform(fileName, source, exportedBy, ownNames) {
             `${existingExport ?? ""}export ${keyword} ${name}`,
     );
 
-    const header = `// Ai generated + Claude Opus 4.6
-// Migrated from \`${LEGACY_PARSER_DIR}/${fileName}\` on the \`${LEGACY_REF}\` branch.
+    // The parsers are their authors' code, so the tool adds no authorship
+    // line of its own; a parser that carried one keeps it.
+    const attribution = /^\/\/ Ai generated[^\n]*\n/.exec(source)?.[0] ?? "";
+    const header = `${attribution}// Migrated from \`${LEGACY_PARSER_DIR}/${fileName}\` on the \`${LEGACY_REF}\` branch.
 // The parser's logic is unchanged; only the module wiring is new.
 "use strict";
 `;
@@ -436,13 +440,21 @@ function buildIndex(fileNames) {
  * kept its priority.
  *
  * These modules are plain JavaScript on purpose. They are the baseline's
- * code, unchanged; annotating 437 untyped files would be churn, and the
+ * code, unchanged; annotating 434 untyped files would be churn, and the
  * contract they implement is already described by the compat layer.
  *
  * See ADR-0002.
  */
 ${lines.join("\n")}
 `;
+}
+
+/**
+ * A file's text with formatting differences ironed out, since the parsers on
+ * disk have been through the formatter and the tool's output has not.
+ */
+function normalise(text) {
+    return text.replace(/\s+/g, "");
 }
 
 /* ------------------------------------------------------------------ */
@@ -480,7 +492,25 @@ async function main() {
     }
 
     if (isCheck) {
-        console.log(`  ${sources.size} parsers would be migrated.`);
+        // Compare what the tool would write with what is on disk, so a hand
+        // edit to a generated parser (or a change to the tool) is caught.
+        const differ = [];
+        for (const [name, source] of sources) {
+            const output = transform(name, source, exportedBy, ownNames.get(name));
+            const current = await readFile(join(OUT_DIR, name), "utf8").catch(() => "");
+            if (normalise(current) !== normalise(output)) differ.push(name);
+        }
+        const index = await readFile(OUT_INDEX, "utf8").catch(() => "");
+        if (normalise(index) !== normalise(buildIndex([...sources.keys()]))) {
+            differ.push("legacy-parsers.ts");
+        }
+        if (differ.length === 0) {
+            console.log(`  All ${sources.size} parsers match what the tool would write.`);
+            return;
+        }
+        console.log(`  ${differ.length} file(s) differ from what the tool would write:`);
+        for (const name of differ) console.log(`    ${name}`);
+        process.exitCode = 1;
         return;
     }
 
