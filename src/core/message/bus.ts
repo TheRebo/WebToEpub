@@ -352,6 +352,7 @@ export async function sendRequest<N extends RequestName>(
             response.error.code,
             response.error.actions,
             response.error.url,
+            response.error.detail,
         );
     }
     if (!("result" in response) || response.result === undefined) {
@@ -401,6 +402,9 @@ export async function handleRequests(
             const response: ResponseEnvelope<unknown> = { id: envelope.id, result };
             return response;
         } catch (error) {
+            // The page shows a sentence; the cause is kept here, in the
+            // worker's console, where a bug report can find it.
+            console.error(`[kintsugi] The ${type} request failed:`, error);
             const response: ResponseEnvelope<unknown> = {
                 id: envelope.id,
                 error: toUserFacingError(error),
@@ -442,10 +446,14 @@ const PAYLOAD_RULES: {
         ) &&
         // The file name is optional, but when it is there it has to be a
         // string: a caller that sends something else meant to send a name.
-        (!hasProperty(payload, "fileName") || hasString(payload, "fileName")) &&
-        (!hasProperty(payload, "author") || hasString(payload, "author")) &&
-        (!hasProperty(payload, "language") || hasString(payload, "language")) &&
-        (!hasProperty(payload, "coverUrl") || hasString(payload, "coverUrl")),
+        // `undefined` counts as absent: Firefox passes messages by structured
+        // clone, which keeps a key whose value is `undefined`, and the
+        // workbench sends `fileName: undefined` when the user kept the
+        // template's name.
+        hasOptionalString(payload, "fileName") &&
+        hasOptionalString(payload, "author") &&
+        hasOptionalString(payload, "language") &&
+        hasOptionalString(payload, "coverUrl"),
     "download:cancel": (payload) => hasString(payload, "jobId"),
     "download:progress": (payload) => hasString(payload, "jobId"),
     "download:list": () => true,
@@ -481,17 +489,15 @@ function hasString(value: unknown, key: string): boolean {
 /**
  * Whether a payload has an array property.
  */
+function hasOptionalString(value: unknown, key: string): boolean {
+    if (typeof value !== "object" || value === null) return false;
+    const field = (value as Record<string, unknown>)[key];
+    return field === undefined || typeof field === "string";
+}
+
 function hasArray(value: unknown, key: string): boolean {
     if (typeof value !== "object" || value === null) return false;
     return Array.isArray((value as Record<string, unknown>)[key]);
-}
-
-/**
- * Whether a payload has a property at all.
- */
-function hasProperty(value: unknown, key: string): boolean {
-    if (typeof value !== "object" || value === null) return false;
-    return key in (value as Record<string, unknown>);
 }
 
 /**

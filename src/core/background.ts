@@ -641,10 +641,15 @@ class BackgroundWorker {
             return {
                 chapters: chapters.map((chapter) => ({
                     sourceUrl: chapter.sourceUrl,
+                    // A migrated parser can leave a title out, and the
+                    // download request refuses a chapter without a string
+                    // title, so a missing one is sent as empty.
                     title:
-                        stripNumbers && chapter.title
-                            ? removeChapterNumber(chapter.title)
-                            : chapter.title,
+                        typeof chapter.title !== "string"
+                            ? ""
+                            : stripNumbers
+                              ? removeChapterNumber(chapter.title)
+                              : chapter.title,
                     // A chapter the parser marks as not includeable starts
                     // unchecked in the UI.
                     isIncludeable: chapter.isIncludeable ?? true,

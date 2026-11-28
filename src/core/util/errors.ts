@@ -373,23 +373,27 @@ export class UserFacingErrorError extends Error {
     readonly code: ErrorCode;
     readonly actions?: ErrorAction[];
     readonly url?: string;
+    readonly detail?: string;
 
     constructor(
         message: string,
         code: ErrorCode = "UNKNOWN",
         actions?: ErrorAction[],
         url?: string,
+        detail?: string,
     ) {
         super(message);
         this.name = "UserFacingErrorError";
         this.code = code;
         if (actions) this.actions = actions;
         if (url) this.url = url;
+        if (detail) this.detail = detail;
     }
 
     toUserFacingError(): UserFacingError {
         const result: UserFacingError = { message: this.message, code: this.code };
         if (this.actions) result.actions = this.actions;
+        if (this.detail) result.detail = this.detail;
         const safeUrl = redactUrl(this.url);
         if (safeUrl) result.url = safeUrl;
         return result;

@@ -650,6 +650,9 @@ export class DownloadManager {
                 this.#pruneFinishedJobs();
                 return;
             }
+            // The user sees a sentence; the stack is only here, in the
+            // worker's console, where a bug report can find it.
+            console.error("[kintsugi] The download failed:", error);
             job.phase = "failed";
             job.error = toUserFacingError(error);
             this.#report(job);
@@ -711,6 +714,7 @@ export class DownloadManager {
                 this.#report(job);
                 return;
             }
+            console.error("[kintsugi] The story's page could not be read:", error);
             job.phase = "failed";
             job.error = toUserFacingError(error);
             this.#report(job);

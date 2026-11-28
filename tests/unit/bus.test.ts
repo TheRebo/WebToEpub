@@ -142,6 +142,34 @@ describe("isValidPayload", () => {
         ).toBe(false);
     });
 
+    it("accepts a download whose optional fields arrive as undefined", () => {
+        // Firefox passes messages by structured clone, which keeps a key
+        // whose value is undefined: the workbench sends `fileName: undefined`
+        // whenever the user kept the template's name.
+        const payload = structuredClone({
+            url: "https://example.com/story",
+            title: "A Story",
+            fileName: undefined,
+            author: undefined,
+            language: undefined,
+            coverUrl: undefined,
+            chapters: [{ sourceUrl: "https://example.com/c/1", title: "One" }],
+        });
+        expect("fileName" in payload).toBe(true);
+        expect(isValidPayload("download:start", payload)).toBe(true);
+    });
+
+    it("still rejects an optional field of the wrong type", () => {
+        expect(
+            isValidPayload("download:start", {
+                url: "https://example.com/story",
+                title: "A Story",
+                fileName: 42,
+                chapters: [],
+            }),
+        ).toBe(false);
+    });
+
     it("rejects a download whose chapter is malformed", () => {
         expect(
             isValidPayload("download:start", {

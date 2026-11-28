@@ -43,7 +43,7 @@ const ERROR_MESSAGE_KEYS: Partial<Record<ErrorCode, string>> = {
  */
 export function errorMessage(error: UserFacingError | undefined): string {
     if (!error) return "";
-    return errorSentence(error.message, error.code, error.url);
+    return errorSentence(error.message, error.code, error.url, error.detail);
 }
 
 /**
@@ -59,7 +59,7 @@ export function errorMessage(error: UserFacingError | undefined): string {
  */
 export function caughtErrorMessage(error: unknown): string {
     if (error instanceof UserFacingErrorError) {
-        return errorSentence(error.message, error.code, error.url);
+        return errorSentence(error.message, error.code, error.url, error.detail);
     }
     if (error instanceof Error && error.message) return error.message;
     return t("errorGeneric");
@@ -68,7 +68,20 @@ export function caughtErrorMessage(error: unknown): string {
 /**
  * A sentence for a failure, in the user's language.
  */
-function errorSentence(message: string, code: ErrorCode, url: string | undefined): string {
+function errorSentence(
+    message: string,
+    code: ErrorCode,
+    url: string | undefined,
+    detail: string | undefined,
+): string {
+    // "Something went wrong" alone leaves the user, and any bug report, with
+    // nothing to go on. An unknown failure is a bug, so what the worker knows
+    // about it is shown: its detail, or a message more specific than its
+    // stock fallback.
+    if (code === "UNKNOWN") {
+        const specific = detail ?? (message.startsWith("Something went wrong") ? "" : message);
+        if (specific) return `${t("errorGeneric")} (${specific})`;
+    }
     const key = ERROR_MESSAGE_KEYS[code];
     if (key) {
         // The worker's message names the host, which is worth keeping, so it
