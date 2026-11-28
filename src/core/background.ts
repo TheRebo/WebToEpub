@@ -550,25 +550,28 @@ class BackgroundWorker {
             if (!parser) {
                 return { supported: false, error: unsupportedSiteError() };
             }
+            const disabled = disabledMessage(parser);
+            if (disabled) return { supported: false, error: disabledSiteError(disabled) };
+            await loadMetadata(parser, dom);
             diagnosticUrl("Analysed the page with", url, parser.constructor.name);
 
-            const title = parser.extractTitleImpl(dom);
-            const titleText =
-                typeof title === "string"
-                    ? title
-                    : title && "textContent" in title
-                      ? (title.textContent ?? "")
-                      : "";
+            // One parser that throws on a page it did not expect must not
+            // turn the whole analysis into "unsupported".
+            const title = safely(() => {
+                if (parser instanceof LegacyParser) return parser.extractTitle(dom);
+                const found = parser.extractTitleImpl(dom);
+                return typeof found === "string" ? found : (found?.textContent ?? "");
+            });
 
             return {
                 supported: true,
                 parserName: parser.constructor.name,
                 usedDefaultParser: parser instanceof DefaultParser,
-                title: titleText.trim() || undefined,
-                author: parser.extractAuthor(dom)?.trim() || undefined,
-                language: parser.extractLanguage(dom)?.trim() || undefined,
-                coverUrl: parser.findCoverImageUrl(dom) ?? undefined,
-                description: parser.extractDescription(dom)?.trim() || undefined,
+                title: title?.trim() || undefined,
+                author: safely(() => parser.extractAuthor(dom))?.trim() || undefined,
+                language: safely(() => parser.extractLanguage(dom))?.trim() || undefined,
+                coverUrl: safely(() => parser.findCoverImageUrl(dom)) ?? undefined,
+                description: safely(() => parser.extractDescription(dom))?.trim() || undefined,
             };
         } catch (error) {
             return { supported: false, error: toUserFacingError(error, { url }) };
@@ -591,6 +594,9 @@ class BackgroundWorker {
             if (!parser) {
                 return { chapters: [], error: unsupportedSiteError() };
             }
+            const disabled = disabledMessage(parser);
+            if (disabled) return { chapters: [], error: disabledSiteError(disabled) };
+            await loadMetadata(parser, dom);
 
             // The original pipeline told the parser which page the list came
             // from before asking for it, and nine parsers read that back.
@@ -742,6 +748,44 @@ class BackgroundWorker {
  * other means the network or the site let us down. Telling them apart matters,
  * because "try again" is useless advice for a site nobody has a parser for.
  */
+/**
+ * The message a parser gives when its site asked not to be scraped, or
+ * `null`. The original refused such a site, and so does the worker.
+ */
+function disabledMessage(parser: Parser): string | null {
+    if (!(parser instanceof LegacyParser)) return null;
+    const message = safely(() => parser.disabled() as unknown);
+    if (typeof message === "function") return String((message as () => unknown)());
+    return typeof message === "string" && message ? message : null;
+}
+
+/** The error for a site whose parser is disabled. */
+function disabledSiteError(message: string): UserFacingError {
+    return { message, code: "UNSUPPORTED" };
+}
+
+/**
+ * Let a parser fetch the metadata that needs a request of its own (a cover
+ * from an API, an author from another page). A failure keeps what the page has.
+ */
+async function loadMetadata(parser: Parser, dom: Document): Promise<void> {
+    if (!(parser instanceof LegacyParser)) return;
+    try {
+        await parser.loadEpubMetaInfo(dom);
+    } catch (error) {
+        diagnostic("A parser could not load its metadata:", String(error));
+    }
+}
+
+/** Call a parser's extractor, treating a throw as "nothing found". */
+function safely<T>(read: () => T): T | undefined {
+    try {
+        return read();
+    } catch {
+        return undefined;
+    }
+}
+
 function unsupportedSiteError(): UserFacingError {
     return {
         message: "Kintsugi does not know this site yet.",

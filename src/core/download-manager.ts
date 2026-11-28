@@ -228,27 +228,37 @@ export function buildBookMetadata(
 
     if (!parser || !storyDom) return metadata;
 
-    const author = parser.extractAuthor(storyDom);
+    // A parser that throws on one field must not cost the book the others,
+    // or the whole download.
+    const read = <T>(extract: () => T): T | undefined => {
+        try {
+            return extract();
+        } catch {
+            return undefined;
+        }
+    };
+
+    const author = read(() => parser.extractAuthor(storyDom));
     if (author) metadata.author = author;
 
-    const language = parser.extractLanguage(storyDom);
+    const language = read(() => parser.extractLanguage(storyDom));
     if (language) metadata.language = language;
 
-    const publisher = parser.extractPublisher(storyDom);
+    const publisher = read(() => parser.extractPublisher(storyDom));
     if (publisher) metadata.publisher = publisher;
 
-    const description = parser.extractDescription(storyDom);
+    const description = read(() => parser.extractDescription(storyDom));
     if (description) metadata.description = description;
 
-    const subject = parser.extractSubject(storyDom);
+    const subject = read(() => parser.extractSubject(storyDom));
     if (subject) metadata.subjects = [subject];
 
-    const date = parser.extractDatePublished(storyDom);
+    const date = read(() => parser.extractDatePublished(storyDom));
     if (date) metadata.date = date;
 
     // The cover is one of the images the chapters referenced, if the parser
     // named one that was downloaded.
-    const coverUrl = parser.findCoverImageUrl(storyDom);
+    const coverUrl = read(() => parser.findCoverImageUrl(storyDom));
     if (coverUrl) {
         const absolute = resolveUrl(coverUrl, sourceUrl);
         const cover = absolute ? images.get(absolute) : undefined;
